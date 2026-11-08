@@ -51,6 +51,15 @@ def _card(i: int, q: dict) -> str:
         focus = f'<div class="focus"><b>只判一件事</b>：合规风险能不能接受。J5 原话：{_esc((gate or {}).get("reason"))}</div>'
     else:
         focus = ""
+    vote_note = next(
+        (ln for ln in (q.get("arbiter_note") or "").split("；") if ln.startswith("投票")), ""
+    )
+    votes = (
+        f'<div class="votes">跨 run 投票：{_esc(vote_note)}'
+        f'<span class="dim"> · 票数越散，越说明这条卡在判据边界上</span></div>'
+        if vote_note
+        else ""
+    )
     return f"""
 <section class="card" data-id="{_esc(q['candidate_id'])}">
   <div class="chead">
@@ -60,6 +69,7 @@ def _card(i: int, q: dict) -> str:
     <span class="s">S={_esc(s_txt)}</span>
     <span class="chips">{chips}</span>
   </div>
+  {votes}
   <h3>{_esc(snap.get('title'))}</h3>
   <p class="body">{_esc(snap.get('body'))}</p>
   <ul class="chos">{chos}</ul>
@@ -115,6 +125,7 @@ h3{{font-size:17px;margin:10px 0 4px}}
 .chos li{{margin:3px 0}}
 .dim{{color:#7a6353}}
 .focus{{border-left:6px solid var(--bad);background:#fdeee7;padding:8px 10px;margin:0 0 10px;font-size:14px}}
+.votes{{border-left:6px solid var(--ink);background:#f2ecdc;padding:6px 10px;margin:0 0 10px;font-size:13px}}
 .reasons{{border-top:2px dashed #d9c9a9;padding-top:8px;font-size:13px}}
 .reasons p{{margin:4px 0}}
 .low{{color:var(--bad)}} .high{{color:var(--ok)}}

@@ -1,4 +1,4 @@
-﻿"""AI 审核官 · 主流程（L0 规则闸 → L1 五判据 → L2 确定性仲裁 → 落日志）
+"""AI 审核官 · 主流程（L0 规则闸 → L1 五判据 → L2 确定性仲裁 → 落日志）
 
 模型＝当前会话模型 DeepSeek（deepseek-chat）。五判据各自独立调用，不共享上下文。
 
@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import concurrent.futures as cf
 import hashlib
 import json
@@ -44,6 +45,7 @@ JUDGES = {
 
 WEIGHTS = {"J1": 0.30, "J2": 0.25, "J3": 0.25, "J4": 0.20}  # v0.2：J5 降为否决闸，不参与加权
 GATE_JUDGE = "J5"  # 风险不是打分维度，是红线清单：只判 pass/fail/unsure
+J4_FLOOR = float(os.environ.get("J4_FLOOR", "2"))  # v0.4 地板：J4 ≤ 此值强制人审；置 0 关闭（隔离实验用）
 PASS_S = 3.85  # v0.3 校准值：32 条人类基准 S 分布 min2.80/p25 3.35/median 3.67/p75 4.07/max4.47，取「好于中位数」为自动通道
 REQUIRED = ("judge", "score", "verdict", "reason", "confidence")
 
@@ -188,6 +190,10 @@ def arbitrate(judges: list[dict]) -> tuple[str, float | None, str]:
 
     if has_fail or S <= 2.5 or guard <= 1:
         return "reject_auto", S, f"否决：fail={has_fail} S={S} min={guard}{na_note}"
+    # 地板：J4 ≤ 此值一律人判。v0.4 锚点方案已证伪回滚，但测出 J4 是极差主因（32 条里最低分判据 J4 占 8 条），
+# 保留地板作为守卫——实测每次 run 命中 3–4 条，且这些条目 S 本来就在 2.7–3.4，不改变裁决
+    if J4_FLOOR > 0 and "J4" in scores and scores["J4"] <= J4_FLOOR:
+        return "to_human", S, f"转人审：J4={scores['J4']}≤{J4_FLOOR:g}（地板）S={S}{na_note}"
     if S >= PASS_S and guard >= 3 and not unsure and spread <= 2:
         return "pass_auto", S, f"通过：S={S} min={guard} 极差={spread}{na_note}"
     return "to_human", S, f"转人审：S={S} min={guard} 极差={spread} unsure={unsure}{na_note}"

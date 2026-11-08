@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -68,39 +69,65 @@ def latest_run(rows: list[dict]) -> str:
     return max(r["run_id"] for r in rows)
 
 
-def build_queue(run: str | None = None) -> list[dict]:
+def build_queue(run: str | None = None, runs: list[str] | None = None) -> list[dict]:
     rows = read_jsonl(LOG)
     if not rows:
         return []
-    run = run or latest_run(rows)
-    rows = [r for r in rows if r["run_id"] == run and r["verdict"] == "to_human"]
     done = {o["candidate_id"]: o for o in read_jsonl(OVERRIDES)}
-    out = []
-    for r in rows:
+
+    def pack(r: dict, queue_id: str, extra_note: str = "") -> dict:
         cid = r["candidate_id"]
-        out.append(
-            {
-                "queue_id": f"{run}:{cid}",
-                "run_id": run,
-                "candidate_id": cid,
-                "content_hash": r.get("content_hash"),
-                "score": r.get("score"),
-                "arbiter_note": r.get("arbiter_note"),
-                "snapshot": r.get("snapshot"),
-                "judges": [
-                    {
-                        "judge": j.get("judge"),
-                        "name": j.get("name"),
-                        "score": j.get("score"),
-                        "verdict": j.get("verdict"),
-                        "reason": j.get("reason"),
-                    }
-                    for j in r.get("judges", [])
-                ],
-                "human_override": done.get(cid),
-            }
-        )
-    return out
+        return {
+            "queue_id": queue_id,
+            "run_id": r["run_id"],
+            "candidate_id": cid,
+            "content_hash": r.get("content_hash"),
+            "score": r.get("score"),
+            "arbiter_note": (extra_note + (r.get("arbiter_note") or "")).strip(),
+            "snapshot": r.get("snapshot"),
+            "judges": [
+                {
+                    "judge": j.get("judge"),
+                    "name": j.get("name"),
+                    "score": j.get("score"),
+                    "verdict": j.get("verdict"),
+                    "reason": j.get("reason"),
+                }
+                for j in r.get("judges", [])
+            ],
+            "human_override": done.get(cid),
+        }
+
+    # 多 run 模式（k≥3 多数票）：为什么需要 —— 同一判据文本连跑 4 次，逐条一致率只有 47%，
+    # 用单 run 导出的清单会把噪声当成待判条目。这里取多数票为 to_human 的条目，
+    # 代表行 = S 最接近中位数的那次 run（避免挑到极端样本），并在 arbiter_note 前置投票分布。
+    if runs:
+        from aggregate import majority
+        by_cid: dict[str, list[dict]] = {}
+        for r in rows:
+            if r["run_id"] in runs:
+                by_cid.setdefault(r["candidate_id"], []).append(r)
+        out = []
+        for cid, rs in by_cid.items():
+            votes = [r["verdict"] for r in rs]
+            maj = majority(votes)
+            if maj != "to_human":
+                continue
+            nums = sorted(r["score"] for r in rs if r.get("score") is not None)
+            med = nums[len(nums) // 2] if nums else None
+            rep = min(
+                (r for r in rs if r["verdict"] == "to_human"),
+                key=lambda r: abs((r.get("score") or 0) - (med or 0)),
+                default=rs[0],
+            )
+            cnt = Counter(votes)
+            note = f"投票 {len(votes)} 次：" + " / ".join(f"{v}×{n}" for v, n in cnt.most_common()) + "；"
+            out.append(pack(rep, f"k{len(runs)}:{cid}", note))
+        out.sort(key=lambda x: (x["score"] is None, x["score"] or 0))
+        return out
+
+    run = run or latest_run(rows)
+    return [pack(r, f"{run}:{r['candidate_id']}") for r in rows if r["run_id"] == run and r["verdict"] == "to_human"]
 
 
 def md_for(item: dict, idx: int) -> str:
@@ -133,7 +160,12 @@ def md_for(item: dict, idx: int) -> str:
     ]
     for i, ch in enumerate(snap.get("choices") or [], 1):
         lines.append(f"- 选项{i} **{ch.get('label','')}**｜{ch.get('summary','')} → {ch.get('result','')}")
+    vote_note = next(
+        (ln for ln in (item.get("arbiter_note") or "").split("；") if ln.startswith("投票")), ""
+    )
     lines += ["", line]
+    if vote_note:
+        lines.append(f"**跨 run 投票**：{vote_note}（同一份判据连跑多次，裁决会翻转 —— 票数越散越说明这条卡在判据边界上）")
     if st["S"] is None:
         gate_reason = (next((j for j in judges if j["judge"] == "J5"), None) or {}).get("reason", "")
         lines.append(f"**人判要点**：只判一件事——这条的合规风险能不能接受。J5 原话：{gate_reason}")
@@ -179,17 +211,21 @@ def _overview_table(queue: list[dict]) -> list[str]:
 
 
 def cmd_export(args) -> None:
-    queue = build_queue(args.run)
+    runs = [x.strip() for x in (getattr(args, "runs", "") or "").split(",") if x.strip()]
+    if runs and len(runs) < 3:
+        print(f"注意：--runs 只给了 {len(runs)} 个 run，噪声未压住（k<3 的结果只能当 smoke test）")
+    queue = build_queue(args.run, runs or None)
     if not queue:
         print("队列为空：review_log 里没有 to_human 行")
         return
     write_jsonl(QUEUE, queue)
 
     run = queue[0]["run_id"]
+    k_note = f"（k={len(runs)} 多数票：{'/'.join(runs)}）" if runs else "（单 run）"
     pending = [q for q in queue if not q.get("human_override")]
     gate_n = sum(1 for q in queue if stats_of(q)["kind"] == "风险闸")
     md = [
-        f"# 人审清单 · {run}",
+        f"# 人审清单 · {run}{k_note}",
         "",
         f"导出时间：{datetime.now(timezone.utc).astimezone().isoformat(timespec='seconds')}",
         f"队列 **{len(queue)}** 条（风险闸 {gate_n} 条 + 判据打架 {len(queue) - gate_n} 条），"
@@ -276,14 +312,13 @@ def cmd_apply(args) -> None:
 
 
 def cmd_status(args) -> None:
-    queue = build_queue(args.run)
+    runs = [x.strip() for x in (getattr(args, "runs", "") or "").split(",") if x.strip()]
+    queue = build_queue(args.run, runs or None)
     if not queue:
         print("队列为空")
         return
     done = [q for q in queue if q.get("human_override")]
     print(f"队列 {len(queue)} 条｜已勾 {len(done)}｜待勾 {len(queue) - len(done)}")
-    from collections import Counter
-
     c = Counter((q["human_override"] or {}).get("verdict") for q in done)
     print("勾选分布:", {k: v for k, v in c.items() if k}, "（pass=AI 判错 / revise=改词 / reject=AI 判对）")
     for q in queue:
@@ -297,6 +332,7 @@ def main() -> None:
 
     e = sub.add_parser("export", help="导出清单")
     e.add_argument("--run", default=None)
+    e.add_argument("--runs", default="", help="逗号分隔的 k 个 run_id：按多数票导队列（k>=3 才压得住噪声）")
     e.set_defaults(func=cmd_export)
 
     a = sub.add_parser("apply", help="回填一条人审结果")
@@ -309,6 +345,7 @@ def main() -> None:
 
     s = sub.add_parser("status", help="看回填进度")
     s.add_argument("--run", default=None)
+    s.add_argument("--runs", default="", help="同上：按多数票口径看进度")
     s.set_defaults(func=cmd_status)
 
     args = ap.parse_args()
