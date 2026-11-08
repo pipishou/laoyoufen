@@ -23,3 +23,7 @@ desktop.ini
 
 # 审核池运行产物（日志本身要入库，见 tools/reviewer/README；此处只忽略临时导出）
 game/data/review/*.tmp
+
+# Python 缓存
+__pycache__/
+*.pyc
