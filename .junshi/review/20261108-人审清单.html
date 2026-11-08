@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人审清单 · 20261108T125819Z</title>
+<style>
+:root{--paper:#fff8e6;--ink:#3b2b1d;--accent:#c2410c;--ok:#2f7d32;--warn:#b45309;--bad:#a1201d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+ font:15px/1.65 "Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:9;background:var(--paper);
+ border-bottom:3px solid var(--ink);padding:12px 18px}
+h1{font-size:19px;margin:0 0 4px}
+.meta{font-size:13px;color:#6b5545}
+.bar{height:10px;border:3px solid var(--ink);margin-top:8px;background:#efe3c8}
+.bar>i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+.wrap{max-width:1080px;margin:0 auto;padding:18px}
+.card{background:#fffdf5;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);
+ margin:0 0 18px;padding:14px 16px}
+.card.done{box-shadow:4px 4px 0 var(--ok);border-color:var(--ok)}
+.chead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px}
+.idx{font-weight:700;background:var(--ink);color:var(--paper);padding:1px 7px}
+.cid{background:#f2e6c9;padding:1px 6px;border:1px solid var(--ink)}
+.kind{color:#fff;padding:1px 7px;font-weight:700}
+.s{font-weight:700}
+.chips{display:flex;gap:4px;margin-left:auto}
+.chip{border:2px solid var(--ink);padding:0 5px;font-size:11px;background:#fff}
+.chip.na{border-style:dashed;color:#8a7563}
+h3{font-size:17px;margin:10px 0 4px}
+.body{margin:0 0 8px}
+.chos{margin:0 0 10px;padding-left:20px}
+.chos li{margin:3px 0}
+.dim{color:#7a6353}
+.focus{border-left:6px solid var(--bad);background:#fdeee7;padding:8px 10px;margin:0 0 10px;font-size:14px}
+.reasons{border-top:2px dashed #d9c9a9;padding-top:8px;font-size:13px}
+.reasons p{margin:4px 0}
+.low{color:var(--bad)} .high{color:var(--ok)}
+.vote{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 8px}
+button{font:inherit;font-size:14px;cursor:pointer;border:3px solid var(--ink);
+ background:#fff;padding:6px 12px;box-shadow:3px 3px 0 var(--ink)}
+button:active{transform:translate(3px,3px);box-shadow:none}
+button.on{color:#fff}
+.b-pass.on{background:var(--ok)} .b-revise.on{background:var(--warn)} .b-reject.on{background:var(--bad)}
+.note{width:100%;font:inherit;font-size:14px;padding:6px 8px;border:3px solid var(--ink);background:#fff}
+footer{max-width:1080px;margin:0 auto;padding:0 18px 60px}
+pre{background:#2b2018;color:#f4e9d4;padding:12px;overflow:auto;font-size:12.5px;
+ border:3px solid var(--ink);white-space:pre-wrap;word-break:break-all}
+.copy{margin:8px 0 0}
+.small{font-size:12.5px;color:#6b5545}
+</style></head>
+<body>
+<header>
+  <h1>人审清单 · 20261108T125819Z</h1>
+  <div class="meta">共 <b id="n-total">15</b> 条｜其中风险闸 3 条（AI 不敢评分，直接上交）｜
+    已勾 <b id="n-done">0</b> 条</div>
+  <div class="bar"><i id="pbar"></i></div>
+</header>
+<div class="wrap">
+  <p class="small">点按钮即勾选，填一句理由；勾选状态只存在本机浏览器（localStorage），关闭不丢。
+  勾完复制页面底部的命令粘回终端回填——不复制也行，状态在本地只是草稿，只有 <code>apply</code> 才进飞轮。</p>
+
+<section class="card" data-id="school_meet">
+  <div class="chead">
+    <span class="idx">01</span>
+    <code class="cid">school_meet</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=2.733</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 3</span><span class="chip">J4 2</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>中学运动会</h3>
+  <p class="body">隔壁中学今天开运动会，班主任来问能不能订三十碗，中午送到操场。</p>
+  <ul class="chos"><li><b>接单，提前备料</b>｜<span class="dim">¥-140 · 口碑 +0.22 · 猪杂热潮 +6</span> → 三十碗准时送到，学生们把汤都喝干净了。</li><li><b>只接十碗</b>｜<span class="dim">¥-40 · 口碑 +0.08</span> → 十碗也够意思，班主任说下次还找你。</li><li><b>推掉</b>｜<span class="dim">口碑 -0.08</span> → 班主任转身去了街尾那家。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 2 —— 「班主任来问能不能订三十碗，中午送到操场」和「学生们把汤都喝干净了」是学校团餐场景的常见写法，但「送到操场」「班主任」这类细节换到任何餐饮题材都能复用，缺少粉店特有的锋利细节（如酸笋、猪杂、汤底、出餐节奏），骨架偏套路。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 仅涉及中学运动会订餐的日常经营情节，无真实机构/政策指称、无地域歧视、无食品安全误导、无影射真实人物、无可截图断章取义的政治民族表述；摘要数字按判据边界不计入。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="rice_price">
+  <div class="chead">
+    <span class="idx">02</span>
+    <code class="cid">rice_price</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.667</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 5</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>米厂涨价</h3>
+  <p class="body">米厂老板打电话来，说今年雨水多，好米涨了两成，问你要不要改订便宜点的陈米。</p>
+  <ul class="chos"><li><b>咬牙用好米</b>｜<span class="dim">¥-130 · 口碑 +0.12</span> → 粉还是那股米香，懂吃的一口就尝得出来。</li><li><b>换便宜陈米</b>｜<span class="dim">¥+130 · 口碑 -0.18</span> → 成本是压下来了，只是有人嘀咕今天的粉不对味。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J1 世界观 3 —— 「米厂老板打电话来」「好米涨了两成」「陈米」是南方粉店日常经营的真实锚点，但正文缺回南天、酸笋、骑楼等广西专属物候与街巷细节，换到广东、湖南的粉店同样成立。</p>
+    <p><b class="high">最高分</b> J3 玩法可读 5 —— 标题“米厂涨价”直接点明事件，两个选项“咬牙用好米”与“换便宜陈米”分别对应成本与口碑的相反代价，摘要和结果行都清楚预示了取舍，没有送分项。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="rival_shop">
+  <div class="chead">
+    <span class="idx">03</span>
+    <code class="cid">rival_shop</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.467</span>
+    <span class="chips"><span class="chip">J1 4</span><span class="chip na">J2</span><span class="chip">J3 4</span><span class="chip">J4 2</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>隔壁开螺蛳粉</h3>
+  <p class="body">隔壁空铺挂起了红布，一家螺蛳粉店在装修。老板还特意过来发开业传单。</p>
+  <ul class="chos"><li><b>门口摆试吃</b>｜<span class="dim">¥-180 · 口碑 +0.3 · 猪杂热潮 +8</span> → 试吃台前排起队，隔壁老板的脸有点挂不住。</li><li><b>不理他</b>｜<span class="dim">口碑 -0.12</span> → 一半的客人跑去尝鲜了，队短了半截。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 2 —— 「隔壁开螺蛳粉」和「试吃台前排起队，隔壁老板的脸有点挂不住」有本地粉类同行竞争的味道，但整体仍是「同行开业→应对/不应对」的套路骨架，结果文案也较通用。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 仅描述隔壁开螺蛳粉店与试吃竞争，无真实机构政策指称、地域歧视、食品安全误导、影射真人或政治民族表述；摘要数字按判据边界不计。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="regular_gift">
+  <div class="chead">
+    <span class="idx">04</span>
+    <code class="cid">regular_gift</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.733</span>
+    <span class="chips"><span class="chip">J1 4</span><span class="chip na">J2</span><span class="chip">J3 4</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>老客送豆豉</h3>
+  <p class="body">常来的那位街坊提着一袋自家晒的豆豉进门，说给你试试，比市面上买的香。</p>
+  <ul class="chos"><li><b>收下</b>｜<span class="dim">豆豉热潮 +10</span> → 豆豉下锅，整间店都是那股发酵的香。</li><li><b>回赠一碗</b>｜<span class="dim">¥-12 · 口碑 +0.25 · 豆豉热潮 +4</span> → 他推了两下还是收下了，走时把碗洗得干干净净。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 3 —— 「自家晒的豆豉」「比市面上买的香」「豆豉下锅，整间店都是那股发酵的香」「走时把碗洗得干干净净」带广西粉店/街坊人情的地方质感，但骨架仍是老客送礼→收/回赠的通用套路，新料集中在豆豉与洗碗细节。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 街坊赠豆豉的日常市井情节，无真实机构政策指称、无地域歧视、无食品安全误导、无影射真人、无可断章取义的政治民族表述；摘要数字按判据边界不计入文案。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="inspect">
+  <div class="chead">
+    <span class="idx">05</span>
+    <code class="cid">inspect</code>
+    <span class="kind" style="background:#a1201d">风险闸</span>
+    <span class="s">S=闸</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 4</span><span class="chip">J4 2</span><span class="chip">J5 3</span></span>
+  </div>
+  <h3>食药监抽查</h3>
+  <p class="body">两名穿制服的进了门，说要看看后厨的台账和冰箱温度。</p>
+  <ul class="chos"><li><b>停业半天整改</b>｜<span class="dim">¥-200 · 口碑 +0.2</span> → 台账补齐、冰箱贴了温度记录，检查员点了点头。</li><li><b>边营业边整改</b>｜<span class="dim">¥-80 · 口碑 -0.08</span> → 检查员皱了皱眉，让你限期整改。</li></ul>
+  <div class="focus"><b>只判一件事</b>：合规风险能不能接受。J5 原话：标题「食药监抽查」使用真实监管机构简称指称，正文「两名穿制服的」与选项结果「检查员点了点头/皱了皱眉」将执法行为写成可被玩家应付的正面/负面反馈，存在影射真实机构执法随意性的轻微擦边，建议改为虚构的「街区卫生巡查」并弱化制服与检查员情绪描写。</div>
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 2 —— 正文只有『台账和冰箱温度』这一笼统检查动作，选项结果也是『补齐台账、贴温度记录』『限期整改』的通用套路，缺少广西老友粉店特有的后厨细节（如酸笋缸、生熟分开、汤底留样等），换个餐饮题材几乎零成本复用。</p>
+    <p><b class="high">最高分</b> J3 玩法可读 4 —— 标题『食药监抽查』动词化明确，两个选项摘要分别显示¥-200口碑+0.2与¥-80口碑-0.08，构成花钱换口碑与省钱损口碑的真取舍，结果行也各自呼应。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="night_market">
+  <div class="chead">
+    <span class="idx">06</span>
+    <code class="cid">night_market</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=2.733</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 3</span><span class="chip">J4 2</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>夜市招商</h3>
+  <p class="body">夜市管理处在招固定摊位，说你家老友粉有口碑，问要不要去支个炉子。</p>
+  <ul class="chos"><li><b>去摆一摊</b>｜<span class="dim">¥-160 · 猪杂热潮 +12 · 口碑 +0.1</span> → 夜市那摊排到收市，收摊时锅底都刮干净了。</li><li><b>守好本店</b>｜<span class="dim">无变化</span> → 你算了算人手，决定先把店守住。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 2 —— 「夜市管理处招固定摊位、问要不要支个炉子」是餐饮经营常见的扩张机会骨架，但「支个炉子」「收摊时锅底都刮干净了」带一点粉店夜市出摊的本地烟火细节，比纯套话略新，仍偏通用。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 正文与选项仅涉及夜市摊位招商与经营取舍，未出现真实机构全称、政策文号、真实人名、地域歧视、食品安全误导或政治民族表述；摘要中的金额与数值属确定性模拟投影，按判据边界不计入文案。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="landlord_repair">
+  <div class="chead">
+    <span class="idx">07</span>
+    <code class="cid">landlord_repair</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=2.733</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 3</span><span class="chip">J4 2</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>房东修屋顶</h3>
+  <p class="body">房东来看房，说屋顶的瓦该换了，他出一半，你出一半，问修不修。</p>
+  <ul class="chos"><li><b>修</b>｜<span class="dim">¥-260 · 口碑 +0.15</span> → 新瓦铺上，下雨天再也不用摆盆接水。</li><li><b>再等等</b>｜<span class="dim">无变化</span> → 房东耸耸肩走了。雨季还长。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 2 —— 「房东出一半你出一半修屋顶」是租铺经营通用骨架，但「下雨天再也不用摆盆接水」「雨季还长」带一点南方多雨街边店的本地质感，仍偏薄。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 正文与选项均为虚构街边粉店日常经营情节，无真实机构、政策文号、真实人名、地域歧视、食品安全误导或政治民族表述；选项摘要中的金额与数值属确定性模拟投影，按判据边界不计入文案评分。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="caexpo">
+  <div class="chead">
+    <span class="idx">08</span>
+    <code class="cid">caexpo</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.0</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 3</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>东博会客商</h3>
+  <p class="body">东博会期间，几个外地客商顺着导航找过来，说要尝尝「本地人自己吃的粉」。</p>
+  <ul class="chos"><li><b>延长营业到凌晨</b>｜<span class="dim">¥-60 · 口碑 +0.25 · 老友汤热潮 +8</span> → 客商吃完又叫了两碗，说回去要写进考察报告。</li><li><b>照常打烊</b>｜<span class="dim">无变化</span> → 你把最后一锅汤收好，按时落了闸。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J1 世界观 3 —— 「东博会客商找本地人自己吃的粉」是南宁现实场景，但正文与选项缺少回南天、酸笋、骑楼夜市等本地锚点，换到任何办展会的南方城市也成立。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 「东博会」为公开展会通称，未涉及政策文号、机构全称或真实人名，无地域歧视、食品安全误导或政治民族表述，选项摘要数字按判据边界不计入文案。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="typhoon">
+  <div class="chead">
+    <span class="idx">09</span>
+    <code class="cid">typhoon</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.733</span>
+    <span class="chips"><span class="chip">J1 4</span><span class="chip na">J2</span><span class="chip">J3 4</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>台风过境</h3>
+  <p class="body">台风预警挂上了，骑楼下的招牌被风吹得哐哐响。房东打电话问你要不要先加固。</p>
+  <ul class="chos"><li><b>加固顶棚和招牌</b>｜<span class="dim">¥-120 · 口碑 +0.1</span> → 台风过后，整条街只有你的招牌还端正。</li><li><b>先扛过去再说</b>｜<span class="dim">口碑 -0.15</span> → 招牌缺了一角，雨水顺着墙缝渗进来。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 3 —— 台风预警下骑楼招牌哐哐响、房东主动打电话问加固，以及结果里『整条街只有你的招牌还端正』和『招牌缺了一角、雨水顺墙缝渗进来』，是南方骑楼街边小店的具体场景细节，不是纯换题材可复用的套话，但骨架仍是『天灾→花钱防/不防』的通用结构。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 台风预警、骑楼加固属通用生活场景，无真实机构/政策指称、无地域歧视、无食品安全误导、无影射人物、无可截断的政治民族表述；选项摘要数字按判据边界不计入文案。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="pig_cycle">
+  <div class="chead">
+    <span class="idx">10</span>
+    <code class="cid">pig_cycle</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.667</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 5</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>猪杂涨价</h3>
+  <p class="body">猪杂批发价一周涨了三成，供货的老陈说这波「猪周期」还得熬一阵。</p>
+  <ul class="chos"><li><b>咬牙进货</b>｜<span class="dim">¥-160 · 口碑 +0.1</span> → 分量一克没少，老客吃得出这份实在。</li><li><b>减量保价</b>｜<span class="dim">¥-60 · 口碑 -0.1</span> → 碗还是那碗，只是有人翻了两下筷子。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J1 世界观 3 —— 「猪杂」「老陈」「猪周期」是两广粉店常见语境，但正文与选项缺少回南天、酸笋、骑楼夜市等广西本地锚点，换到广东街边粉店同样成立。</p>
+    <p><b class="high">最高分</b> J3 玩法可读 5 —— 『咬牙进货』¥-160换口碑+0.1与『减量保价』¥-60换口碑-0.1形成成本对口碑的真取舍，结果句『分量一克没少』与『有人翻了两下筷子』各自兑现代价。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="arcade_renovation">
+  <div class="chead">
+    <span class="idx">11</span>
+    <code class="cid">arcade_renovation</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.333</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 4</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>骑楼街区改造</h3>
+  <p class="body">街道办来通知：骑楼外立面统一改造，愿意配合的店铺有补贴，但要停业几天。</p>
+  <ul class="chos"><li><b>配合改造</b>｜<span class="dim">¥-300 · 口碑 +0.35 · 老友汤热潮 +10</span> → 青砖灰塑重新露出来，门口成了整条街的取景位。</li><li><b>不参与</b>｜<span class="dim">口碑 -0.15</span> → 改造完的骑楼很漂亮，只有你家门面显得旧。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J1 世界观 3 —— 骑楼外立面改造与「青砖灰塑」是两广街巷常见形态，但正文与选项缺少回南天、酸笋豆豉、巷口夜市等广西专属锚点，换到广州、梧州同样成立。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 正文仅泛称「街道办」未涉机构全称或政策文号，无地域歧视、食品安全误导、影射真人或政治民族表述；选项摘要中数字属确定性模拟投影，按判据边界不计入文案。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="bad_review">
+  <div class="chead">
+    <span class="idx">12</span>
+    <code class="cid">bad_review</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=2.733</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 3</span><span class="chip">J4 2</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>一条差评</h3>
+  <p class="body">本地生活平台上多了一条差评，说「汤太淡，粉坨了」，配图是你家的碗。</p>
+  <ul class="chos"><li><b>公开回应并请他来重吃</b>｜<span class="dim">口碑 +0.12</span> → 回复写得不卑不亢，评论区反而有人替你说话。</li><li><b>不理</b>｜<span class="dim">口碑 -0.18</span> → 那条差评挂在首页，新客看了会犹豫。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J4 新颖 2 —— 差评内容「汤太淡，粉坨了」是粉店特有的具体出品问题，但整体仍是「差评→回应/不理」的通用骨架，结果文案「评论区反而有人替你说话」「新客看了会犹豫」属零成本复用套话。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 仅涉及差评与回应，无真实机构政策指称、地域歧视、食品安全误导、影射真人或政治民族表述。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="heritage">
+  <div class="chead">
+    <span class="idx">13</span>
+    <code class="cid">heritage</code>
+    <span class="kind" style="background:#a1201d">风险闸</span>
+    <span class="s">S=闸</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip na">J2</span><span class="chip">J3 4</span><span class="chip">J4 3</span><span class="chip">J5 3</span></span>
+  </div>
+  <h3>非遗授牌</h3>
+  <p class="body">文旅局的人扛着摄像机进店，说「南宁老友粉制作技艺」进了非遗名录，想把牌匾挂到你家门楣上，顺便拍一段煸炒煮的全过程。</p>
+  <ul class="chos"><li><b>停工半天配合拍摄</b>｜<span class="dim">¥-150 · 口碑 +0.4 · 老友汤热潮 +12</span> → 镜头从煸干的酸笋摇到翻滚的汤锅，牌匾挂上去那天，门口围了半条街的人。</li><li><b>照常营业，挂个牌子就行</b>｜<span class="dim">口碑 +0.1</span> → 牌匾挂上了，但镜头里只有你埋头炒料的背影。</li></ul>
+  <div class="focus"><b>只判一件事</b>：合规风险能不能接受。J5 原话：正文出现真实机构指称「文旅局」及真实非遗名录指称「南宁老友粉制作技艺进了非遗名录」，属真实机构/政策指称，需人审确认是否可保留或改为泛称</div>
+  <div class="reasons">
+    <p><b class="low">最低分</b> J1 世界观 3 —— 「煸干的酸笋」「翻滚的汤锅」「门口围了半条街」有南宁粉店锚点，但「文旅局」「非遗授牌」是通用叙事，换个南方城市也成立，缺回南天/骑楼/夜市等本地气候街巷细节。</p>
+    <p><b class="high">最高分</b> J3 玩法可读 4 —— 选项1『停工半天配合拍摄』与选项2『照常营业，挂个牌子就行』在时间成本与曝光收益上形成真取舍，摘要数值投影清晰可预判代价。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="standard">
+  <div class="chead">
+    <span class="idx">14</span>
+    <code class="cid">standard</code>
+    <span class="kind" style="background:#a1201d">风险闸</span>
+    <span class="s">S=闸</span>
+    <span class="chips"><span class="chip">J1 3</span><span class="chip">J2 3</span><span class="chip">J3 3</span><span class="chip">J4 4</span><span class="chip">J5 3</span></span>
+  </div>
+  <h3>地方标准下发</h3>
+  <p class="body">市场监管所送来一本《非物质文化遗产 南宁老友粉制作技艺》地方标准，说以后抽查就照这个来：先煸干酸笋，再爆炒出老友味，最后下高汤煮粉，一步都不能省。</p>
+  <ul class="chos"><li><b>按标准重排后厨动线</b>｜<span class="dim">¥-220 · 口碑 +0.28 · 豆豉热潮 +8</span> → 灶台按煸、炒、煮重新摆过，出餐慢了一点，味道却稳得像刻出来的。</li><li><b>照老习惯做</b>｜<span class="dim">口碑 -0.1</span> → 老师傅的手感没得说，只是抽查那天，检查员在记录本上写了一行小字。</li></ul>
+  <div class="focus"><b>只判一件事</b>：合规风险能不能接受。J5 原话：正文出现「市场监管所」这一真实机构指称，且以「地方标准」「抽查」描述监管流程，虽未写文号或全称，但涉及真实机构与政策执行细节，拿不准是否构成真实机构/政策指称擦边，建议人审确认或改为泛称如「街道管理站」。</div>
+  <div class="reasons">
+    <p><b class="low">最低分</b> J1 世界观 3 —— 酸笋煸干、豆豉、高汤煮粉的工艺链与南宁老友粉对得上，但正文把「地方标准」写成市场监管所直接送书并逐项抽查，缺回南天、骑楼夜市等本地锚点，换柳州螺蛳粉店也成立。</p>
+    <p><b class="high">最高分</b> J4 新颖 4 —— 正文点出老友粉特有的「先煸干酸笋、再爆炒出老友味、最后下高汤煮粉」工序顺序，以及「豆豉热潮」等本地配料，选项结果里「味道稳得像刻出来的」「检查员在记录本上写了一行小字」也贴合小粉店面对标准抽查的具体处境，不是换个题材就能复用的通用骨架。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+<section class="card" data-id="lychee_debt">
+  <div class="chead">
+    <span class="idx">15</span>
+    <code class="cid">lychee_debt</code>
+    <span class="kind" style="background:#b45309">判据打架</span>
+    <span class="s">S=3.4</span>
+    <span class="chips"><span class="chip">J1 4</span><span class="chip na">J2</span><span class="chip">J3 3</span><span class="chip">J4 3</span><span class="chip">J5 5</span></span>
+  </div>
+  <h3>一筐荔枝抵账</h3>
+  <p class="body">供货的老陈欠了你一笔货款，今天拎来两筐灵山荔枝，壳还带着露水。「现钱实在周转不开，你先拿这个抵，行不行？」他搓着手，不敢看你。</p>
+  <ul class="chos"><li><b>收下，切盘送客人</b>｜<span class="dim">口碑 +0.28</span> → 荔枝剥好摆在柜台，客人吃完粉带两颗走。老陈第二天送来的货，分量多了半斤。</li><li><b>只要现金</b>｜<span class="dim">¥+120 · 口碑 -0.15</span> → 老陈咬了咬牙，第二天把现金凑齐送来，筐里的荔枝又拎回去了。</li></ul>
+  
+  <div class="reasons">
+    <p><b class="low">最低分</b> J3 玩法可读 3 —— 选项1摘要「口碑 +0.28」与结果「老陈第二天送来的货，分量多了半斤」未体现抵账损失，选项2「¥+120 · 口碑 -0.15」收益明确，取舍不对称。</p>
+    <p><b class="high">最高分</b> J5 风险 5 —— 仅涉及虚构供货商以荔枝抵账的日常经营情节，无真实机构政策指称、地域歧视、食品安全误导、影射人物或政治民族表述；摘要数字按判据边界不计。</p>
+  </div>
+  <div class="vote">
+    <button data-v="pass" class="b-pass">✅ 通过（AI 判错了）</button>
+    <button data-v="revise" class="b-revise">✏️ 改词后通过</button>
+    <button data-v="reject" class="b-reject">❌ 否决（AI 判对了）</button>
+  </div>
+  <input class="note" placeholder="理由（revise / reject 必填）">
+</section>
+</div>
+<footer>
+  <h3 style="margin:18px 0 6px">回填命令（实时生成）</h3>
+  <pre id="cmds"></pre>
+  <button class="copy" id="btn-copy">复制命令</button>
+  <p class="small">未勾的条目不会出现在命令里。全部勾完再复制，一次粘完。</p>
+</footer>
+<script>
+const DATA = {"run": "20261108T125819Z", "ids": ["school_meet", "rice_price", "rival_shop", "regular_gift", "inspect", "night_market", "landlord_repair", "caexpo", "typhoon", "pig_cycle", "arcade_renovation", "bad_review", "heritage", "standard", "lychee_debt"]};
+const KEY = "laoyoufen.humanreview." + DATA.run;
+const state = JSON.parse(localStorage.getItem(KEY) || "{}");
+const cards = [...document.querySelectorAll(".card")];
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function paint() {
+  let done = 0, lines = ["#!/usr/bin/env bash", "# 人审回填 " + DATA.run];
+  for (const c of cards) {
+    const id = c.dataset.id, st = state[id] || {};
+    c.querySelectorAll(".vote button").forEach(b => b.classList.toggle("on", b.dataset.v === st.v));
+    const note = c.querySelector(".note");
+    if (st.note !== undefined && note.value !== st.note) note.value = st.note;
+    c.classList.toggle("done", !!st.v);
+    if (st.v) {
+      done++;
+      const n = (st.note || "").replace(/"/g, '\\"');
+      lines.push(`python tools/reviewer/human_review.py apply --id ${id} --verdict ${st.v} --note "${n}"`);
+    }
+  }
+  document.getElementById("n-done").textContent = done;
+  document.getElementById("pbar").style.width = (done / cards.length * 100) + "%";
+  document.getElementById("cmds").textContent = lines.length > 2 ? lines.join("\n")
+    : "# 还没勾任何一条";
+}
+cards.forEach(c => {
+  c.querySelectorAll(".vote button").forEach(b => {
+    b.addEventListener("click", () => {
+      const id = c.dataset.id;
+      state[id] = state[id] || {};
+      state[id].v = (state[id].v === b.dataset.v) ? undefined : b.dataset.v;
+      if (!state[id].v) delete state[id].v;
+      save(); paint();
+    });
+  });
+  c.querySelector(".note").addEventListener("input", e => {
+    const id = c.dataset.id;
+    state[id] = state[id] || {};
+    state[id].note = e.target.value;
+    save(); paint();
+  });
+});
+document.getElementById("btn-copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(document.getElementById("cmds").textContent); 
+        document.getElementById("btn-copy").textContent = "已复制"; }
+  catch (e) { document.getElementById("btn-copy").textContent = "请手动选中复制"; }
+});
+paint();
+</script>
+</body></html>
