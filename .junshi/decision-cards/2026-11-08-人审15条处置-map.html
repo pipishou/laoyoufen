@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>决策地图 · 15 条 to_human 怎么处置</title>
+<style>
+:root{
+  --paper:#fff8e6; --ink:#3b2b1d; --ink-2:#6b5540; --ink-3:#9a8064;
+  --line:#3b2b1d; --slide:#e8dcc0; --brand:#c2391f; --brand-soft:#f7d9cf;
+  --ok:#2f6b3a; --ok-soft:#d8ead9; --warn:#a8641a; --warn-soft:#f6e3c6;
+  --bad:#8f2b1d; --bad-soft:#f3d5d0;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:28px 20px 72px; background:var(--paper); color:var(--ink);
+  font:15px/1.62 "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:27px;line-height:1.28;margin:0 0 6px;letter-spacing:.4px}
+.sub{color:var(--ink-2);font-size:13.5px;margin:0 0 4px}
+.meta{color:var(--ink-3);font-size:12.5px;margin:0 0 22px}
+.meta code{background:var(--slide);padding:1px 5px;border-radius:3px;font-size:12px}
+.card{
+  background:#fffdf5;border:3px solid var(--line);box-shadow:5px 5px 0 var(--line);
+  border-radius:4px;padding:18px 20px;margin:0 0 22px;
+}
+.card.rec{border-color:var(--brand);box-shadow:5px 5px 0 var(--brand)}
+h2{font-size:17px;margin:0 0 12px;display:flex;align-items:center;gap:9px}
+h2 .n{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;
+  background:var(--line);color:var(--paper);border-radius:3px;font-size:12.5px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{border:2px solid var(--line);padding:9px 11px;vertical-align:top;text-align:left}
+th{background:var(--slide);font-weight:700;font-size:13px}
+td.dim{background:#fdf6e4;font-weight:700;width:132px;font-size:13px}
+td.dim small{display:block;font-weight:400;color:var(--ink-3);font-size:11.5px;margin-top:3px}
+.rec-head{background:var(--brand);color:#fff8e6}
+.rec-col{background:#fff5f1}
+.tag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:99px;border:2px solid;line-height:1.5;white-space:nowrap}
+.t-ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.t-warn{border-color:var(--warn);background:var(--warn-soft);color:var(--warn)}
+.t-bad{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.t-brand{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.t-null{border-color:var(--ink-3);background:#f1e8d4;color:var(--ink-2)}
+.badge{display:inline-block;background:var(--brand);color:#fff8e6;font-size:11.5px;font-weight:700;
+  padding:2px 9px;border-radius:3px;margin-left:8px;vertical-align:2px}
+ul{margin:8px 0 0;padding-left:20px}
+li{margin:4px 0}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.tab{border:3px solid var(--line);background:#fdf6e4;border-radius:4px;padding:7px 13px;
+  font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:3px 3px 0 var(--line);transition:transform .06s}
+.tab:hover{transform:translate(-1px,-1px)}
+.tab.on{background:var(--brand);color:#fff8e6;border-color:var(--brand);box-shadow:3px 3px 0 var(--brand)}
+.pane{display:none}
+.pane.on{display:block}
+.pane h3{font-size:15.5px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{border:2px solid var(--line);border-radius:3px;padding:10px 12px;background:#fffdf5}
+.box b{display:block;font-size:12px;color:var(--ink-2);margin-bottom:4px;letter-spacing:.3px}
+.risk{border-color:var(--bad);background:var(--bad-soft)}
+.gain{border-color:var(--ok);background:var(--ok-soft)}
+.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px}
+.foot{color:var(--ink-3);font-size:12px;border-top:2px dashed var(--ink-3);padding-top:12px;margin-top:6px}
+.q{border-left:5px solid var(--brand);background:#fff5f1;padding:9px 13px;margin:10px 0;font-size:13.5px}
+@media (max-width:820px){
+  body{padding:18px 12px 56px}
+  .grid{grid-template-columns:1fr}
+  table{font-size:12.5px} th,td{padding:7px 8px}
+  td.dim{width:92px;font-size:12px}
+  h1{font-size:21px}
+  .card{padding:14px 13px;box-shadow:4px 4px 0 var(--line)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>15 条 to_human 怎么处置：判据改边界 / 判据移加权 / 改题库 / 只人判</h1>
+<p class="sub">根问题：这 15 条既不是明显违规、也不是明显优质 —— 那么该动<b>判据</b>、动<b>内容</b>，还是只动<b>这批货</b>？</p>
+<p class="meta">run <code>20261108T125819Z</code> · 32 条基准 · 自动通过 13(41%) / 人审 15(47%) / 自动否决 4(13%) · 打架率 82% · 阈值 PASS_S=3.85 · 本轮到目前累计 tokens 208,707 · 约 ¥0.42</p>
+
+<!-- 0 事实底座 -->
+<div class="card">
+  <h2><span class="n">0</span>先说清楚这批货是什么（实测，不是猜）</h2>
+  <table>
+    <tr><th style="width:170px">分类</th><th>条数</th><th>含义</th><th>处置口径</th></tr>
+    <tr><td><b>风险闸弃权</b></td><td>3<br><span class="mono">inspect / heritage / standard</span></td><td>J5 给 3 且 unsure —— 撞「食药监抽查 / 文旅局非遗名录 / 市场监管所+地方标准」</td><td>只问一句：能不能写进游戏。不评优劣。</td></tr>
+    <tr><td><b>判据打架</b></td><td>12</td><td>总分落在 2.73–3.73，卡在 3.85 之下，但各判据指向不一致（极差≥2 或含 unsure）</td><td>本图要决策的部分</td></tr>
+  </table>
+  <div class="q">
+    <b>反事实测算（决定性证据）</b>：把这 12 条按「移出某个判据 + 权重重归一」重算 ——<br>
+    移出 <b>J4 新颖</b> → <b>5 条</b>能自动过（rice_price 3.667→3.909、rival_shop 3.467→4.000、regular_gift 3.733→4.000、typhoon 3.733→4.000、pig_cycle 3.667→3.909）；<br>
+    移出 <b>J1 世界观</b> → <b>2 条</b>能过（rice_price→4.111、pig_cycle→4.111）；<br>
+    <b>7 条怎么移都过不了</b>：school_meet 2.733（移 J4 仅 3.000）、night_market 2.733（3.000）、landlord_repair 2.733（3.000）、caexpo 3.000、arcade_renovation 3.333（3.455）、bad_review 2.733（3.000）、lychee_debt 3.400（3.545）。<br>
+    ⇒ 判据侧的天花板是 <b>5/12</b>；剩下的 7 条是内容本身偏套路/本地锚点不足，<b>纯调判据压不到 0</b>。
+  </div>
+  <p class="meta" style="margin:6px 0 0">最低分判据分布：<b>J4=8 / J1=6 / J3=1</b>（前稿口头说的「J4=9」是错的，以本行为准）。J2 在 32 条里 31 条标 na —— 事件池里没有工序可判，J2 该改挂配方系统，不在此图内。</p>
+</div>
+
+<!-- 1 决策地图 -->
+<div class="card rec">
+  <h2><span class="n">1</span>决策地图：4 选项 × 5 维度 <span class="badge">推荐 B</span></h2>
+  <table>
+    <tr>
+      <th style="width:120px">维度</th>
+      <th>A 只人判这 15 条<br><small>判据不动</small></th>
+      <th class="rec-head">B 人判 ＋ 把 J4 边界改成锚点清单<br><small>改动仅提示词文本</small></th>
+      <th>C 把 J4 移出加权<br><small>降为观察项，像 J5</small></th>
+      <th>D 不改判据，改题库<br><small>32 → 60 条</small></th>
+    </tr>
+    <tr>
+      <td class="dim">覆盖根因<small>动的到底是哪一层</small></td>
+      <td><span class="tag t-null">零</span><br>只处置这一批货，判据下批照旧</td>
+      <td class="rec-col"><span class="tag t-warn">中</span><br>J4 边界含糊是极差≥2 的主因；改的是<b>判准文本</b>，不是权重</td>
+      <td><span class="tag t-ok">高</span><br>结构性：J4 一出，5/12 当场过关</td>
+      <td><span class="tag t-ok">高</span><br>内容侧：7 条怎么移都不过，就是写的问题</td>
+    </tr>
+    <tr>
+      <td class="dim">一次性成本<small>钱 / 时间</small></td>
+      <td>15 分钟人审<br>清单已就绪，<span class="mono">apply</span> 一行</td>
+      <td class="rec-col">15 分钟人审 + 30 分钟改提示词 + 重跑 32 条（71s / ≈¥0.42）</td>
+      <td>改 1 行 <span class="mono">WEIGHTS</span> + 重跑 32 条对照</td>
+      <td>写作 32→60 条，估 2–3 天（人工，且无 AI 辅助排版）</td>
+    </tr>
+    <tr>
+      <td class="dim">下一批人审率<small>预测，非实测</small></td>
+      <td>≈<b>47%</b> 不变<br><span class="tag t-bad">同一 event pool 实测</span></td>
+      <td class="rec-col">≈<b>30–35%</b><br><span class="tag t-warn">须重跑对照验证</span></td>
+      <td>≈<b>20–25%</b><br><span class="tag t-warn">同上</span></td>
+      <td>比率未知；但分母变大 ⇒ 人审<b>绝对条数</b>上升</td>
+    </tr>
+    <tr>
+      <td class="dim">可逆性<small>反悔要付什么</small></td>
+      <td><span class="tag t-ok">完全可逆</span><br>无副作用，随时停</td>
+      <td class="rec-col"><span class="tag t-ok">可逆</span><br>回滚 1 段文本；但已跑出的 S 需重算一次</td>
+      <td><span class="tag t-ok">可逆</span><br>权重一行回来；历史 run 保留</td>
+      <td><span class="tag t-warn">半可逆</span><br>条目可删，写作时间不回</td>
+    </tr>
+    <tr>
+      <td class="dim">内容质量风险<small>最大 downside</small></td>
+      <td><span class="tag t-bad">人工线性增长</span><br>wal 教训：审得太顺人就再也不看了</td>
+      <td class="rec-col"><span class="tag t-warn">门槛变松</span><br>自动通过里可能混进「合规但平」的事件</td>
+      <td><span class="tag t-bad">失去唯一品质度量</span><br>留下的 J1/J3 只判「合格线」，不判新颖 ⇒ 同质化</td>
+      <td><span class="tag t-warn">产能即瓶颈</span><br>判据未校准时扩写 = 更大人审量</td>
+    </tr>
+    <tr>
+      <td class="dim">证据强度<small>这一步凭什么成立</small></td>
+      <td>实测 47%；但 7 条移判据也不过</td>
+      <td class="rec-col">J4 移出可救 5/12 ⇒ 它确实卡在阈值边缘，边界一动就有量</td>
+      <td>J4=8/15 最低分、均分 3.00 ⇒ 它在做真活，砍掉代价明确</td>
+      <td>7 条 S≤3.4 且移判据仍不过</td>
+    </tr>
+  </table>
+  <p class="meta" style="margin:12px 0 0">读法：A 是必做的底座（人判这 15 条本身就是 B 的对照数据），所以真正的拍板是 <b>B vs C</b>；D 不是同层选项，它是 B/C 之后的下一轮。</p>
+</div>
+
+<!-- 2 选项卡详情 -->
+<div class="card">
+  <h2><span class="n">2</span>逐项展开（点开看权衡与风险）</h2>
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-p="pA">A 只人判</div>
+    <div class="tab" data-p="pB">B 改 J4 边界 ★</div>
+    <div class="tab" data-p="pC">C J4 移出加权</div>
+    <div class="tab" data-p="pD">D 改题库</div>
+  </div>
+
+  <div class="pane on" id="pA">
+    <h3>A · 只处置这 15 条，判据一个不动</h3>
+    <div class="grid">
+      <div class="box gain"><b>得到什么</b>清单已就绪，15 分钟勾完即闭环；0 风险；不污染判据版本号。</div>
+      <div class="box risk"><b>代价是什么</b>人审率仍是 47%（同 pool 实测）。按 47% × 15 分钟/天反推，AI 日产候选上限约 21 条 —— 产能天花板不在模型，在人。</div>
+    </div>
+    <div class="q">反悔成本：0。这条路径唯一的损失是「时间」，不是「结构」。</div>
+  </div>
+
+  <div class="pane" id="pB">
+    <h3>B · 人判 ＋ 把 J4 从「题材新不新」改成「本地锚点密度够不够」★推荐</h3>
+    <div class="grid">
+      <div class="box gain"><b>得到什么</b>J4 是 8/15 条的最低分判据，且 food_blogger 已被判过 1/fail 的假阳性 —— 说明问题出在<b>措辞</b>不是<b>判据存在</b>。改成锚点清单后，school_meet/rival_shop 这类「骨架套路但被广西细节染色」的条目不该再被扣死。</div>
+      <div class="box risk"><b>代价是什么</b>门槛变松：自动通过里会混进「合规但平」的事件。缓解＝保留 J4 ≤2 时强制 to_human 的下限不动（只抬中段，不拆地板）。</div>
+    </div>
+    <div class="q">承重追问：<b>J4 到底该判「题材骨架」还是「细节密度」？</b> 六个 J4 最低条目（校园开放日 / 夜市 / 房东修空调 / 差评）骨架全都是套路 —— 如果承认「骨架必然套路」，J4 唯一能判的就只剩「这个套路有没有被本地细节重新染过色」。这条不先答，改提示词就是瞎改。</div>
+  </div>
+
+  <div class="pane" id="pC">
+    <h3>C · 把 J4 移出加权，降为观察项（学 J5 的做法）</h3>
+    <div class="grid">
+      <div class="box gain"><b>得到什么</b>5/12 立刻自动通过，人审率预计掉到 20–25%；改动最小（1 行权重），回滚最干净。</div>
+      <div class="box risk"><b>代价是什么</b>J1（世界观）和 J3（可读）都是「合格线」判据 —— 它们不会告诉你内容平庸。<b>砍掉 J4 = 失去唯一一个能说「这条很平」的判据</b>，而 J4=8/15 恰恰证明它在做真活。J5 能降成闸是因为「合规」天然是个二值门；「新颖」不是门，它需要刻度。</div>
+    </div>
+    <div class="q">反悔成本：一行权重。但若砍掉后事件池同质化，等发现时已经写了 30 条 —— 这个代价不在代码里，在内容里。</div>
+  </div>
+
+  <div class="pane" id="pD">
+    <h3>D · 判据不动，把题库从 32 条扩到 60 条</h3>
+    <div class="grid">
+      <div class="box gain"><b>得到什么</b>直接打 7 条「怎么移都不过」的真问题：它们是内容不行，不是判据太严。题库变大也让人审有替换选项（这批不行换一批），而不是硬勾。</div>
+      <div class="box risk"><b>代价是什么</b>2–3 天人工写作；且判据未校准时，扩写只会让人审绝对条数上升。它不是 B/C 的替代，是它们的<b>下一轮</b>。</div>
+    </div>
+    <div class="q">排序建议：先 B（校准）→ 再 D（扩写）。反过来就是「用没校好的尺子量更多货」。</div>
+  </div>
+</div>
+
+<!-- 3 拍板 -->
+<div class="card rec">
+  <h2><span class="n">3</span>二选一，你拍板</h2>
+  <table>
+    <tr><th style="width:50%">A（推荐）走 B：判完 → 改 J4 锚点 → 重跑 32 条对照</th><th>B 走 C：直接把 J4 移出加权，先降人审率</th></tr>
+    <tr>
+      <td>反悔成本：改回一段提示词 + 重算一次 S，约 30 分钟。<br><b>置信 MED</b> —— 因为「人审率降多少」目前是预测，B 的收益必须由重跑对照证实，不能凭这张图结案。</td>
+      <td>反悔成本：加回一行权重。<br>隐性成本：失去「这条很平」的度量，且要等 30 条内容写出来之后才感觉得到。</td>
+    </tr>
+  </table>
+  <p class="meta" style="margin:12px 0 0"><b>不做什么</b>：① 不动 <span class="mono">PASS_S=3.85</span>（它卡在人类基准 median 3.67 与 p75 4.07 之间，动它等于改判准本身）；② 不把 J4 连同 J1 一起动（两个判据同时调 = 校准失效，无法归因）。</p>
+</div>
+
+<!-- 4 双镜 -->
+<div class="card">
+  <h2><span class="n">4</span>拍板双镜</h2>
+  <div class="grid">
+    <div class="box"><b>K 镜① 能删就删，先问「J4 是不是多余的」</b>答：不多余。8/15 条最低分来自它，且它是唯一在判「内容是否平庸」的判据。冗余的是它的<b>措辞</b>，不是它的存在 —— 所以删文本（B），不删判据（C）。</div>
+    <div class="box"><b>K 镜② 先跑最小闭环，别用图代替实验</b>答：本图所有「人审率会降到 X%」都是<b>预测</b>。B 的最小验证单元＝重跑 32 条（71s / ≈¥0.42）后比对 pass/to_human 迁移矩阵。图不解锁结论，重跑才解锁。</div>
+    <div class="box"><b>J 镜① 减法优先：这一页能不能砍一半</b>答：能砍的一层是「D 改题库」—— 它不是本轮选项，是 B/C 之后的动作；把它从拍板清单里移出去，只留 B vs C。</div>
+    <div class="box"><b>J 镜② A-player 会怎么读</b>答：他会先看「移出 J4 只能救 5/12」这一行 —— 因为他要找的是「哪个动作能一次解决」，而数据说没有这样的动作。图必须把这句话放在第 0 屏，不能藏在表里。</div>
+  </div>
+</div>
+
+<p class="foot">
+假设账本：H1「人审率与 J4 边界强相关」—— 待重跑对照证伪/证实，置信 MED；H2「7 条不过的根因是内容而非判据」—— 证据＝移出任一判据 S 仍 &lt;3.85，置信 HIGH；H3「D 扩写能降低人审率」—— 未验证，且只要判据未校准，扩写更可能<b>提高</b>人审绝对条数，置信 LOW。<br>
+成本行：本轮累计 tokens 208,707 / 约 ¥0.42；本次决策增量 0（纯本地重算，未调模型）。<br>
+数据来源：<span class="mono">game/data/review/review_log.jsonl</span>（run 20261108T125819Z，32 条）· 清单 <span class="mono">.junshi/review/20261108-人审清单.md</span> · 校准 <span class="mono">AI审核官-首轮校准-2026-11-08.md</span>
+</p>
+</div>
+
+<script>
+document.getElementById('tabs').addEventListener('click',function(e){
+  var t=e.target.closest('.tab'); if(!t) return;
+  [].forEach.call(this.children,function(x){x.classList.remove('on')});
+  t.classList.add('on');
+  [].forEach.call(document.querySelectorAll('.pane'),function(p){p.classList.remove('on')});
+  document.getElementById(t.dataset.p).classList.add('on');
+});
+</script>
+</body>
+</html>
