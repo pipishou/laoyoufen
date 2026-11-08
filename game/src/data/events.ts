@@ -1,0 +1,967 @@
+/**
+ * 事件脚本表。
+ *
+ * 结构：每条事件 = 触发条件（门槛 / 冷却 / 自定义判据）+ 2-3 个选项，
+ * 每个选项给「现金 / 口碑 / 热潮」三种效果之一组，外加一句结果文案。
+ * 只描述数据，不碰 rng、不碰界面——触发与结算是 sim/events.ts 的事。
+ *
+ * 数值全部按「一坛酸笋 60-120 元、一碗粉 12 元」的现金流推 [GUESS, LOW]，
+ * 只保证相对关系：短期花钱换口碑/热潮，长期靠客流回收。
+ *
+ * 事实边界：地名、物产、节令是真实锚点，但事件本身、人物、对白、金额、后果全部虚构。
+ * 趣味优先，不为史实准确度让路；也不写具体政策文号、机构全称、价格数据。
+ */
+
+export type TrendKey = "sourBamboo" | "douchi" | "porkOffal" | "broth";
+
+export type EventEffect =
+  | { kind: "cash"; amount: number }
+  | { kind: "reputation"; amount: number }
+  | { kind: "trend"; key: TrendKey; amount: number };
+
+export interface EventChoice {
+  label: string;
+  /** 选项下方的短摘要，HUD 直接显示，避免玩家点进去才知道代价 */
+  summary: string;
+  /** 结算后的一行结果，写进事件日志 */
+  result: string;
+  effects: readonly EventEffect[];
+}
+
+/** 判据只读投影，避免 data 层反向依赖 sim/state */
+export interface EventView {
+  cash: number;
+  reputation: number;
+  month: number;
+  absDay: number;
+  regularCount: number;
+  seats: number;
+  stoves: number;
+}
+
+export interface GameEventDef {
+  id: string;
+  title: string;
+  body: string;
+  /** 相对权重，不必归一 */
+  weight: number;
+  /** 同一事件两次触发的最小间隔（天） */
+  cooldownDays: number;
+  /** 一辈子只触发一次 */
+  once?: boolean;
+  /** 开档第几天之后才进入池子（绝对日，0 起） */
+  minDay?: number;
+  require?: (v: EventView) => boolean;
+  /** 时令月份（0 起）：硬窗口，不在这些月份就不进池（对应开罗 economy 表的 month_） */
+  season?: readonly number[];
+  choices: readonly EventChoice[];
+}
+
+export const EVENTS: readonly GameEventDef[] = [
+  {
+    id: "bamboo_press",
+    title: "酸笋坊阿婆",
+    body: "巷口酸笋坊的阿婆拎来一坛刚起的酸笋，掀开盖，酸香冲得人眯眼。她说今年的笋好，问你要不要。",
+    weight: 10,
+    cooldownDays: 12,
+    choices: [
+      {
+        label: "整坛收下",
+        summary: "¥-120 · 酸笋热潮 +14",
+        result: "整坛酸笋倒进缸里，明天整条巷都知道你家酸得正。",
+        effects: [
+          { kind: "cash", amount: -120 },
+          { kind: "trend", key: "sourBamboo", amount: 14 },
+        ],
+      },
+      {
+        label: "要半坛",
+        summary: "¥-60 · 酸笋热潮 +7",
+        result: "半坛也够用几天，阿婆说下次给你留好的。",
+        effects: [
+          { kind: "cash", amount: -60 },
+          { kind: "trend", key: "sourBamboo", amount: 7 },
+        ],
+      },
+      {
+        label: "婉拒",
+        summary: "口碑 -0.05",
+        result: "阿婆没说什么，拎着坛子走了。街坊看在眼里。",
+        effects: [{ kind: "reputation", amount: -0.05 }],
+      },
+    ],
+  },
+  {
+    id: "food_blogger",
+    title: "美食博主探店",
+    body: "一个架着手机的美食博主推门进来，说想拍一期「南宁人早上吃什么」。他身后还跟着两个举灯的。",
+    weight: 6,
+    cooldownDays: 18,
+    require: (v) => v.reputation >= 3.2,
+    choices: [
+      {
+        label: "免单招待",
+        summary: "¥-36 · 口碑 +0.35",
+        result: "视频当晚发出去，评论区一水儿问地址。",
+        effects: [
+          { kind: "cash", amount: -36 },
+          { kind: "reputation", amount: 0.35 },
+        ],
+      },
+      {
+        label: "照常收钱",
+        summary: "¥+12 · 口碑 +0.08",
+        result: "博主照付了钱，说这才是真实探店。",
+        effects: [
+          { kind: "cash", amount: 12 },
+          { kind: "reputation", amount: 0.08 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "school_meet",
+    title: "中学运动会",
+    body: "隔壁中学今天开运动会，班主任来问能不能订三十碗，中午送到操场。",
+    weight: 8,
+    cooldownDays: 15,
+    minDay: 5,
+    choices: [
+      {
+        label: "接单，提前备料",
+        summary: "¥-140 · 口碑 +0.22 · 猪杂热潮 +6",
+        result: "三十碗准时送到，学生们把汤都喝干净了。",
+        effects: [
+          { kind: "cash", amount: -140 },
+          { kind: "reputation", amount: 0.22 },
+          { kind: "trend", key: "porkOffal", amount: 6 },
+        ],
+      },
+      {
+        label: "只接十碗",
+        summary: "¥-40 · 口碑 +0.08",
+        result: "十碗也够意思，班主任说下次还找你。",
+        effects: [
+          { kind: "cash", amount: -40 },
+          { kind: "reputation", amount: 0.08 },
+        ],
+      },
+      {
+        label: "推掉",
+        summary: "口碑 -0.08",
+        result: "班主任转身去了街尾那家。",
+        effects: [{ kind: "reputation", amount: -0.08 }],
+      },
+    ],
+  },
+  {
+    id: "rice_price",
+    title: "米厂涨价",
+    body: "米厂老板打电话来，说今年雨水多，好米涨了两成，问你要不要改订便宜点的陈米。",
+    weight: 8,
+    cooldownDays: 18,
+    choices: [
+      {
+        label: "咬牙用好米",
+        summary: "¥-130 · 口碑 +0.12",
+        result: "粉还是那股米香，懂吃的一口就尝得出来。",
+        effects: [
+          { kind: "cash", amount: -130 },
+          { kind: "reputation", amount: 0.12 },
+        ],
+      },
+      {
+        label: "换便宜陈米",
+        summary: "¥+130 · 口碑 -0.18",
+        result: "成本是压下来了，只是有人嘀咕今天的粉不对味。",
+        effects: [
+          { kind: "cash", amount: 130 },
+          { kind: "reputation", amount: -0.18 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "rival_shop",
+    title: "隔壁开螺蛳粉",
+    body: "隔壁空铺挂起了红布，一家螺蛳粉店在装修。老板还特意过来发开业传单。",
+    weight: 7,
+    cooldownDays: 25,
+    minDay: 14,
+    choices: [
+      {
+        label: "门口摆试吃",
+        summary: "¥-180 · 口碑 +0.3 · 猪杂热潮 +8",
+        result: "试吃台前排起队，隔壁老板的脸有点挂不住。",
+        effects: [
+          { kind: "cash", amount: -180 },
+          { kind: "reputation", amount: 0.3 },
+          { kind: "trend", key: "porkOffal", amount: 8 },
+        ],
+      },
+      {
+        label: "不理他",
+        summary: "口碑 -0.12",
+        result: "一半的客人跑去尝鲜了，队短了半截。",
+        effects: [{ kind: "reputation", amount: -0.12 }],
+      },
+    ],
+  },
+  {
+    id: "regular_gift",
+    title: "老客送豆豉",
+    body: "常来的那位街坊提着一袋自家晒的豆豉进门，说给你试试，比市面上买的香。",
+    weight: 9,
+    cooldownDays: 14,
+    require: (v) => v.regularCount >= 1,
+    choices: [
+      {
+        label: "收下",
+        summary: "豆豉热潮 +10",
+        result: "豆豉下锅，整间店都是那股发酵的香。",
+        effects: [{ kind: "trend", key: "douchi", amount: 10 }],
+      },
+      {
+        label: "回赠一碗",
+        summary: "¥-12 · 口碑 +0.25 · 豆豉热潮 +4",
+        result: "他推了两下还是收下了，走时把碗洗得干干净净。",
+        effects: [
+          { kind: "cash", amount: -12 },
+          { kind: "reputation", amount: 0.25 },
+          { kind: "trend", key: "douchi", amount: 4 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "damp_floor",
+    title: "回南天",
+    body: "回南天，玻璃全是水汽，地上返潮，客人进门差点滑一跤。",
+    weight: 7,
+    cooldownDays: 10,
+    choices: [
+      {
+        label: "开除湿机",
+        summary: "¥-45 · 口碑 +0.1",
+        result: "地面干爽了，客人愿意多坐一会儿。",
+        effects: [
+          { kind: "cash", amount: -45 },
+          { kind: "reputation", amount: 0.1 },
+        ],
+      },
+      {
+        label: "铺块纸板硬扛",
+        summary: "口碑 -0.12",
+        result: "纸板吸饱了水，踩上去吱吱响。",
+        effects: [{ kind: "reputation", amount: -0.12 }],
+      },
+    ],
+  },
+  {
+    id: "inspect",
+    title: "食药监抽查",
+    body: "两名穿制服的进了门，说要看看后厨的台账和冰箱温度。",
+    weight: 5,
+    cooldownDays: 30,
+    minDay: 20,
+    choices: [
+      {
+        label: "停业半天整改",
+        summary: "¥-200 · 口碑 +0.2",
+        result: "台账补齐、冰箱贴了温度记录，检查员点了点头。",
+        effects: [
+          { kind: "cash", amount: -200 },
+          { kind: "reputation", amount: 0.2 },
+        ],
+      },
+      {
+        label: "边营业边整改",
+        summary: "¥-80 · 口碑 -0.08",
+        result: "检查员皱了皱眉，让你限期整改。",
+        effects: [
+          { kind: "cash", amount: -80 },
+          { kind: "reputation", amount: -0.08 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "night_market",
+    title: "夜市招商",
+    body: "夜市管理处在招固定摊位，说你家老友粉有口碑，问要不要去支个炉子。",
+    weight: 6,
+    cooldownDays: 24,
+    minDay: 25,
+    choices: [
+      {
+        label: "去摆一摊",
+        summary: "¥-160 · 猪杂热潮 +12 · 口碑 +0.1",
+        result: "夜市那摊排到收市，收摊时锅底都刮干净了。",
+        effects: [
+          { kind: "cash", amount: -160 },
+          { kind: "trend", key: "porkOffal", amount: 12 },
+          { kind: "reputation", amount: 0.1 },
+        ],
+      },
+      {
+        label: "守好本店",
+        summary: "无变化",
+        result: "你算了算人手，决定先把店守住。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "old_classmate",
+    title: "老同学路过",
+    body: "多年不见的老同学推门进来，愣了一下才认出你：「你以前不是最讨厌进厨房的吗？」",
+    weight: 6,
+    cooldownDays: 20,
+    choices: [
+      {
+        label: "请他一碗",
+        summary: "¥-12 · 口碑 +0.2",
+        result: "他吃完抹嘴说，这碗比记忆里任何一家都正。",
+        effects: [
+          { kind: "cash", amount: -12 },
+          { kind: "reputation", amount: 0.2 },
+        ],
+      },
+      {
+        label: "亲兄弟明算账",
+        summary: "¥+12 · 口碑 +0.02",
+        result: "他笑着付了钱，说你还是老样子。",
+        effects: [
+          { kind: "cash", amount: 12 },
+          { kind: "reputation", amount: 0.02 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "viral_video",
+    title: "视频爆了",
+    body: "一条探店视频突然涨到几十万播放，门口开始有人举着手机拍照，队排到了骑楼外。",
+    weight: 4,
+    cooldownDays: 30,
+    require: (v) => v.reputation >= 3.8,
+    choices: [
+      {
+        label: "加班全接",
+        summary: "¥+220 · 口碑 -0.06",
+        result: "从早站到晚，手都抬不起来，但钱箱是满的。",
+        effects: [
+          { kind: "cash", amount: 220 },
+          { kind: "reputation", amount: -0.06 },
+        ],
+      },
+      {
+        label: "限量保口碑",
+        summary: "¥+90 · 口碑 +0.25",
+        result: "每天只卖两百碗，没吃上的反而更惦记。",
+        effects: [
+          { kind: "cash", amount: 90 },
+          { kind: "reputation", amount: 0.25 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "landlord_repair",
+    title: "房东修屋顶",
+    body: "房东来看房，说屋顶的瓦该换了，他出一半，你出一半，问修不修。",
+    weight: 5,
+    cooldownDays: 25,
+    minDay: 10,
+    choices: [
+      {
+        label: "修",
+        summary: "¥-260 · 口碑 +0.15",
+        result: "新瓦铺上，下雨天再也不用摆盆接水。",
+        effects: [
+          { kind: "cash", amount: -260 },
+          { kind: "reputation", amount: 0.15 },
+        ],
+      },
+      {
+        label: "再等等",
+        summary: "无变化",
+        result: "房东耸耸肩走了。雨季还长。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "san_yue_san",
+    title: "三月三歌圩",
+    body: "三月三，歌圩散场，街上全是穿壮锦的人。有人探头问：店里有五色糯米饭吗？",
+    weight: 9,
+    cooldownDays: 20,
+    season: [2, 3],
+    require: (v) => v.month === 2 || v.month === 3,
+    choices: [
+      {
+        label: "连夜蒸五色糯米饭",
+        summary: "¥-90 · 口碑 +0.3 · 酸笋热潮 +8",
+        result: "五色糯米摆上柜台，粉还没卖完，糯米饭先见了底。",
+        effects: [
+          { kind: "cash", amount: -90 },
+          { kind: "reputation", amount: 0.3 },
+          { kind: "trend", key: "sourBamboo", amount: 8 },
+        ],
+      },
+      {
+        label: "只卖老友粉",
+        summary: "口碑 -0.05",
+        result: "有人探头看了一眼菜单，转身去了隔壁。",
+        effects: [{ kind: "reputation", amount: -0.05 }],
+      },
+    ],
+  },
+  {
+    id: "caexpo",
+    title: "东博会客商",
+    body: "东博会期间，几个外地客商顺着导航找过来，说要尝尝「本地人自己吃的粉」。",
+    weight: 8,
+    cooldownDays: 20,
+    season: [8],
+    require: (v) => v.month === 8,
+    choices: [
+      {
+        label: "延长营业到凌晨",
+        summary: "¥-60 · 口碑 +0.25 · 老友汤热潮 +8",
+        result: "客商吃完又叫了两碗，说回去要写进考察报告。",
+        effects: [
+          { kind: "cash", amount: -60 },
+          { kind: "reputation", amount: 0.25 },
+          { kind: "trend", key: "broth", amount: 8 },
+        ],
+      },
+      {
+        label: "照常打烊",
+        summary: "无变化",
+        result: "你把最后一锅汤收好，按时落了闸。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "typhoon",
+    title: "台风过境",
+    body: "台风预警挂上了，骑楼下的招牌被风吹得哐哐响。房东打电话问你要不要先加固。",
+    weight: 7,
+    cooldownDays: 15,
+    season: [6, 7, 8],
+    require: (v) => v.month === 6 || v.month === 7 || v.month === 8,
+    choices: [
+      {
+        label: "加固顶棚和招牌",
+        summary: "¥-120 · 口碑 +0.1",
+        result: "台风过后，整条街只有你的招牌还端正。",
+        effects: [
+          { kind: "cash", amount: -120 },
+          { kind: "reputation", amount: 0.1 },
+        ],
+      },
+      {
+        label: "先扛过去再说",
+        summary: "口碑 -0.15",
+        result: "招牌缺了一角，雨水顺着墙缝渗进来。",
+        effects: [{ kind: "reputation", amount: -0.15 }],
+      },
+    ],
+  },
+  {
+    id: "pig_cycle",
+    title: "猪杂涨价",
+    body: "猪杂批发价一周涨了三成，供货的老陈说这波「猪周期」还得熬一阵。",
+    weight: 8,
+    cooldownDays: 25,
+    minDay: 20,
+    choices: [
+      {
+        label: "咬牙进货",
+        summary: "¥-160 · 口碑 +0.1",
+        result: "分量一克没少，老客吃得出这份实在。",
+        effects: [
+          { kind: "cash", amount: -160 },
+          { kind: "reputation", amount: 0.1 },
+        ],
+      },
+      {
+        label: "减量保价",
+        summary: "¥-60 · 口碑 -0.1",
+        result: "碗还是那碗，只是有人翻了两下筷子。",
+        effects: [
+          { kind: "cash", amount: -60 },
+          { kind: "reputation", amount: -0.1 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "arcade_renovation",
+    title: "骑楼街区改造",
+    body: "街道办来通知：骑楼外立面统一改造，愿意配合的店铺有补贴，但要停业几天。",
+    weight: 6,
+    cooldownDays: 999,
+    once: true,
+    minDay: 120,
+    choices: [
+      {
+        label: "配合改造",
+        summary: "¥-300 · 口碑 +0.35 · 老友汤热潮 +10",
+        result: "青砖灰塑重新露出来，门口成了整条街的取景位。",
+        effects: [
+          { kind: "cash", amount: -300 },
+          { kind: "reputation", amount: 0.35 },
+          { kind: "trend", key: "broth", amount: 10 },
+        ],
+      },
+      {
+        label: "不参与",
+        summary: "口碑 -0.15",
+        result: "改造完的骑楼很漂亮，只有你家门面显得旧。",
+        effects: [{ kind: "reputation", amount: -0.15 }],
+      },
+    ],
+  },
+  {
+    id: "bad_review",
+    title: "一条差评",
+    body: "本地生活平台上多了一条差评，说「汤太淡，粉坨了」，配图是你家的碗。",
+    weight: 7,
+    cooldownDays: 20,
+    require: (v) => v.reputation >= 3.5,
+    choices: [
+      {
+        label: "公开回应并请他来重吃",
+        summary: "口碑 +0.12",
+        result: "回复写得不卑不亢，评论区反而有人替你说话。",
+        effects: [{ kind: "reputation", amount: 0.12 }],
+      },
+      {
+        label: "不理",
+        summary: "口碑 -0.18",
+        result: "那条差评挂在首页，新客看了会犹豫。",
+        effects: [{ kind: "reputation", amount: -0.18 }],
+      },
+    ],
+  },
+  {
+    id: "heritage",
+    title: "非遗授牌",
+    body: "文旅局的人扛着摄像机进店，说「南宁老友粉制作技艺」进了非遗名录，想把牌匾挂到你家门楣上，顺便拍一段煸炒煮的全过程。",
+    weight: 5,
+    cooldownDays: 999,
+    once: true,
+    minDay: 90,
+    choices: [
+      {
+        label: "停工半天配合拍摄",
+        summary: "¥-150 · 口碑 +0.4 · 老友汤热潮 +12",
+        result: "镜头从煸干的酸笋摇到翻滚的汤锅，牌匾挂上去那天，门口围了半条街的人。",
+        effects: [
+          { kind: "cash", amount: -150 },
+          { kind: "reputation", amount: 0.4 },
+          { kind: "trend", key: "broth", amount: 12 },
+        ],
+      },
+      {
+        label: "照常营业，挂个牌子就行",
+        summary: "口碑 +0.1",
+        result: "牌匾挂上了，但镜头里只有你埋头炒料的背影。",
+        effects: [{ kind: "reputation", amount: 0.1 }],
+      },
+    ],
+  },
+  {
+    id: "standard",
+    title: "地方标准下发",
+    body: "市场监管所送来一本《非物质文化遗产 南宁老友粉制作技艺》地方标准，说以后抽查就照这个来：先煸干酸笋，再爆炒出老友味，最后下高汤煮粉，一步都不能省。",
+    weight: 6,
+    cooldownDays: 60,
+    minDay: 45,
+    choices: [
+      {
+        label: "按标准重排后厨动线",
+        summary: "¥-220 · 口碑 +0.28 · 豆豉热潮 +8",
+        result: "灶台按煸、炒、煮重新摆过，出餐慢了一点，味道却稳得像刻出来的。",
+        effects: [
+          { kind: "cash", amount: -220 },
+          { kind: "reputation", amount: 0.28 },
+          { kind: "trend", key: "douchi", amount: 8 },
+        ],
+      },
+      {
+        label: "照老习惯做",
+        summary: "口碑 -0.1",
+        result: "老师傅的手感没得说，只是抽查那天，检查员在记录本上写了一行小字。",
+        effects: [{ kind: "reputation", amount: -0.1 }],
+      },
+    ],
+  },
+  {
+    id: "sour_days",
+    title: "酸笋季",
+    body: "三四月大头笋集中上市，酸笋坊问你要不要一次订够大半年的量。笋价眼下最便宜，坛子却要占掉半间后屋。",
+    weight: 8,
+    cooldownDays: 40,
+    season: [2, 3, 4],
+    require: (v) => v.month === 2 || v.month === 3 || v.month === 4,
+    choices: [
+      {
+        label: "订满一年",
+        summary: "¥-260 · 酸笋热潮 +16",
+        result: "十几口坛子在后屋码成一面墙，开坛那天酸香飘出半条巷。",
+        effects: [
+          { kind: "cash", amount: -260 },
+          { kind: "trend", key: "sourBamboo", amount: 16 },
+        ],
+      },
+      {
+        label: "只订当季",
+        summary: "¥-90 · 酸笋热潮 +7",
+        result: "够用两三个月，坊主说入秋再买可就不是这个价了。",
+        effects: [
+          { kind: "cash", amount: -90 },
+          { kind: "trend", key: "sourBamboo", amount: 7 },
+        ],
+      },
+      {
+        label: "不订",
+        summary: "无变化",
+        result: "你把后屋腾出来放了张桌子。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "sauce_factory",
+    title: "酱包代工",
+    body: "一家食品厂找上门，说想用你的汤底配方做袋装老友粉，流水线一天能出几十万包，你只管收授权费。",
+    weight: 5,
+    cooldownDays: 90,
+    minDay: 150,
+    choices: [
+      {
+        label: "签授权",
+        summary: "¥+600 · 口碑 -0.2",
+        result: "超市货架上出现了印着你店名的袋子，老客拿着袋子站在门口，表情有点复杂。",
+        effects: [
+          { kind: "cash", amount: 600 },
+          { kind: "reputation", amount: -0.2 },
+        ],
+      },
+      {
+        label: "只做堂食",
+        summary: "口碑 +0.15 · 老友汤热潮 +6",
+        result: "你回了句「出了这个门就不是那个味」，对方摇摇头走了。",
+        effects: [
+          { kind: "reputation", amount: 0.15 },
+          { kind: "trend", key: "broth", amount: 6 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "laoyou_mian",
+    title: "老友面之争",
+    body: "一位白发老茶客把筷子一放：「老友粉的根是老友面，当年茶楼里是先有面。你们这些粉店，把传统做丢了。」满堂客人都转过头来。",
+    weight: 6,
+    cooldownDays: 45,
+    minDay: 60,
+    choices: [
+      {
+        label: "加一道老友面",
+        summary: "¥-80 · 口碑 +0.3 · 老友汤热潮 +8",
+        result: "第二天菜单上多了老友面。老茶客连来三天，见人就说这家懂规矩。",
+        effects: [
+          { kind: "cash", amount: -80 },
+          { kind: "reputation", amount: 0.3 },
+          { kind: "trend", key: "broth", amount: 8 },
+        ],
+      },
+      {
+        label: "客气解释，只做粉",
+        summary: "口碑 -0.04",
+        result: "你解释了半天米浆和面粉的区别，老茶客哼了一声，汤还是喝完了。",
+        effects: [{ kind: "reputation", amount: -0.04 }],
+      },
+    ],
+  },
+
+  /* ---------------- 广西本土化补丁 ----------------
+   * 取舍判据：
+   * 1) 锚点必须是南宁人能一眼认出的地名/物产/节令/城市病，不能是「中国任意县城」；
+   * 2) 只映射到既有 4 个热潮键，不新增维度（新增要同时改 score/customer/save）；
+   * 3) 必须保留「花钱换口碑/热潮 或 省钱掉口碑」的张力，不允许纯赚；
+   * 4) 季节事件专挑此前空白的月份（3-4、5-6、11-1）；
+   * 5) weight 6-7，不压过 weight 10 的 bamboo_press。
+   * 物产与节令取自真实地标，事件、人物、对白、后果全部虚构——趣味优先，不为史实让路。
+   */
+
+  {
+    id: "suan_ye_stall",
+    title: "隔壁酸嘢摊",
+    body: "巷口新支了个酸嘢摊，玻璃罐里泡着芒果、萝卜和木瓜，红红绿绿排了一排。摊主是位刚退休的阿姐，问店里要不要搭着卖，她出坛子，你出位置。",
+    weight: 7,
+    cooldownDays: 16,
+    choices: [
+      {
+        label: "腾个柜台给她",
+        summary: "¥-70 · 酸笋热潮 +9 · 口碑 +0.12",
+        result: "冰柜挪出半格，酸嘢摆到收银台边上。等位的人先买一袋，酸得直吸气，又回头加了一碗粉。",
+        effects: [
+          { kind: "cash", amount: -70 },
+          { kind: "trend", key: "sourBamboo", amount: 9 },
+          { kind: "reputation", amount: 0.12 },
+        ],
+      },
+      {
+        label: "门口借两张凳",
+        summary: "口碑 +0.05",
+        result: "阿姐在门口摆开摊子，客人端着粉出来蹲着吃，倒也有了点街边气。",
+        effects: [{ kind: "reputation", amount: 0.05 }],
+      },
+      {
+        label: "店里腾不出地方",
+        summary: "无变化",
+        result: "阿姐笑着说没事，把摊子推到了巷子另一头。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "hengzhou_jasmine",
+    title: "横州花农的茶样",
+    body: "一位横州来的花农放下小半袋茉莉花茶样，说今年花期好，窨了几道，香气压得住。他问：粉店要不要搭一杯，吃粉配茶，解腻。",
+    weight: 6,
+    cooldownDays: 22,
+    season: [4, 5, 6, 7],
+    choices: [
+      {
+        label: "进一批，做粉茶套餐",
+        summary: "¥-110 · 口碑 +0.2 · 老友汤热潮 +6",
+        result: "一碗粉配一盅茉莉，中午的白领最先接受。有人专门为了那盅茶多走两条街。",
+        effects: [
+          { kind: "cash", amount: -110 },
+          { kind: "reputation", amount: 0.2 },
+          { kind: "trend", key: "broth", amount: 6 },
+        ],
+      },
+      {
+        label: "先拿两斤试试",
+        summary: "¥-30 · 口碑 +0.06",
+        result: "两斤茶用了小半个月，喝完那天有人问还有没有。",
+        effects: [
+          { kind: "cash", amount: -30 },
+          { kind: "reputation", amount: 0.06 },
+        ],
+      },
+      {
+        label: "只留茶样",
+        summary: "无变化",
+        result: "茶样收进抽屉，偶尔自己泡一杯。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "wuming_orange",
+    title: "沃柑堆在门口",
+    body: "武鸣来的果农把三轮车停在门口，车斗里码着小山一样的沃柑。他说今年集中上市，收购价压得极低，问能不能在店里代卖，「卖掉的你抽一成，卖不掉我拉走」。",
+    weight: 7,
+    cooldownDays: 20,
+    season: [0, 1, 2],
+    choices: [
+      {
+        label: "门口摆一筐代卖",
+        summary: "¥+90 · 口碑 +0.1",
+        result: "一筐沃柑抵在门边，客人吃完粉顺手拎两斤走。果农第二天又拉来一车。",
+        effects: [
+          { kind: "cash", amount: 90 },
+          { kind: "reputation", amount: 0.1 },
+        ],
+      },
+      {
+        label: "全收下，客人免费拿",
+        summary: "¥-150 · 口碑 +0.3",
+        result: "结账时递一个沃柑，剥开满手是汁。有人拍了张照，配文「这家老板实在」。",
+        effects: [
+          { kind: "cash", amount: -150 },
+          { kind: "reputation", amount: 0.3 },
+        ],
+      },
+      {
+        label: "门口不能摆",
+        summary: "无变化",
+        result: "果农把车斗一盖，突突突地开走了。",
+        effects: [],
+      },
+    ],
+  },
+  {
+    id: "cane_season",
+    title: "榨季运蔗车",
+    body: "榨季到了，拉蔗的大车从早到晚堵在路口，车厢缝里漏下的蔗渣铺了一路，踩上去黏鞋。糖厂的业务员顺路进来，说白糖要涨，问要不要先订一季的量。",
+    weight: 7,
+    cooldownDays: 30,
+    season: [10, 11, 0],
+    choices: [
+      {
+        label: "订一季的量",
+        summary: "¥-180 · 口碑 +0.08",
+        result: "几十袋糖在后屋码起来，墙上贴了防潮的塑料布。价格稳住，分量也没动。",
+        effects: [
+          { kind: "cash", amount: -180 },
+          { kind: "reputation", amount: 0.08 },
+        ],
+      },
+      {
+        label: "随用随买",
+        summary: "口碑 -0.06",
+        result: "糖价一路往上走，你只能在调味上找补，老客喝得出那点差别。",
+        effects: [{ kind: "reputation", amount: -0.06 }],
+      },
+    ],
+  },
+  {
+    id: "kaihai",
+    title: "开海第一船",
+    body: "北部湾开海，第一船海鲜当天就上了岸。相熟的水产摊主拎来一筐花蟹和小虾，说价便宜，问你要不要加一道海鲜老友粉——酸笋和蟹，他自己在家试过。",
+    weight: 7,
+    cooldownDays: 25,
+    season: [7],
+    choices: [
+      {
+        label: "加一道花蟹老友粉",
+        summary: "¥-200 · 口碑 +0.28 · 老友汤热潮 +10",
+        result: "花蟹下锅，酸笋的酸被海鲜的甜托起来。第一天就卖断了货，有人专程开车来吃。",
+        effects: [
+          { kind: "cash", amount: -200 },
+          { kind: "reputation", amount: 0.28 },
+          { kind: "trend", key: "broth", amount: 10 },
+        ],
+      },
+      {
+        label: "只买两斤自己吃",
+        summary: "¥-40 · 口碑 +0.05",
+        result: "两斤花蟹晚上收了工自己蒸，伙计们吃得满手是油。",
+        effects: [
+          { kind: "cash", amount: -40 },
+          { kind: "reputation", amount: 0.05 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "lychee_debt",
+    title: "一筐荔枝抵账",
+    body: "供货的老陈欠了你一笔货款，今天拎来两筐灵山荔枝，壳还带着露水。「现钱实在周转不开，你先拿这个抵，行不行？」他搓着手，不敢看你。",
+    weight: 7,
+    cooldownDays: 24,
+    minDay: 20,
+    season: [5, 6],
+    choices: [
+      {
+        label: "收下，切盘送客人",
+        summary: "口碑 +0.28",
+        result: "荔枝剥好摆在柜台，客人吃完粉带两颗走。老陈第二天送来的货，分量多了半斤。",
+        effects: [{ kind: "reputation", amount: 0.28 }],
+      },
+      {
+        label: "只要现金",
+        summary: "¥+120 · 口碑 -0.15",
+        result: "老陈咬了咬牙，第二天把现金凑齐送来，筐里的荔枝又拎回去了。",
+        effects: [
+          { kind: "cash", amount: 120 },
+          { kind: "reputation", amount: -0.15 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "ebike_parking",
+    title: "门口的电驴",
+    body: "早上开门，门口人行道上已经横七竖八停了二十几辆电驴，把招牌挡去一半。城管来过一次，说再这样就直接拖走。",
+    weight: 6,
+    cooldownDays: 18,
+    minDay: 8,
+    choices: [
+      {
+        label: "自己划一排车位",
+        summary: "¥-90 · 口碑 +0.18",
+        result: "白漆划出一排斜格，车头一律朝外。城管路过看了一眼，没停。",
+        effects: [
+          { kind: "cash", amount: -90 },
+          { kind: "reputation", amount: 0.18 },
+        ],
+      },
+      {
+        label: "贴张纸让大家挪一挪",
+        summary: "口碑 -0.06",
+        result: "纸条贴上去三天就被雨泡烂了，车照样堵着门。",
+        effects: [{ kind: "reputation", amount: -0.06 }],
+      },
+      {
+        label: "不管",
+        summary: "口碑 -0.15",
+        result: "有客人绕了两圈没地方停车，掉头走了。",
+        effects: [{ kind: "reputation", amount: -0.15 }],
+      },
+    ],
+  },
+  {
+    id: "spice_price",
+    title: "八角涨价",
+    body: "香料行的老板打电话来，说今年八角收成不好，桂皮也跟着往上走。他压低声音：「趁现在先压一批在库房，过了年就不是这个价了。」",
+    weight: 7,
+    cooldownDays: 26,
+    minDay: 15,
+    choices: [
+      {
+        label: "压一批货",
+        summary: "¥-170 · 豆豉热潮 +6",
+        result: "八角、桂皮、草果装了半面墙的麻袋。爆炒时那股香压得住整条巷子。",
+        effects: [
+          { kind: "cash", amount: -170 },
+          { kind: "trend", key: "douchi", amount: 6 },
+        ],
+      },
+      {
+        label: "每锅少放一点",
+        summary: "口碑 -0.1",
+        result: "锅还是那口锅，火还是那团火，只是香气薄了。老客吃了两口，抬头看了你一眼。",
+        effects: [{ kind: "reputation", amount: -0.1 }],
+      },
+    ],
+  },
+  {
+    id: "rain_flood",
+    title: "一场暴雨",
+    body: "午后一场暴雨，巷子积水漫过脚踝。食客进不来，外卖骑手在门口犹豫，汤锅的热气把玻璃糊成一片白。",
+    weight: 7,
+    cooldownDays: 15,
+    season: [4, 5, 6],
+    choices: [
+      {
+        label: "蹚水送外卖",
+        summary: "¥-60 · 口碑 +0.2",
+        result: "你在雨里跑了一下午，鞋灌满了水。订单备注里多了一行「老板注意安全」。",
+        effects: [
+          { kind: "cash", amount: -60 },
+          { kind: "reputation", amount: 0.2 },
+        ],
+      },
+      {
+        label: "提前打烊",
+        summary: "¥-100",
+        result: "卷闸门拉下来，水从门缝底下慢慢渗进来。",
+        effects: [{ kind: "cash", amount: -100 }],
+      },
+    ],
+  },
+];
+
+export const EVENTS_BY_ID: ReadonlyMap<string, GameEventDef> = new Map(EVENTS.map((e) => [e.id, e]));

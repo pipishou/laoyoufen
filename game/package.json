@@ -1,0 +1,22 @@
+{
+  "name": "laoyou-noodle",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "老友粉店 · 免费浏览器经营游戏",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}

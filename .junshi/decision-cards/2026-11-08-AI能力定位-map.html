@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>决策地图 · AI 在老友粉店的位置</title>
+<style>
+  :root{--surface:#f7f7f8;--surface-muted:#efeff2;--text:#171717;--text-muted:#52525b;--border:rgba(23,23,23,.12);--brand:#0fdc78;--brand-soft:#e5fff2;--brand-text:#004d26;--warn:#efaa17;--danger:#e8463a;--radius:12px;--font:"SF Pro Text","PingFang SC",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  @media (prefers-color-scheme:dark){:root{--surface:#171717;--surface-muted:#262626;--text:#e5e5e5;--text-muted:#a1a1aa;--border:rgba(229,229,229,.12);--brand:#32f08c;--brand-soft:#004d26;--brand-text:#e5fff2}}
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px;background:var(--surface);color:var(--text);font:400 14px/20px var(--font)}
+  h1{font-size:16px;line-height:24px;margin:0 0 4px}
+  .sub{color:var(--text-muted);font-size:12px;margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+  .card{background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .card.rec{outline:2px solid var(--brand);background:var(--brand-soft)}
+  .badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--brand);color:var(--brand-text);font-weight:600;margin-left:6px}
+  .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text-muted);margin-bottom:8px}
+  .card h2{font-size:14px;margin:6px 0 2px}
+  .card .one{font-size:13px;color:var(--text-muted);margin:0 0 12px}
+  dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px}
+  dt{color:var(--text-muted);white-space:nowrap}
+  dd{margin:0}
+  .ok{color:#02743b;font-weight:600}.no{color:var(--danger);font-weight:600}.mid{color:var(--warn);font-weight:600}
+  footer{margin-top:16px;font-size:12px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<h1>决策地图 · AI 应占据游戏循环的哪个位置</h1>
+<div class="sub">老友粉店 · 2026-11-08 · 3 支 × 5 维 ｜ 推荐项加粗边框，但不默认选中，请自己点。</div>
+<div class="grid">
+  <div class="card">
+    <span class="tag">B1 输出侧</span>
+    <h2>AI 当「嘴」·关系记忆体</h2>
+    <p class="one">常客记住你，重逢时用人话说出来。</p>
+    <dl>
+      <dt>覆盖根因</dt><dd class="mid">改读感不改玩法</dd>
+      <dt>实施成本</dt><dd>3–5 人日；30–60 次调用/局</dd>
+      <dt>触发机制</dt><dd>关系里程碑（首成常客/首次回礼/涨价记仇）</dd>
+      <dt>缺失告警</dt><dd>文本不稳＝负分；被识破即「有 AI 味」</dd>
+      <dt>可逆性</dt><dd class="ok">双向，回落 localNarrative</dd>
+    </dl>
+  </div>
+  <div class="card rec">
+    <span class="badge">推荐</span>
+    <span class="tag">B2 生产侧</span>
+    <h2>AI 当「缸」·夜间发酵</h2>
+    <p class="one">AI 不在玩家面前写字，夜里替你酿明天的街市。</p>
+    <dl>
+      <dt>覆盖根因</dt><dd class="ok">开罗 216 张固定卡 vs 每天新酿一缸</dd>
+      <dt>实施成本</dt><dd>5–8 人日；¥0–50/月（未测）＋每日 10 分钟人审</dd>
+      <dt>触发机制</dt><dd>离线批生成→审核→缓存池；调用期查池，池空回落静态表</dd>
+      <dt>缺失告警</dt><dd>世界观错误（螺蛳粉抢戏）、真实争议地名</dd>
+      <dt>可逆性</dt><dd class="mid">技术双向，合规单向</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <span class="tag">B3 输入侧</span>
+    <h2>AI 当「耳」·说人话点单</h2>
+    <p class="one">一句话点单→翻译成配方；AI 不产出给人读的字。</p>
+    <dl>
+      <dt>覆盖根因</dt><dd class="ok">最抗「AI 味」，把 AI 藏进机制</dd>
+      <dt>实施成本</dt><dd>2–4 人日；使用率 5% 时成本可忽略</dd>
+      <dt>触发机制</dt><dd>输入框→语义解析→Recipe 枚举；失败回落关键词表</dd>
+      <dt>缺失告警</dt><dd>模拟经营玩家不愿打字，手机端更甚</dd>
+      <dt>可逆性</dt><dd class="ok">双向，删框即回到滑条</dd>
+    </dl>
+  </div>
+</div>
+<footer>军师 v0.8 · 图 1/2 ｜ 只呈现权衡，不代替拍板</footer>
+</body>
+</html>

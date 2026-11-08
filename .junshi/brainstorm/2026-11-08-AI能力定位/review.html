@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>思考树对比 · AI 在老友粉模拟器里应占据游戏循环的**哪个位置**，才能成为「开罗拉面店做不到」的真差异，而不是又一层文案包装？</title>
+<style>
+body{font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;margin:24px;color:#1f2328}
+h1{font-size:18px;margin:0 0 4px} .muted{color:#6b7280;font-size:12px}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+th,td{border:1px solid #d0d7de;padding:8px;vertical-align:top;text-align:left}
+th{background:#f6f8fa} tr:nth-child(even) td{background:#fbfcfd}
+.k{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0} .k div{min-width:220px}
+</style></head><body>
+<h1>思考树对比 · AI 在老友粉模拟器里应占据游戏循环的**哪个位置**，才能成为「开罗拉面店做不到」的真差异，而不是又一层文案包装？</h1>
+<div class="muted">成功判据：能说出一个位置 + 一条可证伪的玩家感知指标 + 一条「关闭 AI 仍可通关」的降级路径（B5 门禁） ｜ 早停条件：只定方向，不出交付物</div>
+<table>
+<tr><th>分支</th><th>技法</th><th>一句话</th><th>反证信号</th><th>成本</th><th>可逆性</th><th>结论</th></tr>
+<tr><td><b>B1</b><div class='muted'>B1.md</div></td><td>需求—技术—评估链（技法 10）——先问谁在哪一步费劲，再选技术。</td><td>让每个常客记住你，并在重逢时用人话说出来。</td><td>玩家连续三次直接关掉对话窗；或盲测中 5 人里 ≥3 人认为 LLM 文案「更假」。</td><td>36 月一局约 30–60 次调用（只在关系里程碑触发，如首次成为常客/首次回礼/首次涨价记仇）；千玩家/日一次量级≈月几十元（**未实测**）。工期 3–5 人日（含提示词与降级）。</td><td>双向。AI 关掉即回落 `localNarrative` 模板，机制不变，反悔成本≈0。</td><td>**不成立（作为主线）**。理由：这正是「最容易被识破为 AI」的位置——文本质量一旦不稳，负分比不加 AI 更大；且它没有改变玩法，只改变读感，撑不起「区别于开罗拉面店」。降级为 B2 的**骨**：记忆用结构化字段存，叙述只在里程碑低频触发。</td></tr><tr><td><b>B2</b><div class='muted'>B2.md</div></td><td>类比迁移（技法 3）——酸笋要发酵，内容也该「慢生成」。</td><td>AI 不在玩家面前写字，它在夜里替你酿明天的街市。</td><td>生成文本出现世界观错误（如写「螺蛳粉」「桂林米粉」抢戏）或涉真实争议地名；或玩家在 10 局内对「每日新文本」无感（留存曲线无差异）。</td><td>一次生成、多玩家复用（按城市/口味画像分桶），比 B1 的 per-player 调用便宜一个数量级。</td><td>单向偏双向——池子可随时停更回落静态表（双向），但一旦公开运营，已发布文本的合规责任不可撤销（**单向**，反悔成本＝人工下架＋道歉）。</td><td>**成立（作为主线）**。它同时解决三件事：差异化（开罗的世界是 216 张固定卡，这里是每天新酿一缸）、成本（预生成复用）、降级（池空即回落）。前提是接受「每天 10 分钟人审」。</td></tr><tr><td><b>B3</b><div class='muted'>B3.md</div></td><td>反向假设（技法 5）——假设「AI 该生成内容」是错的，取反：AI 该**理解**玩家。</td><td>玩家用一句话点单，AI 把它翻成配方，AI 不产出任何给人读的字。</td><td>埋点显示自由输入使用率 &lt;5%；或在手机端输入框被当作装饰、无人点击。</td><td>2–4 人日（输入框＋解析＋关键词兜底＋埋点）；每次点单 1 次调用，若使用率 5% 则成本可忽略。</td><td>双向。删掉输入框即回到滑条，零残留。</td><td>**待验（降为彩蛋位）**。它是三条里最抗「AI 味」的，但押注的是「模拟经营玩家愿不愿意打字」——而手机端的输入成本最高。先做成可关闭的彩蛋，用埋点证伪，不进主线。</td></tr>
+</table>
+<div class="k">
+<div><b>MECE·互斥</b><br>分支之间是否互相覆盖/重复？重复→合并同类项。</div>
+<div><b>MECE·穷尽</b><br>是否还有明显方向未列？缺→补一支或写明已知缺口。</div>
+<div><b>推荐位</b><br>哪支进选项地图、哪支进「不做什么」（相位 3 回填）。</div>
+</div>
+<p class="muted">生成于 render_tree.py · 军师 v0.8 ｜ 只渲染，不产生结论</p>
+</body></html>
