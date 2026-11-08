@@ -24,6 +24,7 @@
 
 | 4 | 2026-11-08 | D2→D6 | 审核环节要不要全自动（用户要求 AI 当审核官 + 数据飞轮） | A 完整四齿飞轮（AI 审核官·人只留放行权与抽样） / B 只做 L0+J1/J5 轻量版 | **A（用户 2026-11-08 拍板；L1 模型＝当前会话模型 DeepSeek，先不引入第二家）**：三层闸门（L0 规则闸→L1 五判据异构调用→L2 确定性仲裁→L3 人审唯一放行权）＋ review_log.jsonl 喂回判据版本（棘轮只升不降）＋ 冷启动 200 条金标＋每月 20 条盲测自检** | 卡 `.junshi/decision-cards/2026-11-08-AI审核官与数据飞轮.md`｜设计 `../../AI审核官与数据飞轮-v1.md`｜R2 数字闸沿用 `ai/director.ts` 的 `/\d/` 口径；审核为离线脚本 `tools/reviewer/` 不进 bundle；静态 216 卡作 floor → B5 门禁自动满足 | 「5 判据独立调用优于单 prompt 五连评」「金标 200 条够冷启动」自动走；「人审 15 分钟/天」未测 | MED | 待对照期（第 1 月）翻案率矩阵回写 |
 | 5 | 2026-11-08 | D0 | 能否复用现有 git 仓库（用户提问） | A 同仓 orphan 分支 `game`+worktree / B 同仓 main 白名单纳入 / C 新建独立仓 | **C（用户 2026-11-08 拍板）：新建独立仓库且为公开仓**——项目目录自身 `git init`＋白名单 `.gitignore`（源码≈4.7MB，排除 node_modules 211.5MB/dist/.tmp），不碰 `rea-procurement-agent` | 卡 `.junshi/decision-cards/2026-11-08-代码仓库归属.md`｜实测：`REA/` 3,405MB 只能白名单；原仓私有（未认证 API 404）→ 公开仓须新建；本机无 gh CLI，凭据存在 Windows 凭据管理器（user=pipishou） | 「公开仓会暴露项目全部源码与决策账本」为自动走，用户已明示公开 | HIGH | 2026-11-08 回写：选 C，与「真实玩家免费公开运营」目标一致（Pages/ECS 均可直连） |
+| 6 | 2026-11-08 | D4→D6 | 审核官判据门槛怎么定才不把好内容毙掉 | A 凭直觉设 S≥4.0 / B 用人类已发布内容做参照集、按 S 分布定门槛 | **B（实测拍板）：跑 32 条真人事件为基准，S 分布 min2.80/p25 3.35/median 3.67/p75 4.07 → PASS_S=3.85**；同时 J5 由加权维度降为否决闸、na 判据剔除后权重归一 | 报告 `AI审核官-首轮校准-2026-11-08.md`｜`review_log.jsonl` 4 轮 run/76 行；v0.3 末轮 pass 13(41%)/human 15(47%)/reject 4(13%)，打架率 82%，成本 ¥0.013/条 | 门槛仍随判据版本漂移，需 200 条金标盲测定版 | MED | 2026-11-08 回写：J5 降闸后抓出 3 条真人漏掉的合规风险（食药监/文旅局非遗/市场监管所地方标准）；J2 在事件池 31/32 标 n/a → 应改挂配方系统 |
 
 ## 待拍板（未入账）
 
@@ -36,4 +37,4 @@
 | P5 | 服务技能是否对喜好发现速度加成 | 1108 遗留 |
 | P6 | 起始经济常量（START_CASH 5000 / CAPACITY 40 / TARGET 3600 / GROWTH 1.02）校准 | 源码自认占位，缺真实流水 |
 | P7 | 广西白话/南宁话审校人 | §15 未定项；写错方言比不写更伤本地玩家 |
-| P8 | 是否装 `awesome-gamedev-agent-skills` 的 2 个 discipline（game-ui-ux / performance-optimization） | 建议装；`phaser-core` 是 4.2 不装（项目锁 3.90） |
+| P8 | ~~是否装 `awesome-gamedev-agent-skills` 的 2 个 discipline~~ | **已答（2026-11-08）：装**——已装 game-ui-ux / performance-optimization / input-systems / create-game-assets 四个到 `~\.agents\skills\`；`phaser-core` 是 4.2 不装（项目锁 3.90） |
