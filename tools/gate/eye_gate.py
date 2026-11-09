@@ -55,28 +55,23 @@ def git(*args: str) -> str:
     ).stdout.strip()
 
 
-def changed_files() -> list[Path]:
-    """取工作区里已改/已暂存/新增的前端源文件。
+def app_files() -> list[Path]:
+    """眼睛绿要盖戳的文件集＝「会改变玩家所见」的全部源文件。
 
-    不用 `git status --porcelain` 解析：它的首行在某些 git 版本里会丢掉状态列的前导空格
-    （实测首行是 'M game/index.html' 而不是 ' M game/index.html'），
-    按固定列位切会把路径切成 'ame/index.html'，于是改过的首页被静默漏掉。
-    三查都走 --name-only，拿到的就是纯路径。
+    为什么不用「当前 git 改动」：提交之后工作区就干净了，改动集变成空集，
+    stamp 写成 0 条 —— 于是 check 永远报 RECEIPT: NONE，门看着在用，其实什么都没护
+    （本文件第一次提交后立刻踩到：`stamp 0 条 / RECEIPT: NONE`）。
+    改为全量源文件清单：任何一个被改，旧截图就作废，这才是想要的行为。
     """
-    names: list[str] = []
-    for cmd in (
-        ("diff", "--name-only"),
-        ("diff", "--cached", "--name-only"),
-        ("ls-files", "--others", "--exclude-standard"),
-    ):
-        names.extend(l.strip() for l in git(*cmd).splitlines() if l.strip())
-
     files: list[Path] = []
-    for p in dict.fromkeys(names):  # 去重且保序
-        fp = ROOT / p
-        if fp.is_file() and fp.suffix in SOURCE_SUFFIXES and p.startswith("game/"):
-            files.append(fp)
-    return files
+    skip_dirs = {"node_modules", "dist", ".vite", "evidence"}
+    for p in (ROOT / "game").rglob("*"):
+        if not p.is_file() or p.suffix not in SOURCE_SUFFIXES:
+            continue
+        if skip_dirs & set(p.parts) or p.name.endswith(".test.ts"):
+            continue
+        files.append(p)
+    return sorted(files)
 
 
 def wait_port(deadline: float = 40.0) -> bool:
@@ -129,6 +124,9 @@ def cmd_shot(args: argparse.Namespace) -> int:
     slug = args.slug
     out_dir = EVIDENCE / slug
     out_dir.mkdir(parents=True, exist_ok=True)
+    # 先清旧图：视口增删后残留的 NN-*.png 会变成「看着有证据、其实不是这次拍的」
+    for old in out_dir.glob("*.png"):
+        old.unlink()
 
     if args.build:
         print("[eye] vite build …")
@@ -208,7 +206,7 @@ def cmd_shot(args: argparse.Namespace) -> int:
             except subprocess.TimeoutExpired:
                 server.kill()
 
-    files = [ROOT / f for f in args.files.split(",") if f.strip()] if args.files else changed_files()
+    files = [ROOT / f for f in args.files.split(",") if f.strip()] if args.files else app_files()
     stamp = out_dir / "stamp.txt"
     lines = [f"{sha256(f)}  {f.relative_to(ROOT).as_posix()}" for f in files if f.is_file()]
     head = git("rev-parse", "HEAD")

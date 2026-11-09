@@ -56,12 +56,16 @@ Config/Data 在 `full` 档默认 **blocking**：静态表改错会静默污染�
 
 ## 3. 眼睛绿（eye gate）细则
 
-- 工具：`tools/gate/eye_gate.py`（Playwright/Chromium）
-- 视口（四档，与本项目 HUD 断点一致）：
-  `375x667`（iPhone SE）、`390x844`（iPhone 12+）、`768x1024`（iPad 竖）、`1440x900`（桌面）
-- 每档截 1 张，落 `game/data/evidence/<slug>/<NN>-<viewport>.png`
-- 同时生成 `stamp.txt`：对**每个被改动的源文件**取 sha256，附 `git rev-parse HEAD`
+- 工具：`tools/gate/eye_gate.py`（Playwright；自带 Chromium 缺失时自动退回本机 Edge/Chrome）
+- 视口（五档，与本项目 HUD 断点一致）：
+  `375x667`（iPhone SE 竖）、**`667x375`（手机横屏，真正主用形态）**、`390x844`（iPhone 12+ 竖）、
+  `768x1024`（iPad 竖）、`1440x900`（桌面）
+- 每档截 1 张，落 `game/data/evidence/<slug>/<NN>-<viewport>.png`（每次跑先清旧图，避免残留图冒充本次证据）
+- 同时生成 `stamp.txt`：对 **`game/**` 下全部会改变玩家所见的源文件**（`.ts/.css/.html`，排除 `*.test.ts`）
+  取 sha256，附 `git rev-parse HEAD`
 - 判定：有图 + stamp 未过期 → 该格 pass；缺图 → 该格 `NOT_ASSESSED`（不是 fail，是要补）
+- 空白截图（≤2 色）判「这一跑没渲染」，整格 `NOT_ASSESSED` —— 「零缺陷」不能建立在没画出来上
+- 控制台 error 必须带 URL（只听 console 只知道 404、不知道 404 了谁，等于没报）
 
 ## 4. 证据生命周期（三态，不许静默通过）
 
