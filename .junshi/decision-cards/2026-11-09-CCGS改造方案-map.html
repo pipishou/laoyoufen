@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>决策地图 · CCGS 改造方案（2026-11-09）</title>
+<style>
+  :root{
+    --paper:#fff8e6; --ink:#3b2b1d; --ink2:#6b5540; --line:#3b2b1d;
+    --brand:#b8452b; --ok:#2f6b3a; --warn:#9a6a12; --bad:#8c2f2b;
+    --card:#fffdf5; --shadow:4px 4px 0 rgba(59,43,29,.85);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 20px 60px;background:var(--paper);color:var(--ink);
+    font:15px/1.72 "Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:.5px}
+  .sub{color:var(--ink2);font-size:13.5px;margin-bottom:22px}
+  .note{background:var(--card);border:3px solid var(--line);box-shadow:var(--shadow);
+    padding:12px 16px;margin:0 0 22px;font-size:14px}
+  .note b{color:var(--brand)}
+  table.cmp{width:100%;border-collapse:collapse;background:var(--card);border:3px solid var(--line);
+    box-shadow:var(--shadow);font-size:13.5px;margin:0 0 26px}
+  table.cmp th,table.cmp td{border:1px solid rgba(59,43,29,.45);padding:8px 10px;text-align:left;vertical-align:top}
+  table.cmp th{background:#f2ecdc;font-weight:700}
+  table.cmp td.rec{background:#fdf3ea}
+  .badge{display:inline-block;padding:1px 7px;border:2px solid var(--brand);border-radius:99px;
+    color:var(--brand);font-size:11.5px;font-weight:700;vertical-align:2px;margin-left:6px}
+  .tabs{display:flex;gap:0;flex-wrap:wrap;margin:0 0 -3px}
+  .tabs input{position:absolute;opacity:0;pointer-events:none}
+  .tabs label{cursor:pointer;padding:9px 16px;border:3px solid var(--line);border-bottom:none;
+    background:#f2ecdc;font-weight:700;font-size:14px;margin-right:-3px}
+  .tabs input:checked + label{background:var(--card);box-shadow:0 -3px 0 var(--brand) inset;color:var(--brand)}
+  .panel{display:none;border:3px solid var(--line);background:var(--card);box-shadow:var(--shadow);padding:18px 20px}
+  #t1:checked ~ .panels #p1,#t2:checked ~ .panels #p2,#t3:checked ~ .panels #p3{display:block}
+  .panel h2{font-size:17px;margin:0 0 4px}
+  .panel .tag{font-size:12.5px;color:var(--ink2);margin-bottom:12px}
+  .panel ul{margin:0 0 14px;padding-left:20px}
+  .panel li{margin:5px 0}
+  .panel li b{color:var(--ink)}
+  .verdict{border-top:2px dashed rgba(59,43,29,.5);padding-top:10px;font-size:14px}
+  .ok{color:var(--ok);font-weight:700}.warn{color:var(--warn);font-weight:700}.bad{color:var(--bad);font-weight:700}
+  h3{font-size:15px;margin:26px 0 8px}
+  .foot{font-size:12.5px;color:var(--ink2);margin-top:26px;border-top:2px solid rgba(59,43,29,.3);padding-top:10px}
+  @media (max-width:640px){body{padding:18px 12px 40px}.tabs label{padding:8px 11px;font-size:13px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>决策地图 · CCGS 改造方案</h1>
+  <div class="sub">2026-11-09 · 对象：Claude Code Game Studios 1.2.0（本地 <code>D:\项目\skill\Claude-Code-Game-Studios</code>，638 文件 / 5.79 MB / HEAD 05ad7c8）· 决策人：项目所有者</div>
+
+  <div class="note">
+    <b>硬判据命中</b>：选项 ≥2 且含单向门（B3 全量移植不可逆）→ 决策地图必出。三个选项是同一根轴上的<b>移植厚度</b>，互斥：不动目录 / 三层改造 / 整包接进流程。
+  </div>
+
+  <table class="cmp">
+    <thead>
+      <tr><th style="width:150px">维度</th><th>B1 只搬四件机制</th><th>B2 三层改造 <span class="badge">推荐</span></th><th>B3 全量 skill pack</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>可移植率（实测）</th><td>4 件 ≈ 5%</td><td class="rec">机制 90% / 目录 100% / 角色 3 个</td><td>约 9%（7/74 改一改能用）</td></tr>
+      <tr><th>成本（人时）</th><td>1.5–2</td><td class="rec">8.5（1.5 + 5 + 2，可分停）</td><td>≥74（不含 docs 阅读）</td></tr>
+      <tr><th>覆盖根因</th><td>部分：补机制，不补规矩</td><td class="rec">是：机制 + 单一事实来源 + 证据生命周期</td><td>过度：把别人的编制当产能</td></tr>
+      <tr><th>触发机制</th><td>手写脚本，靠自觉跑</td><td class="rec"><code>npm run gate:eye</code> 一条命令，非 0 退出</td><td>18 个 bash hook，dsh 无入口 → 门变口号</td></tr>
+      <tr><th>可逆性</th><td class="ok">双向</td><td class="rec ok">双向（每层独立开关）</td><td class="bad">单向（删 74 目录 + 20 处引用）</td></tr>
+      <tr><th>30 天产出</th><td>审核官仍两态；目录无单一来源</td><td class="rec">四态 + 证据戳 + registry + 1 次经济分析</td><td>流程完整，游戏一行未变</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tabs">
+    <input type="radio" name="t" id="t1"><label for="t1">B1 只搬机制</label>
+    <input type="radio" name="t" id="t2" checked><label for="t2">B2 三层改造</label>
+    <input type="radio" name="t" id="t3"><label for="t3">B3 全量移植</label>
+  </div>
+  <div class="panels">
+    <div class="panel" id="p1">
+      <h2>B1 · 只搬四件机制</h2>
+      <div class="tag">上一轮结论的延续 · 技法：反向假设</div>
+      <ul>
+        <li><b>做什么</b>：眼睛绿截图、规则直译 4 条、L0 加 <code>ran</code> 第三态、rigor 先验。</li>
+        <li><b>优点</b>：1.5 人时内见效；每件独立可回滚；不动任何现有结构。</li>
+        <li><b>缺点（硬）</b>：证据只有截图、<b>没有过期检测</b>（无 <code>CHANGED / GONE / RECEIPT: NONE</code>）；判据仍两态，出不了「未评估」；<code>design/registry</code> 那层单一事实来源照旧缺位，数值与文案会双写。</li>
+        <li><b>触发信号</b>：三周后 <code>evidence/</code> 里出现「改了代码但图没换」的旧证据，却没人报。</li>
+      </ul>
+      <div class="verdict">结论：<span class="warn">不成立（作为完整方案）</span> —— 是地板不是方案，其四项并入 B2 的 P0/P1。</div>
+    </div>
+
+    <div class="panel" id="p2">
+      <h2>B2 · 三层改造（机制 / 目录协议 / 最小角色集）<span class="badge">推荐</span></h2>
+      <div class="tag">置信 HIGH · 双向门 · 技法：类比迁移（当五金店，不买整套柜子）</div>
+      <ul>
+        <li><b>L1 机制层（改写进脚本）</b>：四态 verdict（NOT ASSESSED 优先于通过并须点名什么能 settle）、观察三证据（looking / asked / <b>seen on screen</b>，a described check is an assertion）、证据过期三态、<code>qa.level × Type</code> 豁免矩阵（the look is never waived）、scope 对照 <code>git status --porcelain</code>。</li>
+        <li><b>L2 目录协议层（近零成本）</b>：<code>game/data/registry.yaml</code> 单一数值来源、<code>game/data/evidence/&lt;slug&gt;/NN-*.png</code> 命名即规范、<code>.junshi/session-state.md</code> 含 <code>Run result:</code> 行、<code>docs/tech-debt.md</code>。</li>
+        <li><b>L3 角色层（只留 3 个）</b>：<code>economy-designer</code>（汇/漏建模、曲线必须给区间两端算例、sink 悬空即未平衡）／<code>qa-lead</code>（证据裁量）／<code>performance-analyst</code>（帧预算）。其余 46 个丢弃。</li>
+        <li><b>三批</b>：P0 1.5h（机制 + 第三态）→ P1 5h（Playwright 四视口 + sha256 stamp + 负测试）→ P2 2h（角色 brief + 实跑汇/漏）。任一批可停。</li>
+        <li><b>失败边界</b>：三个月内 <code>evidence/</code> 零新增、或 <code>review_stats</code> 仍报不出「未执行」→ 说明买的是流程不是游戏，退回 B1 并停。</li>
+      </ul>
+      <div class="verdict">结论：<span class="ok">成立</span> —— 机制层是 CCGS 全库最贵也最可移植的部分；自证「standard 档 30 篇文档 / 58 分钟，盲评排最后」正是我们不该学的那一半。</div>
+    </div>
+
+    <div class="panel" id="p3">
+      <h2>B3 · 全量移植为 dsh skill pack</h2>
+      <div class="tag">技法：10 倍放大，看断在哪</div>
+      <ul>
+        <li><b>做什么</b>：74 skill 逐条改 frontmatter、内联 bash 改 Python；49 agent 改 subagent brief；128 docs 整包进项目。</li>
+        <li><b>优点</b>：从立项到发布的链条不缺环（epics → stories → dev → done → sprint → gate → release）。</li>
+        <li><b>断点（实测）</b>：<b>68/74</b> 顶部内联 <code>yaml-helper.sh resolve_config</code>、<b>25/74</b> 直接调 <code>.claude/scripts/*</code>、<b>32/74</b> 含 Godot/Unity/Unreal 指令 → 74 × 1 人时 = 74 人时纯改造，且期间 0 游戏产出。</li>
+        <li><b>次生伤害</b>：39/74 的 <code>blocked</code> 靠 18 个 bash hook 落地，dsh 无 hook 入口 → 门退化为口号；三引擎指令在 Phaser 项目里产出<b>错指令</b>。</li>
+      </ul>
+      <div class="verdict">结论：<span class="bad">不成立，封存</span> —— 保留为只读参考库（已就位），需要哪节当场进去读。</div>
+    </div>
+  </div>
+
+  <h3>拍板（二选一，均以 B2 为骨架）</h3>
+  <table class="cmp">
+    <thead><tr><th style="width:170px">路线</th><th>内容</th><th>反悔成本</th></tr></thead>
+    <tbody>
+      <tr><td><b>A（推荐）</b></td><td>P0 → P1 → P2 全做；P1 与「双端骨架」（账本行 3）同批，否则双端改动没有证据戳保护</td><td>P2 若无效＝2 人时白花，可当场停</td></tr>
+      <tr><td><b>B</b></td><td>只做 P0 + P1，P2 等玩法稳定再上</td><td>数值纪律晚进场：后续调 <code>START_CASH=5000</code> 这类占位数时无汇/漏判据</td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    依据：① 本地 grep 实测 68/74、25/74、8/74、32/74（<code>D:\项目\skill\Claude-Code-Game-Studios\.claude\skills</code>）② <code>.claude/skills/story-done/SKILL.md:112-131 / 170-174 / 198-203 / 251-266</code> ③ README <code>## Does it produce games, or documents?</code> + <code>docs/run-and-observe.md</code>。<br>
+    假设：H1 Playwright 可装可跑｜H2 Vite 5173 可直连｜H3 registry 改造不致 32 条事件数值漂移｜H4 economy 框架适配单币种结构。成本：本轮 0 次联网 / 0 元；改造 8.5 人时。
+  </div>
+</div>
+</body>
+</html>

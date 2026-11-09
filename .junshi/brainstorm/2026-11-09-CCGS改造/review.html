@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>思考树对比 · Claude Code Game Studios（74 skills / 49 agents）要变成我们这套 dsh + Phaser 3.90/TS + 单人体量下**真能咬合**的东西，改造该停在「哪一层」，既不搬成半成品，也不搬成一堆没人读的文档？</title>
+<style>
+body{font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;margin:24px;color:#1f2328}
+h1{font-size:18px;margin:0 0 4px} .muted{color:#6b7280;font-size:12px}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+th,td{border:1px solid #d0d7de;padding:8px;vertical-align:top;text-align:left}
+th{background:#f6f8fa} tr:nth-child(even) td{background:#fbfcfd}
+.k{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0} .k div{min-width:220px}
+</style></head><body>
+<h1>思考树对比 · Claude Code Game Studios（74 skills / 49 agents）要变成我们这套 dsh + Phaser 3.90/TS + 单人体量下**真能咬合**的东西，改造该停在「哪一层」，既不搬成半成品，也不搬成一堆没人读的文档？</h1>
+<div class="muted">成功判据：说清移植厚度（哪层搬、哪层不搬）＋每层的落点文件与**可机检验收断言**＋一条「搬错了怎么退回」的路径。 ｜ 早停条件：只定方向、不出可照着做的方案（本轮不适用，用户明确要「确认改造方案」）。</div>
+<table>
+<tr><th>分支</th><th>技法</th><th>一句话</th><th>反证信号</th><th>成本</th><th>可逆性</th><th>结论</th></tr>
+<tr><td><b>B1</b><div class='muted'>B1.md</div></td><td>反向假设（技法 5）——把「上一轮的 B 已经够了」当成真命题，去找它撑不住的边界。</td><td>维持上一轮结论，只把 D1 眼睛绿、D2 规则直译 4 条、D3 L0 第三态、D4 rigor 先验搬进项目，不动目录、不加角色。</td><td>四件做完之后，「第四绿」仍然只有截图、没有**过期检测**与**四态 verdict**——那时会重新需要 `story-done` 的判据（`review-receipts.sh check` 的 `CHANGED/GONE/RECEIPT: NONE` 三态）；或目录里仍然没有 `design/registry/entities.yaml` 这类跨系统事实单一来源，导致数值/文案双写。</td><td>1.5–2 人时（D1 半天、D2 半时、D3 半时、D4 一句话）。</td><td>双向。四项各自独立，回滚＝删脚本/回退一段提示词，无悔成本。</td><td>**不成立（作为完整方案）**。它是地板而非天花板：能立即少踩坑，但不解决「我们缺一套跨系统事实与证据生命周期的规矩」这个真问题——这层规矩恰好是 CCGS 全库里最贵也最可移植的部分。保留其四项作为 B2 的第一批交付。</td></tr><tr><td><b>B2</b><div class='muted'>B2.md</div></td><td>类比迁移（技法 3）——把 CCGS 看成「五金店」而不是「现成家具」：拿标准件（螺丝、合页），不买整套柜子。</td><td>改造单位不是「skill」，是「层」——把 CCGS 当标准件仓库按层供货：L1 机制全搬（改写成我们的脚本）、L2 目录协议零成本落地（建目录 + 模板 + 命名规范）、L3 角色只留 3 个（其余 46 个是 3A 编制，丢弃）。</td><td>三批做完后（① 机制落进脚本 ② 目录协议建好 ③ 3 个角色跑过一次），如果 `review_stats.py` 仍报不出「未执行/未评估」、或 `evidence/` 目录三个月零新增、或 economy-designer 输出的曲线没人用于调 `START_CASH=5000` 这类占位数——说明我们买的是一套「看起来专业」的流程，不是游戏，此时应回退到 B1 并停。</td><td>`design/registry/entities.yaml`（跨系统实体单一来源，`economy-designer.md:72-91` 明写「never define an item value that contradicts a registered entry without flagging it as a proposed registry change」）、`production/session-state/active.md`（会话断点，含 `Run result:` 行）、`production/qa/evidence/[slug]/[NN]-[what].png`（证据路径即命名规范）、`docs/tech-debt-register.md`、`docs/adoption-plan-[date].md`——建目录 + 抄 5 个模板，成本≈0。</td><td>**双向**（每层独立开关）。L2 只是建目录与模板（删目录即回滚）；L1 是新脚本 `tools/gate/` 与 `review_log` 增字段（旧行不改、stats 兼容两态）；L3 只是 `docs/agents/*.md` 提示词，不参与运行时。</td><td>**成立，推荐**。置信 HIGH（本地实测三层命中率 + CCGS 自证「standard 档 30 篇文档 / 58 分钟，双盲评排最后」＝文档不等于游戏）。</td></tr><tr><td><b>B3</b><div class='muted'>B3.md</div></td><td>10 倍 / 0.1 倍（技法 9）——把移植量放大到极限，看边界在哪里断。</td><td>把 74 个 skill 逐条改写成 dsh 原生 skill（frontmatter 改 `name`+`description`，内联 bash 执行改成 Python 脚本调用），49 个 agent 改成 dsh subagent brief，128 份 docs 原样带进项目。</td><td>—</td><td>**≥74 人时**（不含 docs 阅读与 hooks 重写），且期间不产出一个可玩改动；机会成本＝按当前节奏约 10 天开发量。</td><td>**单向**。一旦 74 个 skill 进仓并写进流程约定，回退要删 74 个目录、清 20+ 处交叉引用，且团队已被流程驯化（心理成本不可逆）。</td><td>**不成立，封存**。它是「文档产能」的正解、是「游戏质量」的误解；唯一值得保留的是它作为**只读参考库**（已落地 `D:\项目\skill\Claude-Code-Game-Studios`），需要哪一节当场进去读，而不是整包接进流程。</td></tr>
+</table>
+<div class="k">
+<div><b>MECE·互斥</b><br>分支之间是否互相覆盖/重复？重复→合并同类项。</div>
+<div><b>MECE·穷尽</b><br>是否还有明显方向未列？缺→补一支或写明已知缺口。</div>
+<div><b>推荐位</b><br>哪支进选项地图、哪支进「不做什么」（相位 3 回填）。</div>
+</div>
+<p class="muted">生成于 render_tree.py · 军师 v0.8 ｜ 只渲染，不产生结论</p>
+</body></html>
