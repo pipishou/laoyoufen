@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>决策地图 · 是否采纳 Claude Code Game Studios</title>
+<style>
+  :root{
+    --paper:#fff8e6; --ink:#3b2b1d; --line:#3b2b1d; --soft:#f2ecdc;
+    --good:#2f6b46; --warn:#8a5a12; --bad:#8c2f2f; --brand:#1f4f8f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 20px 60px;background:var(--paper);color:var(--ink);
+       font:15px/1.65 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  .wrap{max-width:1040px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#6b5a45;font-size:13px;margin-bottom:22px}
+  .q{background:#fffdf5;border:3px solid var(--line);box-shadow:4px 4px 0 var(--line);
+     padding:14px 16px;margin-bottom:22px;font-size:14px}
+  .q b{color:var(--brand)}
+  /* tabs */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:-3px}
+  .tab{border:3px solid var(--line);border-bottom:none;background:var(--soft);
+       padding:8px 14px;cursor:pointer;font-size:14px;font-weight:600;
+       box-shadow:3px -1px 0 var(--line)}
+  .tab[aria-selected="true"]{background:#fffdf5;position:relative;top:1px}
+  .tab .rec{display:inline-block;margin-left:6px;padding:0 6px;font-size:11px;
+            background:var(--brand);color:#fff;border-radius:2px;vertical-align:2px}
+  .panel{display:none;border:3px solid var(--line);background:#fffdf5;
+         box-shadow:4px 4px 0 var(--line);padding:18px}
+  .panel.on{display:block}
+  .panel h2{font-size:17px;margin:0 0 6px}
+  .pill{display:inline-block;font-size:12px;padding:1px 8px;border:2px solid var(--line);
+        margin-left:8px;vertical-align:2px;background:var(--soft)}
+  table{width:100%;border-collapse:collapse;margin:12px 0 4px;font-size:14px}
+  th,td{border:2px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--soft);width:118px;font-weight:600}
+  .g{color:var(--good);font-weight:600}
+  .w{color:var(--warn);font-weight:600}
+  .b{color:var(--bad);font-weight:600}
+  ul{margin:8px 0 0 18px;padding:0}
+  li{margin:3px 0}
+  .note{margin-top:18px;border-left:6px solid var(--line);background:var(--soft);
+        padding:10px 14px;font-size:13px}
+  .grid{margin-top:26px}
+  .grid h3{font-size:15px;margin:0 0 8px}
+  .matrix{width:100%;border-collapse:collapse;font-size:13px}
+  .matrix th,.matrix td{border:2px solid var(--line);padding:6px 8px;vertical-align:top}
+  .matrix th{background:var(--soft)}
+  footer{margin-top:26px;font-size:12px;color:#6b5a45}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>决策地图 · 是否采纳 Claude Code Game Studios</h1>
+  <div class="sub">2026-11-09 ｜ 老友粉店（Phaser 3.90 + TS + Vite + Vitest）｜ 3 选项 × 5 维 ｜ 数据来源：实测 clone + GitHub API + 本地 grep</div>
+
+  <div class="q">
+    <b>根问题</b>：一个把 Claude Code 变成"49 agent / 74 skill 游戏工作室"的模板（MIT，37.3k star，仅支持 Godot/Unity/Unreal），对一个 Phaser + TS 的广西老友粉单机网页游戏，是补品、是负担，还是只有几块砖有用？<br>
+    <b>成功判据</b>：本项目的"玩家可见缺陷漏检"问题被结构性堵住，且不新增无法维持的流程负担。<br>
+    <b>门性质</b>：全量移植会引入 <code>.claude/**</code> 与 <code>production/epics/**</code> 目录结构 → <b>单向门</b>（引入即迁移债）→ 故出本图。
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-t="a">A 全量移植</button>
+    <button class="tab" role="tab" aria-selected="false" data-t="b">B 选择性直取 4 件<span class="rec">推荐</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-t="c">C 不采用，只记结论</button>
+  </div>
+
+  <section class="panel on" id="p-a" role="tabpanel">
+    <h2>A · 全量移植<span class="pill">单向门</span></h2>
+    <table>
+      <tr><th>覆盖根因</th><td><span class="g">最彻底</span>：把 74 skill + 30 导演门 + 18 hook 全部接入，理论上流程无死角。</td></tr>
+      <tr><th>成本</th><td><span class="b">3–5 天改造</span>（逐条改 frontmatter、把 <code>!`bash …`</code> 内联换 python、<code>Agent</code>/<code>AskUserQuestion</code> 换 dsh 对应物）＋ 每次会话技能清单噪声 ＋ 跟版税（上游 CHANGELOG 88.6 KB / UPGRADING 83.5 KB，8 个月 3.7 万 star 高速迭代）。</td></tr>
+      <tr><th>触发机制</th><td>靠 rules 的 <code>paths:</code> 域注入 + hook 在 write/commit 时校验。<span class="b">但 <code>paths:</code> 全指向 <code>.cs</code>/<code>.cpp</code>/<code>gdscript</code>，对 <code>.ts</code> 永不命中</span> → 规则装载成功却一句不生效，表现与"已遵守"完全一致（静默失效）。</td></tr>
+      <tr><th>可逆性</th><td><span class="b">低</span>：产物落 <code>.claude/**</code>、<code>production/epics/**</code>，回退即迁移债。</td></tr>
+      <tr><th>实测反证</th><td>仓库自证：同一 brief 四档 rigor，<code>minimal</code>=1 文档/0 min、<code>standard</code>=30 文档/58 min，四者都能跑能测，但<span class="b">两个盲评 + 真人试玩把 standard 版排最后</span>（"extra 29 documents bought traceability, not a better game"）。</td></tr>
+    </table>
+  </section>
+
+  <section class="panel" id="p-b" role="tabpanel">
+    <h2>B · 选择性直取 4 件<span class="pill">双向门 · 推荐</span></h2>
+    <table>
+      <tr><th>覆盖根因</th><td>只搬"语言无关的机制"：<br>D1 眼睛绿（Playwright 四视口截图 + 哈希戳，story 不闭合除非看一眼）<br>D2 规则直译（gameplay/ui/data/test 四条 → Phaser/TS 版）<br>D3 观察≠裁决（L0 加 <code>ran</code> 第三态，未跑记 <code>-</code> 不记 0）<br>D4 rigor 先验（走 minimal+，不补 GDD 全套）</td></tr>
+      <tr><th>成本</th><td><span class="g">约 6 小时</span>（4+1+1+0.2），零新增依赖：Playwright 本就在账本行 3 的批次里。</td></tr>
+      <tr><th>触发机制</th><td>D1 挂在"story 闭合"前（人工一次，脚本产图）；D2 写进项目记忆一级（不做成 skill，避免没人读）；D3 进 <code>l0_rules.py</code> 返回值结构，<code>ran=false → to_human</code>（与既有 fail-closed 口径一致）。</td></tr>
+      <tr><th>可逆性</th><td><span class="g">高</span>：D1 只是 <code>tools/qa/observe.mjs</code> 一个脚本 + 证据目录；D2 是文本；D3 是加字段。任一条不满意可单独撤。</td></tr>
+      <tr><th>实测支撑</th><td>本项目四条手机端缺陷（<code>hud.css</code> 1160 行 0 条 <code>@media</code>、<code>#stage</code> 硬钉 1024×768、<code>world.ts:655-660</code> Scale.NONE、<code>main.ts:138</code> 仅 pointerdown）<span class="b">全部通过了三绿</span>——正是 D1 要堵的洞；<code>l0_rules.py:57</code> 只有两态，<code>pool_texts</code> 为空时 R6 静默通过——正是 D3 要堵的洞。</td></tr>
+    </table>
+  </section>
+
+  <section class="panel" id="p-c" role="tabpanel">
+    <h2>C · 不采用，只记结论</h2>
+    <table>
+      <tr><th>覆盖根因</th><td><span class="b">零</span>：手机端零适配继续只靠人眼发现；L0 的"未跑＝通过"漏洞保留。</td></tr>
+      <tr><th>成本</th><td><span class="g">0</span>（本节评估已花 12 分钟）。</td></tr>
+      <tr><th>触发机制</th><td>无。缺陷仍由试玩与用户反馈暴露。</td></tr>
+      <tr><th>可逆性</th><td><span class="g">最高</span>：什么都不做当然可逆。</td></tr>
+      <tr><th>为什么不够</th><td>账本行 3 已拍板"先做双端骨架 + Playwright 三视口断言"，验收器本来就要写；D1 只是把这套断言升级成"带证据的闭合条件"，<span class="w">增量成本低于重写一次的返工成本</span>。</td></tr>
+    </table>
+  </section>
+
+  <div class="grid">
+    <h3>五维对照（硬数据）</h3>
+    <table class="matrix">
+      <tr><th>维度</th><th>A 全量移植</th><th>B 直取 4 件</th><th>C 不采用</th></tr>
+      <tr><td>引擎匹配度</td><td class="b">0（全库 phaser 仅 1 次，且在 prototyper.md 当"替代原型工具"；test-run.sh 无 node/vitest 分支）</td><td class="g">100%（4 件均为语言无关机制）</td><td>不适用</td></tr>
+      <tr><td>与已装 5 skill 重复度</td><td class="b">高（74 个里约 30 个有等价物、25 个绑主机发行、19 个是它自身元工具）</td><td class="g">无重复（机制层，非 skill 层）</td><td>—</td></tr>
+      <tr><td>一次性成本</td><td class="b">3–5 天</td><td class="g">≈6 小时</td><td>0</td></tr>
+      <tr><td>持续成本</td><td class="b">跟版税 + 清单噪声 + Windows bash/python 不稳</td><td class="g">≈每次 story 一次截图脚本调用</td><td>0（但缺陷成本在后）</td></tr>
+      <tr><td>堵住的真缺口</td><td>理论上全堵，实际因 paths 错配<span class="b">多数静默失效</span></td><td class="g">堵住两条实测缺口（无"看一眼"、无"未跑"态）</td><td class="b">0</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>推荐 B，置信 HIGH。</b>判据不是"它好不好"，而是"它的哪一层与我们的引擎和成本纪律对得上"：引擎层零匹配、工具层不可运行、流程层高度重复、知识层与证据层可直取。<br>
+    <b>不选 A 的一条硬理由</b>：rules 的 <code>paths:</code> 永不命中 <code>.ts</code> 会让"装了"与"没装"在行为上无法区分——这比不装更糟。<br>
+    <b>不选 C 的一条硬理由</b>：账本行 3 的三视口断言本来就要写，D1 是同一套脚手架的增强，不是新增项目。
+  </div>
+
+  <footer>本图为拍板件附图（决策地图，硬判据：选项≥2 ∧ 涉单向门 → 必出）。事实来源：<code>评估-Claude-Code-Game-Studios-2026-11-09.md</code> 第一、二、三节；行号与命中计数均为本次实测。</footer>
+</div>
+<script>
+  const tabs=[...document.querySelectorAll('.tab')];
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.setAttribute('aria-selected', x===t ? 'true':'false'));
+    ['a','b','c'].forEach(k=>{
+      const p=document.getElementById('p-'+k);
+      p.classList.toggle('on', k===t.dataset.t);
+    });
+  }));
+</script>
+</body>
+</html>
