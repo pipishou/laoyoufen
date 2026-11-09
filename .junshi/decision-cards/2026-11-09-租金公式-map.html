@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>决策地图 · 租金公式（2026-11-09）</title>
+<style>
+  :root{--paper:#fff8e6;--ink:#3b2b1d;--ink2:#6b5844;--line:#3b2b1d;--brand:#c0392b;--ok:#2e7d32;--warn:#b8860b;--chip:#f2ecdc}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 18px 60px;background:var(--paper);color:var(--ink);font:15px/1.65 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:.5px}
+  .sub{color:var(--ink2);font-size:13px;margin-bottom:18px}
+  .verdict{display:flex;gap:10px;align-items:flex-start;background:#fff;border:3px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:4px 4px 0 rgba(59,43,29,.18);margin-bottom:18px}
+  .verdict b{color:var(--brand)}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 -3px}
+  .tab{padding:8px 14px;border:3px solid var(--line);border-bottom:none;border-radius:9px 9px 0 0;background:var(--chip);cursor:pointer;font-size:14px;font-weight:600;position:relative;top:3px}
+  .tab.on{background:#fff;top:0;z-index:2}
+  .tab .badge{display:inline-block;margin-left:6px;background:var(--brand);color:#fff;border-radius:5px;padding:0 6px;font-size:11px;vertical-align:2px}
+  .panel{display:none;background:#fff;border:3px solid var(--line);border-radius:0 10px 10px 10px;padding:16px 18px;box-shadow:4px 4px 0 rgba(59,43,29,.18)}
+  .panel.on{display:block}
+  .panel h3{margin:0 0 8px;font-size:16px}
+  .panel h4{margin:14px 0 4px;font-size:13px;color:var(--ink2);letter-spacing:.4px}
+  ul{margin:4px 0 0;padding-left:20px}
+  li{margin:2px 0}
+  table{width:100%;border-collapse:collapse;margin-top:18px;font-size:13.5px;background:#fff}
+  th,td{border:2px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--chip);font-size:13px}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rec{background:#fff4f2}
+  .risk{color:var(--brand);font-weight:600}
+  .good{color:var(--ok);font-weight:600}
+  .foot{margin-top:16px;color:var(--ink2);font-size:12.5px;border-top:2px dashed var(--line);padding-top:10px}
+  code{background:var(--chip);padding:1px 5px;border-radius:4px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>决策地图 · 租金公式</h1>
+  <div class="sub">2026-11-09 · 依据 <code>npm run probe:rent</code> 实测（8 局 × 36 月不操作基线与五套公式重算）</div>
+
+  <div class="verdict">
+    <div>🧭 <b>推荐 B（目标 × 22%）</b>，置信 <b>HIGH</b>，双向门（可自行实施、可撤回）。<br>
+    但要把话说全：<b>改租金不是为了难，实测它改不动难度</b>——五套方案达标月数全是 24.6/36，现金从未转负。改它是为了把那行「固定 800」的占位感去掉。</div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab" data-p="p1">A 保持常量 800</div>
+    <div class="tab on" data-p="p2">B 目标 × 22%<span class="badge">推荐</span></div>
+    <div class="tab" data-p="p3">C 阶梯 800/1280/2048</div>
+    <div class="tab" data-p="p4">D 营收 × 18% 保底 800</div>
+  </div>
+
+  <div class="panel" id="p1">
+    <h3>A · 保持 <code>RENT_PER_MONTH = 800</code></h3>
+    <h4>做法</h4><ul><li>一行不动，只把 P14 标成«已知不改»。</li></ul>
+    <h4>实测后果</h4><ul><li>36 月累计租金 2.88 万，占营收 14.0%；第 1 月 19.3% → 第 36 月 13.8%。</li><li>期末现金 18.2 万，最低现金 18.2 万，现金为负月份 0。</li></ul>
+    <h4>代价</h4><ul><li>玩家看不到「房租涨」，三年经营的固定成本是一条水平线——这在经营游戏里是很显眼的假。</li></ul>
+    <h4>反悔成本</h4><ul><li>零（本来就没改）。但每次读代码都要重新判断一遍「这是占位还是设计」。</li></ul>
+  </div>
+
+  <div class="panel on" id="p2">
+    <h3>B · <code>rent = round(monthTarget × 0.22)</code></h3>
+    <h4>做法</h4><ul><li><code>ledger.ts</code> 的 <code>closeMonth</code> 里算 <code>const rent = Math.round(state.monthTarget * 0.22)</code>，`MonthRecord.rent` 记实际值。</li><li>配一条确定性用例：同 seed 同月租金一致、且等于 target×0.22。</li></ul>
+    <h4>为什么是它</h4><ul><li>房租随经营规模走，玩家能一句话解释给自己听：「铺子越旺，房东越敢涨」。</li><li>实测对现金的影响温和（期末 16.96 万，比 A 少 1.2 万），<b>不改变任何达标判定</b>，不会凭空制造挫败。</li><li>改动 1 处 + 1 条测试，完全可逆。</li></ul>
+    <h4>代价</h4><ul><li>租金与目标同源（都是 ×1.02/月），等于给难度曲线加了一条平行线，不提供额外张力——这是设计上的「合规但不惊艳」。</li></ul>
+  </div>
+
+  <div class="panel" id="p3">
+    <h3>C · 阶梯 800 / 1280 / 2048（每 12 月跳一档）</h3>
+    <h4>做法</h4><ul><li>按 <code>Math.floor((month-1)/12)</code> 查表，三档。</li></ul>
+    <h4>实测后果</h4><ul><li>累计租金 4.95 万（五套里最重），期末现金 16.1 万，仍为负月份 0，达标月数不变。</li></ul>
+    <h4>好处</h4><ul><li>「签租约、每年来一刀」的节奏感强，玩家会记得第 13 个月。</li></ul>
+    <h4>代价</h4><ul><li>跳档瞬间现金流凹口（+480/月），若玩家当月刚好紧，会读成「随机惩罚」；需额外做提示（涨租事件），否则是隐形的。</li></ul>
+  </div>
+
+  <div class="panel" id="p4">
+    <h3>D · <code>max(800, 上月营收 × 18%)</code></h3>
+    <h4>做法</h4><ul><li>用上月 <code>MonthRecord.revenue</code> 算，滞后一月。</li></ul>
+    <h4>实测后果</h4><ul><li>累计租金 3.68 万，期末现金 17.4 万，达标月数不变。</li></ul>
+    <h4>好处</h4><ul><li>反馈最直接：这个月生意好，下个月房租就贵——因果链最短。</li></ul>
+    <h4>代价</h4><ul><li>滞后期 + 亏损月仍收高租（因为按上月营收算），容易出现「越亏越贵」的观感；且营收波动会直接传导到成本，噪声大。</li></ul>
+  </div>
+
+  <table>
+    <thead><tr><th>维度</th><th>A 常量 800</th><th class="rec">B 目标 22%（推荐）</th><th>C 阶梯</th><th>D 营收 18%</th></tr></thead>
+    <tbody>
+      <tr><td>难度曲线形状</td><td>水平线</td><td class="rec">与目标平行上升</td><td>三年三台阶</td><td>跟随营收抖动</td></tr>
+      <tr><td>玩家可读性</td><td>差（看不见变化）</td><td class="rec good">好（越旺越贵）</td><td>中（跳档要提示）</td><td>中（滞后一月易误读）</td></tr>
+      <tr><td>改动成本</td><td class="n">0</td><td class="rec n">1 处 + 1 测试</td><td class="n">1 处 + 提示</td><td class="n">1 处（需存上月营收）</td></tr>
+      <tr><td>实测现金影响（36 月末）</td><td class="n">181,993</td><td class="rec n">169,614</td><td class="n">161,257</td><td class="n">173,970</td></tr>
+      <tr><td>是否改变达标判定</td><td class="n">否</td><td class="rec n">否</td><td class="n">否</td><td class="n">否</td></tr>
+      <tr><td>可逆性</td><td>—</td><td class="rec good">改一行撤回</td><td>改一行撤回</td><td>改一行撤回</td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    ⚠️ 地图里最该看的一行是「是否改变达标判定 = 全否」。它说明：<b>租金不是难度杠杆</b>，难度由 <code>monthTarget × 1.02/月</code> 独占（目标 +100%，同期营收 +40%）。想让三年有张力，要动的是固定成本结构（工资/水电/损耗），已另立 P15。<br>
+    证据：<a href="../../租金公式实测-2026-11-09.md">租金公式实测-2026-11-09.md</a> · 复现 <code>npm run probe:rent</code>
+  </div>
+</div>
+<script>
+  document.getElementById('tabs').addEventListener('click', function (e) {
+    var t = e.target.closest('.tab'); if (!t) return;
+    [].forEach.call(document.querySelectorAll('.tab'), function (x) { x.classList.remove('on'); });
+    [].forEach.call(document.querySelectorAll('.panel'), function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    document.getElementById(t.dataset.p).classList.add('on');
+  });
+</script>
+</body>
+</html>

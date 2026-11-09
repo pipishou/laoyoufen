@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "gate:eye": "python ../tools/gate/eye_gate.py shot --slug dualend-skeleton",
-    "gate:eye:check": "python ../tools/gate/eye_gate.py check data/evidence/dualend-skeleton/stamp.txt"
+    "gate:eye:check": "python ../tools/gate/eye_gate.py check data/evidence/dualend-skeleton/stamp.txt",
+    "probe:rent": "vitest run --config vitest.probe.config.ts"
   },
   "dependencies": {
     "phaser": "^3.90.0"
