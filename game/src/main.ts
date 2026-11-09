@@ -14,10 +14,15 @@ import { fire, hire, toggleRest } from "./sim/staff";
 import { advanceMinute, createInitialState, type GameState } from "./sim/state";
 import { mountHud } from "./ui/hud";
 import { mountPanels, type Panels, type PanelTab } from "./ui/panels";
+import { initViewport } from "./ui/viewport";
 
 const hudRoot = document.getElementById("hud");
 const gameRoot = document.getElementById("game");
 if (!hudRoot || !gameRoot) throw new Error("页面缺 #hud / #game 容器");
+
+// 双端骨架：算 --stage-scale 并挂 resize/横竖屏监听。必须在 Phaser 建游戏前跑，
+// 否则首帧会以桌面尺寸渲染一帧再被缩放，手机上有可见的跳一下。
+initViewport();
 
 function newPlayerId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();

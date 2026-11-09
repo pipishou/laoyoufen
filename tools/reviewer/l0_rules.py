@@ -119,8 +119,39 @@ def check(cand: dict, pool_texts: list[str], *, ai_fields: bool = True) -> list[
     return v
 
 
+RULES = ("R1", "R2", "R3", "R4", "R5", "R6")
+
+
+def check_report(cand: dict, pool_texts: list[str], *, ai_fields: bool = True) -> list[dict]:
+    """第三条规则：每条规则都报「跑了没跑」。
+
+    为什么需要：`check()` 只返回违规列表，空列表既可能是「跑了没问题」，
+    也可能是「根本没跑」（池为空时的 R6、结构不全被短路后的 R2–R6、命中豁免的 R2）。
+    两者在报告里长得一样 —— 这正是「没执行被记成通过」的漏洞。
+    约定（同 CCGS `scripts/asset-scan.sh`）：未执行的规则 hits 记 `-`，绝不记 0。
+    """
+    v = check(cand, pool_texts, ai_fields=ai_fields)
+    hits: dict[str, int] = {}
+    for x in v:
+        hits[x["rule"]] = hits.get(x["rule"], 0) + 1
+    structural_fail = any(x["rule"] == "R4" and "结构不全" in x["reason"] for x in v)
+    body = cand.get("body") or ""
+    exempt_digits = any(k in body for k in DIGITS_ALLOWED_EXCEPTION)
+    rows: list[dict] = []
+    for r in RULES:
+        ran, note = True, ""
+        if structural_fail and r != "R4":
+            ran, note = False, "结构不全，本规则未执行"
+        elif r == "R6" and not pool_texts:
+            ran, note = False, "池内无可比条目，本规则未执行"
+        elif r == "R2" and (not ai_fields or exempt_digits):
+            ran, note = False, "未启用或命中豁免，本规则未执行"
+        rows.append({"rule": r, "ran": ran, "hits": hits.get(r, 0) if ran else None, "note": note})
+    return rows
+
+
 def run(cands: list[dict], pool_texts: list[str], *, ai_fields: bool = True) -> tuple[list[dict], list[dict]]:
-    """返回 (通过, 被拒)；被拒项带 violations。"""
+    """返回 (通过, 被拒)；被拒项带 violations。通过项带 l0_report（逐规则 ran/hits）。"""
     ok, bad = [], []
     seen = set()
     for c in cands:
@@ -134,5 +165,5 @@ def run(cands: list[dict], pool_texts: list[str], *, ai_fields: bool = True) -> 
         if v:
             bad.append({**c, "violations": v})
         else:
-            ok.append(c)
+            ok.append({**c, "l0_report": check_report(c, others, ai_fields=ai_fields)})
     return ok, bad

@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from common import PROJECT_ROOT, REVIEW_DIR, append_jsonl, read_jsonl, resolve_key, write_jsonl
+from verdict import from_review as gate_from_review
 import l0_rules
 
 API_URL = "https://api.deepseek.com/chat/completions"
@@ -248,6 +249,7 @@ def main() -> None:
         judges = judge_all(key, c, args.model)
         verdict, S, why = arbitrate(judges)
         tally[verdict] = tally.get(verdict, 0) + 1
+        gate = gate_from_review(verdict, judges)
         row = {
             "run_id": run_id,
             "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -259,12 +261,15 @@ def main() -> None:
             "score": S,
             "verdict": verdict,
             "arbiter_note": why,
+            "gate_verdict": gate["verdict"],
+            "gate_reasons": gate["reasons"],
+            "l0_rules": c.get("l0_report", []),
             "sample_queued": verdict == "pass_auto",
             "human_override": None,  # 人审后回填，唯一的放行证据
         }
         append_jsonl(log_path, row)
         sc = ",".join(f"{j['judge']}={j.get('score', 'ERR')}" for j in judges)
-        print(f"[{i}/{len(l0_pass)}] {c['id']:<18} S={S} {verdict:<12} {sc} | {why}")
+        print(f"[{i}/{len(l0_pass)}] {c['id']:<18} S={S} {verdict:<12} → {gate['verdict']:<18} {sc} | {why}")
 
     dt = time.time() - t_start
     print(f"\n{run_id} done in {dt:.1f}s → {log_path}")

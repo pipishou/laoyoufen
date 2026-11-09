@@ -34,8 +34,10 @@
 | 10 | 2026-11-09 | D3→D6 | Claude Code Game Studios（37.3k star，49 agent/74 skill，仅 Godot/Unity/Unreal）对本项目是否是有帮助 | A 全量移植 / B 选择性直取 4 件机制 / C 不采用只记结论 | **推荐 B，待拍板**：只取 D1 眼睛绿（Playwright 四视口截图＋哈希戳，"story 不闭合除非看一眼"）／D2 规则直译（gameplay·ui·data·test 四条→Phaser/TS 版写进项目记忆）／D3 观察≠裁决（L0 加 `ran` 第三态，未跑记 `-` 不记 0）／D4 rigor 先验（走 minimal+，不补 GDD 全套）；A 因引擎层零匹配且 rules 的 `paths:` 永不命中 `.ts` 而否决 | 评估 `../../评估-Claude-Code-Game-Studios-2026-11-09.md`｜卡 `.junshi/decision-cards/2026-11-09-CCGS评估.md`＋地图 `-map.html`｜实测：全库 `phaser` 仅 1 次（`agents/prototyper.md:116` 当替代原型工具）、`test-run.sh` 无 node/vitest 分支、rules `paths:` 全指 `.cs/.cpp/gdscript`；其 README 自证「minimal=1 文档 vs standard=30 文档，standard 被双盲评＋真人试玩排最后」；本项目四条手机端缺陷全部通过三绿、`l0_rules.py:57` 只有两态 | H1 四视口必抓到手机断链（HIGH）；H2 四条规则 1 小时可译（MED）；H3 不装 74 skill 不漏流程（MED）；H4 上游半年不转 Web（未知→不深度耦合） | HIGH | — |
 
 | 11 | 2026-11-09 | D3→D6 | CCGS 已拉到本地，改造方案该停在哪一层 | A 只搬四件机制（首评 B 的延续）/ B 三层改造（机制＋目录协议＋最小角色集）/ C 全量 74 skill 移植 | **推荐 B，置信 HIGH，双向门**：L1 机制层全搬（四态 verdict：NOT ASSESSED 优先于通过且须点名什么能 settle；观察三证据 looking/asked/seen-on-screen；证据过期三态 CHANGED/GONE/RECEIPT: NONE；qa.level×Type 豁免矩阵；scope 对照 git）；L2 目录协议层（registry.yaml 单一数值来源、evidence/<slug>/NN-*.png 命名即规范、session-state 含 Run result、tech-debt）；L3 角色层只留 economy-designer / qa-lead / performance-analyst，其余 46 个丢弃；分 P0 1.5h → P1 5h → P2 2h 三批可停 | 报告 `CCGS第二次评估-改造方案-2026-11-09.md`｜卡 `.junshi/decision-cards/2026-11-09-CCGS改造方案.md`＋地图 `-map.html`｜树 `.junshi/brainstorm/2026-11-09-CCGS改造/review.html`｜本地实测：638 文件/5.79MB/HEAD 05ad7c8；**68/74** 内联 `yaml-helper.sh`、**25/74** 调 `.claude/scripts/*`、**8/74** 才提证据、**32/74** 含三引擎指令、docs 128＝gate 28＋templates 63＋根 31，且 1.2.0 已无 `engine-reference`；`story-done/SKILL.md:112-131/170-174/198-203/251-266` 可 1:1 落进 `tools/reviewer` | H1 Playwright 可装可跑｜H2 Vite 5173 可直连｜H3 registry 改造不致 32 条事件数值漂移｜H4 economy 框架适配单币种结构 | HIGH | 待 P0 落地后回写「未执行」第三态是否真能报出 |
+| 12 | 2026-11-09 | D6→执行 | CCGS 三层改造怎么才算落地（用户拍板 A 后实施） | P0 机制 / P1 眼睛绿 / P2 角色集 | **A（用户 2026-11-09 拍板，已实施）**：P0＝`verdict.py` 四态（12 例自测过）＋`l0_rules.check_report()` 逐规则 `{ran,hits}`（未执行 `hits=null`，绝不记 0）＋`run_review` 行增 `gate_verdict/gate_reasons/l0_rules`＋`docs/gates.md` 门矩阵；P1＝`tools/gate/eye_gate.py`（5 视口 375×667/667×375/390×844/768×1024/1440×900，sha256 stamp，`CHANGED/GONE/RECEIPT: NONE`，空白截图判未渲染）＋双端骨架（`--stage-scale` 等比缩放、安全区、触摸 44px 热区、竖屏提示）；P2＝`docs/roles.md`（economy/qa/perf 三角色 brief）＋`docs/economy-faucet-sink.md`（实跑一次汇/漏）＋`docs/rules.md`（四条规则直译 Phaser/TS 版） | 实测：K-08 负测试三态全部成立（删 stamp→`RECEIPT: NONE`；改文件→`CHANGED`；还原→`OK`）；四绿 `tsc=0 / 89 tests / build 571ms / eye 5 张零 console error`；竖屏 375 下舞台曾被 body flex 压成 137px 宽（flex-shrink 所致）→ 加 `flex:0 0 auto` 修复；`git status --porcelain` 首行丢状态列前导空格 → 改用 `diff --name-only` 三查取路径，否则 `game/index.html` 被静默漏戳 | 「门必须能表达未执行」已落代码；「眼睛绿必须点名哪条资源 404」已落（`response` 监听）；`RENT_PER_MONTH=800` 为常量导致难度随时间递减（待改公式，未动代码） | HIGH | 待下批改动跑一次完整眼睛绿回写 |
 
 ## 待拍板（未入账）
+
 
 | # | 问题 | 卡在哪 |
 |---|---|---|
@@ -50,5 +52,6 @@
 | P9 | ~~J4 判「题材骨架」还是「细节密度」~~ | **已答（2026-11-08，实测推翻问题本身）**：两个都不成立——先得能测出差异才谈取舍。同文本 4 次 run 一致率仅 46.9%，判据微调在噪声内不可测；J4 文本回滚 v0.3，改 J4 措辞降人审率这条路封了（见账本行 9） |
 | P10 | B 定案后是否同批上 D（题库 32→60） | 顺序仍未定；但行 9 证明「判据侧已到噪声地板」→ D（内容侧）优先级上升，且 B 的人判结果未回填前不应急着扩题库 |
 | P11 | ~~眼睛绿（D1）与行 3「双端骨架」是否同批落地~~ | **已答（2026-11-09，见行 11 推荐 A）：同批** —— 一套 Playwright 脚手架两用；分开则手机端缺陷在 UI 批次前仍无自动发现手段 |
-| P12 | 是否把 CCGS 的 rules 直译写进项目常驻记忆（D2） | 写进去＝每轮对话都受约束；不写＝靠自觉。倾向写（4 条，文本量小） |
-| P13 | 改造是否按 P0→P1→P2 今日开工 | 行 11 推荐 A（全做，且 P1 与双端骨架同批）；B（只做 P0+P1）省 2 人时但数值纪律晚进场 |
+| P12 | ~~是否把 CCGS 的 rules 直译写进项目常驻记忆（D2）~~ | **已答（2026-11-09）：写**——落为 `docs/rules.md` 四条（gameplay/ui/ai/data，Phaser+TS 口径），不进 skill、不进每轮上下文，靠 `docs/gates.md` 与 code review 对照 |
+| P13 | ~~改造是否按 P0→P1→P2 今日开工~~ | **已答（2026-11-09，用户拍板 A）：已全做**，见行 12；P1 与行 3 双端骨架同批交付，证据 `game/data/evidence/dualend-skeleton/`（5 视口 + stamp） |
+| P14 | `RENT_PER_MONTH = 800` 固定常量 → 难度随时间递减（行 12 汇/漏实测） | 待定：改成随门店规模/月数递增的公式，并给第 1 月/第 36 月两端算例；动它会影响存档里既有现金流 |

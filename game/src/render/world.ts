@@ -653,10 +653,13 @@ export function createGameConfig(
     roundPixels: true,
     backgroundColor: PALETTE.paper,
     scale: {
+      // 缩放交给 CSS（hud.responsive.css 的 --stage-scale 同时缩 canvas 与 HUD）：
+      // 这里必须保持 NONE + zoom 1，让 canvas 的 CSS 尺寸恒等于 1024×768，
+      // 否则 Phaser 会自己改 canvas 尺寸，HUD 与画面就脱层了。
       mode: Phaser.Scale.NONE,
       width: VIEW_W,
       height: VIEW_H,
-      zoom: 2,
+      zoom: 1,
       autoCenter: Phaser.Scale.NO_CENTER,
     },
     scene: [],

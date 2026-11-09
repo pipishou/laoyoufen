@@ -1,0 +1,113 @@
+/*
+ * 双端适配层（后加载，覆盖 hud.css 的固定 1024×768）。
+ *
+ * 规矩：
+ *  1. 不改 hud.css 里任何坐标——它是「舞台内部坐标系」，改它等于改游戏。
+ *  2. 这里只做三件事：等比缩放、安全区、触摸热区。
+ *  3. 断点只影响「外框与提示」，不影响内部布局；真要大改布局，得另开一条证据链（眼睛绿）来验。
+ */
+
+:root {
+  --stage-scale: 1;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+/* 安全区：刘海屏横屏时左右会挡住舞台边缘 */
+body {
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+}
+
+/* 整体等比缩放：canvas 与 HUD 一起缩，永不脱层 */
+#stage {
+  /* 关键：body 是 flex 容器，默认 flex-shrink:1 会把 1024 的舞台压成视口宽，
+     再被 transform 缩一次 → 双重缩小（375 视口下实测只剩 137px 宽）。 */
+  flex: 0 0 auto;
+  transform: scale(var(--stage-scale));
+  transform-origin: center center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ---------- 触摸设备 ---------- */
+@media (pointer: coarse) {
+  html,
+  body {
+    /* 禁掉双击缩放与长按选择，避免和点单/拖动抢手势 */
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  /* 44px 是 iOS HIG 的最小热区：缩放后仍要够点 */
+  #hud button,
+  #hud [role="button"],
+  #hud .tab,
+  #hud .btn,
+  #hud .choice {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 触摸端不显示 hover 效果，避免「点完还亮着」 */
+  #hud *:hover {
+    filter: none;
+  }
+}
+
+/* ---------- 桌面 ≥1280：给足外框，别让舞台贴边 ---------- */
+@media (min-width: 1280px) and (min-height: 960px) {
+  #stage {
+    box-shadow:
+      0 0 0 3px var(--ink),
+      0 24px 60px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* ---------- 平板 768–1279：缩到 0.75 左右时 3px 描边会糊，收成 2px ---------- */
+@media (max-width: 1279px) {
+  #stage {
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+}
+
+/* ---------- 手机 <768 ---------- */
+@media (max-width: 767px) {
+  #stage {
+    box-shadow: none;
+  }
+
+  body {
+    background: #1b1510;
+  }
+}
+
+/* ---------- 竖屏提示（仅在 phone + portrait 时由 viewport.ts 挂 class） ---------- */
+body.hint-rotate::after {
+  content: "把手机横过来 · 横屏才看得清灶台";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(16px + var(--safe-bottom));
+  margin: 0 auto;
+  width: max-content;
+  max-width: 88vw;
+  padding: 8px 14px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--paper);
+  background: var(--ink);
+  border: 2px solid var(--paper2);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* 竖屏时把舞台顶到上方，别让提示压住画面中心 */
+body.hint-rotate #stage {
+  transform: scale(var(--stage-scale)) translateY(-8%);
+}
