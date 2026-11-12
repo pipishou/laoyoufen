@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K1 · 目标换骨 — 决策地图</title>
+<style>
+:root{--paper:#fff8e6;--ink:#3b2b1d;--line:#3b2b1d;--accent:#b8452c;--soft:#f2ecdc;--muted:#6b5b46;--ok:#2f6b3a;--warn:#8a5a12}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--paper);color:var(--ink);font:15px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+.wrap{max-width:1120px;margin:0 auto}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:.5px}
+.sub{color:var(--muted);margin:0 0 18px}
+.card{background:#fffdf6;border:3px solid var(--line);box-shadow:6px 6px 0 var(--line);padding:18px 20px;margin:0 0 22px;border-radius:2px}
+.tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.tab{border:3px solid var(--line);background:#fffdf6;box-shadow:3px 3px 0 var(--line);padding:8px 14px;cursor:pointer;font-weight:700;border-radius:2px}
+.tab[aria-selected="true"]{background:var(--accent);color:#fff8e6}
+.tab .tag{font-weight:400;font-size:12px;opacity:.85}
+.panel{display:none}
+.panel[data-active="true"]{display:block}
+.brand{display:inline-block;background:var(--ok);color:#fff8e6;font-size:12px;padding:2px 8px;border-radius:2px;margin-left:8px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;margin:10px 0 6px}
+th,td{border:2px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+th{background:var(--soft);width:150px;font-weight:700}
+td.wide{width:auto}
+ul{margin:6px 0 6px 20px;padding:0}
+li{margin:3px 0}
+.dim{color:var(--muted);font-size:13px}
+.verdict{border-left:6px solid var(--accent);background:var(--soft);padding:10px 14px;margin:0 0 12px}
+.cmp td,.cmp th{text-align:center}
+.cmp td:first-child,.cmp th:first-child{text-align:left}
+.yes{color:var(--ok);font-weight:700}
+.no{color:var(--accent);font-weight:700}
+.mid{color:var(--warn);font-weight:700}
+.note{font-size:13px;color:var(--muted)}
+code{background:var(--soft);padding:1px 5px;border-radius:2px;font-size:13px}
+.foot{font-size:13px;color:var(--muted);border-top:2px dashed var(--line);padding-top:10px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>K1 · 目标换骨：把「月营收 KPI」换成开罗那套「累计成就 + 段位评定」</h1>
+  <p class="sub">2026-11-12 · 老友粉模拟器 · 3 选项 × 5 维度 · 推荐 A（置信 HIGH）· 单向门（改存档版本）</p>
+
+  <div class="card">
+    <div class="verdict">
+      <strong>一句话：</strong>我们现在的 <code>monthTarget = 21000 × 1.02^月</code> 是**发明物** —— 开罗拉面店没有月营收 KPI，它用 39 条累计 trophy + 11 级段位评定推人往前走。K1 就是把这根轴换掉。
+    </div>
+    <div class="dim">
+      现状实测：不操作局 4 座 71 碗/日、月均 ¥25,632、<b>达标率 29%</b>；8 座 110 碗/日、<b>91%</b>。也就是说现在的「难度」只由这一个乘法决定，
+      而玩家看不到自己离「做成一家店」还有多远 —— 因为根本没有「做成」的定义。
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-t="a">A 全换骨 <span class="tag">推荐</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-t="b">B 双轨并存</button>
+    <button class="tab" role="tab" aria-selected="false" data-t="c">C 只降级不改轴</button>
+  </div>
+
+  <section class="panel card" data-panel="a" data-active="true">
+    <h2 style="margin-top:0">A 全换骨：删月营收考核，39 条 trophy 南宁化 + 11 级段位<span class="brand">推荐</span></h2>
+    <table>
+      <tr><th>改什么</th><td class="wide">1) <code>state.monthTarget</code> 从「考核」降为「参考线」（HUD 只显示、不判负）；2) 新建 <code>game/src/sim/achievements.ts</code>（12 条首批 trophy，累计计数、只增不减）；3) 新建 <code>game/src/sim/grade.ts</code>（11 级段位评定：交费 + 条件 + 奖励）；4) 36 个月结束改判「累计成就达成度」而非「达标月数」。</td></tr>
+      <tr><th>改动面</th><td class="wide"><b>5 个源文件 + 2 个测试 + 存档版本 5→6</b>：<code>sim/state.ts</code>（字段/迁移）、<code>sim/ledger.ts</code>（月结不再判失败）、<code>sim/save.ts</code>（v5 存档需迁移或拒绝）、<code>ui/hud.ts</code>（目标条改成就条）、<code>data/balance.ts</code>（删 TARGET_GROWTH 语义）；测试 <code>systems.test.ts</code>、<code>balance.test.ts</code> 里 16 处 <code>monthTarget</code> 引用要改。约 <b>6–8 小时</b>。</td></tr>
+      <tr><th>与开罗一致性</th><td class="wide"><span class="yes">最高</span>。trophy 与段位都是原版数字直译（顾客 100/1000/3000/6000、赚钱 10万/50万/300万 KCU、判定费 5,000→2,000,000 KCU）。</td></tr>
+      <tr><th>玩家目标感</th><td class="wide"><span class="yes">最强</span>：任何时候都有「下一个 trophy 差多少」的具体数字；段位给「再往上还有 8 级」的长线。</td></tr>
+      <tr><th>钱去处与现金收敛</th><td class="wide">段位费 + 换区转让费 + 装修设备成为三条现金出口；实测现金期末 22 万，够走 3–4 步。</td></tr>
+      <tr><th>可逆性</th><td class="wide"><span class="no">低（单向门）</span>：动了存档结构与 HUD 语义，回退要写迁移。故需先拍板。</td></tr>
+    </table>
+    <p class="note">反悔成本：保留一个 <code>monthTarget</code> 字段并只做展示，回退时把判定逻辑加回去即可（约 1 小时），存档结构不用回退。</p>
+  </section>
+
+  <section class="panel card" data-panel="b">
+    <h2 style="margin-top:0">B 双轨并存：月目标保留为「奖金门槛」，trophy 做收藏</h2>
+    <table>
+      <tr><th>改什么</th><td class="wide">不删 <code>monthTarget</code> 判定；达标发奖金（如营收 5%）；另加 trophy 与段位，两套并行。</td></tr>
+      <tr><th>改动面</th><td class="wide">与 A 相同再加奖金逻辑，约 <b>8–10 小时</b>；但不动存档结构（可逆）。</td></tr>
+      <tr><th>与开罗一致性</th><td class="wide"><span class="mid">中</span>：多了一套原版没有的月奖金，等于把「我们发明的 KPI」洗成「我们发明的奖金」。</td></tr>
+      <tr><th>玩家目标感</th><td class="wide"><span class="mid">两套都要看</span>：新手会问「到底该冲哪个」，认知负担翻倍。</td></tr>
+      <tr><th>钱去处与现金收敛</th><td class="wide"><span class="no">反向放水</span>：达标奖金让现金更宽松，36 月内经济压力进一步消失。</td></tr>
+      <tr><th>可逆性</th><td class="wide"><span class="yes">高</span>：纯增量。</td></tr>
+    </table>
+  </section>
+
+  <section class="panel card" data-panel="c">
+    <h2 style="margin-top:0">C 只降级：月目标变「建议值」，先只加 12 条 trophy</h2>
+    <table>
+      <tr><th>改什么</th><td class="wide">判定改成「达标 = 好评、未达标 = 无惩罚」，先上 trophy；段位与换区留到下一批。</td></tr>
+      <tr><th>改动面</th><td class="wide">最小：<b>2–3 小时</b>，<code>ledger.ts</code> + <code>achievements.ts</code>，不动存档结构。</td></tr>
+      <tr><th>与开罗一致性</th><td class="wide"><span class="mid">中低</span>：只搬了 trophy，没搬段位评定（而段位是开罗的主要现金出口和长线目标）。</td></tr>
+      <tr><th>玩家目标感</th><td class="wide"><span class="mid">有 trophy 但没长线</span>：12 条拿完后没有下一个台阶。</td></tr>
+      <tr><th>钱去处与现金收敛</th><td class="wide"><span class="no">弱</span>：段位费这条出口没开，现金仍无处花。</td></tr>
+      <tr><th>可逆性</th><td class="wide"><span class="yes">最高</span>：纯增量、不动存档。</td></tr>
+    </table>
+  </section>
+
+  <div class="card">
+    <h2 style="margin-top:0">横向对比</h2>
+    <table class="cmp">
+      <tr><th>维度</th><th>A 全换骨</th><th>B 双轨</th><th>C 只降级</th></tr>
+      <tr><td>改动面（工时）</td><td class="mid">6–8h</td><td class="no">8–10h</td><td class="yes">2–3h</td></tr>
+      <tr><td>开罗一致性</td><td class="yes">高</td><td class="mid">中</td><td class="mid">中低</td></tr>
+      <tr><td>目标感 / 长线</td><td class="yes">强（12+11 级）</td><td class="mid">两套打岔</td><td class="no">弱（12 封顶）</td></tr>
+      <tr><td>现金出口</td><td class="yes">段位费+换区+设备</td><td class="no">奖金反向放水</td><td class="no">只换区</td></tr>
+      <tr><td>可逆性</td><td class="no">低（存档 v6）</td><td class="yes">高</td><td class="yes">最高</td></tr>
+    </table>
+    <p class="note">推荐 A：理由是<b>目标是这套游戏的主轴，轴错了补丁补不回来</b>。若怕单向门，先做 C 的 12 条 trophy 再上段位也可，但那时 A 的工时不会减少 —— 只是把一次性拍板拆成两次。</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">附录一 · 首批 12 条 trophy（数字来自开罗，名词换成老友粉）</h2>
+    <table>
+      <tr><th>类</th><th>trophy</th><th>门槛（累计）</th><th>开罗原值</th></tr>
+      <tr><td>客流</td><td>街坊上门</td><td>100 / 1,000 / 3,000 / 6,000 位</td><td>顾客 100/1000/3000/6000</td></tr>
+      <tr><td>客流</td><td>熟客回头</td><td>10 / 20 / 30 / 56 位</td><td>常客 10/20/30/56</td></tr>
+      <tr><td>客流</td><td>排到巷口</td><td>同时排队 10 / 15 / 20 人</td><td>排队 10/15/20</td></tr>
+      <tr><td>手艺</td><td>出碗</td><td>5 / 20 / 60 碗</td><td>做面 5/20/60</td></tr>
+      <tr><td>手艺</td><td>熬汤底</td><td>5 / 20 / 60 锅</td><td>熬汤 5/20/60</td></tr>
+      <tr><td>手艺</td><td>手工切粉</td><td>10 / 20 / 35 / 50 / 80 次</td><td>拉面 10/20/35/50/80</td></tr>
+      <tr><td>生意</td><td>营业额</td><td>¥10,000 / 50,000 / 300,000</td><td>赚钱 100,000/500,000/3,000,000 KCU</td></tr>
+      <tr><td>生意</td><td>单日最高营收</td><td>¥800 / 1,500 / 2,500</td><td>—（新增，对应现实 70 碗/日）</td></tr>
+      <tr><td>生意</td><td>换区开店</td><td>2 / 4 / 6 / 12 个区</td><td>区域解锁 6 个（第 7 区哨兵不开放）</td></tr>
+      <tr><td>名望</td><td>比赛胜场</td><td>3 / 30 / 54 场</td><td>胜场 3/30/54</td></tr>
+      <tr><td>名望</td><td>招牌等级</td><td>Lv 5 / 30 / 50</td><td>段位 5/30/50</td></tr>
+      <tr><td>名望</td><td>老友图鉴</td><td>集齐 10 / 30 / 34 省风味</td><td>总等级 100/200/500/1000（改口径）</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">附录二 · 11 级段位评定（判定费 = 开罗 KCU × 0.01）</h2>
+    <table>
+      <tr><th>级</th><th>称号</th><th>判定费</th><th>条件（累计顾客，千人）</th><th>奖励</th></tr>
+      <tr><td>1</td><td>摆摊仔</td><td>¥50</td><td>0.4</td><td>¥1</td></tr>
+      <tr><td>2</td><td>街边小店</td><td>¥150</td><td>0.7</td><td>¥1</td></tr>
+      <tr><td>3</td><td>巷口老铺</td><td>¥300</td><td>1.0</td><td>¥1</td></tr>
+      <tr><td>4</td><td>街知巷闻</td><td>¥500</td><td>1.5</td><td>¥1.5</td></tr>
+      <tr><td>5</td><td>区级名店</td><td>¥800</td><td>2.0</td><td>¥2</td></tr>
+      <tr><td>6</td><td>市级名店</td><td>¥1,500</td><td>2.4</td><td>¥3</td></tr>
+      <tr><td>7</td><td>老友粉传人</td><td>¥2,000</td><td>3.0</td><td>¥4</td></tr>
+      <tr><td>8</td><td>八桂名厨</td><td>¥3,000</td><td>3.4</td><td>¥5</td></tr>
+      <tr><td>9</td><td>桂系食神</td><td>¥5,000</td><td>4.0</td><td>¥6</td></tr>
+      <tr><td>10</td><td>老友粉大王</td><td>¥20,000</td><td>5.0</td><td>¥8</td></tr>
+      <tr><td>11</td><td>广西老友粉非遗传承人</td><td>—（终局）</td><td>通关</td><td>—</td></tr>
+    </table>
+    <p class="note">注：开罗奖励列 100→6,000 KCU（¥1–¥60），对我们 22 万现金体量偏小，故第 10 级后奖励按比例放大，待实跑校准（P18）。</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">承重假设与成本</h2>
+    <ul>
+      <li><b>H1</b>：玩家确实要「看得见的累计目标」而不是「每月 KPI」—— 开罗 39 条 trophy 的存在是强证据，但我们没做玩家测试。</li>
+      <li><b>H2</b>：段位判定费能成为有效现金出口 —— 需在 K2/K3 落地后用可赢性探针复测（当前 36 月末 22 万）。</li>
+      <li><b>H3</b>：删月目标不会让游戏「没有压力」—— 压力改由「换区转让费 18,000–120,000」承担。</li>
+      <li><b>成本</b>：A 6–8h / B 8–10h / C 2–3h；改存档版本是唯一不可逆项。</li>
+    </ul>
+    <div class="foot">决策地图 · 2026-11-12 · 数据源：<code>docs/开罗机制取证-2026-11-12.md</code>、<code>game/src/data/nanning.ts</code>、<code>winnable.probe.ts</code> 实测。拍板件见 <code>.junshi/decision-cards/2026-11-12-K1目标换骨.md</code>。</div>
+  </div>
+</div>
+<script>
+const tabs=[...document.querySelectorAll('.tab')];
+const panels=[...document.querySelectorAll('.panel')];
+tabs.forEach(t=>t.addEventListener('click',()=>{
+  tabs.forEach(x=>x.setAttribute('aria-selected',String(x===t)));
+  panels.forEach(p=>p.setAttribute('data-active',String(p.dataset.panel===t.dataset.t)));
+}));
+</script>
+</body>
+</html>
