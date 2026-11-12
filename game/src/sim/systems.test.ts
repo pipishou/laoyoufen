@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { unlock } from "./collection";
 import { canEnter, enterContest } from "./contest";
-import { closeMonth, closeYear, RENT_PER_MONTH } from "./ledger";
+import { closeMonth, closeYear } from "./ledger";
+import { rentFor } from "../data/balance";
 import {
   collectGift,
   favoriteArchetypes,
@@ -179,7 +180,7 @@ describe("月结 / 年结", () => {
       lost: 2,
       avgSat: 70,
       wages: 500,
-      rent: RENT_PER_MONTH,
+      rent: rentFor(3600),
       profit: 2700,
       target: 3600,
       grade: "A",
@@ -195,11 +196,13 @@ describe("月结 / 年结", () => {
     s.monthSatCount = 100;
     s.monthWages = 500;
     const cash = s.cash;
+    const rent = rentFor(s.monthTarget);
     closeMonth(s);
     expect(s.months).toHaveLength(1);
     expect(s.months[0]!.revenue).toBe(4000);
     expect(s.months[0]!.avgSat).toBe(70);
-    expect(s.cash).toBe(cash - RENT_PER_MONTH);
+    expect(s.months[0]!.rent).toBe(rent);
+    expect(s.cash).toBe(cash - rent);
     expect(s.monthRevenue).toBe(0);
     expect(s.monthWages).toBe(0);
   });
@@ -224,7 +227,7 @@ describe("月结 / 年结", () => {
     expect(y.revenue).toBe(60000);
     expect(["S", "A", "B"]).toContain(y.rating);
     expect(s.pendingReport).not.toBeNull();
-    expect(s.cash).toBe(10000 - 12 * RENT_PER_MONTH + y.bonus);
+    expect(s.cash).toBe(10000 - 12 * rentFor(3600) + y.bonus);
     expect(y.bonus).toBeGreaterThanOrEqual(2000);
   });
 

@@ -1,7 +1,5 @@
 import type { GameState, MonthRecord, YearRecord } from "./state";
-
-/** 月租（元），每月固定扣 */
-export const RENT_PER_MONTH = 800;
+import { rentFor } from "../data/balance";
 const YEAR_BONUS: Record<YearRecord["rating"], number> = { S: 8000, A: 4000, B: 2000, C: 500, D: 0 };
 const GRADES: YearRecord["rating"][] = ["D", "C", "B", "A", "S"];
 
@@ -28,9 +26,11 @@ export function closeMonth(state: GameState): void {
   const target = state.monthTarget;
   const avgSat = state.monthSatCount > 0 ? state.monthSatSum / state.monthSatCount : 0;
   const wages = state.monthWages;
+  // 房租 = 当月营收目标 × 22%（账本行 13 拍板 B）。数值口径见 data/balance.ts。
+  const rent = rentFor(target);
 
-  state.cash -= RENT_PER_MONTH;
-  const profit = Math.round(revenue - wages - RENT_PER_MONTH);
+  state.cash -= rent;
+  const profit = Math.round(revenue - wages - rent);
 
   const record: MonthRecord = {
     month: state.month,
@@ -39,7 +39,7 @@ export function closeMonth(state: GameState): void {
     lost: state.monthLost,
     avgSat: Math.round(avgSat),
     wages,
-    rent: RENT_PER_MONTH,
+    rent,
     profit,
     target: Math.round(target),
     grade: gradeByRatio(revenue / Math.max(1, target)),
