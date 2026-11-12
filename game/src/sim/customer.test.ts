@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ARCHETYPE_BY_ID } from "../data/customers";
 import { likeFoundRatio, likeStats } from "./collection";
-import { DAY_MINUTES, QUEUE_MAX, SEATS, likeHitsOf, likeScoreOf, prefMatch, satisfactionOf, tickCustomers, trendAffinity } from "./customer";
+import { FLOW } from "../data/balance";
+import { DAY_MINUTES, likeHitsOf, likeScoreOf, prefMatch, satisfactionOf, tickCustomers, trendAffinity } from "./customer";
 import { scoreRecipe } from "./score";
 import { advanceMinute, createInitialState, type GameState, type Recipe } from "./state";
 
@@ -42,25 +43,26 @@ describe("顾客循环", () => {
     expect(set.size).toBeGreaterThan(30);
   });
 
-  it("在座人数不超过座位数，排队不超过 QUEUE_MAX", () => {
+  it("在座人数不超过座位数，排队不超过候餐上限", () => {
     const s = createInitialState("p", 3);
     for (let i = 0; i < DAY_MINUTES * 3; i++) {
       advanceMinute(s);
       const eating = s.flow.customers.filter((c) => c.status === "eating").length;
       const waiting = s.flow.customers.filter((c) => c.status === "waiting").length;
-      expect(eating).toBeLessThanOrEqual(SEATS);
-      expect(waiting).toBeLessThanOrEqual(QUEUE_MAX);
+      expect(eating).toBeLessThanOrEqual(s.venue.seats);
+      expect(waiting).toBeLessThanOrEqual(FLOW.queueMax);
+      // 兜底闸：日销不得超过 state.capacity，否则扩建与客流调参都失去意义
+      expect(s.todayCustomers).toBeLessThanOrEqual(s.capacity);
     }
   });
 
-  it("吃完要付钱：现金随营收净增（扣除食材成本）", () => {
+  it("吃完要付钱：营收与出餐数对账", () => {
     const s = createInitialState("p", 11);
     const before = s.cash;
     for (let i = 0; i < DAY_MINUTES; i++) tickCustomers(s, scoreRecipe(s.recipe, s.price));
-    const gained = s.cash - before;
-    const expected = s.flow.servedToday * (s.price - scoreRecipe(s.recipe, s.price).cost);
-    expect(gained).toBeCloseTo(expected, 5);
-    expect(gained).toBeGreaterThanOrEqual(0);
+    // 用营收对账而不是现金：现金还含食材成本与熟客回礼（会补现金），对不上是正常的
+    expect(s.flow.revenueToday).toBeCloseTo(s.flow.servedToday * s.price, 5);
+    expect(s.cash).toBeGreaterThan(before);
   });
 
   it("越贴合顾客口味，满意度越高", () => {

@@ -28,7 +28,12 @@ export function buyUpgrade(state: GameState, id: string): PurchaseResult {
   state.venue.upgrades[id] = level + 1;
   if (id === "seats") state.venue.seats += 1;
   if (id === "stove") state.venue.stoves += 1;
-  if (id === "hall") state.capacity += 10;
+  if (id === "hall") {
+    // 大厅扩建：现实里就是「多摆两张桌」，所以增长落在座位上，不是落在一个
+    // 和产能无关的日销闸上。capacity 只是兜底闸（见 state.ts），+10 仅防呆。
+    state.venue.seats += 2;
+    state.capacity += 10;
+  }
   return { ok: true };
 }
 

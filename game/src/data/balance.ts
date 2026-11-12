@@ -99,3 +99,64 @@ export function bowlMargin(): number {
 export function breakEvenBowls(): number {
   return Math.ceil((GUANGXI.rentYuan + GUANGXI.wageYuan) / bowlMargin());
 }
+
+/**
+ * 客流与出餐的可调旋钮。
+ *
+ * 为什么做成可变对象而不是 const：调客流量级只能靠实测扫描（`flow-probe`），
+ * 扫描时需要在不重启进程的情况下换参数。默认值就是「上线值」，
+ * 任何一次改动都必须重跑 `npm run probe:flow` 并留下数字。
+ *
+ * 2026-11-12 实测定值（5 seeds × 36 月，目标 21,000；目标 4 座放开产能后）：
+ *   eat×1.0 → 4 座 71.2 碗/日、流失 29%、达标 29% ｜ 8 座 110.5 碗/日、流失 0%、达标 91%
+ *   eat×0.8 → 4 座 87.1 碗/日（比现实 70 碗更乐观，达标 58% 太松）→ 不采用
+ * 取 eat×1.0：4 座正好落在现实「70 碗/日」上，且不操作局只有 29% 达标 ——
+ * 想通关必须扩座、加灶或改配方，这正是开罗式的「扩建驱动」。
+ * 开罗原版「每日 120 分钟」的现实换算是 1 游戏分钟 = 6 现实分钟，
+ * 所以 serve=1 分钟 ≈ 现实 6 分钟一碗 —— 这正是现实单灶的节奏。
+ */
+export const FLOW_DEFAULTS = {
+  /** 进店概率的整体倍率（乘在 spawnChance 上） */
+  spawnScale: 6,
+  /** 出一碗要几分钟（一口灶、无厨师时） */
+  serveMinutes: 1,
+  /** 等位耐心倍率 */
+  patienceScale: 1.5,
+  /** 吃一碗的时间倍率（座位周转的隐藏杠杆） */
+  eatScale: 1,
+  /** 候餐区上限（现实 4 座小店门口站 8 个人就堵路，12 已是极限） */
+  queueMax: 12,
+} as const;
+
+export const FLOW: {
+  spawnScale: number;
+  serveMinutes: number;
+  patienceScale: number;
+  eatScale: number;
+  queueMax: number;
+} = { ...FLOW_DEFAULTS };
+
+export function resetFlowTuning(): void {
+  FLOW.spawnScale = FLOW_DEFAULTS.spawnScale;
+  FLOW.serveMinutes = FLOW_DEFAULTS.serveMinutes;
+  FLOW.patienceScale = FLOW_DEFAULTS.patienceScale;
+  FLOW.eatScale = FLOW_DEFAULTS.eatScale;
+  FLOW.queueMax = FLOW_DEFAULTS.queueMax;
+}
+
+/**
+ * 一天的长度换算（把现实时长压进 120 游戏分钟）。
+ *
+ * 现实：早餐 6:30–9:00、午市 11:30–14:00、晚市 17:30–21:00，有效营业约 12 小时 = 720 分钟。
+ * 游戏：一天 120 分钟 → **1 游戏分钟 = 6 现实分钟**。
+ * 于是「一位顾客从落座到走人 41 现实分钟」≈ 6.8 游戏分钟，
+ * 4 张桌子 × 120 / 6.8 ≈ 70 碗/日——这正是广西 4 座小店的现实日销。
+ */
+export const REAL_MINUTES_PER_GAME_MINUTE = 6;
+
+/** 把现实分钟折成游戏分钟 */
+export function realMinutesToGame(realMinutes: number): number {
+  return realMinutes / REAL_MINUTES_PER_GAME_MINUTE;
+}
+
+

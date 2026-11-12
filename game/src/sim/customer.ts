@@ -8,6 +8,7 @@ import {
   type CustomerPrefs,
   type LikeDim,
 } from "../data/customers";
+import { FLOW } from "../data/balance";
 import { unlock } from "./collection";
 import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } from "./regulars";
 import { nextFloat } from "./rng";
@@ -137,7 +138,14 @@ function spawnChance(state: GameState, score: RecipeScore): number {
   const base = DAYPART_CHANCE[part] ?? 0.1;
   const repFactor = 0.35 + (state.reputation / 5) * 0.65;
   const scoreFactor = 0.4 + (score.storeScore + shopCharmBonus(state)) / 160;
-  return base * repFactor * scoreFactor * shopAttractMultiplier(state) * popularityMultiplier(state);
+  return (
+    base *
+    repFactor *
+    scoreFactor *
+    shopAttractMultiplier(state) *
+    popularityMultiplier(state) *
+    FLOW.spawnScale
+  );
 }
 
 /** 三维偏好（粉宽/粉型/汤种）与配方的贴合度 0-100：命中一维 1/3 */
@@ -234,7 +242,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   // 先掷骰再判断队满：看到长队掉头走的人也算流失，不能静默吞掉
   if (nextFloat(state.rng) < spawnChance(state, score)) {
-    if (waiting >= QUEUE_MAX) {
+    if (waiting >= FLOW.queueMax) {
       flow.lostToday += 1;
       state.monthLost += 1;
     } else {
@@ -245,7 +253,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
       if (arch) {
         const regular = regularId !== null;
         const patienceScale =
-          patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1);
+          patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1) * FLOW.patienceScale;
         flow.customers.push({
           id: flow.nextId++,
           archetypeId: arch.id,
@@ -269,7 +277,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
       c.elapsed += 1;
       surveyTick(state, c);
       const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
-      if (arch && c.elapsed >= arch.eatSpeed) {
+      if (arch && c.elapsed >= Math.max(1, Math.round(arch.eatSpeed * FLOW.eatScale))) {
         settle(state, score, c);
         continue;
       }
@@ -280,15 +288,16 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   flow.customers = staying;
 
   // 2. 灶台空闲且有空位时，队首入座
-  if (flow.serveCooldown > 0) {
-    flow.serveCooldown = Math.max(0, flow.serveCooldown - 1);
-  } else {
+  //    先减冷却再判：否则 1 分钟的灶也会变成「每 2 分钟一碗」，
+  //    实测差 2 倍（57.7 vs 119 碗/日的上限）。
+  if (flow.serveCooldown > 0) flow.serveCooldown = Math.max(0, flow.serveCooldown - 1);
+  if (flow.serveCooldown <= 0) {
     const freeSeats = state.venue.seats - eatingNow;
     const next = flow.customers.find((c) => c.status === "waiting");
     if (freeSeats > 0 && next) {
       next.status = "eating";
       next.elapsed = 0;
-      flow.serveCooldown = SERVE_MINUTES * serveMultiplier(state);
+      flow.serveCooldown = FLOW.serveMinutes * serveMultiplier(state);
     }
   }
 

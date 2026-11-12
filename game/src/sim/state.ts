@@ -1,4 +1,5 @@
 import { DAYS_PER_MONTH, dayIndex } from "./calendar";
+import { GUANGXI, TARGET_BASE_YUAN, monthTargetFor } from "../data/balance";
 import { DAY_MINUTES, tickCustomers } from "./customer";
 import { tickEvents } from "./events";
 import { closeMonth } from "./ledger";
@@ -259,14 +260,24 @@ export interface GameState {
   finished: boolean;
 }
 
-/** 以下数值全是占位，等按真实流水校准后替换，不要当成设计定稿。 */
-const START_CASH = 5000;
-const START_CAPACITY = 40;
-const START_MONTH_TARGET = 3600;
+/**
+ * 起始数值：全部来自 `data/balance.ts` 的广西换算（1 KCU = 0.01 元）。
+ * 改动前先看 `docs/数值来源与换算-2026-11-12.md`，那是这套数字的出处。
+ */
+const START_CASH = GUANGXI.startCashYuan;
+/**
+ * 每日接待上限（兜底闸，不是产能）。
+ *
+ * 实测教训：原来这里是 40，客流怎么调都卡在 40 碗/日 —— 产能被一道与
+ * 座位、灶台无关的常量锁死。后来改成 80，仍然盖住了「4 座 ≈ 82 碗/日」的
+ * 真实产能，导致扩座完全无效（4 座与 8 座同样 80.3 碗/日）。
+ * 现在设成 200，只当日销量异常的保护阀：真正的天花板由座位的翻台与
+ * 灶台的出餐速度决定，扩座、加灶、雇人也才有意义。
+ */
+const START_CAPACITY = 200; /* 现实 4 座小店 70 碗/日属于「产出」，不该由常量扮演 */
+const START_MONTH_TARGET = TARGET_BASE_YUAN;
 const START_SEATS = 4;
 const START_STOVES = 1;
-/** 每月目标涨幅 */
-const TARGET_GROWTH = 1.02;
 
 const DEFAULT_RECIPE: Recipe = {
   soup: [40, 45, 55, 50, 50, 45, 40, 55],
@@ -401,7 +412,7 @@ function endDay(state: GameState): void {
     state.day = 1;
     if (state.month < TOTAL_MONTHS - 1) {
       state.month += 1;
-      state.monthTarget = Math.round(START_MONTH_TARGET * Math.pow(TARGET_GROWTH, state.month));
+      state.monthTarget = monthTargetFor(state.month + 1);
     } else {
       state.finished = true;
     }

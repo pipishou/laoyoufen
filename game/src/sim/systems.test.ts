@@ -77,10 +77,15 @@ describe("店铺扩建", () => {
   it("加灶与扩建同时生效", () => {
     const s = createInitialState("shop-2", 7);
     s.cash = 20000;
+    const capBefore = s.capacity;
+    const seatsBefore = s.venue.seats;
     buyUpgrade(s, "stove");
     buyUpgrade(s, "hall");
     expect(s.venue.stoves).toBe(2);
-    expect(s.capacity).toBe(50);
+    // 只断言增量：起始 capacity 是兜底闸（2026-11-12 由 40 → 200），
+    // 写死数字会让每次调平衡都误报；真正该固定的是「大厅 +10 张接待量、+2 座」。
+    expect(s.capacity - capBefore).toBe(10);
+    expect(s.venue.seats - seatsBefore).toBe(2);
   });
 });
 
