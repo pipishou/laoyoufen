@@ -210,6 +210,7 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   state.totalCustomers += 1;
   state.monthServed += 1;
   state.flow.servedToday += 1;
+  state.tally.bowls += 1; // K1 成就计数：累计出碗（只增不减）
   state.flow.lastSatisfaction = Math.round(sat);
   state.monthSatSum += sat;
   state.monthSatCount += 1;
@@ -240,6 +241,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   if (state.todayCustomers >= state.capacity) return;
 
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
+  if (waiting > state.tally.maxQueue) state.tally.maxQueue = waiting; // K1 成就：排队峰值
   // 先掷骰再判断队满：看到长队掉头走的人也算流失，不能静默吞掉
   if (nextFloat(state.rng) < spawnChance(state, score)) {
     if (waiting >= FLOW.queueMax) {

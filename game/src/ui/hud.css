@@ -206,7 +206,7 @@ body {
 #cook {
   position: absolute;
   left: 8px;
-  top: 306px;
+  top: 396px;
   width: 176px;
   padding: 0 0 8px;
   pointer-events: none;
@@ -293,6 +293,9 @@ body {
 #left {
   left: 8px;
   top: 62px;
+  /* 灶台卡从 306 挪到 396，这里拿到 320px：热潮 4 行 + 参考线 + 两行成就刚好 */
+  max-height: 320px;
+  overflow: hidden;
 }
 
 #right {
@@ -368,6 +371,56 @@ body {
 
 .track.big {
   height: 14px;
+}
+
+/* K1 目标换骨：成就条（取代「月度目标」成为主推力） */
+.goal.ach {
+  padding-top: 8px;
+}
+
+.achlist {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.achrow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "an av" "abar abar";
+  gap: 2px 6px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.achrow .an {
+  grid-area: an;
+  font-weight: 700;
+  color: #4a3527;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.achrow .av {
+  grid-area: av;
+  color: #7a6a52;
+  font-variant-numeric: tabular-nums;
+}
+
+.achrow .abar {
+  grid-area: abar;
+  height: 7px;
+  background: #e7dcc2;
+  border: 2px solid var(--shadow);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.achrow .abar i {
+  display: block;
+  height: 100%;
+  background: #b8452c;
 }
 
 /* 右栏：B2 之前只有空态 */

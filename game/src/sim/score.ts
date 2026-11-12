@@ -3,10 +3,18 @@ import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
 import { evalRpn } from "./rpn";
 import type { Recipe } from "./state";
 
-/** 南宁老友粉常见客单价（元/碗）。B3 会改成玩家可调。 */
-export const DEFAULT_PRICE = 12;
-/** 价格评分的最优价位：过 12 元，学生与街坊开始流失 */
-const PRICE_SWEET_SPOT = 12;
+/**
+ * 默认客单价（元/碗）。
+ *
+ * 9 元不是拍的：`data/nanning.ts` 的 `priceVerdict` 实测矩阵显示 ——
+ * 9 元时 12 个区有 70%–94% 的人买得起，10 元骤降到 32%–72%，12 元只剩
+ * 青秀 52% / 良庆 50%（详见 `docs/南宁区县客流与钱包-2026-11-12.md`）。
+ * 钱包是离散十档，跨一档就掉一批人，所以街坊价定 9 元；10 元及以上做成
+ * 「加料档」，留给均钱包 ≥ 11 的区（P19）。
+ */
+export const DEFAULT_PRICE = 9;
+/** 价格评分的最优价位：9 元是街坊价，再往上走就靠加料撑 */
+const PRICE_SWEET_SPOT = 9;
 
 export interface SubScore {
   id: string;

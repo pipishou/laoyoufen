@@ -1,0 +1,90 @@
+{
+  "slug": "k1-achievements",
+  "url": "http://127.0.0.1:4173/",
+  "browser": "msedge",
+  "head": "0e24d076a4a18809596454ac67fdb4705726ddf4",
+  "stamped": [
+    "game/.tmp/raf-probe.html",
+    "game/index.html",
+    "game/src/ai/director.ts",
+    "game/src/audio/bgm.ts",
+    "game/src/audio/engine.ts",
+    "game/src/audio/sfx.ts",
+    "game/src/audio/synth.ts",
+    "game/src/data/balance.ts",
+    "game/src/data/contest.ts",
+    "game/src/data/customers.ts",
+    "game/src/data/events.ts",
+    "game/src/data/ingredients.ts",
+    "game/src/data/nanning.ts",
+    "game/src/data/ramen-calc.ts",
+    "game/src/data/shop.ts",
+    "game/src/data/staff.ts",
+    "game/src/main.ts",
+    "game/src/render/palette.ts",
+    "game/src/render/world.ts",
+    "game/src/sim/achievements.ts",
+    "game/src/sim/calendar.ts",
+    "game/src/sim/clock.ts",
+    "game/src/sim/collection.ts",
+    "game/src/sim/contest.ts",
+    "game/src/sim/customer.ts",
+    "game/src/sim/events.ts",
+    "game/src/sim/flow-curve.probe.ts",
+    "game/src/sim/flow-diag.probe.ts",
+    "game/src/sim/flow-probe.probe.ts",
+    "game/src/sim/grade.ts",
+    "game/src/sim/ledger.ts",
+    "game/src/sim/regulars.ts",
+    "game/src/sim/rent-probe.probe.ts",
+    "game/src/sim/rng.ts",
+    "game/src/sim/rpn.ts",
+    "game/src/sim/save.ts",
+    "game/src/sim/score.ts",
+    "game/src/sim/shop.ts",
+    "game/src/sim/staff.ts",
+    "game/src/sim/state.ts",
+    "game/src/sim/winnable.probe.ts",
+    "game/src/ui/hud.css",
+    "game/src/ui/hud.responsive.css",
+    "game/src/ui/hud.ts",
+    "game/src/ui/panels.ts",
+    "game/src/ui/viewport.ts",
+    "game/vite.config.ts",
+    "game/vitest.probe.config.ts"
+  ],
+  "shots": [
+    {
+      "viewport": "375x667",
+      "png": "01-375x667.png",
+      "blank": false,
+      "note": "2021 色"
+    },
+    {
+      "viewport": "667x375",
+      "png": "02-667x375.png",
+      "blank": false,
+      "note": "2577 色"
+    },
+    {
+      "viewport": "390x844",
+      "png": "03-390x844.png",
+      "blank": false,
+      "note": "2081 色"
+    },
+    {
+      "viewport": "768x1024",
+      "png": "04-768x1024.png",
+      "blank": false,
+      "note": "3010 色"
+    },
+    {
+      "viewport": "1440x900",
+      "png": "05-1440x900.png",
+      "blank": false,
+      "note": "1363 色"
+    }
+  ],
+  "console_errors": [],
+  "blank_shots": []
+}

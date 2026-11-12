@@ -6,6 +6,14 @@ import { LIKES_TOTAL } from "../sim/collection";
 import { SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
+import { nextThree } from "../sim/achievements";
+
+/** 成就进度显示：上万用「1.2万」，避免长串数字把成就条挤爆 */
+function fmtProgress(n: number): string {
+  if (n >= 10_000) return `${(n / 10_000).toFixed(n >= 100_000 ? 0 : 1)}万`;
+  if (n >= 1_000) return `${Math.round(n / 100) / 10}千`;
+  return String(Math.round(n));
+}
 import type { RecipeScore } from "../sim/score";
 import { serveMultiplier } from "../sim/staff";
 
@@ -129,9 +137,13 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     <div class="ttl">本 月 热 潮</div>
     ${trendRows}
     <div class="goal">
-      <div class="lab">月度目标 · 营收</div>
+      <div class="lab">本 月 营 收 · 参 考 线（不 判 定 成 败）</div>
       <div class="num">¥<b data-rev>0</b> / <span data-target>¥0</span></div>
       <div class="track big"><i data-goalbar></i></div>
+    </div>
+    <div class="goal ach">
+      <div class="lab">下 一 目 标 · 段 <span data-grade>0</span>/11</div>
+      <div class="achlist" data-achlist></div>
     </div>
   </div>
 
@@ -251,6 +263,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     rev: q("[data-rev]"),
     target: q("[data-target]"),
     goalbar: q("[data-goalbar]"),
+    grade: q("[data-grade]"),
+    achlist: q("[data-achlist]"),
     waiting: q("[data-waiting]"),
     custlist: q("[data-custlist]"),
     queue: q("[data-queue]"),
@@ -319,6 +333,18 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.rev.textContent = Math.round(s.monthRevenue).toLocaleString("zh-CN");
     el.target.textContent = formatMoney(s.monthTarget);
     el.goalbar.style.width = `${Math.min(100, (s.monthRevenue / Math.max(1, s.monthTarget)) * 100)}%`;
+    // K1 目标换骨：成就条取代「月度目标」成为主推力（见 sim/achievements.ts）
+    el.grade.textContent = `${s.gradeLevel}`;
+    const ach = nextThree(s).slice(0, 2); // 左栏只有 176px 宽，两行刚好不压到灶台卡
+    el.achlist.innerHTML = ach
+      .map(
+        (v) => `<div class="achrow" title="${v.hint}">
+          <span class="an">${v.name}</span>
+          <span class="av">${fmtProgress(v.progress)}${v.unit} / ${v.next === null ? "满" : fmtProgress(v.next)}${v.unit}</span>
+          <span class="abar"><i style="width:${Math.round(v.ratio * 100)}%"></i></span>
+        </div>`,
+      )
+      .join("");
 
     TREND_ROWS.forEach((r, i) => {
       const v = s.trend[r.key];

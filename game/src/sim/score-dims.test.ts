@@ -39,10 +39,11 @@ describe("魅力 / 价格 / 成本", () => {
     expect(combo).toBeGreaterThan(sameCountNoCombo);
   });
 
-  it("价格分：12 元满分，越贵越低", () => {
-    expect(valueScoreOf(12)).toBe(100);
-    expect(valueScoreOf(15)).toBeLessThan(valueScoreOf(12));
-    expect(valueScoreOf(20)).toBeLessThan(valueScoreOf(15));
+  it("价格分：9 元满分（街坊价），越贵越低", () => {
+    expect(valueScoreOf(9)).toBe(100);
+    expect(valueScoreOf(10)).toBeLessThan(valueScoreOf(9));
+    expect(valueScoreOf(12)).toBeLessThan(valueScoreOf(10));
+    expect(valueScoreOf(20)).toBeLessThan(valueScoreOf(12));
   });
 
   it("成本随加料增加，毛利随售价变化", () => {

@@ -84,7 +84,9 @@ function isEventLogEntry(v: unknown): boolean {
 
 function isGameState(v: unknown): v is GameState {
   if (!isRecord(v)) return false;
-  if (v.saveVersion !== SAVE_VERSION) return false;
+  // v6 = K1 目标换骨（tally / gradeLevel）。v5 老档允许读入，缺的字段在
+  // deserialize 里补默认值，不判废 —— 玩家练了三年的店不该因为一次改版清零。
+  if (v.saveVersion !== SAVE_VERSION && v.saveVersion !== 5) return false;
   if (typeof v.playerId !== "string" || v.playerId.length === 0) return false;
   if (typeof v.connectCode !== "string" || v.connectCode.length !== 6) return false;
   if (!isRecord(v.rng) || !isFiniteNumber(v.rng.s)) return false;
@@ -211,7 +213,26 @@ export function deserialize(raw: string): GameState | null {
     if (i <= 0) return false;
     return ARCHETYPE_BY_ID.has(id.slice(0, i)) && dims.has(id.slice(i + 1));
   });
+  // v5 → v6（K1 目标换骨）：补累计成就计数与段位，老档继续可玩
+  if (!parsed.tally || typeof parsed.tally !== "object") {
+    parsed.tally = { bowls: 0, bestDayRevenue: 0, maxQueue: 0, districts: ["xingning"] };
+  } else {
+    if (typeof parsed.tally.bowls !== "number") parsed.tally.bowls = 0;
+    if (typeof parsed.tally.bestDayRevenue !== "number") parsed.tally.bestDayRevenue = 0;
+    if (typeof parsed.tally.maxQueue !== "number") parsed.tally.maxQueue = 0;
+    if (!Array.isArray(parsed.tally.districts) || parsed.tally.districts.length === 0) {
+      parsed.tally.districts = ["xingning"];
+    }
+  }
+  if (typeof parsed.gradeLevel !== "number" || !Number.isFinite(parsed.gradeLevel)) {
+    parsed.gradeLevel = 0;
+  }
+  parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }
 
+/**
+ * 存档键名停在 v4：改键名等于让所有老档变成孤儿，而版本判断已由
+ * `saveVersion` 字段承担。真要挪键名，得先写一次读旧键的迁移。
+ */
 export const SAVE_STORAGE_KEY = "laoyou.save.v4";

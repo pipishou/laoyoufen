@@ -29,6 +29,8 @@ export function closeMonth(state: GameState): void {
   // 房租 = 当月营收目标 × 22%（账本行 13 拍板 B）。数值口径见 data/balance.ts。
   const rent = rentFor(target);
 
+  // K1：日营收峰值在 endDay 里逐日更新（见 sim/state.ts），此处不再动 tally
+
   state.cash -= rent;
   const profit = Math.round(revenue - wages - rent);
 
@@ -46,11 +48,11 @@ export function closeMonth(state: GameState): void {
   };
   state.months.push(record);
 
-  if (revenue >= target) {
-    state.reputation = Math.min(5, state.reputation + 0.08);
-  } else {
-    state.reputation = Math.max(0, state.reputation - 0.05);
-  }
+  // K1 目标换骨（账本行 19）：月营收不再判定成败。
+  // 原实现「达标 +0.08 口碑 / 未达标 -0.05 口碑」是我们自己发明的月度 KPI：
+  // 开罗拉面店没有这个机制，它靠 39 条累计 trophy 与 11 级段位推人往前走。
+  // monthTarget 现在只是 HUD 上的一把量尺，口碑只由「顾客吃到嘴里的感受」决定
+  // （见 sim/customer.ts 的 settle：按满意度漂移）。
 
   state.monthRevenue = 0;
   state.monthServed = 0;

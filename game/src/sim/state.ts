@@ -1,5 +1,8 @@
 import { DAYS_PER_MONTH, dayIndex } from "./calendar";
 import { GUANGXI, TARGET_BASE_YUAN, monthTargetFor } from "../data/balance";
+
+/** 起步区：兴宁区（祖传铺面，转让费 0），见 data/nanning.ts 与账本行 18 */
+const START_DISTRICT = "xingning";
 import { DAY_MINUTES, tickCustomers } from "./customer";
 import { tickEvents } from "./events";
 import { closeMonth } from "./ledger";
@@ -7,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -207,6 +210,17 @@ export interface EventRuntime {
   count: number;
 }
 
+export interface Tally {
+  /** 累计出碗数 */
+  bowls: number;
+  /** 单日营收最高值（元） */
+  bestDayRevenue: number;
+  /** 同时排队人数峰值 */
+  maxQueue: number;
+  /** 已开店（或已在营）的区，见 data/nanning.ts */
+  districts: string[];
+}
+
 export interface GameState {
   saveVersion: number;
   /** 匿名 UUID，存档主键 */
@@ -236,7 +250,16 @@ export interface GameState {
   /** 本月满意度累加，结算时算均值 */
   monthSatSum: number;
   monthSatCount: number;
+  /**
+   * 本月营收目标 —— **只作参考线，不再判定成败**（K1 目标换骨，账本行 19）。
+   * 开罗拉面店没有月营收 KPI：它用 39 条累计 trophy + 11 级段位推人往前走，
+   * 这里保留这个数只为了让 HUD 有个「本月做了多少」的量尺。
+   */
   monthTarget: number;
+  /** 累计成就计数（只增不减，见 sim/achievements.ts） */
+  tally: Tally;
+  /** 已通过的段位 0-11（0 = 还没评过，见 sim/grade.ts） */
+  gradeLevel: number;
   /** 每碗售价（元） */
   price: number;
   recipe: Recipe;
@@ -330,6 +353,13 @@ export function createInitialState(playerId: string, seed: number): GameState {
     monthSatSum: 0,
     monthSatCount: 0,
     monthTarget: START_MONTH_TARGET,
+    tally: {
+      bowls: 0,
+      bestDayRevenue: 0,
+      maxQueue: 0,
+      districts: [START_DISTRICT],
+    },
+    gradeLevel: 0,
     price: DEFAULT_PRICE,
     recipe: {
       soup: DEFAULT_RECIPE.soup.slice() as SoupParams,
@@ -397,6 +427,10 @@ export function createInitialState(playerId: string, seed: number): GameState {
 /** 日结：发工资、员工疲劳、换日；月底交给 ledger。 */
 function endDay(state: GameState): void {
   state.monthWages += settleStaffDay(state);
+  // K1 成就：单日营收峰值（必须在 flow.revenueToday 被清零之前取）
+  if (state.flow.revenueToday > state.tally.bestDayRevenue) {
+    state.tally.bestDayRevenue = state.flow.revenueToday;
+  }
 
   state.day += 1;
   state.todayCustomers = 0;
