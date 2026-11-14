@@ -132,16 +132,33 @@ function popularityMultiplier(state: GameState): number {
   return 1 + Math.min(4, state.totalCustomers / 600);
 }
 
+/**
+ * 味道能撑起的价格倍率（开罗 Rarity 的位置）。
+ * 味道 55 及以下 = 1.0（街坊价），味道 100 = 1.25（敢卖贵 25%）。
+ * 顾客进店前按这个乘自己的钱包判「吃不吃得起」，吃不起就掉头走 —— 
+ * 所以涨价不是白捡的，得先把粉做好。 [INFERRED, MED]
+ */
+export function priceTolerance(total: number): number {
+  return 1 + Math.max(0, total - 55) / 180;
+}
+
 /** 口碑越高、门店综合分越高、摆件越多、人气越旺，进店越密 */
 function spawnChance(state: GameState, score: RecipeScore): number {
   const part = Math.min(3, Math.floor(state.flow.minuteOfDay / (DAY_MINUTES / 4)));
   const base = DAYPART_CHANCE[part] ?? 0.1;
   const repFactor = 0.35 + (state.reputation / 5) * 0.65;
   const scoreFactor = 0.4 + (score.storeScore + shopCharmBonus(state)) / 160;
+  /**
+   * 味道直通来访率（开罗 Charisma I–IV「顾客来访率 +X%」）。
+   * 之前味道只能经 满意度→口碑 这条慢通道影响客流，做得好与做得一般拉不开差距；
+   * 系数 0.7/1.0/1.3 对应 味道 0/50/100 倍率 [INFERRED, MED]，靠 winnable.probe 校准。
+   */
+  const tasteFactor = 0.7 + (score.total / 100) * 0.6;
   return (
     base *
     repFactor *
     scoreFactor *
+    tasteFactor *
     shopAttractMultiplier(state) *
     popularityMultiplier(state) *
     FLOW.spawnScale
@@ -168,7 +185,13 @@ export function satisfactionOf(
 ): number {
   const taste = score.total * 0.45;
   const pref = prefMatch(recipe, arch.prefs) * 0.3;
-  const priceFit = clamp(100 - Math.max(0, price - arch.budget) * 25, 0, 100) * 0.25;
+  /**
+   * 品质溢价（开罗 Rarity I–IV「拉面售价 +X%」）：
+   * 味道 55 以下无溢价，味道 100 时容忍价 +25%。
+   * 这样「把粉做好」才换得回涨价空间，而不是只有扩座一条路。
+   */
+  const affordable = arch.budget * priceTolerance(score.total);
+  const priceFit = clamp(100 - Math.max(0, price - affordable) * 25, 0, 100) * 0.25;
   const waitPenalty = Math.max(0, waitedMinutes - lineLimit * 4) * 4;
   return clamp(taste + pref + priceFit + bonus - waitPenalty, 0, 100);
 }
@@ -253,20 +276,29 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
         ? ARCHETYPE_BY_ID.get(regularId)
         : pickArchetype(nextFloat(state.rng), state.trend);
       if (arch) {
-        const regular = regularId !== null;
-        const patienceScale =
-          patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1) * FLOW.patienceScale;
-        flow.customers.push({
-          id: flow.nextId++,
-          archetypeId: arch.id,
-          status: "waiting",
-          elapsed: 0,
-          waited: 0,
-          patience: Math.round((arch.lineLimit + 1) * 6 * patienceScale),
-          satisfaction: -1,
-          regular,
-          survey: 0,
-        });
+        // 看价牌：吃不起就走（开罗「售价超过顾客预算 → 不来」）。
+        // 溢价来自味道，所以涨价前必须先把粉做好，否则人全被价牌挡回去。
+        const canPay = state.price <= arch.budget * priceTolerance(score.total);
+        if (!canPay) {
+          flow.lostToday += 1;
+          state.monthLost += 1;
+          flow.lastLostReason = `${arch.name}看价牌走了（¥${state.price} 超预算 ¥${arch.budget}）`;
+        } else {
+          const regular = regularId !== null;
+          const patienceScale =
+            patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1) * FLOW.patienceScale;
+          flow.customers.push({
+            id: flow.nextId++,
+            archetypeId: arch.id,
+            status: "waiting",
+            elapsed: 0,
+            waited: 0,
+            patience: Math.round((arch.lineLimit + 1) * 6 * patienceScale),
+            satisfaction: -1,
+            regular,
+            survey: 0,
+          });
+        }
       }
     }
   }

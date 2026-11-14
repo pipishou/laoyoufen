@@ -11,6 +11,8 @@
  * 只对**相对关系**有把握（牛腩/牛杂 ≈ 猪杂 > 瘦肉 > 青菜 > 酸笋/豆豉），绝对值等采购单替换。
  */
 
+import { GUANGXI } from "./balance";
+
 export type FlavorTag = "酸" | "辣" | "鲜" | "咸" | "香" | "青菜" | "肉" | "杂" | "甜";
 
 /** 荤素分档，给 UI 分组与「浇头三件套」计数用 */
@@ -117,9 +119,16 @@ export const TOPPINGS: readonly Ingredient[] = [
 
 export const TOPPING_BY_ID: ReadonlyMap<string, Ingredient> = new Map(TOPPINGS.map((t) => [t.id, t]));
 
-/** 汤底 + 粉的基础成本 */
-export const BASE_COST =
-  SOUP_MATERIALS.reduce((sum, m) => sum + m.cost, 0) + NOODLE_MATERIALS.reduce((sum, m) => sum + m.cost, 0);
+/**
+ * 汤底 + 粉的基础成本（元/碗）。
+ *
+ * 旧实现把「全部汤料 + 全部粉料的单价加总」当一碗的成本（≈¥6.3），
+ * 等于每碗都放了所有料 —— 这不是成本，这是清仓。
+ * 按南宁现实一碗老友粉的料钱取 `GUANGXI.bowlCostYuan`（¥4.2），
+ * 加料另计（`bowlCost()` 里逐项累加）。
+ * 依据：docs/数值来源与换算-2026-11-12.md、docs/开罗设计哲学-扩张是否必需-2026-11-14.md
+ */
+export const BASE_COST = GUANGXI.bowlCostYuan;
 
 /** 按 id 取配料；未知 id 返回 undefined，由调用方决定是否报错（存档可能带旧 id） */
 export function findTopping(id: string): Ingredient | undefined {

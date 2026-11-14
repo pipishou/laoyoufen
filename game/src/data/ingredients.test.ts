@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { GUANGXI } from "./balance";
 import { BASE_COST, NOODLE_MATERIALS, SOUP_MATERIALS, TOPPINGS } from "./ingredients";
 
 describe("配料/原料表", () => {
@@ -30,9 +31,13 @@ describe("配料/原料表", () => {
     expect(ids).toContain("soup.garlic");
   });
 
-  it("粉原料与汤料分开计价，基础成本 = 两者之和", () => {
-    const sum =
+  it("基础成本 = 一碗的料钱（南宁现实 4.2 元），不是所有料加总", () => {
+    // 2026-11-14 修正：旧实现把「全部汤料 + 全部粉料」加总当一碗成本（≈6.3），
+    // 等于每碗都放了所有料。改为按现实单碗料钱取 GUANGXI.bowlCostYuan。
+    const allMaterials =
       SOUP_MATERIALS.reduce((a, m) => a + m.cost, 0) + NOODLE_MATERIALS.reduce((a, m) => a + m.cost, 0);
-    expect(BASE_COST).toBeCloseTo(sum, 6);
+    expect(BASE_COST).toBeCloseTo(GUANGXI.bowlCostYuan, 6);
+    // 一碗不可能用完全部料：料表加总必须是单碗成本的 1.4 倍以上
+    expect(allMaterials / BASE_COST).toBeGreaterThan(1.4);
   });
 });

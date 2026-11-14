@@ -14,7 +14,8 @@
     "gate:eye:check": "python ../tools/gate/eye_gate.py check data/evidence/dualend-skeleton/stamp.txt",
     "probe:rent": "vitest run --config vitest.probe.config.ts",
     "probe:flow": "vitest run --config vitest.probe.config.ts -t 扫描",
-    "probe:win": "vitest run --config vitest.probe.config.ts -t 可赢性"
+    "probe:win": "vitest run --config vitest.probe.config.ts -t 可赢性",
+    "probe:quality": "vitest run --config vitest.probe.config.ts -t 做得好也能活"
   },
   "dependencies": {
     "phaser": "^3.90.0"

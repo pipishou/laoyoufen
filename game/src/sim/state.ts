@@ -93,6 +93,8 @@ export interface CustomerFlow {
   lastLikeFound: string | null;
   /** 最近一次「熟客回礼」的提示文案，HUD 读完即消费 */
   lastGift: string | null;
+  /** 最近一次「为什么跑了」的提示（目前只有看价牌走人），HUD 读完即消费 */
+  lastLostReason: string | null;
 }
 
 export type StaffRole = "cook" | "prep" | "server";
@@ -383,6 +385,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastSatisfaction: -1,
       lastLikeFound: null,
       lastGift: null,
+      lastLostReason: null,
     },
     staff: {
       roster: [],
