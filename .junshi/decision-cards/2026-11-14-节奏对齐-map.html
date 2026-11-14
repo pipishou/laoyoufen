@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>决策地图 · 游戏节奏照搬开罗</title>
+<style>
+  :root{
+    --paper:#fff8e6; --paper2:#f6ecd4; --ink:#3b2b1d; --ink2:#6b5a45; --line:#3b2b1d;
+    --hot:#b8452c; --warm:#8a5a3b; --gold:#e0a63c; --good:#2f6b45;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper2);color:var(--ink);
+    font:16px/1.65 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    padding:28px 18px 60px}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:.5px}
+  .sub{color:#7a6a55;font-size:14px;margin-bottom:22px}
+  .lead{background:var(--paper);border:3px solid var(--line);box-shadow:6px 6px 0 rgba(59,43,29,.18);
+    padding:16px 18px;margin-bottom:22px}
+  .lead b{color:var(--hot)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{appearance:none;border:3px solid var(--line);background:var(--paper);color:var(--ink);
+    padding:8px 14px;font:600 15px/1 inherit;cursor:pointer;box-shadow:4px 4px 0 rgba(59,43,29,.16)}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--paper);box-shadow:2px 2px 0 rgba(59,43,29,.3)}
+  .tab .tag{font-size:12px;opacity:.8;margin-left:6px}
+  .card{display:none;background:var(--paper);border:3px solid var(--line);
+    box-shadow:6px 6px 0 rgba(59,43,29,.18);padding:18px}
+  .card.on{display:block}
+  .card h2{margin:0 0 4px;font-size:21px}
+  .card .rec{display:inline-block;background:var(--hot);color:#fff;font-size:12px;
+    padding:2px 8px;letter-spacing:.5px;vertical-align:middle;margin-left:8px}
+  .rows{display:grid;gap:10px;margin-top:14px}
+  .row{display:grid;grid-template-columns:132px 1fr;gap:12px;border-top:1px dashed #c9b99b;padding-top:10px}
+  .row:first-child{border-top:0;padding-top:0}
+  .k{color:var(--warm);font-weight:700;font-size:14px}
+  .v{font-size:15px}
+  .v ul{margin:0;padding-left:18px}
+  table{width:100%;border-collapse:collapse;margin-top:26px;background:var(--paper);
+    border:3px solid var(--line);box-shadow:6px 6px 0 rgba(59,43,29,.18);font-size:14px}
+  th,td{border:1px solid #cbb99a;padding:9px 10px;text-align:left;vertical-align:top}
+  th{background:var(--ink);color:var(--paper);font-weight:700}
+  td.dim{background:#fbf1da;font-weight:700;color:var(--warm);white-space:nowrap}
+  .best{color:var(--good);font-weight:700}
+  .bad{color:var(--hot);font-weight:700}
+  .note{margin-top:18px;font-size:13px;color:#7a6a55}
+  .ladder{margin-top:26px;background:var(--paper);border:3px solid var(--line);padding:16px 18px;
+    box-shadow:6px 6px 0 rgba(59,43,29,.18)}
+  .ladder h3{margin:0 0 10px;font-size:17px}
+  .steps{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch}
+  .step{flex:1 1 130px;background:#fbf1da;border:2px solid var(--line);padding:8px 10px;font-size:13px}
+  .step b{display:block;font-size:14px;color:var(--hot)}
+  .step small{color:#7a6a55}
+  @media (max-width:640px){ .row{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>决策地图 · 游戏节奏照搬开罗拉面店</h1>
+  <div class="sub">2026-11-14 ｜ 三个选项 × 六个维度 ｜ 数据源：开罗 39 张表取证 + 本作 <code>sim/</code> 实测</div>
+
+  <div class="lead">
+    开罗的节奏<b>不是日历</b>，是「奖励表解锁新动词 → 段位审查收钱 → 区域解锁买客流池」的三环咬合。
+    我们删掉月营收 KPI 之后没有补驱动源，替身实测 <b>M03–M35 营收恒定 ¥27.2k、流失 0%、零决策</b>；
+    六件升级合计 &lt;¥7,500、段位费 ¥50–20,000，而三年攒下 ¥24.8 万现金 —— <b>钱没有去处</b>。
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-t="a">A 六阶全做<span class="tag">3.5 天</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-t="b">B 只做建店 + 梯度<span class="tag">2 天</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-t="c">C 只做建店仪式<span class="tag">0.5 天</span></button>
+  </div>
+
+  <section class="card on" id="card-a">
+    <h2>六阶阶梯全做 <span class="rec">推荐 · 置信 HIGH</span></h2>
+    <div class="rows">
+      <div class="row"><div class="k">解决什么</div><div class="v">同时解掉三个已实测的病：钱没去处（B8）、第 3 个月无决策（P24）、段位有层没门（P21/B6）；并补上「建店」这个缺失的动词。</div></div>
+      <div class="row"><div class="k">做什么</div><div class="v"><ul>
+        <li>P1 建店仪式：选铺（¥0/¥1.5万/¥4万 三档）+ 起店名（AI 5 个南宁候选）+ 开张，新阶段 <code>setup</code>，存档 7→8</li>
+        <li>P2 资本梯度 + 段位门：灶/粉篓/案台 3 类 × 4 档（1,500 / 3,800 / 9,000 / 30,000）；段位费 ¥500→¥120,000；评定 UI</li>
+        <li>P3 解锁树 + 布置风格：<code>data/unlocks.ts</code> 16 行（灰项 + 条件 + 差值提示）；6 套风格 × 5 部件</li>
+      </ul></div></div>
+      <div class="row"><div class="k">成本</div><div class="v">3.5 天；新增 2 张数据表、1 个阶段、1 个评定界面；改存档版本一次。</div></div>
+      <div class="row"><div class="k">证据强度</div><div class="v"><span class="best">强</span>——开罗三张表（rank / grade_review / region）结构实证；本作三处数字实测（升级总额、段位费、替身 36 月现金与平坦段）。</div></div>
+      <div class="row"><div class="k">可逆性</div><div class="v">中高。P1 可保留旧开局开关；P2 是常量表；P3 是新增文件，删掉即回到今天。只有段位费与资本价属已感知数值，需留回滚常量。</div></div>
+      <div class="row"><div class="k">失败模式</div><div class="v">① 梯度拉高把前 6 个月变穷（H2）→ 用 <code>probe:standin</code> 卡「第 6 个月现金为正」；② 解锁树退化成清单任务（H1）→ 灰项必须显示「还差多少」，不显示进度条百分比。</div></div>
+    </div>
+  </section>
+
+  <section class="card" id="card-b">
+    <h2>只做建店 + 资本梯度 <span class="tag">稳但留空窗</span></h2>
+    <div class="rows">
+      <div class="row"><div class="k">解决什么</div><div class="v">补上「建店」动词，让钱有去处，段位真正收费。不解「新动词什么时候出现」。</div></div>
+      <div class="row"><div class="k">做什么</div><div class="v">P1 + P2；解锁树与风格套推迟。</div></div>
+      <div class="row"><div class="k">成本</div><div class="v">2 天。</div></div>
+      <div class="row"><div class="k">证据强度</div><div class="v">中——钱的问题有实证，节奏问题只有间接证据。</div></div>
+      <div class="row"><div class="k">可逆性</div><div class="v"><span class="best">最高</span>——不动 UI 结构，只加一个开局页与两组常量。</div></div>
+      <div class="row"><div class="k">失败模式</div><div class="v">第 3 个月的空窗仍在：玩家买满 4 档设备后（约 ¥4.4 万）再次进入「等」。只能靠涨价/扩座填，而那两样上一轮已证明边际很小。</div></div>
+    </div>
+  </section>
+
+  <section class="card" id="card-c">
+    <h2>只做建店仪式 <span class="tag">最小切片</span></h2>
+    <div class="rows">
+      <div class="row"><div class="k">解决什么</div><div class="v">只解「开局没有身份选择」，让第一分钟有代入感。</div></div>
+      <div class="row"><div class="k">做什么</div><div class="v">P1 单独上线：三档铺位 + AI 店名 + 开张。</div></div>
+      <div class="row"><div class="k">成本</div><div class="v">0.5 天，风险最小。</div></div>
+      <div class="row"><div class="k">证据强度</div><div class="v"><span class="bad">弱</span>——只有审美与体验判断，没有数字支撑它会改变节奏。</div></div>
+      <div class="row"><div class="k">可逆性</div><div class="v">最高。</div></div>
+      <div class="row"><div class="k">失败模式</div><div class="v">玩家选完铺位、起完名字，进入的还是同一局：钱涨到 20 万没东西买，第 3 个月开始等。等于只加了 30 秒仪式。</div></div>
+    </div>
+  </section>
+
+  <table>
+    <thead>
+      <tr><th>维度</th><th>A 六阶全做</th><th>B 建店 + 梯度</th><th>C 只建店</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="dim">解决什么</td><td class="best">钱去处 + 空窗 + 段位门 + 建店动词</td><td>钱去处 + 建店动词</td><td>建店动词</td></tr>
+      <tr><td class="dim">做什么</td><td>P1+P2+P3（六阶）</td><td>P1+P2</td><td>P1</td></tr>
+      <tr><td class="dim">成本</td><td>3.5 天 / 存档 7→8 / 2 张新表</td><td>2 天 / 存档 7→8</td><td>0.5 天 / 存档 7→8</td></tr>
+      <tr><td class="dim">证据强度</td><td class="best">强（开罗三表 + 本作三处实测）</td><td>中</td><td class="bad">弱</td></tr>
+      <tr><td class="dim">可逆性</td><td>中高（常量可回滚）</td><td class="best">最高</td><td class="best">最高</td></tr>
+      <tr><td class="dim">失败模式</td><td>前期变穷 / 解锁变清单</td><td class="bad">第 3 个月仍空窗</td><td class="bad">只加 30 秒仪式</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ladder">
+    <h3>六阶阶梯（A 的落地形状）</h3>
+    <div class="steps">
+      <div class="step"><b>S0 建店</b>选铺 · 起名 · 挂招牌<small>¥0 / 1.5万 / 4万</small></div>
+      <div class="step"><b>S1 第一碗</b>调味道 · 加浇头 · 定价 · 开门<small>已上线</small></div>
+      <div class="step"><b>S2 招人</b>雇 1–4 人 · 排班<small>累计 300/800/1600/2600</small></div>
+      <div class="step"><b>S3 布置</b>6 套风格 × 5 部件<small>¥3,000–8,000</small></div>
+      <div class="step"><b>S4 设备</b>灶 / 粉篓 / 案台 4 档<small>¥1,500→30,000</small></div>
+      <div class="step"><b>S5 扩建</b>加座 · 排队区 · 二楼<small>¥12,000 / 35,000</small></div>
+      <div class="step"><b>S6 开分店</b>搬去另一个区县<small>¥0–12 万（12 区）</small></div>
+    </div>
+  </div>
+
+  <div class="note">
+    依据：<code>docs/节奏对齐开罗-2026-11-14.md</code>（§二 取证表 / §三 差距表 / §四 六阶）｜
+    思考树：<code>.junshi/brainstorm/2026-11-14-节奏与解锁树/review.html</code>（3 支）｜
+    决策简报：<code>.junshi/decision-cards/2026-11-14-节奏对齐.md</code>
+  </div>
+</div>
+<script>
+  const tabs = [...document.querySelectorAll('.tab')];
+  const cards = {a:document.getElementById('card-a'), b:document.getElementById('card-b'), c:document.getElementById('card-c')};
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.setAttribute('aria-selected', String(x === t)));
+    Object.entries(cards).forEach(([k, el]) => el.classList.toggle('on', k === t.dataset.t));
+  }));
+</script>
+</body>
+</html>

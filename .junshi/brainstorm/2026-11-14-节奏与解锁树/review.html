@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>思考树对比 · 广西老友粉模拟器的「节奏」应该由什么驱动——日历、门槛，还是内容？</title>
+<style>
+body{font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;margin:24px;color:#1f2328}
+h1{font-size:18px;margin:0 0 4px} .muted{color:#6b7280;font-size:12px}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+th,td{border:1px solid #d0d7de;padding:8px;vertical-align:top;text-align:left}
+th{background:#f6f8fa} tr:nth-child(even) td{background:#fbfcfd}
+.k{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0} .k div{min-width:220px}
+</style></head><body>
+<h1>思考树对比 · 广西老友粉模拟器的「节奏」应该由什么驱动——日历、门槛，还是内容？</h1>
+<div class="muted">成功判据：— ｜ 早停条件：若三支都无法让「第 3 个月有决策」与「钱有去处」同时成立，则先修经济梯度（B1 的前半段），节奏树留到下一轮。</div>
+<table>
+<tr><th>分支</th><th>技法</th><th>一句话</th><th>反证信号</th><th>成本</th><th>可逆性</th><th>结论</th></tr>
+<tr><td><b>B1</b><div class='muted'>B1.md</div></td><td>把可选手段砍到只剩一个——不允许用内容量、不允许用随机事件，只能靠月份推进节奏。于是被迫回答「第 3 个月的第 1 天，玩家手里必须多出什么」。</td><td>日历到点就开新东西。</td><td>—</td><td>低（1 个解锁表 + 5 个 UI 提示，约 0.5 天）。</td><td>高（去掉表即可）。</td><td>**不成立**，作为反面参照保留——它证明「节奏 = 日历」是个伪解，我们上一轮删掉月营收 KPI 之后，日历这条腿已经断了，必须另找驱动源。</td></tr><tr><td><b>B2</b><div class='muted'>B2.md</div></td><td>类比迁移——不抄具体物品，抄**机制形状**。开罗的节奏由三样东西咬合，不是由日历：</td><td>节奏 = 「攒到 → 交钱过门 → 拿到新动词 → 用它开新池子」的循环。</td><td>—</td><td>三批，约 3.5 天（S0 0.5 天 / 资本梯度 + 段位门 1.5 天 / 解锁表与 UI 1.5 天）。</td><td>中高（解锁表是数据，门槛是常量；段位费可调；只有 S0 建店要动存档版本）。</td><td>**成立，推荐**。它同时解掉三个已实测的病：钱没去处（B8 升级太便宜）、第 3 个月无决策（P24）、段位有层没门（P21/B6）。</td></tr><tr><td><b>B3</b><div class='muted'>B3.md</div></td><td>十倍放大——不问「还要多久解锁」，只问「内容量放大十倍后会怎样」。把节奏交给内容：12 区县 × 32 条事件 × 24 个顾客原型 × 100 项图鉴，靠「还没见过的东西」拉动玩家。</td><td>不靠门槛推进，靠「下一个还没见过的南宁」推动。</td><td>—</td><td>高（内容 10 倍 = 至少 300 条事件 / 100 个原型 / 12 区县文案，按审核吞吐 12 条/天算需要 25 天纯生产）。</td><td>高（内容可弃），但**时间不可逆**。</td><td>**不作节奏骨架，作内容层**。它的正确用途是给 B2 的每个解锁节点填广西物件与文案（风格套、区县、事件），而不是承担「为什么现在要往下走」这个问题。</td></tr>
+</table>
+<div class="k">
+<div><b>MECE·互斥</b><br>分支之间是否互相覆盖/重复？重复→合并同类项。</div>
+<div><b>MECE·穷尽</b><br>是否还有明显方向未列？缺→补一支或写明已知缺口。</div>
+<div><b>推荐位</b><br>哪支进选项地图、哪支进「不做什么」（相位 3 回填）。</div>
+</div>
+<p class="muted">生成于 render_tree.py · 军师 v0.8 ｜ 只渲染，不产生结论</p>
+</body></html>
