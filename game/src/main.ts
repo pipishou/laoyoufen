@@ -1,4 +1,4 @@
-﻿import Phaser from "phaser";
+import Phaser from "phaser";
 import { fetchEventNarrative, localNarrative, localReaction } from "./ai/director";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
@@ -11,6 +11,7 @@ import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
 import { guideState, mountGuide, type Guide } from "./ui/guide";
 import {
   beaconPlaytest,
+  deviceId,
   downloadPlaytest,
   flushTelemetry,
   getDays,
@@ -19,6 +20,7 @@ import {
   recordSample,
   summarize,
   uploadEnabled,
+  uploadPending,
   uploadPlaytest,
 } from "./sim/telemetry";
 import { scoreRecipe } from "./sim/score";
@@ -286,12 +288,12 @@ function onMinute(): void {
   const pending = state.events.pending;
   if (pending && EVENTS_BY_ID.has(pending.id)) return;
   const monthsBefore = state.months.length;
-  const dayBefore = state.day;
   advanceMinute(state);
   recordSample(state, score.total);
   if (state.months.length > monthsBefore) flushTelemetry();
-  // 每跨一天给服务端递一次（内部有 90 秒节流，不会把带宽打死）
-  if (state.day !== dayBefore) void uploadPlaytest();
+  // 飞轮自动运转：不再依赖玩家按 Shift+E / Shift+U。
+  // 每分钟问一次，节流在 uploadPlaytest 内部（≥10 分钟才传、间隔≥2 分钟、每推进 15 分钟补一次）。
+  void uploadPlaytest();
   refresh();
   tickFeedback();
 }
@@ -310,6 +312,10 @@ document.addEventListener("visibilitychange", () => {
     flushTelemetry();
     void uploadPlaytest();
   }
+});
+// 断网时攒着，回网立刻补传（uploadPlaytest 内部有 pending 标记）
+window.addEventListener("online", () => {
+  void uploadPlaytest(true);
 });
 // 试玩记录一键导出：Shift+E 下载 playtest-YYYYMMDD.json（放到 game/data/playtest/ 我就能读）
 // 在线模式还会自动上传；Shift+U 手动催一次上传
@@ -338,6 +344,8 @@ declare global {
       upload: typeof uploadPlaytest;
       online: typeof uploadEnabled;
       flush: typeof flushTelemetry;
+      pending: typeof uploadPending;
+      device: typeof deviceId;
     };
   }
 }
@@ -351,6 +359,8 @@ window.__laoyou = {
   upload: uploadPlaytest,
   online: uploadEnabled,
   flush: flushTelemetry,
+  pending: uploadPending,
+  device: deviceId,
 };
 
 new Phaser.Game(createGameConfig(onMinute, () => speed, () => state));

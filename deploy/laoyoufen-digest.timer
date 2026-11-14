@@ -1,0 +1,10 @@
+[Unit]
+Description=Run laoyoufen playtest digest every day at 03:10
+
+[Timer]
+OnCalendar=*-*-* 03:10:00
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target

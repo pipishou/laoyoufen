@@ -73,6 +73,16 @@ systemctl restart "$SVC"
 sleep 1
 log "service: $(systemctl is-active $SVC)"
 
+# 5b) 每日试玩日报（飞轮第 5 齿：采集到的东西得自己变成能读的东西）
+if [ -f "$STAGE/deploy/laoyoufen-digest.service" ]; then
+  cp -a "$STAGE/deploy/laoyoufen-digest.service" /etc/systemd/system/laoyoufen-digest.service
+  cp -a "$STAGE/deploy/laoyoufen-digest.timer" /etc/systemd/system/laoyoufen-digest.timer
+  sed -i "s#/usr/local/bin/python3#${PY}#" /etc/systemd/system/laoyoufen-digest.service
+  systemctl daemon-reload
+  systemctl enable --now laoyoufen-digest.timer >/dev/null
+  log "digest timer: $(systemctl is-active laoyoufen-digest.timer)  next: $(systemctl show -p NextElapseUSecRealtime --value laoyoufen-digest.timer 2>/dev/null)"
+fi
+
 # 6) nginx（default.d 只加 location；写 conf.d 会报 location not allowed）
 if [ -f /etc/nginx/default.d/laoyoufen.conf ]; then
   cp -a /etc/nginx/default.d/laoyoufen.conf "/etc/nginx/default.d/laoyoufen.conf.bak.$(date +%Y%m%d%H%M)"

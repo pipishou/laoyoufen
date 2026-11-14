@@ -1,0 +1,13 @@
+[Unit]
+Description=laoyoufen playtest digest (one page daily)
+After=laoyoufen-api.service
+
+[Service]
+Type=oneshot
+User=laoyoufen
+Group=laoyoufen
+EnvironmentFile=/etc/laoyoufen/api.env
+ExecStart=/usr/local/bin/python3 /opt/laoyoufen/app.py --digest --data /var/lib/laoyoufen --events /opt/laoyoufen/events.json --env /etc/laoyoufen/api.env
+# 日报写到 /var/lib/laoyoufen/reports/YYYY-MM-DD.md，失败不该影响游戏服务
+SuccessExitStatus=0
+Nice=10

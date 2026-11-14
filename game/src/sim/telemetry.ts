@@ -284,15 +284,38 @@ export function summarize(): TelemetrySummary {
   };
 }
 
-/** 导出给「飞轮」吃的一整包 */
-export function exportPayload(): string {
+/**
+ * 匿名设备号：只用来把同一台机器的多次上传归到一条时间线上。
+ * 不含任何账号、不尝试指纹识别——随机 16 字节，存在 localStorage，玩家清缓存就换一个。
+ */
+const DEVICE_KEY = "laoyou.device.v1";
+
+export function deviceId(): string {
+  try {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+      const buf = new Uint8Array(12);
+      crypto.getRandomValues(buf);
+      id = Array.from(buf, (b) => b.toString(16).padStart(2, "0")).join("");
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    return "no-storage";
+  }
+}
+
+/** 导出给「飞轮」吃的一整包。自动上传不带 samples（那是 Shift+E 导出的东西），省 90% 流量 */
+export function exportPayload(opts: { samples?: boolean } = {}): string {
   return JSON.stringify(
     {
-      version: 2,
+      version: 3,
+      device: deviceId(),
+      client: "laoyoufen-web",
       exportedAt: new Date().toISOString(),
       summary: summarize(),
       days: allDays(),
-      samples,
+      samples: opts.samples ? samples : undefined,
     },
     null,
     1,
@@ -316,10 +339,16 @@ export function downloadPlaytest(): string {
 // ---------------- 上传（飞轮的「采集」接到服务端） ----------------
 
 const API_BASE = ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_BASE ?? "").replace(/\/$/, "");
-const UPLOAD_MIN_MINUTES = 60; // 太短的会话不上传，免得脏数据灌进统计
-const UPLOAD_EVERY_MS = 90_000;
+/** 玩到 10 分钟就值得记一笔；更短的会话留在本地，不污染统计 */
+const UPLOAD_MIN_MINUTES = 10;
+/** 两次上传的最小间隔（防抖，不是防玩家） */
+const UPLOAD_EVERY_MS = 120_000;
+/** 又推进了这么多游戏分钟就再传一次，避免「玩了两小时只传了开头」 */
+const UPLOAD_STEP_MINUTES = 15;
 let lastUploadAt = 0;
+let lastUploadMinutes = 0;
 let lastUploadDays = -1;
+const PENDING_KEY = "laoyou.upload.pending";
 
 export function uploadEnabled(): boolean {
   return API_BASE.length > 0;
@@ -332,19 +361,54 @@ export interface UploadResult {
   error?: string;
 }
 
+function markPending(reason: string): void {
+  try {
+    localStorage.setItem(PENDING_KEY, reason);
+  } catch {
+    /* 存不了就算了，别影响玩 */
+  }
+}
+
+function clearPending(): void {
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 上次没传成功过？给 UI / 自检用 */
+export function uploadPending(): string | null {
+  try {
+    return localStorage.getItem(PENDING_KEY);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * 把当前这局的埋点包 POST 给服务端。失败一律不抛、不影响游戏。
- * `force` 用于玩家按 Shift+U 或关页时的最后一次尝试。
+ * 把当前这局的埋点包 POST 给服务端 —— 平时由 main.ts 每分钟调一次，节流在这里。
+ * 失败一律不抛、不影响游戏，只记一个待补传标记，下次联网/下次推进自动补。
+ * `force` 用于玩家按 Shift+U。
  */
 export async function uploadPlaytest(force = false): Promise<UploadResult> {
   if (!API_BASE) return { ok: false, skipped: "no_api_base" };
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    markPending("offline");
+    return { ok: false, skipped: "offline" };
+  }
   const sum = summarize();
   if (sum.minutes < UPLOAD_MIN_MINUTES) return { ok: false, skipped: "too_short" };
   const now = Date.now();
-  if (!force && now - lastUploadAt < UPLOAD_EVERY_MS && sum.days === lastUploadDays) {
+  // 时间闸无条件生效（force 除外）：16 倍速下「又推进了 15 分钟」每秒都成立，
+  // 若让 grew 绕过时间闸，一次十分钟的加速游戏能打出上百个包。
+  if (!force && lastUploadAt > 0 && now - lastUploadAt < UPLOAD_EVERY_MS) {
     return { ok: false, skipped: "throttled" };
   }
+  const grew = sum.minutes - lastUploadMinutes >= UPLOAD_STEP_MINUTES || sum.days !== lastUploadDays;
+  if (!force && !grew && lastUploadAt > 0) return { ok: false, skipped: "no_progress" };
   lastUploadAt = now;
+  lastUploadMinutes = sum.minutes;
   lastUploadDays = sum.days;
   try {
     const res = await fetch(`${API_BASE}/playtest`, {
@@ -353,11 +417,17 @@ export async function uploadPlaytest(force = false): Promise<UploadResult> {
       body: exportPayload(),
       keepalive: true,
     });
-    if (!res.ok) return { ok: false, error: `http_${res.status}` };
+    if (!res.ok) {
+      markPending(`http_${res.status}`);
+      return { ok: false, error: `http_${res.status}` };
+    }
     const data = (await res.json()) as { id?: string };
+    clearPending();
     return { ok: true, id: data.id };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "network" };
+    const msg = err instanceof Error ? err.message : "network";
+    markPending(msg);
+    return { ok: false, error: msg };
   }
 }
 

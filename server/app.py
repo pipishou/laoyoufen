@@ -72,6 +72,10 @@ class Cfg:
     def index_file(self) -> pathlib.Path:
         return self.playtest_dir / "index.jsonl"
 
+    @property
+    def report_dir(self) -> pathlib.Path:
+        return self.data / "reports"
+
 
 CFG = Cfg()
 _LOCK = threading.Lock()
@@ -130,6 +134,33 @@ def rate_ok(ip: str, limit_per_min: int = 60) -> bool:
         bucket.append(now)
         _RATE[ip] = bucket
     return True
+
+
+def _boring_streak(days: list) -> int:
+    """最长「碗数几乎不动」的连续天数（±5% 以内算没动）——就是玩家说的「在等」。
+
+    这条判据来自验收：替身 36 月实测第 3 个月起营收 33 个月持平 ±0.5%，
+    所以 ≥5 天不动就当作「中期没有决策点」（账本 P24）。
+    """
+    series = []
+    for d in days:
+        if isinstance(d, dict):
+            try:
+                series.append(float(d.get("bowls") or 0))
+            except (TypeError, ValueError):
+                series.append(0.0)
+    best = run = 0
+    base = None
+    for v in series:
+        if base is None:
+            base, run, best = v, 1, max(best, 1)
+            continue
+        if abs(v - base) <= max(1.0, base * 0.05):
+            run += 1
+            best = max(best, run)
+        else:
+            base, run = v, 1
+    return best
 
 
 def sanitize_line(text: str, max_len: int = 240) -> str | None:
@@ -213,6 +244,47 @@ def deepseek_narrative(event_id: str, month: int, day: int, tone: str) -> dict |
     return {"body": line, "reactions": [], "source": "remote"}
 
 
+def digest_markdown(report: dict, reasons: list[dict]) -> str:
+    """把 /report 的聚合结果写成人能读的一页日报（给定时任务用，也可 GET /digest 看）。"""
+    stamp = now_iso()
+    if not report.get("devices"):
+        return f"# 老友粉店 · 试玩日报 {stamp[:10]}\n\n还没有任何试玩记录上传。\n"
+    r4, r8 = 71.2, 113.4  # 4 座 / 8 座不操作局的产能基线（见 docs/验收-开罗标准对照）
+    lines = [
+        f"# 老友粉店 · 试玩日报 {stamp[:10]}",
+        "",
+        f"- 设备 **{report['devices']}** 台，记录 **{report['records']}** 条（同一设备多次上传按最新快照计）",
+        f"- 累计试玩 **{report['minutes']}** 游戏分钟（≈ {report['minutes'] * 6 / 60:.1f} 现实小时）",
+        f"- 日均碗数 **{report['bowls_per_day']}**（4 座基线 {r4} / 8 座 {r8}）",
+        f"- 流失率 **{report['lost_rate'] * 100:.1f}%** ｜ 均价 **¥{report['avg_price']}** ｜ 味道 **{report['avg_taste']}**",
+        "",
+        "| 设备 | 上传 | 最后时间 | 天数 | 分钟 | 日均碗 | 流失 | 均价 | 味道 | 持平段 | 主要流失原因 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for row in report["rows"][:20]:
+        flat = row["flat_streak"]
+        flag = f"**{flat}**" + ("（≥5 天＝无聊区）" if flat >= 5 else "")
+        lines.append(
+            f"| `{row['device'][:10]}` | {row['uploads']} | {str(row['last_ts'])[5:16]} | {row['days']} | "
+            f"{row['minutes']} | {row['bowls_per_day']} | {row['lost_rate'] * 100:.0f}% | ¥{row['avg_price']} | "
+            f"{row['avg_taste']} | {flag} | {row['top_reason'] or '—'} |"
+        )
+    if reasons:
+        lines += ["", "**流失原因合计**", ""]
+        for it in reasons[:6]:
+            lines.append(f"- {it['reason']}：{it['count']}")
+    boring = [r for r in report["rows"] if r["flat_streak"] >= 5]
+    lines += ["", "**本期结论**", ""]
+    if boring:
+        lines.append(
+            f"- {len(boring)}/{len(report['rows'])} 台设备出现 ≥5 天零变化 —— 账本 P24「中期没有决策点」在真人盘面上复现了。"
+        )
+    else:
+        lines.append("- 暂无 ≥5 天零变化的盘面；样本还不够，继续收。")
+    lines.append(f"- 生成时间 {stamp}（`python3 app.py --digest` 产出，systemd timer 每天 03:10 自动跑）")
+    return "\n".join(lines) + "\n"
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = f"laoyoufen/{VERSION}"
     protocol_version = "HTTP/1.1"
@@ -228,7 +300,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("content-length", str(len(body)))
         self.send_header("cache-control", "no-store")
         origin = self.headers.get("origin", "")
-        if CFG.allow_origin and origin.startswith(CFG.allow_origin):
+        if CFG.allow_origin and any(origin.startswith(o.strip()) for o in CFG.allow_origin.split(",") if o.strip()):
             self.send_header("access-control-allow-origin", origin)
             self.send_header("vary", "origin")
         self.end_headers()
@@ -291,6 +363,19 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, {"ok": True, "stats": self._stats()})
             return
+        if path.endswith("/report") or path == "/report":
+            if not self._admin():
+                self._send(401, {"ok": False, "error": "unauthorized"})
+                return
+            self._send(200, {"ok": True, "report": self._report()})
+            return
+        if path.endswith("/digest") or path == "/digest":
+            if not self._admin():
+                self._send(401, {"ok": False, "error": "unauthorized"})
+                return
+            md = digest_markdown(self._report(), self._daily_reasons())
+            self._send(200, md.encode("utf-8"), "text/markdown; charset=utf-8")
+            return
         self._send(404, {"ok": False, "error": "not_found"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -331,9 +416,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"ok": False, "error": "days_out_of_range"})
             return
         pid = f"{time.strftime('%Y%m%d-%H%M%S')}-{short_id()}"
+        device = "".join(ch for ch in str(payload.get("device") or "")[:40] if ch.isalnum() or ch in "-_") or "anon"
+        reasons = summary.get("lostReasons") or []
         rec = {
             "id": pid,
             "ts": now_iso(),
+            "device": device,
             "ip_hash": hashlib.sha256(ip.encode()).hexdigest()[:12],
             "days": len(days),
             "minutes": summary.get("minutes", 0),
@@ -343,6 +431,7 @@ class Handler(BaseHTTPRequestHandler):
             "avg_price": summary.get("avgPrice", 0),
             "avg_taste": summary.get("avgTaste", 0),
             "peak_waiting": summary.get("peakWaiting", 0),
+            "top_reason": (reasons[0].get("reason", "")[:60] if reasons and isinstance(reasons[0], dict) else ""),
             "payload": payload,
         }
         CFG.playtest_dir.mkdir(parents=True, exist_ok=True)
@@ -373,7 +462,83 @@ class Handler(BaseHTTPRequestHandler):
             jsonl_append(CFG.cache_file, {"key": key, "payload": out, "ts": now_iso()})
         self._send(200, out)
 
+    def _daily_reasons(self) -> list[dict]:
+        """把每份 payload 里 summary.lostReasons 加总，看这一批人到底为什么走。"""
+        agg: dict[str, int] = {}
+        for it in self._index():
+            payload = self._payload(it.get("id", ""))
+            summary = payload.get("summary") or {}
+            for r in summary.get("lostReasons") or []:
+                if isinstance(r, dict):
+                    key = str(r.get("reason") or "")[:60]
+                    if key:
+                        agg[key] = agg.get(key, 0) + int(r.get("count") or 0)
+        return [{"reason": k, "count": v} for k, v in sorted(agg.items(), key=lambda kv: -kv[1])]
+
     # ---------- 统计 ----------
+    def _report(self) -> dict:
+        """按设备聚合：每台机器只算「最新那一次快照」，避免同一局上传多次被重复计。"""
+        items = self._index()
+        if not items:
+            return {"devices": 0, "records": 0, "rows": []}
+        by_dev: dict[str, dict] = {}
+        for it in items:
+            dev = it.get("device") or "anon"
+            cur = by_dev.get(dev)
+            if cur is None:
+                by_dev[dev] = {**it, "uploads": 1, "first_ts": it.get("ts"), "last_ts": it.get("ts")}
+                continue
+            cur["uploads"] += 1
+            cur["last_ts"] = it.get("ts")
+            if it.get("minutes", 0) >= cur.get("minutes", 0):
+                keep = {k: cur[k] for k in ("uploads", "first_ts")}
+                by_dev[dev] = {**it, **keep, "last_ts": it.get("ts")}
+        rows = []
+        for dev, r in by_dev.items():
+            payload = self._payload(r.get("id", ""))
+            days = payload.get("days") or []
+            streaks = _boring_streak(days)
+            by_day = [d.get("bowls", 0) for d in days] or [0]
+            rows.append({
+                "device": dev,
+                "uploads": r.get("uploads", 1),
+                "first_ts": r.get("first_ts"),
+                "last_ts": r.get("last_ts"),
+                "days": r.get("days", 0),
+                "minutes": r.get("minutes", 0),
+                "bowls": r.get("bowls", 0),
+                "lost_rate": round(float(r.get("lost_rate") or 0), 4),
+                "avg_price": r.get("avg_price", 0),
+                "avg_taste": r.get("avg_taste", 0),
+                "peak_waiting": r.get("peak_waiting", 0),
+                "bowls_per_day": round(sum(by_day) / max(1, len(by_day)), 1),
+                "flat_streak": streaks,
+                "top_reason": r.get("top_reason", ""),
+            })
+        rows.sort(key=lambda x: -x["minutes"])
+        return {
+            "devices": len(rows),
+            "records": len(items),
+            "minutes": sum(r["minutes"] for r in rows),
+            "bowls": sum(r["bowls"] for r in rows),
+            "lost_rate": round(
+                sum(r["lost_rate"] * (r["bowls"] + 1) for r in rows) / max(1, sum(r["bowls"] + 1 for r in rows)), 4
+            ),
+            "avg_price": round(sum(r["avg_price"] for r in rows) / max(1, len(rows)), 2),
+            "avg_taste": round(sum(r["avg_taste"] for r in rows) / max(1, len(rows)), 1),
+            "bowls_per_day": round(sum(r["bowls_per_day"] for r in rows) / max(1, len(rows)), 1),
+            "rows": rows,
+        }
+
+    def _payload(self, pid: str) -> dict:
+        f = CFG.playtest_dir / f"{pid}.json"
+        if not f.exists():
+            return {}
+        try:
+            return json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+
     def _index(self) -> list[dict]:
         f = CFG.index_file
         if not f.exists():
@@ -429,6 +594,7 @@ def main() -> None:
     ap.add_argument("--events", default="")
     ap.add_argument("--env", default="")
     ap.add_argument("--offline", action="store_true", help="不调模型，全走本地模板（压测/降级用）")
+    ap.add_argument("--digest", action="store_true", help="只生成今天的试玩日报到 <data>/reports/，不起服务")
     args = ap.parse_args()
 
     if args.env:
@@ -442,6 +608,16 @@ def main() -> None:
     CFG.admin_token = os.environ.get("LAOYOU_ADMIN_TOKEN", "")
     CFG.allow_origin = os.environ.get("LAOYOU_ALLOW_ORIGIN", "")
     CFG.offline_only = args.offline
+
+    if args.digest:
+        h = Handler.__new__(Handler)  # 只用它的聚合方法，不建 socket
+        md = digest_markdown(h._report(), h._daily_reasons())
+        CFG.report_dir.mkdir(parents=True, exist_ok=True)
+        out = CFG.report_dir / f"{time.strftime('%Y-%m-%d')}.md"
+        out.write_text(md, encoding="utf-8")
+        print(md)
+        print(f"[digest] written {out}")
+        return
 
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"[laoyoufen] listening {args.host}:{args.port}  data={CFG.data}  events={len(CFG.events)}  ai={'on' if CFG.ai_key and not CFG.offline_only else 'off'}")
