@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>决策地图 · 下一批做什么（2026-11-14）</title>
+<style>
+  :root{
+    --paper:#fff8e6; --ink:#3b2b1d; --sub:#6b5640; --line:#3b2b1d;
+    --brand:#b8452c; --ok:#2f6b3f; --warn:#a8621b; --dim:#e8dcc0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px 64px;background:var(--paper);color:var(--ink);
+       font:15px/1.65 ui-sans-serif,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:.5px}
+  .q{color:var(--sub);margin:0 0 18px}
+  .q b{color:var(--ink)}
+  .card{background:#fffdf5;border:3px solid var(--line);box-shadow:6px 6px 0 rgba(59,43,29,.35);
+        padding:16px 18px;margin:0 0 20px}
+  .card h2{font-size:17px;margin:0 0 10px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+  .tab{border:3px solid var(--line);background:#fffdf5;padding:7px 14px;cursor:pointer;
+       font:inherit;font-weight:600;box-shadow:3px 3px 0 rgba(59,43,29,.35)}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+  .tab .badge{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:9px;
+              background:var(--brand);color:#fff;font-size:12px;vertical-align:1px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{border:2px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--dim);width:132px;white-space:nowrap}
+  .panel{display:none}
+  .panel.on{display:block}
+  .rec{border-left:8px solid var(--brand);padding:8px 0 8px 12px;margin:12px 0 0;color:var(--sub)}
+  .rec b{color:var(--ink)}
+  .kv{display:grid;grid-template-columns:132px 1fr;gap:0}
+  .kv div{border-bottom:1px dashed rgba(59,43,29,.35);padding:7px 0}
+  .kv div:nth-child(odd){color:var(--sub)}
+  .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12.5px;font-weight:700}
+  .pill.hi{background:#dfeede;color:var(--ok)}
+  .pill.mid{background:#f6e7cf;color:var(--warn)}
+  .pill.lo{background:#f3dcd6;color:var(--brand)}
+  footer{color:var(--sub);font-size:13px;margin-top:26px;border-top:2px solid var(--line);padding-top:10px}
+  @media (max-width:640px){ .kv{grid-template-columns:1fr} th{width:auto;white-space:normal} h1{font-size:21px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>下一批做什么 · 决策地图</h1>
+  <p class="q">根问题：<b>扩张非必需、手艺能活</b>已经落地（味道→来访率、味道→涨价权、成本错账已修），接下来一周（≈20 工作小时）投在哪儿，才能让这个游戏离「真玩家愿意玩第二局」最近？</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true"  data-p="a">A · 先让真人玩一局 <span class="badge">推荐</span></button>
+    <button class="tab" role="tab" aria-selected="false" data-p="b">B · 先补经济闭环</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="c">C · 先扩内容量</button>
+  </div>
+
+  <section class="panel on" id="p-a">
+    <div class="card">
+      <h2>A · 先让真人玩一局（3 天内做到「能交给陌生人玩 20 分钟」）</h2>
+      <table>
+        <tr><th>解决什么</th><td>把「模拟器自洽」变成「人能玩」。产出第一份真人卡点清单，并把后面所有优先级从猜测改成排序。</td></tr>
+        <tr><th>做什么</th><td>① 首局引导层（3 条提示：点粉→配料→售价）；② 首局目标卡（今天卖够 20 碗）；③ 埋点：每分钟记 <code>bowls/lost/revenue/price</code> 快照；④ 自己当替身完整玩 36 个月并记「第几个月开始重复」。</td></tr>
+        <tr><th>成本</th><td><span class="pill mid">4–6 小时</span>　引导 3h ＋ 埋点 1h ＋ 陪看与整理 2h</td></tr>
+        <tr><th>证据强度</th><td><span class="pill lo">目前为零</span>　全仓库没有一条人类游玩记录；<code>grep tutorial|引导|首次|onboarding</code> 在 <code>src/ui/**</code> 与 <code>main.ts</code> 只命中一条音频注释</td></tr>
+        <tr><th>可逆性</th><td><span class="pill hi">高</span>　只加引导与埋点，不动模拟层与数值，随时摘掉</td></tr>
+        <tr><th>失败模式</th><td>替身测试太宽容（我知道答案），于是「人玩得通」被高估 —— 必须至少 1 个非本人试玩，或严格按「不知道代码的人」的路径走</td></tr>
+      </table>
+      <p class="rec"><b>为什么排第一：</b>它不是玩法，但它是唯一能决定「P22 该改成什么样」的输入。B2 的所有参数（味道差该拉多大、段位费该多贵）现在都只有模拟器数字可依据，而模拟器是我写的。</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-b">
+    <div class="card">
+      <h2>B · 先补经济闭环（P22 味道区分度 ＋ P21 段位入口 ＋ 看价牌反馈）</h2>
+      <table>
+        <tr><th>解决什么</th><td>让「做得好 → 卖得贵 → 评得高」这条链完整且看得见。现在链条有终点（11 级段位）却没有入口。</td></tr>
+        <tr><th>做什么</th><td>① 味道影响翻台与口碑留存（不只影响来人与溢价）；② 段位面板接 <code>checkGrade/applyGrade</code>；③ 涨价时 HUD 明说「有 3 人看价牌走了」。</td></tr>
+        <tr><th>成本</th><td><span class="pill mid">8–10 小时</span>　味道通道 3h ＋ 段位面板 3h ＋ 反馈 1h ＋ 测试与四绿 2h</td></tr>
+        <tr><th>证据强度</th><td><span class="pill mid">中</span>　<code>probe:quality</code> 实测味道 19 与 71 的三年现金只差 <b>3.7 万</b>（≈每月 1,027 元）；4 座产能封顶 66.8 碗/日、流失 36–51%，多来的人只能堵门口</td></tr>
+        <tr><th>可逆性</th><td><span class="pill mid">中</span>　动满意度与翻台公式会改三套 probe 的基线，需重跑并归档新基线</td></tr>
+        <tr><th>失败模式</th><td>闭环做出来了但激励方向反了 —— 测试者看到「评定费 ¥50」第一反应是「不想评」，等于把段位变成惩罚</td></tr>
+      </table>
+      <p class="rec"><b>它是对的，但不是现在：</b>它回答「游戏好不好」，而 A 回答「游戏能不能被玩」。要先有能玩的人，才谈得上好不好。</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-c">
+    <div class="card">
+      <h2>C · 先扩内容量（事件 32→52 条、图鉴、比赛对手补全）</h2>
+      <table>
+        <tr><th>解决什么</th><td>假设「留不住人是因为内容少」，用数据量换重复游玩。</td></tr>
+        <tr><th>做什么</th><td>加 20 条事件（走 L0 六规则＋五判据管线）、图鉴插画、比赛对手扩到 34 省完整。</td></tr>
+        <tr><th>成本</th><td><span class="pill lo">12–16 小时</span>　且每条新事件需人审 15 分钟/天，长期运营成本上升</td></tr>
+        <tr><th>证据强度</th><td><span class="pill lo">反向</span>　32 条事件在 36 个月 × 每日 5% ＋ 每月固定 3 号事件下，一局能撞到 30 条以上 —— 对第一局并不薄</td></tr>
+        <tr><th>可逆性</th><td><span class="pill hi">高</span>　只加数据不改结构，但会持续增加审核负载</td></tr>
+        <tr><th>失败模式</th><td>典型的加法自救：内容翻倍但没人玩过第一局，翻倍的是没人看的东西</td></tr>
+      </table>
+      <p class="rec"><b>结论：</b>不成立作下一批，降级为 A 之后按测量结果再定。</p>
+    </div>
+  </section>
+
+  <div class="card">
+    <h2>三支横向对比</h2>
+    <table>
+      <tr><th>维度</th><td><b>A 真人验证</b></td><td><b>B 经济闭环</b></td><td><b>C 内容量</b></td></tr>
+      <tr><th>产出</th><td>卡点清单＋优先级排序</td><td>可感知的手艺反馈</td><td>更多事件与图鉴</td></tr>
+      <tr><th>成本</th><td>4–6 h</td><td>8–10 h</td><td>12–16 h</td></tr>
+      <tr><th>证据</th><td>零（无人玩过）</td><td>中（模拟器数字）</td><td>反向（内容不薄）</td></tr>
+      <tr><th>可逆</th><td>高</td><td>中</td><td>高</td></tr>
+      <tr><th>决定后续</th><td><b>是</b></td><td>否</td><td>否</td></tr>
+    </table>
+  </div>
+
+  <footer>
+    数据来源：<code>probe:quality</code> / <code>probe:win</code> / <code>probe:flow</code> 实测、<code>docs/开罗设计哲学-扩张是否必需-2026-11-14.md</code>、<code>.junshi/brainstorm/2026-11-14-下一批做什么/</code>（含 MECE 与未展开池）。
+  </footer>
+</div>
+<script>
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.setAttribute('aria-selected','false'); });
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+      t.setAttribute('aria-selected','true');
+      document.getElementById('p-' + t.dataset.p).classList.add('on');
+    });
+  });
+</script>
+</body>
+</html>
