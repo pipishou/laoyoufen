@@ -84,9 +84,9 @@ function isEventLogEntry(v: unknown): boolean {
 
 function isGameState(v: unknown): v is GameState {
   if (!isRecord(v)) return false;
-  // v6 = K1 目标换骨（tally / gradeLevel）。v5 老档允许读入，缺的字段在
-  // deserialize 里补默认值，不判废 —— 玩家练了三年的店不该因为一次改版清零。
-  if (v.saveVersion !== SAVE_VERSION && v.saveVersion !== 5) return false;
+  // v7 = 一天三态（prep / open / closing）＋日结单。v5/v6 老档允许读入，
+  // 缺的字段在 deserialize 里补默认值，不判废 —— 玩家练了三年的店不该因为一次改版清零。
+  if (v.saveVersion !== SAVE_VERSION && v.saveVersion !== 6 && v.saveVersion !== 5) return false;
   if (typeof v.playerId !== "string" || v.playerId.length === 0) return false;
   if (typeof v.connectCode !== "string" || v.connectCode.length !== 6) return false;
   if (!isRecord(v.rng) || !isFiniteNumber(v.rng.s)) return false;
@@ -227,6 +227,22 @@ export function deserialize(raw: string): GameState | null {
   if (typeof parsed.gradeLevel !== "number" || !Number.isFinite(parsed.gradeLevel)) {
     parsed.gradeLevel = 0;
   }
+  // v6 → v7（一天三态）：老档没有 phase/dayReport/days。
+  // 老档读进来时可能正卡在一天中间，这里统一回到「今日准备」，让玩家重新开门，
+  // 而不是把半天的数字塞进一张还没生成的日结单。
+  if (parsed.phase !== "prep" && parsed.phase !== "open" && parsed.phase !== "closing") {
+    parsed.phase = "prep";
+    parsed.flow.minuteOfDay = 0;
+    parsed.flow.customers = [];
+    parsed.flow.servedToday = 0;
+    parsed.flow.lostToday = 0;
+    parsed.flow.revenueToday = 0;
+    parsed.flow.serveCooldown = 0;
+  }
+  if (!Array.isArray(parsed.days)) parsed.days = [];
+  if (parsed.dayReport === undefined) parsed.dayReport = null;
+  if (typeof parsed.flow.satSumToday !== "number") parsed.flow.satSumToday = 0;
+  if (typeof parsed.flow.satCountToday !== "number") parsed.flow.satCountToday = 0;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

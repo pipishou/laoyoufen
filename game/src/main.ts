@@ -26,7 +26,7 @@ import {
 import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { fire, hire, toggleRest } from "./sim/staff";
-import { advanceMinute, createInitialState, type GameState } from "./sim/state";
+import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { mountHud } from "./ui/hud";
 import { mountPanels, type Panels, type PanelTab } from "./ui/panels";
 import { initViewport } from "./ui/viewport";
@@ -88,6 +88,25 @@ const hud = mountHud(hudRoot, {
     playSfx("ui");
   },
   getAudioMuted: () => isMuted(),
+  // 开门营业：一天三态里唯一能把时间放走的动作
+  onOpenShop: () => {
+    if (openShop(state)) {
+      guide.notify("open");
+      playSfx("ui");
+      hud.showToast("开门了，客人陆续进店", "like");
+    }
+    refresh();
+    tickFeedback();
+  },
+  // 日结单「明天继续」：清日结，回到次日准备
+  onNextDay: () => {
+    if (ackDayReport(state)) {
+      playSfx("ui");
+      hud.showToast("新的一天，先看看配方和价牌", "info");
+    }
+    refresh();
+    tickFeedback();
+  },
   onEventChoice: (index) => {
     const pending = state.events.pending;
     const def = pending ? EVENTS_BY_ID.get(pending.id) : undefined;
@@ -287,8 +306,9 @@ function onMinute(): void {
   // 事件弹窗期间停表：玩家读文案时不该有顾客流失，也不该偷偷推进营业
   const pending = state.events.pending;
   if (pending && EVENTS_BY_ID.has(pending.id)) return;
+  // 一天三态：只在「营业中」走时间。开门前、打烊后的日结单没确认时，时钟不动
+  if (!tickMinute(state)) return;
   const monthsBefore = state.months.length;
-  advanceMinute(state);
   recordSample(state, score.total);
   if (state.months.length > monthsBefore) flushTelemetry();
   // 飞轮自动运转：不再依赖玩家按 Shift+E / Shift+U。

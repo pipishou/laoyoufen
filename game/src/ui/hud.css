@@ -184,6 +184,55 @@ body {
   box-shadow: 3px 3px 0 var(--shadow);
 }
 
+/* 一天三态：prep 是唯一可点的状态（红底 = 有事要你做），营业中/打烊只做指示 */
+button.pill {
+  font-family: inherit;
+  cursor: pointer;
+  pointer-events: auto; /* #hud 整体穿透，顶栏没接事件时按钮会被画布吃掉 */
+}
+
+button.pill.prep {
+  background: var(--chili, #b8452c);
+  color: #fff8e6;
+  animation: pillbreathe 2.4s ease-in-out infinite;
+}
+
+button.pill.live {
+  background: var(--bamboo);
+  color: var(--paper);
+}
+
+button.pill.done {
+  background: #8a7a63;
+  color: var(--paper2);
+}
+
+button.pill[disabled] {
+  cursor: default;
+}
+
+@keyframes pillbreathe {
+  0%,
+  100% {
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
+  50% {
+    box-shadow: 3px 3px 0 var(--shadow), 0 0 0 3px #b8452c55;
+  }
+}
+
+/* 顶栏钟面：营业中走时，准备/打烊时变灰 */
+.clock {
+  margin-left: 8px;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--ink);
+}
+
+.clock.closed {
+  color: #8a7a63;
+}
+
 /* ---------- 音频开关 ---------- */
 .audio {
   font-family: inherit;
@@ -195,6 +244,7 @@ body {
   cursor: pointer;
   letter-spacing: 1px;
   box-shadow: 3px 3px 0 var(--shadow);
+  pointer-events: auto; /* 同上：不写这句顶栏按钮点不动（老 bug） */
 }
 
 .audio.off {
@@ -1242,4 +1292,102 @@ body {
   font-size:10px;
   color:#8a7a63;
   letter-spacing:.2px;
+}
+
+/* ---------- 日结单：打烊报数（对齐开罗「閉店→売上/客数」） ---------- */
+.dayreport {
+  z-index: 70;
+  background: rgba(36, 28, 20, 0.46);
+}
+
+.daybox {
+  width: 420px;
+  max-width: 92vw;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(36, 28, 20, 0.5);
+  padding: 0 0 12px;
+}
+
+.dayhd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px 8px;
+  margin: 0 4px 10px;
+  border-bottom: 2px dashed var(--shadow);
+}
+
+.dttl {
+  font-size: 16px;
+  letter-spacing: 3px;
+}
+
+.ddate {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #8a7a63;
+}
+
+.daygrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.dcell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 2px solid var(--shadow);
+  background: #fff8e6;
+}
+
+.dk {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #8a7a63;
+}
+
+.dv {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.daynote {
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #5d4c39;
+}
+
+.dayfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px 0;
+}
+
+.dcash {
+  font-size: 11px;
+  color: #8a7a63;
+}
+
+.daybtn {
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 2px;
+  padding: 8px 16px;
+  border: 3px solid var(--ink);
+  background: var(--mustard);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+.daybtn:hover {
+  background: var(--bamboo);
+  color: var(--paper);
 }

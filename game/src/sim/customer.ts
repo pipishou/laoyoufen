@@ -237,6 +237,8 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   state.flow.lastSatisfaction = Math.round(sat);
   state.monthSatSum += sat;
   state.monthSatCount += 1;
+  state.flow.satSumToday += sat;
+  state.flow.satCountToday += 1;
 
   state.reputation = clamp(state.reputation + (sat - 55) / 800, 0, 5);
   if (sat < 35) state.reputation = clamp(state.reputation - 0.05, 0, 5);

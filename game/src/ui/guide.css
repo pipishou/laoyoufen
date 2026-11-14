@@ -15,17 +15,24 @@
   pointer-events:auto;
 }
 .guide[hidden]{display:none}
+.guide .ghead{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:4px;
+}
 .guide .gtitle{
   font-size:16px;
   font-weight:800;
-  margin-bottom:4px;
   letter-spacing:.3px;
 }
 .guide .gbody{color:#5a4632}
 .guide .gfoot{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
+  gap:8px;
   margin-top:8px;
   padding-top:7px;
   border-top:1px dashed rgba(59,43,29,.35);
@@ -34,6 +41,7 @@
   font-size:12.5px;
   color:#8a6f52;
   letter-spacing:.5px;
+  flex:0 0 auto;
 }
 .guide .gbtn{
   appearance:none;
@@ -49,6 +57,49 @@
 }
 .guide .gbtn:hover{background:#e8dcc0}
 .guide .gbtn:active{transform:translate(1px,1px);box-shadow:none}
+.guide .gbtn.ghost{
+  background:transparent;
+  border-color:rgba(59,43,29,.45);
+  color:#7a6449;
+  box-shadow:none;
+  font-size:12px;
+  padding:4px 9px;
+}
+.guide .gbtn.ghost:hover{background:#efe5cd;color:#3b2b1d}
+.guide .gbtn.main{
+  background:#b8452c;
+  color:#fff8e6;
+  border-color:#3b2b1d;
+}
+
+/* 收起后的恢复入口：原来教程关掉就再也回不来了 */
+.guiderestore{
+  position:absolute;
+  right:12px;
+  bottom:132px;
+  z-index:41;
+  appearance:none;
+  border:2px solid #3b2b1d;
+  background:#fff8e6;
+  color:#3b2b1d;
+  font:12px/1 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  padding:7px 10px;
+  min-height:32px;
+  cursor:pointer;
+  box-shadow:2px 2px 0 rgba(59,43,29,.35);
+  pointer-events:auto; /* #hud 整体 pointer-events:none，漏了这句按钮会被画布吃掉点击 */
+}
+.guiderestore[hidden]{display:none}
+.guiderestore:hover{background:#f2ecdc}
+
+/* 当前这一步要点的按钮：呼吸式描边，不改变布局 */
+.guide-target{
+  animation:guidetarget 1.6s ease-in-out infinite;
+}
+@keyframes guidetarget{
+  0%,100%{box-shadow:0 0 0 0 rgba(184,69,44,.75)}
+  50%{box-shadow:0 0 0 4px rgba(184,69,44,.35)}
+}
 
 @media (max-width:520px){
   .guide{
@@ -58,4 +109,9 @@
     font-size:13px;
   }
   .guide .gtitle{font-size:14.5px}
+  .guiderestore{
+    right:8px;
+    bottom:auto;
+    top:154px;
+  }
 }

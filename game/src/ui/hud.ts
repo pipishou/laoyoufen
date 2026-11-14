@@ -3,6 +3,7 @@ import { ARCHETYPE_BY_ID } from "../data/customers";
 import { EVENTS_BY_ID } from "../data/events";
 import { TOPPINGS } from "../data/ingredients";
 import { LIKES_TOTAL } from "../sim/collection";
+import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
@@ -81,6 +82,10 @@ export interface HudOptions {
   onToggleAudio?: () => void;
   /** 当前是否静音 */
   getAudioMuted?: () => boolean;
+  /** 顶栏「开门营业」：把 phase 从 prep 推到 open */
+  onOpenShop?: () => void;
+  /** 日结单「明天继续」：清掉日结、进次日准备 */
+  onNextDay?: () => void;
 }
 
 export interface Hud {
@@ -122,7 +127,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   root.innerHTML = `
   <div id="topbar">
     <div class="logo">老友粉店</div>
-    <div class="date">第 <b data-year>1</b> 年 · <b data-month>1</b> 月 · <b data-day>1</b> 日</div>
+    <div class="date">第 <b data-year>1</b> 年 · <b data-month>1</b> 月 · <b data-day>1</b> 日<span class="clock" data-clock>06:00</span></div>
     <div class="stat"><span class="k">现金</span><span class="v" data-cash>¥0</span></div>
     <div class="stat"><span class="k">评价</span><span class="stars" data-stars>☆☆☆☆☆</span><span class="v" data-rep>0.0</span></div>
     <div class="stat"><span class="k">今日客流</span><span class="v" data-today>0</span><span class="k" data-cap>/40</span><span class="bar-mini"><i data-flowbar></i></span></div>
@@ -130,7 +135,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     <div class="stat"><span class="k">员工</span><span class="v" data-staffn>0</span></div>
     <div class="spacer"></div>
     <button type="button" class="audio" data-audio title="开罗风 BGM 与音效开关">音乐</button>
-    <div class="pill" data-openpill>● 营业中</div>
+    <button type="button" class="pill prep" data-openpill title="营业时间 06:00–14:00，开门后才开始走时间">● 开门营业</button>
   </div>
 
   <div id="left" class="panel card">
@@ -220,6 +225,43 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     </div>`;
   root.appendChild(evtWrap);
 
+  /**
+   * 日结单：打烊那一刻的数字，点「明天继续」才进次日。
+   * 开罗的「打烊报数」就是这个位置——不看一眼今天卖了多少，
+   * 玩家就没法把「味道/价格/座位」的改动和结果对上号。
+   */
+  const dayWrap = document.createElement("div");
+  dayWrap.className = "modal dayreport";
+  dayWrap.hidden = true;
+  dayWrap.innerHTML = `
+    <div class="daybox card">
+      <div class="dayhd"><span class="dttl">今天打烊了</span><span class="ddate" data-day-date></span></div>
+      <div class="daygrid">
+        <div class="dcell"><span class="dk">营业额</span><span class="dv" data-day-rev>¥0</span></div>
+        <div class="dcell"><span class="dk">卖出去</span><span class="dv" data-day-served>0 碗</span></div>
+        <div class="dcell"><span class="dk">走了</span><span class="dv" data-day-lost>0 位</span></div>
+        <div class="dcell"><span class="dk">平均满意</span><span class="dv" data-day-sat>--</span></div>
+      </div>
+      <div class="daynote" data-day-note></div>
+      <div class="dayfoot">
+        <span class="dcash">现金 <b data-day-cash>¥0</b></span>
+        <button type="button" class="daybtn" data-day-next>明天继续 ›</button>
+      </div>
+    </div>`;
+  root.appendChild(dayWrap);
+
+  const dayRev = dayWrap.querySelector("[data-day-rev]") as HTMLElement;
+  const dayServed = dayWrap.querySelector("[data-day-served]") as HTMLElement;
+  const dayLost = dayWrap.querySelector("[data-day-lost]") as HTMLElement;
+  const daySat = dayWrap.querySelector("[data-day-sat]") as HTMLElement;
+  const dayDate = dayWrap.querySelector("[data-day-date]") as HTMLElement;
+  const dayCash = dayWrap.querySelector("[data-day-cash]") as HTMLElement;
+  const dayNote = dayWrap.querySelector("[data-day-note]") as HTMLElement;
+
+  dayWrap.addEventListener("click", (e) => {
+    if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
+  });
+
   const evtTitle = evtWrap.querySelector("[data-evt-title]") as HTMLElement;
   const evtBody = evtWrap.querySelector("[data-evt-body]") as HTMLElement;
   const evtSrc = evtWrap.querySelector("[data-evt-src]") as HTMLElement;
@@ -283,6 +325,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     cookbar: q("[data-cookbar]"),
     cooknow: q("[data-cooknow]"),
     audio: q<HTMLButtonElement>("[data-audio]"),
+    clock: q("[data-clock]"),
+    openpill: q<HTMLButtonElement>("[data-openpill]"),
   };
 
   let lastToday = -1;
@@ -319,10 +363,57 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.audio.classList.toggle("off", muted);
   });
 
+  el.openpill.addEventListener("click", () => {
+    opts.onOpenShop?.();
+  });
+
   const render = (s: GameState, score: RecipeScore): void => {
-    el.year.textContent = String(Math.floor(s.month / 12) + 1);
-    el.month.textContent = String((s.month % 12) + 1);
-    el.day.textContent = String(s.day);
+    // 打烊后 endDay 已经换过日，顶栏要显示「刚过完的那天」，
+    // 否则会出现顶栏 1 月 2 日、日结单写 1 月 1 日的自相矛盾
+    const shown = s.dayReport ?? null;
+    const month = shown ? shown.month : s.month;
+    const day = shown ? shown.day : s.day;
+    el.year.textContent = String(Math.floor(month / 12) + 1);
+    el.month.textContent = String((month % 12) + 1);
+    el.day.textContent = String(day);
+
+    // 一天三态：钟面、开门按钮、日结单（对齐开罗「打烊报数」）
+    const phase = s.phase;
+    // 打烊后 endDay 已把 minuteOfDay 归零，钟面得停在关门的时刻
+    el.clock.textContent =
+      phase === "prep" ? SHOP_OPEN_LABEL : phase === "closing" ? SHOP_CLOSE_LABEL : clockOf(s.flow.minuteOfDay);
+    el.clock.classList.toggle("closed", phase !== "open");
+    if (phase === "prep") {
+      el.openpill.textContent = "● 开门营业";
+      el.openpill.className = "pill prep";
+      el.openpill.disabled = false;
+    } else if (phase === "open") {
+      el.openpill.textContent = `● 营业中 · 还剩 ${minutesLeft(s.flow.minuteOfDay)} 分`;
+      el.openpill.className = "pill live";
+      el.openpill.disabled = true;
+    } else {
+      el.openpill.textContent = "○ 已打烊";
+      el.openpill.className = "pill done";
+      el.openpill.disabled = true;
+    }
+
+    const rep = s.dayReport;
+    dayWrap.hidden = !rep;
+    if (rep) {
+      dayDate.textContent = `第 ${Math.floor(rep.month / 12) + 1} 年 · ${(rep.month % 12) + 1} 月 · ${rep.day} 日`;
+      dayRev.textContent = formatMoney(rep.revenue);
+      dayServed.textContent = `${rep.served} 碗`;
+      dayLost.textContent = `${rep.lost} 位`;
+      daySat.textContent = rep.avgSat < 0 ? "--" : String(rep.avgSat);
+      dayCash.textContent = formatMoney(rep.cash);
+      const visited = rep.served + rep.lost;
+      dayNote.textContent =
+        rep.served === 0
+          ? "一碗都没卖出去：先回去把味道调上去、把价降到街坊掏得出的数，再开门。"
+          : visited > 0 && rep.lost / visited > 0.3
+            ? `走了 ${rep.lost} 位：多半是嫌贵或者等太久——价牌和产能看一眼。`
+            : `今天站住了：一碗毛利约 ¥${score.margin.toFixed(1)}，明天试试多卖几碗。`;
+    }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);
     el.rep.textContent = s.reputation.toFixed(1);

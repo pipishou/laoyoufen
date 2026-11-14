@@ -10,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -95,6 +95,9 @@ export interface CustomerFlow {
   lastGift: string | null;
   /** 最近一次「为什么跑了」的提示（目前只有看价牌走人），HUD 读完即消费 */
   lastLostReason: string | null;
+  /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
+  satSumToday: number;
+  satCountToday: number;
 }
 
 export type StaffRole = "cook" | "prep" | "server";
@@ -212,6 +215,31 @@ export interface EventRuntime {
   count: number;
 }
 
+/**
+ * 一天的三态，对齐开罗「时间只在顶层营业窗口推进」：
+ * - `prep`：开店前 / 打烊后。时间不走，玩家可以调配方、定价、雇人、看报表。
+ * - `open`：营业中。每「分钟」推进一次，顾客进店、等位、吃粉、结算。
+ * - `closing`：今天已经打烊，日结单等玩家确认（`dayReport` 非空）。
+ *
+ * 这样做的原因：原来一进游戏就在营业，玩家还没有任何决策，第一分钟就开始
+ * 流失顾客，等于把「准备」这一步从流程里删掉了。
+ */
+export type Phase = "prep" | "open" | "closing";
+
+/** 一天的日结单。打烊时生成，玩家点「明天继续」后清空。 */
+export interface DayRecord {
+  month: number;
+  day: number;
+  revenue: number;
+  served: number;
+  lost: number;
+  /** 今日平均满意度，0 位顾客时为 -1 */
+  avgSat: number;
+  price: number;
+  taste: number;
+  cash: number;
+}
+
 export interface Tally {
   /** 累计出碗数 */
   bowls: number;
@@ -283,6 +311,12 @@ export interface GameState {
   pendingReport: YearRecord | null;
   /** 36 个月跑完 */
   finished: boolean;
+  /** 一天的三态，见 Phase */
+  phase: Phase;
+  /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
+  dayReport: DayRecord | null;
+  /** 最近若干天的日结单，账本面板用；只留 120 天 */
+  days: DayRecord[];
 }
 
 /**
@@ -386,6 +420,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastLikeFound: null,
       lastGift: null,
       lastLostReason: null,
+      satSumToday: 0,
+      satCountToday: 0,
     },
     staff: {
       roster: [],
@@ -422,6 +458,9 @@ export function createInitialState(playerId: string, seed: number): GameState {
     },
     pendingReport: null,
     finished: false,
+    phase: "prep",
+    dayReport: null,
+    days: [],
   };
   refreshCandidates(state);
   return state;
@@ -443,6 +482,8 @@ function endDay(state: GameState): void {
   state.flow.servedToday = 0;
   state.flow.lostToday = 0;
   state.flow.revenueToday = 0;
+  state.flow.satSumToday = 0;
+  state.flow.satCountToday = 0;
 
   if (state.day > DAYS_PER_MONTH) {
     closeMonth(state);
@@ -462,6 +503,9 @@ function endDay(state: GameState): void {
  *
  * 事件弹窗未处理时整条时间线停住——对齐开罗：GameForm.Update 只在
  * AppData.IsTopForm(this) 为真时调 _update→ProgressTime，子窗体压栈即刻停表。
+ *
+ * 打烊时先写 `dayReport`（日结单）再交给 `endDay` 换日，phase 留在 `closing`：
+ * 时间不会自己接着走，等玩家点「明天继续」才回 `prep`。玩家侧入口是 `tickMinute()`。
  */
 export function advanceMinute(state: GameState): void {
   if (state.finished) return;
@@ -470,5 +514,63 @@ export function advanceMinute(state: GameState): void {
   tickCustomers(state, score);
   tickEvents(state);
   state.flow.minuteOfDay += 1;
-  if (state.flow.minuteOfDay >= DAY_MINUTES) endDay(state);
+  if (state.flow.minuteOfDay >= DAY_MINUTES) {
+    // recordDay 会把 phase 置为 "closing" 并留下 dayReport；
+    // 这里不能再写 prep，否则日结单永远等不到玩家确认（原本的 bug）
+    recordDay(state, score.total);
+    endDay(state);
+  }
+}
+
+/** 打烊：把今天的数字钉成一张日结单（必须在 endDay 清账之前调） */
+function recordDay(state: GameState, taste: number): void {
+  const f = state.flow;
+  const rec: DayRecord = {
+    month: state.month,
+    day: state.day,
+    revenue: Math.round(f.revenueToday),
+    served: f.servedToday,
+    lost: f.lostToday,
+    avgSat: f.satCountToday > 0 ? Math.round(f.satSumToday / f.satCountToday) : -1,
+    price: state.price,
+    taste: Math.round(taste),
+    cash: Math.round(state.cash),
+  };
+  state.dayReport = rec;
+  state.days.push(rec);
+  if (state.days.length > 120) state.days.shift();
+  state.phase = "closing";
+}
+
+/**
+ * 开门营业：只有 `prep` 能开。返回是否真的开了，
+ * 这样 UI 可以据此决定要不要播音效/推进引导。
+ */
+export function openShop(state: GameState): boolean {
+  if (state.finished) return false;
+  if (state.phase !== "prep") return false;
+  if (state.dayReport) return false;
+  state.phase = "open";
+  return true;
+}
+
+/** 玩家在日结单上点「明天继续」：清掉日结单，回到次日的准备阶段 */
+export function ackDayReport(state: GameState): boolean {
+  if (!state.dayReport) return false;
+  state.dayReport = null;
+  state.phase = "prep";
+  return true;
+}
+
+/**
+ * 玩家侧的时间入口：只有营业中、没有等处理的事件与日结单时才走一分钟。
+ * 返回是否真的推进了，方便上层决定要不要刷 UI。
+ */
+export function tickMinute(state: GameState): boolean {
+  if (state.finished) return false;
+  if (state.dayReport) return false;
+  if (state.events.pending) return false;
+  if (state.phase !== "open") return false;
+  advanceMinute(state);
+  return true;
 }
