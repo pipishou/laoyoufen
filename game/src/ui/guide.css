@@ -1,0 +1,61 @@
+/* 首局引导气泡：暖纸底 + 3px 描边，贴近开罗的纸片质感，不抢戏 */
+.guide{
+  position:absolute;
+  left:50%;
+  bottom:308px;
+  z-index:40;
+  width:min(460px,74%);
+  transform:translateX(-50%);
+  background:#fff8e6;
+  border:3px solid #3b2b1d;
+  box-shadow:5px 5px 0 rgba(59,43,29,.4);
+  padding:12px 14px 10px;
+  font:14px/1.6 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  color:#3b2b1d;
+  pointer-events:auto;
+}
+.guide[hidden]{display:none}
+.guide .gtitle{
+  font-size:16px;
+  font-weight:800;
+  margin-bottom:4px;
+  letter-spacing:.3px;
+}
+.guide .gbody{color:#5a4632}
+.guide .gfoot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:8px;
+  padding-top:7px;
+  border-top:1px dashed rgba(59,43,29,.35);
+}
+.guide .gstep{
+  font-size:12.5px;
+  color:#8a6f52;
+  letter-spacing:.5px;
+}
+.guide .gbtn{
+  appearance:none;
+  border:2px solid #3b2b1d;
+  background:#f2ecdc;
+  color:#3b2b1d;
+  font:inherit;
+  font-size:13px;
+  padding:5px 12px;
+  min-height:34px;
+  cursor:pointer;
+  box-shadow:2px 2px 0 rgba(59,43,29,.35);
+}
+.guide .gbtn:hover{background:#e8dcc0}
+.guide .gbtn:active{transform:translate(1px,1px);box-shadow:none}
+
+@media (max-width:520px){
+  .guide{
+    width:min(320px,86%);
+    bottom:auto;
+    top:96px;
+    font-size:13px;
+  }
+  .guide .gtitle{font-size:14.5px}
+}

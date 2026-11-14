@@ -3,7 +3,7 @@ import { ARCHETYPE_BY_ID } from "../data/customers";
 import { EVENTS_BY_ID } from "../data/events";
 import { TOPPINGS } from "../data/ingredients";
 import { LIKES_TOTAL } from "../sim/collection";
-import { SERVE_MINUTES } from "../sim/customer";
+import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
 import { nextThree } from "../sim/achievements";
@@ -169,6 +169,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <span class="track"><i data-satbar></i></span>
       <span class="pct" data-sat>--</span>
     </div>
+    <div class="caprow" data-caprow title="产能 = 座位数 × 每碗出餐时间；扩充座位或换灶才提得上去">座位 4 · 出餐 6 分/碗</div>
   </div>
 
   <div id="float" class="card">
@@ -271,6 +272,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     queuebar: q("[data-queuebar]"),
     sat: q("[data-sat]"),
     satbar: q("[data-satbar]"),
+    caprow: q("[data-caprow]"),
     econ: q("[data-econ]"),
     code: q("[data-code]"),
     total: q("[data-total]"),
@@ -367,16 +369,28 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.sat.textContent = sat < 0 ? "--" : String(sat);
     el.satbar.style.width = sat < 0 ? "0%" : `${sat}%`;
     el.satbar.className = sat < 40 ? "hot" : sat < 60 ? "warm" : "";
+    el.caprow.textContent = `座位 ${s.venue.seats} · 出餐 ${SERVE_MINUTES} 分/碗 · 日上限 ${s.capacity} 碗`;
 
     const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}`).join("|");
     if (custKey !== lastCustKey) {
       lastCustKey = custKey;
+      // 顾客行带「钱包」：定价是否偏高必须让玩家看得见，否则涨价像白捡钱
+      const tol = priceTolerance(score.total);
       const rows = [...eatingList, ...waitingList].slice(0, 6).map((c) => {
         const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
         const name = arch?.name ?? "顾客";
         const tag = c.status === "eating" ? "吃" : "等";
         const note = arch?.note ?? "";
-        return `<div class="cust"><span class="tag ${c.status}${c.regular ? " reg" : ""}">${c.regular ? "常" : tag}</span><span class="cn">${name}</span><span class="cd">${note}</span></div>`;
+        const wallet = arch ? Math.round(arch.budget * tol) : 0;
+        const short = arch ? wallet < s.price : false;
+        return (
+          `<div class="cust${short ? " short" : ""}">` +
+          `<span class="tag ${c.status}${c.regular ? " reg" : ""}">${c.regular ? "常" : tag}</span>` +
+          `<span class="cn">${name}</span>` +
+          `<span class="cw" title="这一位愿意出到多少钱（含味道带来的溢价）">¥${wallet}</span>` +
+          `<span class="cd">${short ? "嫌贵" : note}</span>` +
+          `</div>`
+        );
       });
       el.custlist.innerHTML =
         rows.length > 0

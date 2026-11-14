@@ -8,6 +8,8 @@ import { createGameConfig } from "./render/world";
 import { enterContest } from "./sim/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
+import { guideState, mountGuide, type Guide } from "./ui/guide";
+import { flushTelemetry, getSamples, loadTelemetry, recordSample, summarize } from "./sim/telemetry";
 import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { fire, hire, toggleRest } from "./sim/staff";
@@ -45,10 +47,20 @@ let score = scoreRecipe(state.recipe, state.price);
 let speed = 4;
 let panels!: Panels;
 
+// 埋点：先读回历史采样（跨刷新保留），再开始记这一局
+loadTelemetry();
+
+/**
+ * 引导必须挂在 mountHud 之后：mountHud 会重写 #hud 的 innerHTML，
+ * 先挂会被整块抹掉（第一版就是这么消失的）。
+ */
+let guide: Guide;
+
 const hud = mountHud(hudRoot, {
   onToggleTopping,
   onOpenTab: (tab) => {
     playSfx("ui");
+    if (tab === "recipe") guide.notify("recipe");
     panels.open(tab as PanelTab);
   },
   onSpeed: (v) => {
@@ -75,6 +87,10 @@ const hud = mountHud(hudRoot, {
   },
 });
 
+guide = mountGuide(hudRoot, () => {
+  hud.showToast("引导完成，接下来看你自己", "info");
+});
+
 panels = mountPanels(hudRoot, {
   setParam(group, index, value) {
     state.recipe[group][index] = value;
@@ -82,6 +98,7 @@ panels = mountPanels(hudRoot, {
   },
   setPrice(value) {
     state.price = Math.max(1, Math.min(99, Math.round(value)));
+    guide.notify("price");
     refresh();
   },
   hire(uid) {
@@ -123,6 +140,7 @@ function onToggleTopping(id: string): void {
   if (i >= 0) list.splice(i, 1);
   else list.push(id);
   playSfx("ui");
+  guide.notify("topping");
   refresh();
 }
 
@@ -152,6 +170,7 @@ let prevCooldown = state.flow.serveCooldown;
 let prevMonths = state.months.length;
 let prevContest = state.contest.results.length;
 let prevEventKey: string | null = null;
+let prevLostReason: string | null = null;
 
 /**
  * 音效与事件叙述都由「状态差值」驱动，不往模拟层塞回调：
@@ -203,6 +222,13 @@ function tickFeedback(): void {
     hud.showToast(s.flow.lastGift, "like");
     s.flow.lastGift = null;
   }
+
+  // 「看价牌走了」必须被玩家看见——否则涨价像白捡钱，是体验谎言
+  const reason = s.flow.lastLostReason;
+  if (reason && reason !== prevLostReason) {
+    prevLostReason = reason;
+    hud.showToast(reason, "info");
+  }
 }
 
 /**
@@ -231,6 +257,7 @@ function refresh(): void {
   score = scoreRecipe(state.recipe, state.price);
   hud.render(state, score);
   panels.render(state, score);
+  guide.render(state);
   scheduleSave();
 }
 
@@ -247,10 +274,33 @@ function onMinute(): void {
   // 事件弹窗期间停表：玩家读文案时不该有顾客流失，也不该偷偷推进营业
   const pending = state.events.pending;
   if (pending && EVENTS_BY_ID.has(pending.id)) return;
+  const monthsBefore = state.months.length;
   advanceMinute(state);
+  recordSample(state, score.total);
+  if (state.months.length > monthsBefore) flushTelemetry();
   refresh();
   tickFeedback();
 }
 
 refresh();
+recordSample(state, score.total);
+
+// 验收/复盘用的只读出口：不参与游戏逻辑，纯观测
+declare global {
+  interface Window {
+    __laoyou?: {
+      state: GameState;
+      samples: typeof getSamples;
+      summary: typeof summarize;
+      guide: typeof guideState;
+    };
+  }
+}
+window.__laoyou = {
+  state,
+  samples: getSamples,
+  summary: () => summarize(getSamples()),
+  guide: guideState,
+};
+
 new Phaser.Game(createGameConfig(onMinute, () => speed, () => state));

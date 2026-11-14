@@ -484,6 +484,28 @@ body {
   font-size: 11px;
 }
 
+/* 钱包：定价决策的唯一依据，必须常显 */
+.cust .cw {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b5238;
+  background: #f2e7cd;
+  border: 1px solid rgba(59, 43, 29, 0.35);
+  padding: 0 4px;
+}
+
+.cust.short .cw {
+  color: #fff;
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+.cust.short .cd {
+  color: var(--orange);
+  font-weight: 700;
+}
+
 .cust .cd {
   flex: 1;
   overflow: hidden;
@@ -1211,3 +1233,13 @@ body {
   }
 }
 
+
+/* 产能行：告诉玩家日上限从哪来 */
+.caprow{
+  margin-top:2px;
+  padding-top:5px;
+  border-top:1px dashed rgba(59,43,29,.3);
+  font-size:10px;
+  color:#8a7a63;
+  letter-spacing:.2px;
+}
