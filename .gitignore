@@ -1,34 +1,35 @@
-# 依赖与构建产物
+# 依赖与产物
 node_modules/
 dist/
 .vite/
 coverage/
 *.tsbuildinfo
 
-# 临时
+# 临时目录（.tmp_* 同时匹配文件与目录；不要只写 .tmp_*/，否则 .tmp_xxx.txt 会被提交）
 .tmp/
+.tmp_*
 .tmp_*/
 scratch/
 *.log
 
-# 环境与密钥（.env 一律不入库）
+# 环境变量：真值不入库，模板与线上 API 前缀可以留
 .env
 .env.*
 !.env.example
+!game/.env.production
 
-# 编辑器/系统
+# 系统垃圾
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# 审核池运行产物（日志本身要入库，见 tools/reviewer/README；此处只忽略临时导出）
+# 审核管线临时产物（留档的是 review_log.jsonl）
 game/data/review/*.tmp
 
 # Python 缓存
 __pycache__/
 *.pyc
 
-# 部署私钥不进库
+# 部署私钥与本地服务端沙盒
 deploy/ecs_ed25519
-!game/.env.production
 .tmp_srv*
