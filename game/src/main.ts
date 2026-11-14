@@ -10,6 +10,7 @@ import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
 import { guideState, mountGuide, type Guide } from "./ui/guide";
 import {
+  beaconPlaytest,
   downloadPlaytest,
   flushTelemetry,
   getDays,
@@ -17,6 +18,8 @@ import {
   loadTelemetry,
   recordSample,
   summarize,
+  uploadEnabled,
+  uploadPlaytest,
 } from "./sim/telemetry";
 import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
@@ -283,9 +286,12 @@ function onMinute(): void {
   const pending = state.events.pending;
   if (pending && EVENTS_BY_ID.has(pending.id)) return;
   const monthsBefore = state.months.length;
+  const dayBefore = state.day;
   advanceMinute(state);
   recordSample(state, score.total);
   if (state.months.length > monthsBefore) flushTelemetry();
+  // 每跨一天给服务端递一次（内部有 90 秒节流，不会把带宽打死）
+  if (state.day !== dayBefore) void uploadPlaytest();
   refresh();
   tickFeedback();
 }
@@ -294,16 +300,28 @@ refresh();
 recordSample(state, score.total);
 
 // 埋点兜底落盘：关页/切后台/每分钟都可能来不及走月结
+window.addEventListener("pagehide", () => {
+  flushTelemetry();
+  beaconPlaytest();
+});
 window.addEventListener("beforeunload", flushTelemetry);
-window.addEventListener("pagehide", flushTelemetry);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") flushTelemetry();
+  if (document.visibilityState === "hidden") {
+    flushTelemetry();
+    void uploadPlaytest();
+  }
 });
 // 试玩记录一键导出：Shift+E 下载 playtest-YYYYMMDD.json（放到 game/data/playtest/ 我就能读）
+// 在线模式还会自动上传；Shift+U 手动催一次上传
 window.addEventListener("keydown", (e) => {
   if (e.shiftKey && (e.key === "E" || e.key === "e")) {
     const name = downloadPlaytest();
     hud.showToast(`试玩记录已导出：${name}`, "like");
+  }
+  if (e.shiftKey && (e.key === "U" || e.key === "u")) {
+    void uploadPlaytest(true).then((r) => {
+      hud.showToast(r.ok ? `试玩记录已上传（${r.id ?? "ok"}）` : `未上传：${r.skipped ?? r.error ?? "?"}`, r.ok ? "like" : "info");
+    });
   }
 });
 
@@ -317,6 +335,8 @@ declare global {
       summary: typeof summarize;
       guide: typeof guideState;
       export: typeof downloadPlaytest;
+      upload: typeof uploadPlaytest;
+      online: typeof uploadEnabled;
       flush: typeof flushTelemetry;
     };
   }
@@ -328,8 +348,11 @@ window.__laoyou = {
   summary: summarize,
   guide: guideState,
   export: downloadPlaytest,
+  upload: uploadPlaytest,
+  online: uploadEnabled,
   flush: flushTelemetry,
 };
 
 new Phaser.Game(createGameConfig(onMinute, () => speed, () => state));
+
 

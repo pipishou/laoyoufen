@@ -1,0 +1,21 @@
+[Unit]
+Description=laoyoufen api (playtest ingest + AI narrative proxy)
+After=network.target
+
+[Service]
+Type=simple
+User=laoyoufen
+Group=laoyoufen
+EnvironmentFile=/etc/laoyoufen/api.env
+ExecStart=/usr/local/bin/python3 /opt/laoyoufen/app.py --host 127.0.0.1 --port 8767 --data /var/lib/laoyoufen --events /opt/laoyoufen/events.json --env /etc/laoyoufen/api.env
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/laoyoufen
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

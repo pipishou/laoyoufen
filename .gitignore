@@ -27,3 +27,8 @@ game/data/review/*.tmp
 # Python 缓存
 __pycache__/
 *.pyc
+
+# 部署私钥不进库
+deploy/ecs_ed25519
+!game/.env.production
+.tmp_srv*

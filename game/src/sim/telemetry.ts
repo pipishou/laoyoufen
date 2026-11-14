@@ -313,3 +313,63 @@ export function downloadPlaytest(): string {
   return name;
 }
 
+// ---------------- 上传（飞轮的「采集」接到服务端） ----------------
+
+const API_BASE = ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_API_BASE ?? "").replace(/\/$/, "");
+const UPLOAD_MIN_MINUTES = 60; // 太短的会话不上传，免得脏数据灌进统计
+const UPLOAD_EVERY_MS = 90_000;
+let lastUploadAt = 0;
+let lastUploadDays = -1;
+
+export function uploadEnabled(): boolean {
+  return API_BASE.length > 0;
+}
+
+export interface UploadResult {
+  ok: boolean;
+  id?: string;
+  skipped?: string;
+  error?: string;
+}
+
+/**
+ * 把当前这局的埋点包 POST 给服务端。失败一律不抛、不影响游戏。
+ * `force` 用于玩家按 Shift+U 或关页时的最后一次尝试。
+ */
+export async function uploadPlaytest(force = false): Promise<UploadResult> {
+  if (!API_BASE) return { ok: false, skipped: "no_api_base" };
+  const sum = summarize();
+  if (sum.minutes < UPLOAD_MIN_MINUTES) return { ok: false, skipped: "too_short" };
+  const now = Date.now();
+  if (!force && now - lastUploadAt < UPLOAD_EVERY_MS && sum.days === lastUploadDays) {
+    return { ok: false, skipped: "throttled" };
+  }
+  lastUploadAt = now;
+  lastUploadDays = sum.days;
+  try {
+    const res = await fetch(`${API_BASE}/playtest`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: exportPayload(),
+      keepalive: true,
+    });
+    if (!res.ok) return { ok: false, error: `http_${res.status}` };
+    const data = (await res.json()) as { id?: string };
+    return { ok: true, id: data.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "network" };
+  }
+}
+
+/** 关页时用 sendBeacon：比 fetch 更可能在卸载阶段送出去 */
+export function beaconPlaytest(): boolean {
+  if (!API_BASE || typeof navigator === "undefined" || !navigator.sendBeacon) return false;
+  if (summarize().minutes < UPLOAD_MIN_MINUTES) return false;
+  try {
+    const blob = new Blob([exportPayload()], { type: "application/json" });
+    return navigator.sendBeacon(`${API_BASE}/playtest`, blob);
+  } catch {
+    return false;
+  }
+}
+
