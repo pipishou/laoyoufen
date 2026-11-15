@@ -8,7 +8,6 @@
  * `pointer-events:auto`（`#hud` 整体是 none，见 hud.css）。
  */
 
-import { monthTargetFor } from "../data/balance";
 import { CAPITAL } from "../data/anchors";
 import { nameCandidates, validShopName } from "../data/shop-names";
 import { SITES, type SiteDef } from "../data/sites";
@@ -29,10 +28,9 @@ function yuan(n: number): string {
   return `¥${n.toLocaleString("zh-CN")}`;
 }
 
-/** 该铺位第一年的月租（只用于展示，实际扣费走 ledger + rentFactorOf） */
+/** 该铺位的月租（固定值，随年份 3% 续约涨幅；这里只展示第一年的数） */
 function rentOf(site: SiteDef): number {
-  const base = Math.round(monthTargetFor(1) * 0.22);
-  return Math.round(base * site.rentFactor);
+  return site.rentMonthly;
 }
 
 export function mountSetup(root: HTMLElement, opts: SetupOptions): SetupScreen {

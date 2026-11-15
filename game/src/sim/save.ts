@@ -84,10 +84,11 @@ function isEventLogEntry(v: unknown): boolean {
 
 function isGameState(v: unknown): v is GameState {
   if (!isRecord(v)) return false;
-  // v5..v8 老档允许读入（缺的字段在 deserialize 里补默认值），不判废
+  // v5..v9 老档允许读入（缺的字段在 deserialize 里补默认值），不判废
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 9 &&
     v.saveVersion !== 8 &&
     v.saveVersion !== 7 &&
     v.saveVersion !== 6 &&
@@ -268,6 +269,12 @@ export function deserialize(raw: string): GameState | null {
   // v8 → v9（设备 S4）：老档没有 equipment，补成空对象（全 0 档＝原样不变）。
   if (typeof parsed.equipment !== "object" || parsed.equipment === null || Array.isArray(parsed.equipment)) {
     parsed.equipment = {};
+  }
+  // v9 → v10（扩建 S5）：老档没有 venue.expansion。旧档可能买过 seats/stove/hall 三件旧升级，
+  // 那些加出来的座位与灶位已经落在 venue.seats/stoves 里，这里不再回退，只把档位记 0。
+  if (!isRecord(parsed.venue)) parsed.venue = { seats: 4, stoves: 1, upgrades: {}, expansion: 0 };
+  if (typeof parsed.venue.expansion !== "number" || !isFinite(parsed.venue.expansion)) {
+    parsed.venue.expansion = 0;
   }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;

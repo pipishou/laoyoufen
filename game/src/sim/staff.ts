@@ -1,10 +1,26 @@
-import { CANDIDATE_COUNT, HIRE_FEE_RATE, MAX_STAFF, STAFF_POOL, type StaffTemplate } from "../data/staff";
+import {
+  CANDIDATE_COUNT,
+  HIRE_FEE_RATE,
+  MAX_STAFF,
+  STAFF_POOL,
+  nextStaffNeed,
+  staffSlots,
+  type StaffTemplate,
+} from "../data/staff";
 import { dayIndex } from "./calendar";
 import { shuffled } from "./rng";
 import type { GameState, StaffMember } from "./state";
 
-/** 每天涨多少疲劳，以及休息一天恢复多少 */
-const FATIGUE_PER_DAY: Record<StaffMember["role"], number> = { cook: 26, prep: 16, server: 20 };
+/**
+ * 每天涨多少疲劳，以及休息一天恢复多少。
+ *
+ * 口径修正（2026-11-15，S2 招人）：原来是 26/16/20 —— 煮粉的干 4 天就到 100 辞职，
+ * 等于「雇来的人一周内必走」，替身 36 个月里雇了 36 次人（每月一个）。
+ * 这与开罗不一致：开罗的店员只有「雇佣费 + 月给」两笔钱，不会自己跑（`clerk.txt`）。
+ * 现在改成 7–10 天需要休一天（休息半薪、恢复 55），辞职只在连续硬撑到 100 时发生，
+ * 所以一个正常排班的员工能一直在职，工资变成真实成本而不是流水。
+ */
+const FATIGUE_PER_DAY: Record<StaffMember["role"], number> = { cook: 10, prep: 7, server: 8 };
 const REST_RECOVERY = 55;
 /** 疲劳到这个值，次日辞职 */
 const QUIT_FATIGUE = 100;
@@ -76,10 +92,29 @@ export function inNoodlesNum(state: GameState): number {
   return 1 + Math.min(2, Math.floor(sumSkill(state, "cook") / 50));
 }
 
+/**
+ * 能同时开几口锅 —— 「有人掌勺的灶位」。
+ *
+ * 老板自己算一个（`+1`），每多一个在职的煮粉师傅 +1。
+ *
+ * 为什么必须这么算：旧版 `parallel = stoves × inNoodlesNum` 只看灶位，
+ * 于是**扩建加灶就是唯一有效的产能杠杆，雇厨师只会降 boil（最多 45%）**。
+ * 替身 36 个月实测（2026-11-15）：4 座店雇满 4 人，月工资 ¥3,053，
+ * 期末现金从 ¥98,539 掉到 ¥2,040 —— 雇人纯亏，因为灶只有 1 口。
+ * 开罗里 clerk 是「操作者」而不是加成：没有店员，多买的那口锅没人看。
+ * 现在灶位变成「上限」、人手变成「实际开火数」，两件资本开支才串成一条线：
+ * 想用上第二口灶，得先雇到第二个人。
+ */
+export function cookSlots(state: GameState): number {
+  const cooks = state.staff.roster.filter((m) => m.role === "cook" && !m.resting).length;
+  return 1 + cooks;
+}
+
 export function serveMultiplier(state: GameState): number {
   const boil = 1 - Math.min(COOK_CUT_MAX, sumSkill(state, "cook") * COOK_CUT_PER_SKILL);
   const setout = 1 - Math.min(SETOUT_CUT_MAX, sumSkill(state, "server") * SETOUT_CUT_PER_SKILL);
-  const parallel = Math.max(1, state.venue.stoves) * inNoodlesNum(state);
+  const stoves = Math.max(1, state.venue.stoves);
+  const parallel = Math.max(1, Math.min(stoves, cookSlots(state))) * inNoodlesNum(state);
   return (boil * setout) / parallel;
 }
 
@@ -115,7 +150,16 @@ export interface HireResult {
 export function hire(state: GameState, uid: string): HireResult {
   const i = state.staff.candidates.findIndex((c) => c.uid === uid);
   if (i < 0) return { ok: false, reason: "这个人已经不在了" };
-  if (state.staff.roster.length >= MAX_STAFF) return { ok: false, reason: `最多雇 ${MAX_STAFF} 人` };
+  const slots = staffSlots(state.totalCustomers);
+  if (state.staff.roster.length >= slots) {
+    const nxt = nextStaffNeed(state.totalCustomers);
+    return {
+      ok: false,
+      reason: nxt
+        ? `店里还忙不过来——累计接待 ${nxt.need} 位才有人愿意来（还差 ${nxt.short} 位）`
+        : `最多雇 ${MAX_STAFF} 人`,
+    };
+  }
   const cand = state.staff.candidates[i] as StaffMember;
   const fee = cand.wage * HIRE_FEE_RATE;
   if (state.cash < fee) return { ok: false, reason: `介绍费要 ¥${fee}` };

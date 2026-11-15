@@ -12,6 +12,7 @@
 
 import { siteById, type SiteDef } from "../data/sites";
 import { validShopName } from "../data/shop-names";
+import { rentMonthlyOf } from "../data/balance";
 import type { GameState } from "./state";
 
 export interface SetupResult {
@@ -59,7 +60,12 @@ export function openForBusiness(
   return { ok: true, site };
 }
 
-/** 月租系数（`ledger` 在算房租时乘上去；没选铺位前按 1 算） */
-export function rentFactorOf(state: GameState): number {
-  return siteById(state.site)?.rentFactor ?? 1;
+/**
+ * 当月房租（元）：铺位的固定月租 × 每满一年 3% 的续约涨幅。
+ *
+ * 没选铺位（`phase === "setup"`）时按巷内小店 ¥4,600 预演，让面板上有个数可看。
+ */
+export function monthlyRentOf(state: GameState): number {
+  const base = siteById(state.site)?.rentMonthly ?? 4_600;
+  return rentMonthlyOf(base, state.month);
 }

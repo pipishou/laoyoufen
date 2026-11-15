@@ -26,6 +26,7 @@ import {
 import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { buyEquipment } from "./sim/equipment";
+import { buyExpansion } from "./sim/expansion";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -182,6 +183,13 @@ panels = mountPanels(hudRoot, {
     const r = buyEquipment(state, id);
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
     else hud.showToast("设备换了，明天出碗更快", "info");
+    playSfx("upgrade");
+    refresh();
+  },
+  buyExpand() {
+    const r = buyExpansion(state);
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(`扩好了：座位 ${state.venue.seats} · 灶 ${state.venue.stoves}`, "info");
     playSfx("upgrade");
     refresh();
   },

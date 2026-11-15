@@ -10,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -127,6 +127,11 @@ export interface VenueState {
   seats: number;
   stoves: number;
   upgrades: Record<string, number>;
+  /**
+   * 已买下几档扩建（0/1/2），见 `data/expansion.ts`。
+   * 座位与灶位的资本开支只走这里，摆件（招牌/空调/装饰）走 upgrades。
+   */
+  expansion: number;
 }
 
 /** 常客档案：按顾客原型记，不记到具体人名，避免 24×N 的内存爆炸 */
@@ -440,6 +445,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       seats: START_SEATS,
       stoves: START_STOVES,
       upgrades: {},
+      expansion: 0,
     },
     regulars: {},
     collection: {

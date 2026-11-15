@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { GUANGXI, monthTargetFor, rentFor } from "../data/balance";
+import { GUANGXI, monthTargetFor, rentMonthlyOf } from "../data/balance";
 import { CAPITAL, BOWL, bowls, monthsOf, RENT, totalCapital, totalGradeFee } from "../data/anchors";
 import { nameCandidates, validShopName } from "../data/shop-names";
 import { SITES, affordableSites, siteById } from "../data/sites";
-import { canTakeSite, openForBusiness, rentFactorOf } from "./setup";
+import { canTakeSite, monthlyRentOf, openForBusiness } from "./setup";
 import { createInitialState, tickMinute } from "./state";
 
 /**
@@ -37,7 +37,7 @@ describe("建店 S0", () => {
     expect(s.venue.seats).toBe(alley.seats);
     expect(s.venue.stoves).toBe(alley.stoves);
     expect(s.capacity).toBe(alley.capacity);
-    expect(rentFactorOf(s)).toBe(alley.rentFactor);
+    expect(monthlyRentOf(s)).toBe(alley.rentMonthly);
   });
 
   it("店名不合法、铺位不存在、已开张：都拒绝且不扣钱", () => {
@@ -58,7 +58,7 @@ describe("建店 S0", () => {
     expect(affordableSites(s.cash).map((x) => x.id)).toEqual(["stall", "alley", "streetfront"]);
     const seats = SITES.map((x) => x.seats);
     expect(seats).toEqual([...seats].sort((a, b) => a - b));
-    const rents = SITES.map((x) => rentFactorOf({ site: x.id } as never));
+    const rents = SITES.map((x) => x.rentMonthly);
     expect(rents).toEqual([...rents].sort((a, b) => a - b));
     // 最贵的铺位要花掉起始现金的大部分，剩下不到两个月房租
     const street = siteById("streetfront")!;
@@ -72,7 +72,7 @@ describe("建店 S0", () => {
     expect(s.cash).toBe(GUANGXI.startCashYuan);
     expect(s.venue.seats).toBe(2);
     expect(s.venue.stoves).toBe(1);
-    expect(rentFactorOf(s)).toBe(0.33);
+    expect(monthlyRentOf(s)).toBe(1_500);
   });
 });
 
@@ -133,12 +133,18 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     expect(cap).toBeLessThan(totalGradeFee() * 2);
   });
 
-  it("房租落在现实区间：街边摊 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600（2025 实测）", () => {
-    const base = rentFor(monthTargetFor(1));
-    expect(base).toBe(4_620);
-    expect(Math.round(base * 0.33)).toBe(1_525);
-    expect(Math.round(base * 1.65)).toBe(7_623);
+  it("月租是铺位固定值（2025 实测）：摊位 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600，每年 +3%", () => {
+    const stall = siteById("stall")!;
+    const alley = siteById("alley")!;
+    const street = siteById("streetfront")!;
+    expect(stall.rentMonthly).toBe(RENT.stallMonthly);
+    expect(alley.rentMonthly).toBe(RENT.communityMonthly);
+    expect(street.rentMonthly).toBe(RENT.streetMonthly);
     expect(GUANGXI.rentYuan).toBe(4_600);
-    expect(RENT.streetMonthly).toBe(7_600);
+    // 第 1 个月不涨；第 13 个月起 +3%；第 25 个月再 +3%
+    expect(rentMonthlyOf(RENT.communityMonthly, 1)).toBe(4_600);
+    expect(rentMonthlyOf(RENT.communityMonthly, 12)).toBe(4_600);
+    expect(rentMonthlyOf(RENT.communityMonthly, 13)).toBe(4_738);
+    expect(rentMonthlyOf(RENT.communityMonthly, 25)).toBe(4_880);
   });
 });

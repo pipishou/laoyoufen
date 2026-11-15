@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { unlock } from "./collection";
 import { canEnter, enterContest } from "./contest";
 import { closeMonth, closeYear } from "./ledger";
-import { rentFor } from "../data/balance";
+import { monthlyRentOf } from "./setup";
 import {
   collectGift,
   favoriteArchetypes,
@@ -13,7 +13,9 @@ import {
   regularReturnChance,
 } from "./regulars";
 import { buyUpgrade, upgradeCost, upgradeLevel } from "./shop";
+import { buyExpansion, expansionLevel, expansionNextCost, nextExpansion } from "./expansion";
 import { dailyWage, hire, serveMultiplier, settleStaffDay, surveyRate, toggleRest } from "./staff";
+import { STAFF_POOL, WAGE_BY_SKILL, monthlyWageOf, nextStaffNeed, staffSlots, wageOf } from "../data/staff";
 import { createInitialState, type MonthRecord, type StaffMember } from "./state";
 
 function cook(skill: number, wage = 120): StaffMember {
@@ -25,9 +27,10 @@ function server(skill: number, wage = 90): StaffMember {
 }
 
 describe("员工", () => {
-  it("雇佣扣介绍费，厨师让出一碗更快", () => {
+  it("雇佣扣介绍费，厨师让出一碗更快（先做到 300 位客人才招得到人）", () => {
     const s = createInitialState("staff-1", 7);
     s.cash = 5000;
+    s.totalCustomers = 300;
     const base = serveMultiplier(s);
     s.staff.candidates = [cook(5, 180)];
     const r = hire(s, "u1");
@@ -36,6 +39,39 @@ describe("员工", () => {
     expect(s.staff.roster).toHaveLength(1);
     expect(serveMultiplier(s)).toBeLessThan(base);
     expect(dailyWage(s)).toBe(180);
+  });
+
+  it("累计接待不到门槛就招不到人：明确说还差多少位", () => {
+    const s = createInitialState("staff-0", 7);
+    s.cash = 5000;
+    s.totalCustomers = 120;
+    s.staff.candidates = [cook(3, 150)];
+    const r = hire(s, "u1");
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("还差 180 位");
+    expect(s.cash).toBe(5000);
+    expect(s.staff.roster).toHaveLength(0);
+  });
+
+  it("人手随累计接待量逐人解锁：300/800/1600/2600 → 1/2/3/4 个坑位", () => {
+    expect(staffSlots(299)).toBe(0);
+    expect(staffSlots(300)).toBe(1);
+    expect(staffSlots(800)).toBe(2);
+    expect(staffSlots(1600)).toBe(3);
+    expect(staffSlots(2600)).toBe(4);
+    expect(staffSlots(99_999)).toBe(4);
+    expect(nextStaffNeed(0)).toEqual({ slot: 1, need: 300, short: 300 });
+    expect(nextStaffNeed(2600)).toBeNull();
+  });
+
+  it("日薪按技能走现实尺度（技能 1 贴最低工资折算线，技能 5 是老师傅价）", () => {
+    expect(WAGE_BY_SKILL).toEqual([110, 130, 150, 180, 220]);
+    expect(wageOf(1)).toBe(110);
+    expect(wageOf(5)).toBe(220);
+    // 110 × 21.75 ≈ 2393，与南宁最低工资 2200 同阶
+    expect(monthlyWageOf(110)).toBeGreaterThan(2200);
+    expect(monthlyWageOf(110)).toBeLessThan(2600);
+    for (const t of STAFF_POOL) expect(t.wage).toBe(wageOf(t.skill));
   });
 
   it("跑堂服务技能越高，问口味越快（开罗 PARAM_SERVICE）", () => {
@@ -62,30 +98,63 @@ describe("员工", () => {
   });
 });
 
-describe("店铺扩建", () => {
-  it("加桌 +1 座，价格按倍率上涨", () => {
+describe("店铺扩建（S5 两档资本开支）", () => {
+  it("第一档先打隔墙：座位 +2、日上限 +60、钱按 CAPITAL 扣", () => {
     const s = createInitialState("shop-1", 7);
-    s.cash = 10000;
-    const cost1 = upgradeCost(s, "seats");
-    expect(buyUpgrade(s, "seats").ok).toBe(true);
-    expect(s.venue.seats).toBe(5);
-    expect(s.cash).toBe(10000 - cost1);
-    expect(upgradeCost(s, "seats")).toBeGreaterThan(cost1);
-    expect(upgradeLevel(s, "seats")).toBe(1);
-  });
-
-  it("加灶与扩建同时生效", () => {
-    const s = createInitialState("shop-2", 7);
-    s.cash = 20000;
+    s.cash = 20_000;
     const capBefore = s.capacity;
     const seatsBefore = s.venue.seats;
-    buyUpgrade(s, "stove");
-    buyUpgrade(s, "hall");
-    expect(s.venue.stoves).toBe(2);
-    // 只断言增量：起始 capacity 是兜底闸（2026-11-12 由 40 → 200），
-    // 写死数字会让每次调平衡都误报；真正该固定的是「大厅 +10 张接待量、+2 座」。
-    expect(s.capacity - capBefore).toBe(10);
+    const cost = expansionNextCost(s);
+    expect(cost).toBe(12_000);
+    expect(buyExpansion(s).ok).toBe(true);
+    expect(s.cash).toBe(20_000 - cost);
     expect(s.venue.seats - seatsBefore).toBe(2);
+    expect(s.venue.stoves).toBe(1);
+    expect(s.capacity - capBefore).toBe(60);
+    expect(expansionLevel(s)).toBe(1);
+  });
+
+  it("第二档加后厨：座位再 +2、灶 +1、日上限 +140；钱不够就拒绝且不扣钱", () => {
+    const s = createInitialState("shop-2", 7);
+    s.cash = 50_000;
+    buyExpansion(s);
+    const cash = s.cash;
+    const seats = s.venue.seats;
+    const stoves = s.venue.stoves;
+    const cap = s.capacity;
+    expect(expansionNextCost(s)).toBe(35_000);
+    expect(buyExpansion(s).ok).toBe(true);
+    expect(s.cash).toBe(cash - 35_000);
+    expect(s.venue.seats - seats).toBe(2);
+    expect(s.venue.stoves - stoves).toBe(1);
+    expect(s.capacity - cap).toBe(140);
+    // 到顶后再买：拒绝，不扣钱
+    const cashAfter = s.cash;
+    expect(buyExpansion(s).ok).toBe(false);
+    expect(s.cash).toBe(cashAfter);
+    expect(nextExpansion(s)).toBeNull();
+  });
+
+  it("钱不够买扩建：明确拒绝，现金不动", () => {
+    const s = createInitialState("shop-3", 7);
+    s.cash = 3_000;
+    const r = buyExpansion(s);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("还差");
+    expect(s.cash).toBe(3_000);
+    expect(expansionLevel(s)).toBe(0);
+  });
+
+  it("摆件仍然按倍率涨价（招牌/空调/装饰 三件留在 data/shop.ts）", () => {
+    const s = createInitialState("shop-4", 7);
+    s.cash = 10_000;
+    const cost1 = upgradeCost(s, "sign");
+    expect(buyUpgrade(s, "sign").ok).toBe(true);
+    expect(upgradeLevel(s, "sign")).toBe(1);
+    expect(upgradeCost(s, "sign")).toBeGreaterThan(cost1);
+    // 旧的空间类升级已经退场：座位/灶位只能靠扩建
+    expect(buyUpgrade(s, "seats").ok).toBe(false);
+    expect(buyUpgrade(s, "hall").ok).toBe(false);
   });
 });
 
@@ -185,14 +254,14 @@ describe("月结 / 年结", () => {
       lost: 2,
       avgSat: 70,
       wages: 500,
-      rent: rentFor(3600),
+      rent: monthlyRentOf({ site: "alley", month: 1 } as never),
       profit: 2700,
       target: 3600,
       grade: "A",
     };
   }
 
-  it("月结扣房租、写月报、重置累计", () => {
+  it("月结扣固定月租、写月报、重置累计", () => {
     const s = createInitialState("ledger-1", 7);
     s.monthRevenue = 4000;
     s.monthServed = 100;
@@ -201,7 +270,8 @@ describe("月结 / 年结", () => {
     s.monthSatCount = 100;
     s.monthWages = 500;
     const cash = s.cash;
-    const rent = rentFor(s.monthTarget);
+    const rent = monthlyRentOf(s);
+    expect(rent).toBe(4_600); // 未选铺位时按巷内小店预演
     closeMonth(s);
     expect(s.months).toHaveLength(1);
     expect(s.months[0]!.revenue).toBe(4000);
@@ -212,9 +282,10 @@ describe("月结 / 年结", () => {
     expect(s.monthWages).toBe(0);
   });
 
-  it("满 12 个月出年度结算单", () => {
+  it("满 12 个月出年度结算单（房租是固定月租，不随 KPI 涨）", () => {
     const s = createInitialState("ledger-2", 7);
-    s.cash = 10000;
+    s.cash = 60_000;
+    let rentTotal = 0;
     for (let m = 0; m < 12; m++) {
       s.month = m;
       s.monthRevenue = 5000;
@@ -223,6 +294,7 @@ describe("月结 / 年结", () => {
       s.monthSatCount = 120;
       s.monthWages = 300;
       s.monthTarget = 3600;
+      rentTotal += monthlyRentOf(s);
       closeMonth(s);
     }
     expect(s.months).toHaveLength(12);
@@ -232,7 +304,9 @@ describe("月结 / 年结", () => {
     expect(y.revenue).toBe(60000);
     expect(["S", "A", "B"]).toContain(y.rating);
     expect(s.pendingReport).not.toBeNull();
-    expect(s.cash).toBe(10000 - 12 * rentFor(3600) + y.bonus);
+    // 第一年内不涨租：12 × ¥4,600
+    expect(rentTotal).toBe(12 * 4_600);
+    expect(s.cash).toBe(60_000 - rentTotal + y.bonus);
     expect(y.bonus).toBeGreaterThanOrEqual(2000);
   });
 

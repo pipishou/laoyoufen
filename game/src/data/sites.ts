@@ -7,8 +7,9 @@
  * **钱怎么定的（坐标系规则，见 `data/anchors.ts`）**：
  *   - 起始现金 `GUANGXI.startCashYuan = ¥30,000`（现实下限：押金＋简装＋首批原料）
  *   - 转让费按「拿走起始现金的 0% / 50% / 93%」定，于是三种开局都是**现金取舍**而不是难度选项
- *   - 房租系数乘在 `rentFor(月目标)` 上：现实社区店 ¥4,600/月 对应系数 1.0（`rentFor(21000)=4620`）；
- *     街边摊 0.33（摊位费 ¥1,500）、临街铺面 1.65（实测 ¥7,600/月，良庆 58 ㎡）
+ *   - **月租是固定值**（`RENT` 里的现实观测）：摊位费 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600。
+ *     2026-11-15 之前是「月目标 × 系数」，但月目标每月 +2% 涨到 ¥42,000 而实际营收被客流封顶，
+ *     第 36 个月租金吃掉营收 34%，账上必亏（替身实测期末 −¥27,186）。现实里房租是房东定的固定数。
  */
 
 export type SiteId = "stall" | "alley" | "streetfront";
@@ -26,8 +27,8 @@ export interface SiteDef {
   stoves: number;
   /** 每日接待兜底闸（不是产能，产能由座位与灶台决定） */
   capacity: number;
-  /** 房租系数：乘在 `rentFor()` 上 */
-  rentFactor: number;
+  /** 固定月租（元），每年续约涨 3%（`rentMonthlyOf`） */
+  rentMonthly: number;
   /** 开张后第一句旁白（AI 可用同义句替换） */
   openingLine: string;
 }
@@ -41,7 +42,7 @@ export const SITES: readonly SiteDef[] = [
     seats: 2,
     stoves: 1,
     capacity: 120,
-    rentFactor: 0.33,
+    rentMonthly: 1_500,
     openingLine: "炉子一支，锅一放，老友粉的香味先把人引过来。",
   },
   {
@@ -52,7 +53,7 @@ export const SITES: readonly SiteDef[] = [
     seats: 4,
     stoves: 1,
     capacity: 200,
-    rentFactor: 1,
+    rentMonthly: 4_600,
     openingLine: "卷帘门拉开，先把招牌挂正——街坊认得这块牌子。",
   },
   {
@@ -63,7 +64,7 @@ export const SITES: readonly SiteDef[] = [
     seats: 6,
     stoves: 2,
     capacity: 260,
-    rentFactor: 1.65,
+    rentMonthly: 7_600,
     openingLine: "玻璃门擦到能照人，灶火一起，两条街都闻得到。",
   },
 ] as const;

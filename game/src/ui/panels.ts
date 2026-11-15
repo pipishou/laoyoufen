@@ -3,11 +3,12 @@ import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
 import { EQUIPMENT } from "../data/equipment";
-import { MAX_STAFF, ROLE_LABEL } from "../data/staff";
+import { HIRE_FEE_RATE, MAX_STAFF, ROLE_LABEL, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
 import { UPGRADES } from "../data/shop";
 import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
 import { canEnter } from "../sim/contest";
 import { equipLevel, equipNextCost } from "../sim/equipment";
+import { expansionLevel, nextExpansion } from "../sim/expansion";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { dailyWage, serveMultiplier } from "../sim/staff";
@@ -71,6 +72,7 @@ export interface PanelActions {
   toggleRest(uid: string): void;
   buy(id: string): void;
   buyEquip(id: string): void;
+  buyExpand(): void;
   enterContest(): void;
   dismissReport(): void;
 }
@@ -198,6 +200,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       case "buyequip":
         actions.buyEquip(id);
         break;
+      case "buildexpand":
+        actions.buyExpand();
+        break;
       case "contest":
         actions.enterContest();
         break;
@@ -236,24 +241,32 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       })
       .join("");
 
+    const slots = staffSlots(s.totalCustomers);
+    const nxt = nextStaffNeed(s.totalCustomers);
+    const fullStaff = s.staff.roster.length >= slots;
     const cands = s.staff.candidates
       .map(
         (m) => `<div class="lrow">
           <div class="lname">${m.name}<span class="tag2">${ROLE_LABEL[m.role]}</span><span class="tag2">技能 ${m.skill}</span></div>
-          <div class="lmeta">日薪 ¥${m.wage} · 介绍费 ¥${m.wage * 2}</div>
-          <div class="lbtns"><button type="button" data-act="hire" data-id="${m.uid}" ${s.staff.roster.length >= MAX_STAFF ? "disabled" : ""}>雇佣</button></div>
+          <div class="lmeta">日薪 ¥${m.wage} · 介绍费 ¥${m.wage * HIRE_FEE_RATE} · 月薪约 ¥${monthlyWageOf(m.wage)}</div>
+          <div class="lbtns"><button type="button" data-act="hire" data-id="${m.uid}" ${fullStaff ? "disabled" : ""}>雇佣</button></div>
         </div>`,
       )
       .join("");
 
     return `<div class="sec">
-        <div class="sechd">在职 ${s.staff.roster.length}/${MAX_STAFF} · 日薪 ${money(dailyWage(s))}</div>
+        <div class="sechd">在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))}</div>
         ${roster || `<div class="empty2">还没雇人。你自己一个人炒锅，出碗 6 分钟。</div>`}
         <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"}</div>
       </div>
       <div class="sec">
         <div class="sechd">今日候选 · 每天换一批</div>
         ${cands || `<div class="empty2">今天没人来问工。</div>`}
+        <div class="hint">${
+          nxt
+            ? `下一个人要累计接待 ${nxt.need} 位才肯来（还差 ${nxt.short} 位）。店里越忙，越招得到人。`
+            : `人手已经招满 ${MAX_STAFF} 人。`
+        }</div>
       </div>`;
   }
 
@@ -270,6 +283,18 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
     }).join("");
     const serveNow = Math.max(0.5, SERVE_MINUTES * serveMultiplier(s) * equipServeMultiplier(s));
+
+    // 扩建：两档，按顺序买（data/expansion.ts）。座位与灶位只从这里涨。
+    const nextExp = nextExpansion(s);
+    const expLv = expansionLevel(s);
+    const expRow = nextExp
+      ? `<div class="lrow">
+          <div class="lname">${nextExp.name}<span class="tag2">第 ${expLv + 1}/2 步</span></div>
+          <div class="lmeta">${nextExp.desc} · 座位 +${nextExp.seats}${nextExp.stoves ? ` · 灶 +${nextExp.stoves}` : ""}</div>
+          <div class="lbtns"><button type="button" data-act="buildexpand" ${s.cash < nextExp.costYuan ? "disabled" : ""}>${money(nextExp.costYuan)}</button></div>
+        </div>`
+      : `<div class="lrow"><div class="lname">已经扩到顶了<span class="tag2">座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</span></div><div class="lmeta">下一步是换区开分店（S6）。</div></div>`;
+
     const ups = UPGRADES.map((u) => {
       const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
@@ -281,12 +306,17 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
     }).join("");
     return `<div class="sec">
+        <div class="sechd">店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
+        <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
+        ${expRow}
+      </div>
+      <div class="sec">
         <div class="sechd">设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
         <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
       <div class="sec">
-        <div class="sechd">扩建与摆件</div>
+        <div class="sechd">摆件</div>
         ${ups}
       </div>`;
   }

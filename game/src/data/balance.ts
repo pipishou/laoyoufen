@@ -81,7 +81,15 @@ export function kcuToYuan(kcu: number): number {
   return Math.round(kcu * KCU_TO_YUAN * 10) / 10;
 }
 
-/** 租金占「月营收目标」的比例。由现实反推：4500 / (70×10×30) = 21.4%，取 22%。 */
+/**
+ * 租金占「月营收目标」的比例（历史值，保留给对照，不再用于收租）。
+ *
+ * 2026-11-15 停用：替身 36 个月实测，租金按「目标营收 × 22%」收，
+ * 而目标每月 +2% 涨到 ¥42,000，实际营收被客流封顶在 ¥27,200 ——
+ * 于是第 36 个月租金 ¥9,240 = 营收的 34%，账上必亏（种子 1 期末 −¥27,186）。
+ * 现实粉店租金占营收 15–25%，且**租金是房东定的固定月租，不会跟着你的流水涨**。
+ * 现在改用 `rentMonthlyOf(site, month)`：按铺位固定月租 + 每年 3% 续约涨幅。
+ */
 export const RENT_RATIO = 0.22;
 
 /** 月营收目标：首个 21000（=70 碗/日 × 10 元 × 30 天），每月 +2%（沿用现有 TARGET_GROWTH）。 */
@@ -93,10 +101,23 @@ export function monthTargetFor(month: number): number {
   return Math.round(TARGET_BASE_YUAN * Math.pow(TARGET_GROWTH, Math.max(0, month - 1)));
 }
 
+/** 每年续约涨多少（现实里房东一年一涨，3% 是温和值） */
+export const RENT_YEAR_GROWTH = 1.03;
+
 /**
- * 第 n 月的房租：按当月营收目标 × 22%。
- * 取「目标」而不是「上月营收」：目标平滑、玩家可预期；用营收会让亏损月也收高租。
- * 这条公式是账本行 13 拍板 B 的落地。
+ * 第 n 个月的房租（元）—— 固定月租，按铺位定锚，不跟着流水涨。
+ *
+ * `baseMonthly` 取 `RENT` 里的现实观测值（stall 1,500 / community 4,600 / street 7,600）。
+ * 每满 12 个月按 3% 续约涨一次（`RENT_YEAR_GROWTH`）。
+ */
+export function rentMonthlyOf(baseMonthly: number, month: number): number {
+  const years = Math.floor(Math.max(0, month - 1) / 12);
+  return Math.round(baseMonthly * Math.pow(RENT_YEAR_GROWTH, years));
+}
+
+/**
+ * 旧的「目标 × 22%」收租法：只留给对照与回归测试，不再进月结。
+ * @deprecated 用 `rentMonthlyOf` 与 `siteById(...).rentFactor` 组合的固定月租
  */
 export function rentFor(target: number): number {
   return Math.round(target * RENT_RATIO);

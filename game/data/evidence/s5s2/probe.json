@@ -1,0 +1,52 @@
+{
+ "start": {
+  "cash": 15000,
+  "seats": 4,
+  "stoves": 1,
+  "capacity": 200,
+  "expansion": 0,
+  "total": 0,
+  "slots": null
+ },
+ "trace_before_inject": {
+  "phase": "open",
+  "day": 1,
+  "minute": 25,
+  "total": 7
+ },
+ "customers_before_buy": 327,
+ "panel_ready": true,
+ "panel_before": "店面 · 座位 4 · 灶 1",
+ "expand_click": "clicked",
+ "after_expand": {
+  "cash": 3834.2000000000307,
+  "seats": 6,
+  "stoves": 1,
+  "capacity": 260,
+  "expansion": 1,
+  "panel": "店面 · 座位 6 · 灶 1",
+  "caprow": "座位 6 · 出餐 6.0 分/碗 · 日上限 260 碗"
+ },
+ "staff_before": {
+  "roster": 0,
+  "cands": [
+   "prep",
+   "prep",
+   "server"
+  ],
+  "line": "在职 0/1 · 日薪 ¥0",
+  "hint": "疲劳到 100 会辞职，记得安排休息。"
+ },
+ "hired_uid": "st.aming-0-0",
+ "after_hire": {
+  "cash": 3438.8000000000284,
+  "roster": 1,
+  "line": "在职 1/1 · 日薪 ¥150",
+  "caprow": "座位 6 · 出餐 6.0 分/碗 · 日上限 260 碗",
+  "serveText": "座位 6 · 出餐 6.0 分/碗 · 日上限 260 碗"
+ },
+ "console_error_count": 0,
+ "console_errors": [],
+ "expand_net_spend": 11166,
+ "ok": true
+}
