@@ -1,0 +1,194 @@
+/* 建店界面（S0 开张）—— 与 HUD 同一套暖纸底/硬描边语汇 */
+
+.setup {
+  position: fixed;
+  inset: 0;
+  /* 挂在 body 上、要在「竖屏提示」(z-index 9999) 之上才读得到 */
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(24, 16, 10, 0.72);
+  /* #hud 整体 pointer-events:none，浮层必须自己接事件 */
+  pointer-events: auto;
+  font-family: "Fusion Pixel 12px Monospaced", "Zpix", ui-monospace, monospace;
+  color: #3b2b1d;
+}
+
+.setup[hidden] { display: none; }
+
+.setupbox {
+  width: min(760px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 20px 22px 18px;
+  background: #fff8e6;
+  border: 3px solid #3b2b1d;
+  box-shadow: 6px 6px 0 #3b2b1d;
+}
+
+.shead { margin-bottom: 12px; }
+.sttl {
+  font-size: 22px;
+  letter-spacing: 6px;
+  font-weight: 700;
+}
+.ssub {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #6b5540;
+}
+
+.sitegrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.sitecard {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 11px;
+  background: #fffcf2;
+  border: 2px solid #3b2b1d;
+  box-shadow: 3px 3px 0 #d8c9a8;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  pointer-events: auto;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.sitecard:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #d8c9a8; }
+.sitecard.picked {
+  background: #fff1cf;
+  border-color: #b8452c;
+  box-shadow: 3px 3px 0 #b8452c;
+  transform: translate(-1px, -1px);
+}
+.sitecard.broke {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.scardhd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+.sname { font-size: 15px; font-weight: 700; }
+.sfee { font-size: 11px; color: #b8452c; }
+.spitch {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #6b5540;
+  min-height: 34px;
+}
+.sstats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #4a382a;
+}
+.sstats span {
+  padding: 1px 6px;
+  background: #f2e7cd;
+  border: 1px solid #c9b48c;
+}
+.sbadge { margin-top: 6px; font-size: 11px; color: #b8452c; min-height: 14px; }
+
+.namerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.nlabel { font-size: 13px; }
+.ninput {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 14px;
+  color: #3b2b1d;
+  background: #fffcf2;
+  border: 2px solid #3b2b1d;
+  pointer-events: auto;
+}
+.ninput:focus { outline: 2px solid #b8452c; outline-offset: 1px; }
+
+.namechips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chip {
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 12px;
+  color: #3b2b1d;
+  background: #f2e7cd;
+  border: 2px solid #b9a179;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.chip:hover { background: #ffe9b8; border-color: #b8452c; }
+
+.sfoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px dashed #c9b48c;
+}
+.scash { font-size: 12px; color: #6b5540; }
+
+.sbtn {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  color: #3b2b1d;
+  background: #f2e7cd;
+  border: 2px solid #3b2b1d;
+  box-shadow: 3px 3px 0 #3b2b1d;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.sbtn.main {
+  background: #b8452c;
+  color: #fff8e6;
+  font-size: 15px;
+  padding: 9px 20px;
+  letter-spacing: 2px;
+}
+.sbtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: 2px 2px 0 #8a7a63;
+}
+.sbtn.ghost { background: #fffcf2; }
+
+.snote {
+  margin-top: 8px;
+  min-height: 16px;
+  font-size: 11px;
+  color: #b8452c;
+}
+
+@media (max-width: 720px) {
+  .sitegrid { grid-template-columns: 1fr; }
+  .setupbox { padding: 14px 14px 12px; }
+  .sttl { font-size: 18px; letter-spacing: 4px; }
+  .sfoot { flex-direction: column; align-items: stretch; }
+  .sbtn.main { width: 100%; }
+}

@@ -1,16 +1,20 @@
 /**
- * 段位评定（K1 目标换骨的第二根轴）。
+ * 段位评定（K1 目标换骨的第二根轴，六阶里「钱有去处」的主 sink）。
  *
  * 开罗原文 `grade_review.txt` 11 级：判定费 5,000 → 2,000,000 KCU，
  * 条件列 4/7/10/15/20/24/30/34/40/50，奖励 100 → 6,000。
- * 按 1 KCU = 0.01 元换算后，费是 ¥50 → ¥20,000 —— 但 2,000,000 KCU 那档
- * 换算成 ¥20,000 仍嫌太大（我们 36 月末现金约 22 万），故按卡里的口径保留
- * 原序列形状、把最后一档按比例收到 ¥20,000（已在账本行 18 备注待实跑校准）。
  *
- * 条件列在开罗里是「累计顾客」之类的门槛，我们统一用累计接待人次（千人）。
+ * **2026-11-14 改口径（账本行 27 / 决策卡「节奏对齐」P2）**：开罗的 KCU 不能按
+ * `kcuToYuan` 直折进我们的账 —— 我们一碗 ¥10，开罗一碗约 1,000 KCU，直折会把
+ * 门槛折成零头（旧表 ¥50–¥20,000，等于三个月就买通全部段位）。现在费一律走
+ * `data/anchors.ts` 的 `CAPITAL.gradeFeeYuan`（¥500 → ¥120,000，合计 ¥33.3 万，
+ * 约三年营收的 1/3），形状仍是开罗的递增曲线，量级是南宁现实。
+ *
+ * 条件列在开罗里是「累计顾客」之类的门槛，我们统一用累计接待人次（百人）。
  * 判定费进 sink（现金出口），奖励进 cash —— 这样段位同时是目标与钱去处。
  */
 
+import { CAPITAL } from "../data/anchors";
 import type { GameState } from "./state";
 
 export interface GradeDef {
@@ -28,17 +32,17 @@ export interface GradeDef {
 }
 
 export const GRADES: readonly GradeDef[] = [
-  { level: 1, title: "摆摊仔", feeYuan: 50, minCustomers: 400, rewardYuan: 1, note: "街边支一口锅，先让人知道有你这家" },
-  { level: 2, title: "街边小店", feeYuan: 150, minCustomers: 700, rewardYuan: 1, note: "有两张桌子，坐得下四个人" },
-  { level: 3, title: "巷口老铺", feeYuan: 300, minCustomers: 1_000, rewardYuan: 1, note: "街坊开始记得你的招牌" },
-  { level: 4, title: "街知巷闻", feeYuan: 500, minCustomers: 1_500, rewardYuan: 2, note: "隔壁街的人也过来吃" },
-  { level: 5, title: "区级名店", feeYuan: 800, minCustomers: 2_000, rewardYuan: 2, note: "本区的老友粉，数得上你一家" },
-  { level: 6, title: "市级名店", feeYuan: 1_500, minCustomers: 2_400, rewardYuan: 3, note: "市里的美食号开始写你" },
-  { level: 7, title: "老友粉传人", feeYuan: 2_000, minCustomers: 3_000, rewardYuan: 4, note: "有人专程来问你的酸笋怎么发" },
-  { level: 8, title: "八桂名厨", feeYuan: 3_000, minCustomers: 3_400, rewardYuan: 5, note: "广西台来拍过一次" },
-  { level: 9, title: "桂系食神", feeYuan: 5_000, minCustomers: 4_000, rewardYuan: 6, note: "同行拿你的汤底当参照" },
-  { level: 10, title: "老友粉大王", feeYuan: 20_000, minCustomers: 5_000, rewardYuan: 8, note: "全区开分店，名字就是招牌" },
-  { level: 11, title: "广西老友粉非遗传承人", feeYuan: 0, minCustomers: 6_000, rewardYuan: 0, note: "37 个月跑完，账本翻到最后一页" },
+  { level: 1, title: "摆摊仔", feeYuan: CAPITAL.gradeFeeYuan[0], minCustomers: 400, rewardYuan: 500, note: "街边支一口锅，先让人知道有你这家" },
+  { level: 2, title: "街边小店", feeYuan: CAPITAL.gradeFeeYuan[1], minCustomers: 700, rewardYuan: 800, note: "有两张桌子，坐得下四个人" },
+  { level: 3, title: "巷口老铺", feeYuan: CAPITAL.gradeFeeYuan[2], minCustomers: 1_000, rewardYuan: 1_200, note: "街坊开始记得你的招牌" },
+  { level: 4, title: "街知巷闻", feeYuan: CAPITAL.gradeFeeYuan[3], minCustomers: 1_500, rewardYuan: 2_000, note: "隔壁街的人也过来吃" },
+  { level: 5, title: "区级名店", feeYuan: CAPITAL.gradeFeeYuan[4], minCustomers: 2_000, rewardYuan: 3_000, note: "本区的老友粉，数得上你一家" },
+  { level: 6, title: "市级名店", feeYuan: CAPITAL.gradeFeeYuan[5], minCustomers: 2_400, rewardYuan: 5_000, note: "市里的美食号开始写你" },
+  { level: 7, title: "老友粉传人", feeYuan: CAPITAL.gradeFeeYuan[6], minCustomers: 3_000, rewardYuan: 8_000, note: "有人专程来问你的酸笋怎么发" },
+  { level: 8, title: "八桂名厨", feeYuan: CAPITAL.gradeFeeYuan[7], minCustomers: 3_400, rewardYuan: 12_000, note: "广西台来拍过一次" },
+  { level: 9, title: "桂系食神", feeYuan: CAPITAL.gradeFeeYuan[8], minCustomers: 4_000, rewardYuan: 18_000, note: "同行拿你的汤底当参照" },
+  { level: 10, title: "老友粉大王", feeYuan: CAPITAL.gradeFeeYuan[9], minCustomers: 5_000, rewardYuan: 30_000, note: "全区开分店，名字就是招牌" },
+  { level: 11, title: "广西老友粉非遗传承人", feeYuan: CAPITAL.gradeFeeYuan[10], minCustomers: 6_000, rewardYuan: 0, note: "37 个月跑完，账本翻到最后一页" },
 ];
 
 export const MAX_GRADE = GRADES.length;

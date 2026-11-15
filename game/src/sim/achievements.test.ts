@@ -121,7 +121,7 @@ describe("K1 段位（开罗 grade_review 11 级）", () => {
     s.cash = 10;
     const check = checkGrade(s);
     expect(check.ready).toBe(false);
-    expect(check.shortCash).toBe(40);
+    expect(check.shortCash).toBe(GRADES[0]!.feeYuan - 10);
     expect(check.next!.level).toBe(1);
   });
 
@@ -133,7 +133,7 @@ describe("K1 段位（开罗 grade_review 11 级）", () => {
     const r = applyGrade(s);
     expect(r.ok).toBe(true);
     expect(s.gradeLevel).toBe(1);
-    expect(s.cash).toBe(1_000 - 50 + 1);
+    expect(s.cash).toBe(1_000 - GRADES[0]!.feeYuan + GRADES[0]!.rewardYuan);
     expect(s.reputation).toBeGreaterThan(repBefore);
   });
 

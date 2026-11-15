@@ -10,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -216,15 +216,16 @@ export interface EventRuntime {
 }
 
 /**
- * 一天的三态，对齐开罗「时间只在顶层营业窗口推进」：
+ * 全流程的四个状态，对齐开罗「时间只在顶层营业窗口推进」：
+ * - `setup`：还没开店。选铺位、起店名（六阶的 S0），时间不走，也没有顾客。
  * - `prep`：开店前 / 打烊后。时间不走，玩家可以调配方、定价、雇人、看报表。
  * - `open`：营业中。每「分钟」推进一次，顾客进店、等位、吃粉、结算。
  * - `closing`：今天已经打烊，日结单等玩家确认（`dayReport` 非空）。
  *
  * 这样做的原因：原来一进游戏就在营业，玩家还没有任何决策，第一分钟就开始
- * 流失顾客，等于把「准备」这一步从流程里删掉了。
+ * 流失顾客，等于把「准备」与「建店」这两步从流程里删掉了。
  */
-export type Phase = "prep" | "open" | "closing";
+export type Phase = "setup" | "prep" | "open" | "closing";
 
 /** 一天的日结单。打烊时生成，玩家点「明天继续」后清空。 */
 export interface DayRecord {
@@ -313,6 +314,10 @@ export interface GameState {
   finished: boolean;
   /** 一天的三态，见 Phase */
   phase: Phase;
+  /** 铺位 id，见 `data/sites.ts`（setup 阶段为空串） */
+  site: string;
+  /** 店名（setup 阶段为空串；开张时定下，之后写进档口招牌与月结单） */
+  shopName: string;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
   dayReport: DayRecord | null;
   /** 最近若干天的日结单，账本面板用；只留 120 天 */
@@ -458,7 +463,9 @@ export function createInitialState(playerId: string, seed: number): GameState {
     },
     pendingReport: null,
     finished: false,
-    phase: "prep",
+    phase: "setup",
+    site: "",
+    shopName: "",
     dayReport: null,
     days: [],
   };

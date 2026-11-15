@@ -27,6 +27,8 @@ import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
+import { openForBusiness } from "./sim/setup";
+import { mountSetup, type SetupScreen } from "./ui/setup";
 import { mountHud } from "./ui/hud";
 import { mountPanels, type Panels, type PanelTab } from "./ui/panels";
 import { initViewport } from "./ui/viewport";
@@ -121,6 +123,28 @@ const hud = mountHud(hudRoot, {
 
 guide = mountGuide(hudRoot, () => {
   hud.showToast("引导完成，接下来看你自己", "info");
+});
+
+/**
+ * 建店界面（S0）挂在 document.body 上，不挂 #hud：
+ *   - `#hud` 会被 mountHud 重写 innerHTML（挂在里面会被抹掉）；
+ *   - `#stage` 带 transform 缩放，`position:fixed` 的子元素会跟着缩放，
+ *     在手机上小到看不清。挂 body 才是真正的视口定位。
+ */
+const setupScreen: SetupScreen = mountSetup(document.body, {
+  onOpen: (siteId, shopName) => {
+    const r = openForBusiness(state, siteId, shopName);
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "开张失败", "info");
+      return false;
+    }
+    playSfx("upgrade");
+    hud.showToast(`${shopName} 开张了，先调好一碗粉的味道`, "like");
+    score = scoreRecipe(state.recipe, state.price);
+    refresh();
+    tickFeedback();
+    return true;
+  },
 });
 
 panels = mountPanels(hudRoot, {
@@ -290,6 +314,7 @@ function refresh(): void {
   hud.render(state, score);
   panels.render(state, score);
   guide.render(state);
+  setupScreen.render(state);
   scheduleSave();
 }
 

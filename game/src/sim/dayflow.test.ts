@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DAY_MINUTES } from "./customer";
 import { DAYS_PER_MONTH } from "./calendar";
+import { openForBusiness } from "./setup";
 import {
   ackDayReport,
   advanceMinute,
@@ -11,14 +12,24 @@ import {
 } from "./state";
 
 /**
- * 一天三态（prep / open / closing）的守门测试。
+ * 全流程状态机的守门测试（setup → prep → open → closing）。
  *
  * 起因（玩家实测反馈 m03752 第 1 条）：一进游戏就在营业，第一分钟就开始
  * 流失顾客，玩家还没有任何决策。这里把「时间什么时候才允许走」钉成断言。
+ * 又加了 S0 建店：全新存档连铺位都没选，更不该有顾客。
  */
 
-function fresh(seed = 20261114): GameState {
+/** 全新存档（phase === "setup"，还没选铺位） */
+function brandNew(seed = 20261114): GameState {
   return createInitialState("p-test", seed);
+}
+
+/** 已经开好店（phase === "prep"）的存档：铺位固定用「巷内小店」 */
+function fresh(seed = 20261114): GameState {
+  const s = brandNew(seed);
+  const r = openForBusiness(s, "alley", "测试老友粉");
+  expect(r.ok).toBe(true);
+  return s;
 }
 
 /** 把某一天推到打烊（走 tickMinute，和玩家侧一致；事件弹窗直接当玩家选第一项关掉） */
@@ -33,7 +44,17 @@ function runToClose(s: GameState): void {
 }
 
 describe("一天三态", () => {
-  it("新局是准备阶段：时钟不走，一个顾客都不会来", () => {
+  it("新局是建店阶段：连铺位都没选，时钟不走、也没有顾客", () => {
+    const s = brandNew();
+    expect(s.phase).toBe("setup");
+    expect(s.site).toBe("");
+    for (let i = 0; i < 30; i++) tickMinute(s);
+    expect(s.phase).toBe("setup");
+    expect(s.flow.minuteOfDay).toBe(0);
+    expect(s.flow.customers.length).toBe(0);
+  });
+
+  it("开好店后的准备阶段：时钟不走，一个顾客都不会来", () => {
     const s = fresh();
     expect(s.phase).toBe("prep");
     expect(s.dayReport).toBeNull();

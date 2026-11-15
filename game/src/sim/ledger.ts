@@ -1,5 +1,6 @@
 import type { GameState, MonthRecord, YearRecord } from "./state";
 import { rentFor } from "../data/balance";
+import { rentFactorOf } from "./setup";
 const YEAR_BONUS: Record<YearRecord["rating"], number> = { S: 8000, A: 4000, B: 2000, C: 500, D: 0 };
 const GRADES: YearRecord["rating"][] = ["D", "C", "B", "A", "S"];
 
@@ -26,8 +27,9 @@ export function closeMonth(state: GameState): void {
   const target = state.monthTarget;
   const avgSat = state.monthSatCount > 0 ? state.monthSatSum / state.monthSatCount : 0;
   const wages = state.monthWages;
-  // 房租 = 当月营收目标 × 22%（账本行 13 拍板 B）。数值口径见 data/balance.ts。
-  const rent = rentFor(target);
+  // 房租 = 当月营收目标 × 22% × 铺位系数（账本行 13 拍板 B；系数见 data/sites.ts）。
+  // 系数为 1 时与现实临街小铺 ¥4,500/月 对齐；街边摊 0.6、临街铺 1.4。
+  const rent = Math.round(rentFor(target) * rentFactorOf(state));
 
   // K1：日营收峰值在 endDay 里逐日更新（见 sim/state.ts），此处不再动 tally
 

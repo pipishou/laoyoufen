@@ -49,6 +49,16 @@ with sync_playwright() as pw:
     page.reload(wait_until="load")
     page.wait_for_timeout(2000)
 
+    # 0) 先过建店（S0）：全新存档停在「开张」，必须先选铺位 + 起名
+    if page.evaluate("() => !!document.querySelector('.setup')"):
+        page.click('.sitecard[data-site="alley"]')
+        page.click("[data-open]")
+        page.wait_for_timeout(800)
+    OUT["after_setup"] = page.evaluate(
+        "() => ({phase: window.__laoyou.state.phase, site: window.__laoyou.state.site,"
+        " name: window.__laoyou.state.shopName})"
+    )
+
     # 1) 全新一局停在准备
     OUT["fresh"] = page.evaluate(
         "() => ({phase: window.__laoyou.state.phase, minute: window.__laoyou.state.flow.minuteOfDay,"

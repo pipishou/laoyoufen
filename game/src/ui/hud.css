@@ -108,6 +108,12 @@ body {
   box-shadow: 3px 3px 0 var(--shadow);
 }
 
+/* 还没起店名时的招牌：淡一点，提示这是占位 */
+.logo.unnamed {
+  opacity: 0.6;
+  filter: grayscale(0.35);
+}
+
 .date {
   font-size: 16px;
   letter-spacing: 1px;

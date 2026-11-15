@@ -126,7 +126,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
 
   root.innerHTML = `
   <div id="topbar">
-    <div class="logo">老友粉店</div>
+    <div class="logo" data-shopname>老友粉店</div>
     <div class="date">第 <b data-year>1</b> 年 · <b data-month>1</b> 月 · <b data-day>1</b> 日<span class="clock" data-clock>06:00</span></div>
     <div class="stat"><span class="k">现金</span><span class="v" data-cash>¥0</span></div>
     <div class="stat"><span class="k">评价</span><span class="stars" data-stars>☆☆☆☆☆</span><span class="v" data-rep>0.0</span></div>
@@ -326,6 +326,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     cooknow: q("[data-cooknow]"),
     audio: q<HTMLButtonElement>("[data-audio]"),
     clock: q("[data-clock]"),
+    shopname: q("[data-shopname]"),
     openpill: q<HTMLButtonElement>("[data-openpill]"),
   };
 
@@ -379,11 +380,18 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
 
     // 一天三态：钟面、开门按钮、日结单（对齐开罗「打烊报数」）
     const phase = s.phase;
+    // 招牌：建店阶段先显示占位，开张后换成玩家起的店名
+    el.shopname.textContent = s.shopName || "老友粉店";
+    el.shopname.classList.toggle("unnamed", !s.shopName);
     // 打烊后 endDay 已把 minuteOfDay 归零，钟面得停在关门的时刻
     el.clock.textContent =
       phase === "prep" ? SHOP_OPEN_LABEL : phase === "closing" ? SHOP_CLOSE_LABEL : clockOf(s.flow.minuteOfDay);
     el.clock.classList.toggle("closed", phase !== "open");
-    if (phase === "prep") {
+    if (phase === "setup") {
+      el.openpill.textContent = "● 还没开张";
+      el.openpill.className = "pill done";
+      el.openpill.disabled = true;
+    } else if (phase === "prep") {
       el.openpill.textContent = "● 开门营业";
       el.openpill.className = "pill prep";
       el.openpill.disabled = false;
