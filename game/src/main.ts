@@ -30,6 +30,7 @@ import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
+import { sideSummary, toggleSide } from "./sim/sides";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -199,6 +200,13 @@ panels = mountPanels(hudRoot, {
     playSfx("upgrade");
     refresh();
   },
+  toggleSide(id) {
+    const r = toggleSide(state, String(id));
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(sideSummary(state), "info");
+    playSfx("ui");
+    refresh();
+  },
   enterContest(type) {
     const r = enterContest(state, type as ContestTypeId);
     if (!r) {
@@ -337,6 +345,12 @@ function tickFeedback(): void {
   if (s.flow.lastFrenzy) {
     hud.showToast(s.flow.lastFrenzy, "like");
     s.flow.lastFrenzy = null;
+  }
+
+  // 凑出加料组合（老友味/酸辣开胃）—— 客人自己点的，报一句就够，不刷屏
+  if (s.flow.lastSides) {
+    hud.showToast(s.flow.lastSides, "like");
+    s.flow.lastSides = null;
   }
 }
 

@@ -1,4 +1,5 @@
 import { ARCHETYPE_BY_ID, LIKE_DIMS_ORDER } from "../data/customers";
+import { START_SIDES } from "../data/sides";
 import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -90,6 +91,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 11 &&
     v.saveVersion !== 10 &&
     v.saveVersion !== 9 &&
     v.saveVersion !== 8 &&
@@ -226,7 +228,14 @@ export function deserialize(raw: string): GameState | null {
   });
   // v5 → v6（K1 目标换骨）：补累计成就计数与段位，老档继续可玩
   if (!parsed.tally || typeof parsed.tally !== "object") {
-    parsed.tally = { bowls: 0, bestDayRevenue: 0, maxQueue: 0, districts: ["xingning"] };
+    parsed.tally = {
+      bowls: 0,
+      bestDayRevenue: 0,
+      maxQueue: 0,
+      districts: ["xingning"],
+      sideRevenue: 0,
+      comboHits: 0,
+    };
   } else {
     if (typeof parsed.tally.bowls !== "number") parsed.tally.bowls = 0;
     if (typeof parsed.tally.bestDayRevenue !== "number") parsed.tally.bestDayRevenue = 0;
@@ -319,6 +328,21 @@ export function deserialize(raw: string): GameState | null {
   if (parsed.flow && typeof parsed.flow === "object") {
     const fl = parsed.flow as { lastFrenzy?: unknown };
     if (typeof fl.lastFrenzy !== "string") fl.lastFrenzy = null;
+  }
+  // v12 → v13（加料台与饮料柜）：老档没有 sides，补成「开局三样上架、没卖过」；
+  // tally 补两个累加字段。不补的话 settle 里读 state.sides.sold 会炸。
+  const sd = (parsed as { sides?: unknown }).sides as Record<string, unknown> | undefined;
+  if (!sd || typeof sd !== "object") {
+    parsed.sides = { active: [...START_SIDES], sold: {} };
+  } else {
+    const active = Array.isArray(sd.active) ? sd.active.filter((x): x is string => typeof x === "string") : [];
+    const sold = sd.sold && typeof sd.sold === "object" ? (sd.sold as Record<string, number>) : {};
+    parsed.sides = { active: active.length > 0 ? active : [...START_SIDES], sold };
+  }
+  if (parsed.tally && typeof parsed.tally === "object") {
+    const t = parsed.tally as { sideRevenue?: unknown; comboHits?: unknown };
+    if (typeof t.sideRevenue !== "number" || !isFinite(t.sideRevenue)) t.sideRevenue = 0;
+    if (typeof t.comboHits !== "number" || !isFinite(t.comboHits)) t.comboHits = 0;
   }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;

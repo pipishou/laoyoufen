@@ -9,8 +9,9 @@ import { closeMonth } from "./ledger";
 import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
+import { START_SIDES } from "../data/sides";
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -100,6 +101,10 @@ export interface CustomerFlow {
   satCountToday: number;
   /** 最近一次「热卖开始了」的提示文案，HUD 读完即消费 */
   lastFrenzy: string | null;
+  /** 加料凑出组合时的喜报（老友味/酸辣开胃/全套），消费一次置空 */
+  lastSides: string | null;
+  /** 上次报加料组合的绝对分钟（节流用，免得每碗都弹） */
+  sideToastAt: number;
 }
 
 export type StaffRole = "cook" | "prep" | "server";
@@ -275,6 +280,19 @@ export interface Tally {
   maxQueue: number;
   /** 已开店（或已在营）的区，见 data/nanning.ts */
   districts: string[];
+  /** 累计加购收入（加料/饮料，不含一碗的基础价） */
+  sideRevenue: number;
+  /** 累计凑出组合（老友味/酸辣开胃/全套）的次数 */
+  comboHits: number;
+}
+
+/**
+ * 加料台与饮料柜（P41 客单价结构）。
+ * active 是「上架的单品 id」，sold 是累计卖出份数 —— 只增不减，所以不用每天清零。
+ */
+export interface SideState {
+  active: string[];
+  sold: Record<string, number>;
 }
 
 export interface GameState {
@@ -342,6 +360,8 @@ export interface GameState {
    * 门口有人排队且今天吃得满意 → 槽涨满 → 30 分钟来客翻倍、店员 aura 涨满意度。
    */
   frenzy: FrenzyState;
+  /** 加料台与饮料柜（P41 客单价结构），见 `data/sides.ts` */
+  sides: SideState;
   /** 年度结算单，非空时 HUD 强制弹出 */
   pendingReport: YearRecord | null;
   /** 36 个月跑完 */
@@ -444,6 +464,12 @@ export function createInitialState(playerId: string, seed: number): GameState {
       bestDayRevenue: 0,
       maxQueue: 0,
       districts: [START_DISTRICT],
+      sideRevenue: 0,
+      comboHits: 0,
+    },
+    sides: {
+      active: [...START_SIDES],
+      sold: {},
     },
     gradeLevel: 0,
     price: DEFAULT_PRICE,
@@ -471,6 +497,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastGift: null,
       lastLostReason: null,
       lastFrenzy: null,
+      lastSides: null,
+      sideToastAt: -9999,
       satSumToday: 0,
       satCountToday: 0,
     },

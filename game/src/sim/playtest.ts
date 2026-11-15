@@ -48,6 +48,10 @@ export interface Quant {
   championCount: number;
   gradeLevel: number;
   frenzyCount: number;
+  /** 加购（加料/饮料）占营业额的比例，0–1 */
+  sideShare: number;
+  /** 凑出加料组合的次数 */
+  comboHits: number;
 }
 
 export interface PlaytestReport {
@@ -109,6 +113,11 @@ export function quantOf(s: GameState): Quant {
     championCount: s.contest.results.filter((r) => r.rank === 1).length,
     gradeLevel: s.gradeLevel,
     frenzyCount: s.frenzy?.count ?? 0,
+    sideShare:
+      s.monthRevenue + (s.tally?.sideRevenue ?? 0) > 0
+        ? (s.tally?.sideRevenue ?? 0) / (s.monthRevenue + (s.tally?.sideRevenue ?? 0))
+        : 0,
+    comboHits: s.tally?.comboHits ?? 0,
   };
 }
 
@@ -259,8 +268,20 @@ export function auditPlaytest(s: GameState): PlaytestReport {
     });
   }
 
-  out.sort((a, b) => {
-    const rank: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
+  // ── T9 客单价结构：加料/饮料压根没人点 → 功能等于没做（P41）──
+  if (q.months >= 6 && q.sideShare < 0.03) {
+    out.push({
+      id: "T9",
+      bucket: "design",
+      severity: "medium",
+      title: "加料台没被用起来",
+      evidence: `三年加购只占营业额 ${(q.sideShare * 100).toFixed(1)}%（组合 ${q.comboHits} 次）`,
+      kairo: "Toppings「Toppings also get XP when they are sold individually」＋ Customers 1「钱包是上限」",
+      fix: "先看是不是价开太高（每人钱包 8–15 元）、或者上架的加料太少；中期收入不能只靠碗数",
+    });
+  }
+
+  out.sort((a, b) => {    const rank: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
     return rank[a.severity] - rank[b.severity] || a.id.localeCompare(b.id);
   });
 

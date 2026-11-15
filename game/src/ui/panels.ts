@@ -13,6 +13,7 @@ import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost } from "../sim/equipment";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
+import { kindLabel, sideShareOf, sideSummary, sideViews } from "../sim/sides";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -77,6 +78,8 @@ export interface PanelActions {
   buy(id: string): void;
   buyEquip(id: string): void;
   buyExpand(): void;
+  /** 加料/饮料上架或下架（P41） */
+  toggleSide(id: string): void;
   /** 报名比赛：type = staff / customers / shop（见 data/contest.ts） */
   enterContest(type: string): void;
   /** 交费评段位 */
@@ -221,6 +224,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       case "movedistrict":
         actions.moveDistrict(id);
         break;
+      case "toggleside":
+        actions.toggleSide(id);
+        break;
       case "dismiss":
         actions.dismissReport();
         break;
@@ -311,6 +317,33 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>`
       : `<div class="lrow"><div class="lname">已经扩到顶了<span class="tag2">座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</span></div><div class="lmeta">下一步是换区开分店（S6）。</div></div>`;
 
+    // 加料台与饮料柜（P41 客单价结构）：照开罗 Toppings「可单独卖」+ Customers 1「钱包是上限」
+    const sv = sideViews(s);
+    const share = (sideShareOf(s) * 100).toFixed(1);
+    const sidesSec = `<div class="sec">
+        <div class="sechd">加料台与饮料柜 · ${sideSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">一碗粉之外再卖一件 —— 加料不占座、不占灶，只加客单价。客人钱包是硬上限，价钱开到钱包外头就没人点了。三样加料凑齐才算组合（老友味 / 全套加蛋），两样是本分，不稀奇。</div>
+        ${sv
+          .map(
+            (v) => `<div class="lrow${v.unlocked ? "" : " locked"}">
+              <div class="lname">${v.def.name}<span class="tag2">${kindLabel(v.def.kind)}</span>${
+                v.on && v.unlocked
+                  ? '<span class="tag2">在架</span>'
+                  : v.unlocked
+                    ? '<span class="tag2">下架</span>'
+                    : `<span class="tag2">还差 ${v.short} 人</span>`
+              }<span class="tag2">卖 ¥${v.def.priceYuan} / 本 ¥${v.def.costYuan}</span></div>
+              <div class="lmeta">满意 +${v.def.satBonus}｜已卖 ${v.sold} 份｜开罗：${v.def.kairo}</div>
+              <div class="lmeta" style="color:#8a7a63">「${v.def.line}」</div>
+              <div class="lbtns"><button type="button" data-act="toggleside" data-id="${v.def.id}" ${v.unlocked ? "" : "disabled"}>${
+                v.on && v.unlocked ? "下架" : v.unlocked ? "上架" : "还没解锁"
+              }</button></div>
+            </div>`,
+          )
+          .join("")}
+        <div class="lmeta" style="padding:6px 2px 0">累计加购 ${money(s.tally.sideRevenue)}（占营业额 ${share}%）· 凑出组合 ${s.tally.comboHits} 次</div>
+      </div>`;
+
     // 段位评定（开罗 Grading Tests）：交费 + 累计人次达标才升段，升段才能报更高档比赛
     const gc = checkGrade(s);
     const gradeSec = `<div class="sec">
@@ -389,6 +422,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd">摆件</div>
         ${ups}
       </div>
+      ${sidesSec}
       ${gradeSec}
       ${craftSec}
       ${districtSec}`;
@@ -562,7 +596,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

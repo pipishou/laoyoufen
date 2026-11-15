@@ -29,6 +29,9 @@ function goodState(): GameState {
   s.gradeLevel = 6;
   s.tally.bowls = s.months.reduce((n, m) => n + m.customers, 0);
   s.frenzy = { gauge: 0, until: -1, restUntil: -1, count: 24 };
+  // P41：客单价结构也得真的用起来，否则 T9 会说「加料台没被用起来」
+  s.tally.sideRevenue = 42_000;
+  s.tally.comboHits = 120;
   s.contest.results = Array.from({ length: 6 }, (_, i) => ({
     month: i * 6,
     round: i,

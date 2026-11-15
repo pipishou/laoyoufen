@@ -1,0 +1,240 @@
+/**
+ * 加料台与饮料柜 —— 「客单价结构」（P41）
+ *
+ * 为什么要有这一层：中期的营收被两个天花板压死 —— 出餐产能（座位×灶位×并行槽 ≈120 碗/日）
+ * 与单价（¥12 已是南宁牛肉粉的现实上限）。开罗的另一条腿不在碗数上，在**客单价**上：
+ *
+ *   help.txt ▼Toppings：「When ramen sells, the toppings used on it will earn XP …
+ *                        **Toppings also get XP when they are sold individually.**」
+ *   help.txt ▼Customers 1：「**Wallet**: Products that exceed a customer's wallet are harder for them to buy」
+ *   help.txt ▼Construction (Facilities)：「Depending on their type, they can have a variety of effects.
+ *                        **In some cases you will also get money when they are used.**」
+ *
+ * 所以我们做的不是「第二份主食」，是「一碗粉之外再加一件」：加料（2 元级）与饮料（3 元级）。
+ * 价格全部按 2025 南宁街边粉店的实际标价定，成本按淡村市场的批发价估。
+ *
+ * 组合（照开罗 topping_combo.txt 的「两种浇头凑一起触发一个 combo」）：
+ * 酸笋 + 豆豉 = 老友味；酸笋 + 辣椒 = 酸辣开胃。凑齐了客人更满意。
+ */
+
+export type SideKind = "topping" | "drink";
+
+export type SideId =
+  | "suansun"
+  | "douchi"
+  | "lazhi"
+  | "ludan"
+  | "zhuzai"
+  | "youtiao"
+  | "fuzhu"
+  | "qingcai"
+  | "doujiang"
+  | "huaifen"
+  | "lvdou"
+  | "ningmeng";
+
+export interface SideDef {
+  id: SideId;
+  name: string;
+  kind: SideKind;
+  /** 进货成本（元/份） */
+  costYuan: number;
+  /** 加购价（元/份） */
+  priceYuan: number;
+  /** 吃到/喝到加多少满意度 */
+  satBonus: number;
+  /** 累计接待多少人才有人点（开罗 Toppings 要卖过才涨级，我们用「熟客够多才有人要」代替） */
+  needCustomers: number;
+  /** 开罗对应 */
+  kairo: string;
+  /** 一句南宁话 */
+  line: string;
+}
+
+export const SIDES: SideDef[] = [
+  {
+    id: "suansun",
+    name: "加酸笋",
+    kind: "topping",
+    costYuan: 0.5,
+    priceYuan: 2,
+    satBonus: 2,
+    needCustomers: 0,
+    kairo: "Toppings（可单独卖）",
+    line: "老友粉的魂，多一勺酸笋多一层爽。",
+  },
+  {
+    id: "douchi",
+    name: "加豆豉",
+    kind: "topping",
+    costYuan: 0.3,
+    priceYuan: 2,
+    satBonus: 2,
+    needCustomers: 0,
+    kairo: "Toppings（可单独卖）",
+    line: "豆豉下锅爆香，那股镬气才出得来。",
+  },
+  {
+    id: "lazhi",
+    name: "加辣椒",
+    kind: "topping",
+    costYuan: 0.3,
+    priceYuan: 1,
+    satBonus: 1,
+    needCustomers: 0,
+    kairo: "Shredded Chili",
+    line: "指天椒剁碎，敢加的都是老南宁。",
+  },
+  {
+    id: "ludan",
+    name: "加卤蛋",
+    kind: "topping",
+    costYuan: 1.2,
+    priceYuan: 3,
+    satBonus: 3,
+    needCustomers: 60,
+    kairo: "Boiled Eggs",
+    line: "卤了一夜的蛋，切开还是溏心。",
+  },
+  {
+    id: "zhuzai",
+    name: "加猪杂",
+    kind: "topping",
+    costYuan: 2.2,
+    priceYuan: 5,
+    satBonus: 4,
+    needCustomers: 150,
+    kairo: "Thin Roast Pork",
+    line: "猪肝粉肠瘦肉各来一点，一碗变两碗。",
+  },
+  {
+    id: "youtiao",
+    name: "加根油条",
+    kind: "topping",
+    costYuan: 0.8,
+    priceYuan: 2,
+    satBonus: 2,
+    needCustomers: 300,
+    kairo: "—（本土）",
+    line: "油条掰断泡进汤里，吸饱了才好吃。",
+  },
+  {
+    id: "fuzhu",
+    name: "加腐竹",
+    kind: "topping",
+    costYuan: 0.9,
+    priceYuan: 3,
+    satBonus: 2,
+    needCustomers: 600,
+    kairo: "—（本土）",
+    line: "腐竹要提前泡，泡不透就是嚼皮带。",
+  },
+  {
+    id: "qingcai",
+    name: "加青菜",
+    kind: "topping",
+    costYuan: 0.7,
+    priceYuan: 2,
+    satBonus: 1,
+    needCustomers: 1000,
+    kairo: "Wakame",
+    line: "一筷子青菜，心里就没那么罪恶。",
+  },
+  {
+    id: "doujiang",
+    name: "现磨豆浆",
+    kind: "drink",
+    costYuan: 0.6,
+    priceYuan: 2,
+    satBonus: 1,
+    needCustomers: 60,
+    kairo: "Vending（售货机）",
+    line: "早上现磨的，甜的咸的自己说。",
+  },
+  {
+    id: "huaifen",
+    name: "槐花粉",
+    kind: "drink",
+    costYuan: 1.2,
+    priceYuan: 4,
+    satBonus: 3,
+    needCustomers: 150,
+    kairo: "Facilities（用一次收一次钱）",
+    line: "槐花做的凉粉，浇红糖水，热天卖得最快。",
+  },
+  {
+    id: "lvdou",
+    name: "生地绿豆沙",
+    kind: "drink",
+    costYuan: 1.0,
+    priceYuan: 3,
+    satBonus: 2,
+    needCustomers: 300,
+    kairo: "Facilities（用一次收一次钱）",
+    line: "生地压一压火气，熬夜的人专门来喝。",
+  },
+  {
+    id: "ningmeng",
+    name: "手打柠檬茶",
+    kind: "drink",
+    costYuan: 1.4,
+    priceYuan: 5,
+    satBonus: 3,
+    needCustomers: 600,
+    kairo: "Facilities（用一次收一次钱）",
+    line: "柠檬要现捶，捶轻了不出味，捶重了发苦。",
+  },
+];
+
+export const SIDE_BY_ID = new Map<string, SideDef>(SIDES.map((s) => [s.id, s]));
+
+/** 一开始就摆得出来的三样（重庆小面摊也有这三样） */
+export const START_SIDES: string[] = ["suansun", "douchi", "lazhi"];
+
+/**
+ * 组合（照 `topping_combo.txt`：两种浇头凑一起触发一个 combo）。
+ *
+ * 注意：**酸笋+豆豉不算组合** —— 那是老友粉的本分，每碗都有，凑出来的东西就不稀奇了。
+ * 组合要「多花一件的钱才凑得出」，否则它会变成噪音（第一次实现就是这样：
+ * 36 个月凑了 16,125 次，等于每碗都在报喜）。
+ */
+export interface SideCombo {
+  id: string;
+  name: string;
+  needs: SideId[];
+  satBonus: number;
+  line: string;
+}
+
+export const SIDE_COMBOS: SideCombo[] = [
+  {
+    id: "suanla",
+    name: "酸辣开胃",
+    needs: ["suansun", "lazhi"],
+    satBonus: 2,
+    line: "又酸又辣，一碗下去额头冒汗。",
+  },
+  {
+    id: "laoyou",
+    name: "老友味",
+    needs: ["suansun", "douchi", "lazhi"],
+    satBonus: 4,
+    line: "酸笋、豆豉、辣椒凑齐，这才是老友粉的底子。",
+  },
+  {
+    id: "quandan",
+    name: "全套加蛋",
+    needs: ["suansun", "douchi", "ludan"],
+    satBonus: 3,
+    line: "卤蛋切开泡汤，懂吃的人才这么点。",
+  },
+];
+
+/** 一顿最多加几件（照开罗：浇头受 max toppings 限制，我们给 2 件加料 + 1 份饮料） */
+export const MAX_TOPPING_ADDS = 2;
+export const MAX_DRINK_ADDS = 1;
+
+/** 客人愿意加购的基础概率；吃得满意的人更爱加（0.22 → 0.47） */
+export function sideChanceOf(sat: number): number {
+  return Math.min(0.5, 0.22 + Math.max(0, sat) / 400);
+}

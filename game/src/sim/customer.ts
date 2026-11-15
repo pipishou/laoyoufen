@@ -18,6 +18,8 @@ import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, sur
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
+import { pickSides, recordSides } from "./sides";
+import { absMinuteOf } from "./frenzy";
 import {
   frenzyAura,
   frenzyBudgetBoost,
@@ -287,7 +289,7 @@ function surveyTick(state: GameState, c: QueueCustomer): void {
 function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
   const regularBonus = c.regular ? regularSatisfactionBonus(state, c.archetypeId) : 0;
-  const sat = arch
+  let sat = arch
     ? satisfactionOf(
         score,
         arch,
@@ -300,8 +302,29 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
       )
     : 50;
 
-  const paid = state.price;
-  const cost = score.cost * costMultiplier(state) * equipCostMultiplier(state);
+  /**
+   * 客单价结构（P41）：客人吃完这碗，还愿意再加一件吗？
+   * 加购受钱包上限约束（开罗 Customers 1「Products that exceed a customer's wallet
+   * are harder for them to buy」），所以 room = 钱包 − 基础价。
+   */
+  const wallet = arch ? arch.budget * priceTolerance(score.total) : state.price;
+  const sidePick = arch ? pickSides(state, arch, sat, wallet - state.price) : { items: [], paid: 0, cost: 0, combo: null, satBonus: 0 };
+  if (sidePick.items.length > 0) {
+    sat = clamp(sat + sidePick.satBonus, 0, 100);
+    recordSides(state, sidePick);
+    // 凑出组合才吭声，而且一个半小时只吭一次 —— 组合现在要三件才凑得出，但仍可能连着来
+    if (sidePick.combo) {
+      const nowMin = absMinuteOf(state);
+      if (nowMin - state.flow.sideToastAt >= 90) {
+        state.flow.sideToastAt = nowMin;
+        state.flow.lastSides = `${sidePick.combo}！${sidePick.items.map((d) => d.name).join(" + ")}（+¥${sidePick.paid}）`;
+      }
+    }
+  }
+
+  const paid = state.price + sidePick.paid;
+  const cost =
+    score.cost * costMultiplier(state) * equipCostMultiplier(state) + sidePick.cost;
   state.cash += paid - cost;
   state.monthRevenue += paid;
   state.flow.revenueToday += paid;
