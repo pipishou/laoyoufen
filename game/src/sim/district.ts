@@ -122,17 +122,22 @@ export interface MoveResult {
 /**
  * 换区。只允许在「还没开门」时搬（开罗也是在营业窗口之间调区域），
  * 钱不够不扣钱；搬完能量从 1.0 重新开始。
+ *
+ * 转让费是**一次性解锁**：付过一次的区以后随时可以搬回去（`tally.districts` 记账），
+ * 对齐开罗 `region.txt` 的「买个区就归你了」；否则从免费区搬出去再搬回来等于白嫖一个新池子。
  */
 export function moveShop(state: GameState, id: string): MoveResult {
   if (state.phase !== "prep") return { ok: false, reason: "打烊后再搬" };
   if (id === state.district) return { ok: false, reason: "已经在这个区了" };
   const d = districtById(id as DistrictId);
-  if (state.cash < d.transferFeeYuan) {
-    return { ok: false, reason: `转让费还差 ¥${Math.ceil(d.transferFeeYuan - state.cash).toLocaleString("zh-CN")}` };
+  const unlocked = state.tally.districts.includes(d.id);
+  const fee = unlocked ? 0 : d.transferFeeYuan;
+  if (state.cash < fee) {
+    return { ok: false, reason: `转让费还差 ¥${Math.ceil(fee - state.cash).toLocaleString("zh-CN")}` };
   }
-  state.cash -= d.transferFeeYuan;
+  state.cash -= fee;
   state.district = d.id;
   state.districtSince = state.month;
   if (!state.tally.districts.includes(d.id)) state.tally.districts.push(d.id);
-  return { ok: true, paid: d.transferFeeYuan };
+  return { ok: true, paid: fee };
 }

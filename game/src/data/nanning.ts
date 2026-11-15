@@ -45,19 +45,25 @@ export interface District {
 /** 客/日/亿元。0.16 是把兴宁区（442.63 亿）对齐到 71 客/日 得出的。 */
 export const TRAFFIC_PER_GDP_YI = 0.16;
 
+/**
+ * 转让费（元）。锚定「本作一个月营收」而不是 GDP 线性 —— 开罗的区解锁价也是这个量级
+ * （`region.txt` 第 2 区 1,000，而一碗拉面 1,050，约等于一天到几天的营业额），
+ * 玩家换区的心理成本是「值不值得掏一两个月的钱」，不是「按 GDP 算命」。
+ * 参照：兴宁起步店月营收约 ¥2.7 万（4 座 · 70 碗/日 · ¥9）。
+ */
 export const DISTRICTS: readonly District[] = [
   { id: "xingning", name: "兴宁区", gdpYi: 442.63, transferFeeYuan: 0, pitch: "老城区，朝阳广场人流；祖传铺面，起步就在这" },
-  { id: "yongning", name: "邕宁区", gdpYi: 200.9, transferFeeYuan: 20_000, pitch: "蒲庙老镇，租金便宜，街坊生意" },
-  { id: "mashan", name: "马山县", gdpYi: 116.23, transferFeeYuan: 18_000, pitch: "山里县城，客流小但竞争也小" },
-  { id: "shanglin", name: "上林县", gdpYi: 122.3, transferFeeYuan: 20_000, pitch: "大明山脚，周末游客多" },
-  { id: "longan", name: "隆安县", gdpYi: 141.68, transferFeeYuan: 24_000, pitch: "右江边，工业园工人饭点集中" },
-  { id: "binyang", name: "宾阳县", gdpYi: 312.35, transferFeeYuan: 32_000, pitch: "炮龙节老家，节庆生意爆" },
-  { id: "hengzhou", name: "横州市", gdpYi: 401.61, transferFeeYuan: 38_000, pitch: "茉莉花都，早市客流稳" },
-  { id: "wuming", name: "武鸣区", gdpYi: 463.94, transferFeeYuan: 48_000, pitch: "大学城 + 新工厂，年轻人多" },
-  { id: "liangqing", name: "良庆区", gdpYi: 534.78, transferFeeYuan: 62_000, pitch: "五象新区，写字楼白领" },
-  { id: "jiangnan", name: "江南区", gdpYi: 692.83, transferFeeYuan: 72_000, pitch: "机场 + 工业，客流最杂" },
-  { id: "xixiangtang", name: "西乡塘区", gdpYi: 1053.45, transferFeeYuan: 92_000, pitch: "大学城，学生党钱包薄但人多" },
-  { id: "qingxiu", name: "青秀区", gdpYi: 1512.66, transferFeeYuan: 120_000, pitch: "东盟商务区，客单价最高" },
+  { id: "yongning", name: "邕宁区", gdpYi: 200.9, transferFeeYuan: 8_000, pitch: "蒲庙老镇，租金便宜，街坊生意" },
+  { id: "mashan", name: "马山县", gdpYi: 116.23, transferFeeYuan: 6_000, pitch: "山里县城，客流小但竞争也小" },
+  { id: "shanglin", name: "上林县", gdpYi: 122.3, transferFeeYuan: 8_000, pitch: "大明山脚，周末游客多" },
+  { id: "longan", name: "隆安县", gdpYi: 141.68, transferFeeYuan: 10_000, pitch: "右江边，工业园工人饭点集中" },
+  { id: "binyang", name: "宾阳县", gdpYi: 312.35, transferFeeYuan: 18_000, pitch: "炮龙节老家，节庆生意爆" },
+  { id: "hengzhou", name: "横州市", gdpYi: 401.61, transferFeeYuan: 22_000, pitch: "茉莉花都，早市客流稳" },
+  { id: "wuming", name: "武鸣区", gdpYi: 463.94, transferFeeYuan: 32_000, pitch: "大学城 + 新工厂，年轻人多" },
+  { id: "liangqing", name: "良庆区", gdpYi: 534.78, transferFeeYuan: 40_000, pitch: "五象新区，写字楼白领" },
+  { id: "jiangnan", name: "江南区", gdpYi: 692.83, transferFeeYuan: 55_000, pitch: "机场 + 工业，客流最杂" },
+  { id: "xixiangtang", name: "西乡塘区", gdpYi: 1053.45, transferFeeYuan: 70_000, pitch: "大学城，学生党钱包薄但人多" },
+  { id: "qingxiu", name: "青秀区", gdpYi: 1512.66, transferFeeYuan: 95_000, pitch: "东盟商务区，客单价最高" },
 ] as const;
 
 export const DISTRICT_BY_ID: ReadonlyMap<DistrictId, District> = new Map(

@@ -1,7 +1,7 @@
 import { describe, it } from "vitest";
 import { FLOW } from "../data/balance";
 import { nextStaffNeed, staffSlots } from "../data/staff";
-import { advanceMinute, createInitialState, type GameState } from "./state";
+import { ackDayReport, advanceMinute, createInitialState, type GameState } from "./state";
 import { resolveEvent } from "./events";
 import { scoreRecipe } from "./score";
 import { buyExpansion, nextExpansion } from "./expansion";
@@ -9,24 +9,29 @@ import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
 import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
+import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
+import { auditPlaytest, verdictLabel } from "./playtest";
 
 /**
- * 「替身」记录：一个按规矩办事的假玩家，完整玩 36 个月。
+ * 「替身」＝游戏测试员：一个按规矩办事的假玩家，完整玩 36 个月，跑完还要交体检单。
  *
- * 它**不是**人类证据（我知道答案，会走捷径）——它只是把「一局完整流程」跑一遍，
- * 用来回答三件事：
+ * 它**不是**人类证据（我知道答案，会走捷径）——它是一把量尺，用来回答三件事：
  *  ① 36 个月里每个月的营收/流失/现金长什么样；
- *  ② 只做「调价 + 扩建 + 雇人」这三件最朴素的操作，能不能活得下去；
- *  ③ 哪个月开始现金吃紧（也就是玩家第一次会卡住的地方）。
+ *  ② 只做「调价 + 买设备 + 扩建 + 雇人 + 评段 + 比赛 + 换区」这些朴素操作，能不能活得下去；
+ *  ③ 哪个月开始现金吃紧、哪段路开始没有决策点。
  *
- * 策略（刻意朴素，不用最优解）：
- *  - 满意 < 55 → 降价 1 元（最低 8）；满意 ≥ 70 且流失 > 25% → 涨价 1 元（最高 12）；
- *  - 现金 ≥ 下一档扩建价 + ¥8,000 缓冲 → 扩建（S5，两档 ¥12,000/¥35,000）；
- *  - 有空坑（累计接待解锁的人手）且现金 ≥ 介绍费 + ¥6,000 缓冲 → 雇最便宜的那个（S2）；
+ * 跑完交给 `auditPlaytest()`（`sim/playtest.ts`）出四态裁决 + 问题四桶，
+ * 判据骨架来自 Claude Code Game Studios 的 playtest-report / soak-test。
+ *
+ * 策略（刻意朴素，不用最优解；每一条都能在开罗的 help.txt 里找到对应动作）：
+ *  - 定价贴着南宁现实价：满意 <50 且价 >9 → 降 1（下限 ¥9＝老友猪杂粉现实价）；
+ *    价 <11、满意 ≥75、流失 <5% → 涨 1；
+ *  - 流失 >40% 且现金 >设备下档价 +¥4,000 → 买设备（P36：旧版替身从不买设备，
+ *    所以「热卖没用/扩建没收益」这类结论其实是替身自己造成的）；
+ *  - 现金 ≥ 下一档扩建价 + ¥8,000 → 扩建（S5，两档 ¥12,000/¥35,000）；
+ *  - 有空坑（累计接待解锁的人手）且现金 ≥ 介绍费 + ¥6,000 → 只补掌勺（S2）；
+ *  - 能评段位就评、比赛月报最擅长类型、本区能量掉到 85% 且别区好 25% 就搬；
  *  - 事件一律选第一项。
- *
- * 为什么要加缓冲：旧版「现金 > 25,000 就扩建」会在扩建后立刻现金见底，
- * 遇到涨价事件就破产；缓冲是替身自己的谨慎，不代表游戏规则。
  */
 function play(seed: number): GameState {
   const s = createInitialState("standin", seed);
@@ -35,6 +40,7 @@ function play(seed: number): GameState {
   const log: string[] = [];
   let expands = 0;
   let hires = 0;
+  let equips = 0;
 
   while (!s.finished && s.months.length < 36 && guard < 5_000_000) {
     if (s.events.pending) {
@@ -43,6 +49,11 @@ function play(seed: number): GameState {
     }
     advanceMinute(s);
     guard += 1;
+
+    // 每天开门那一刻：先点掉昨天的日结单（玩家会点「明天继续」），
+    // 否则 phase 永远停在 closing —— 而 moveShop() 要求 phase === "prep"，
+    // 换区就会被一直拒绝（这是替身自己踩过的坑：模拟器绕过状态机，测出来的是假世界）。
+    if (s.dayReport) ackDayReport(s);
 
     // 每天开门那一刻排班：疲劳过 70 就让他今天休（半薪），别等到 100 辞职
     if (s.flow.minuteOfDay === 0) {
@@ -62,8 +73,23 @@ function play(seed: number): GameState {
       // 定价贴着南宁现实（老友粉主力价 10 元）：只有「卖出去的人不满意」才降价，
       // 只有「人人满意且几乎没人走」才敢涨。流失多不等于需求旺 —— 也可能是价太高把人吓走，
       // 所以流失率高时不许涨价（这条是替身自己踩过的坑：一路涨到 12，流失 77%、日均掉到 30 碗）。
-      if (sat >= 0 && sat < 50 && s.price > 8) s.price -= 1;
+      if (sat >= 0 && sat < 50 && s.price > 9) s.price -= 1;
       else if (s.price < 11 && sat >= 75 && lostRate < 0.05) s.price += 1;
+
+      // 先买设备再扩建：一个灶/一档粉篓 ¥1,500 起，比 ¥12,000 的扩建便宜一个数量级，
+      // 而且直接改「每轮几碗」。旧版替身从不买设备，于是所有「产能不够」的结论
+      // 都被记到了扩建头上（P36）。
+      if (lostRate > 0.4) {
+        for (const id of ["stove", "strainer", "bench"] as const) {
+          const cost = equipNextCost(s, id);
+          if (!Number.isFinite(cost)) continue;
+          if (s.cash < cost + 4_000) continue;
+          if (buyEquipment(s, id).ok) {
+            equips += 1;
+            break;
+          }
+        }
+      }
 
       const exp = nextExpansion(s);
       if (exp && s.cash >= exp.costYuan + 8_000) {
@@ -123,6 +149,7 @@ function play(seed: number): GameState {
           ` · 客 ${m.customers} · 流失 ${(lostRate * 100).toFixed(0)}%` +
           ` · 价 ¥${s.price} · 座 ${s.venue.seats}/灶 ${s.venue.stoves}` +
           ` · 工 ${s.staff.roster.length}/${slots}（日薪 ¥${dailyWage(s)}）` +
+          ` · 设备 ${equipLevel(s, "stove")}/${equipLevel(s, "strainer")}/${equipLevel(s, "bench")}` +
           ` · 段 ${s.gradeLevel} · 区能量 ${(homeEnergyOf(s) * 100).toFixed(0)}%` +
           (need ? ` · 下一个还差 ${need.short} 位` : "") +
           contestNote +
@@ -134,9 +161,21 @@ function play(seed: number): GameState {
   const sc = scoreRecipe(s.recipe, s.price);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 ===`,
   );
   for (const line of log) console.log(line);
+
+  // 跑完交体检单（CCGS playtest-report 的四态裁决 + 问题四桶）
+  const rep = auditPlaytest(s);
+  console.log(
+    `\n[测试员 · 种子 ${seed}] 裁决：${rep.verdict}（${verdictLabel(rep.verdict)}）` +
+      ` · 日均 ${rep.quant.bowlsPerDay} 碗 · 流失 ${(rep.quant.lostRate * 100).toFixed(0)}%` +
+      ` · 均价 ¥${rep.quant.avgPrice} · 成长 ×${rep.quant.growth.toFixed(2)}` +
+      ` · 最长持平 ${rep.quant.flatStreak} 月 · 比赛 ${rep.quant.contestCount} 场 · 段 ${rep.quant.gradeLevel}`,
+  );
+  for (const f of rep.findings) {
+    console.log(`  [${f.severity}/${f.bucket}] ${f.id} ${f.title} —— ${f.evidence}`);
+  }
   return s;
 }
 
