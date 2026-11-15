@@ -16,6 +16,7 @@ import { queueMaxOf } from "./unlocks";
 import type { RecipeScore } from "./score";
 import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, surveyRate } from "./staff";
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
+import { noodleCostFactor, noodleSeasonBonus, noodleServeFactor } from "./noodles";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
 import { pickSides, recordSides } from "./sides";
@@ -297,8 +298,9 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
         state.price,
         c.waited,
         arch.lineLimit,
-        // 热卖时店员起 aura（开罗 Frenzy 2），吃到的人更满意
-        regularBonus + frenzyAura(state),
+        // 热卖时店员起 aura（开罗 Frenzy 2），吃到的人更满意；
+        // 当季粉型（夏天干捞、冬天砂锅）+3，反季 −3（P42）
+        regularBonus + frenzyAura(state) + noodleSeasonBonus(state),
       )
     : 50;
 
@@ -323,8 +325,10 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   }
 
   const paid = state.price + sidePick.paid;
+  // 粉型影响一碗的成本：伊面贵、干捞省粉
   const cost =
-    score.cost * costMultiplier(state) * equipCostMultiplier(state) + sidePick.cost;
+    score.cost * costMultiplier(state) * equipCostMultiplier(state) * noodleCostFactor(state) +
+    sidePick.cost;
   state.cash += paid - cost;
   state.monthRevenue += paid;
   state.flow.revenueToday += paid;
@@ -423,7 +427,8 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
     }
     // 空转（没人排队）就不进冷却，否则下一分钟来的客人要多等一轮
     if (servedAny) {
-      flow.serveCooldown = FLOW.serveMinutes * serveMultiplier(state) * equipServeMultiplier(state);
+      flow.serveCooldown =
+    FLOW.serveMinutes * serveMultiplier(state) * equipServeMultiplier(state) * noodleServeFactor(state);
     }
   }
 

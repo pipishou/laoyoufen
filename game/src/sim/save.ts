@@ -1,5 +1,6 @@
 import { ARCHETYPE_BY_ID, LIKE_DIMS_ORDER } from "../data/customers";
 import { START_SIDES } from "../data/sides";
+import { NOODLE_BY_ID, START_NOODLE } from "../data/noodles";
 import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -91,6 +92,8 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 13 &&
+    v.saveVersion !== 12 &&
     v.saveVersion !== 11 &&
     v.saveVersion !== 10 &&
     v.saveVersion !== 9 &&
@@ -333,17 +336,25 @@ export function deserialize(raw: string): GameState | null {
   // tally 补两个累加字段。不补的话 settle 里读 state.sides.sold 会炸。
   const sd = (parsed as { sides?: unknown }).sides as Record<string, unknown> | undefined;
   if (!sd || typeof sd !== "object") {
-    parsed.sides = { active: [...START_SIDES], sold: {} };
+    parsed.sides = { active: [...START_SIDES], sold: {}, mealDeal: false };
   } else {
     const active = Array.isArray(sd.active) ? sd.active.filter((x): x is string => typeof x === "string") : [];
     const sold = sd.sold && typeof sd.sold === "object" ? (sd.sold as Record<string, number>) : {};
-    parsed.sides = { active: active.length > 0 ? active : [...START_SIDES], sold };
+    parsed.sides = {
+      active: active.length > 0 ? active : [...START_SIDES],
+      sold,
+      mealDeal: sd.mealDeal === true,
+    };
   }
   if (parsed.tally && typeof parsed.tally === "object") {
     const t = parsed.tally as { sideRevenue?: unknown; comboHits?: unknown };
     if (typeof t.sideRevenue !== "number" || !isFinite(t.sideRevenue)) t.sideRevenue = 0;
     if (typeof t.comboHits !== "number" || !isFinite(t.comboHits)) t.comboHits = 0;
   }
+  // v13 → v14（粉型本土化）：老档没有 noodle，补成切粉（老友粉的正统）。
+  // 非法值也回切粉 —— 否则 noodleFit 会读到 undefined 尺寸。
+  const nd = (parsed as { noodle?: unknown }).noodle;
+  if (typeof nd !== "string" || !NOODLE_BY_ID.has(nd)) parsed.noodle = START_NOODLE;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

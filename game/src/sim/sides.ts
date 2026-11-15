@@ -1,6 +1,8 @@
 import {
   MAX_DRINK_ADDS,
   MAX_TOPPING_ADDS,
+  MEAL_DEAL_OFF,
+  MEAL_DEAL_SAT,
   SIDE_BY_ID,
   SIDE_COMBOS,
   SIDES,
@@ -10,6 +12,9 @@ import {
   type SideKind,
 } from "../data/sides";
 import type { CustomerArchetype } from "../data/customers";
+import type { NoodleId, SeasonId } from "../data/noodles";
+import { currentSeason, noodleKindOf } from "./noodles";
+import { isUnlocked } from "./unlocks";
 import { nextFloat } from "./rng";
 import type { GameState } from "./state";
 
@@ -80,16 +85,43 @@ export function toggleSide(state: GameState, id: string): { ok: boolean; reason?
   return { ok: true };
 }
 
-/** 组合判定：只认加料（topping），按 SIDE_COMBOS 顺序取第一个凑齐的 */
-export function comboOf(items: SideDef[]): { name: string; satBonus: number } | null {
-  const ids = new Set(items.filter((i) => i.kind === "topping").map((i) => i.id));
+/**
+ * 组合判定：按 SIDE_COMBOS 顺序取加成最高的一个。
+ *
+ * P42 起组合可以带条件 —— 冬夏限定的两条（干捞配豆浆 / 砂锅配热浆）
+ * 只在「那个粉型 + 那个季节」成立，所以要把粉型与季节传进来。
+ */
+export function comboOf(
+  items: SideDef[],
+  noodle: NoodleId = "flat",
+  season: SeasonId | null = null,
+): { name: string; satBonus: number } | null {
+  const ids = new Set(items.map((i) => i.id));
   let best: { name: string; satBonus: number } | null = null;
   for (const c of SIDE_COMBOS) {
-    if (c.needs.every((n) => ids.has(n))) {
-      if (!best || c.satBonus > best.satBonus) best = { name: c.name, satBonus: c.satBonus };
-    }
+    if (c.noodle && c.noodle !== noodle) continue;
+    if (c.season && c.season !== season) continue;
+    if (!c.needs.every((n) => ids.has(n))) continue;
+    if (!best || c.satBonus > best.satBonus) best = { name: c.name, satBonus: c.satBonus };
   }
   return best;
+}
+
+/** 一顿最多加几件「加料」：基础 2 件，点了手艺树的 topping4 之后 3 件（照开罗 More Toppings） */
+export function maxToppingAdds(state: GameState): number {
+  return MAX_TOPPING_ADDS + (isUnlocked(state, "topping4") ? 1 : 0);
+}
+
+/** 套餐：粉 + 饮料打包，饮料便宜一块（P42）。返回 null 表示这个客没点套餐。 */
+export function mealDealOf(state: GameState, items: SideDef[]): { off: number; sat: number } | null {
+  if (!state.sides.mealDeal) return null;
+  if (!items.some((i) => i.kind === "drink")) return null;
+  return { off: MEAL_DEAL_OFF, sat: MEAL_DEAL_SAT };
+}
+
+export function toggleMealDeal(state: GameState): { ok: boolean; reason?: string } {
+  state.sides.mealDeal = !state.sides.mealDeal;
+  return { ok: true };
 }
 
 /** 初始化一份默认上架表（存档迁移也用） */
@@ -122,10 +154,11 @@ export function pickSides(
 
   /**
    * 先加料后饮料：加料是「一碗粉的延伸」，饮料是「吃完再带走」。
-   * 钱包宽的人（上班族/部长，预算 ≥11）多给一件加料的额度 —— 有钱就想吃全套。
+   * 钱包宽的人（上班族/部长，预算 ≥11）多给一件加料的额度 —— 有钱就想吃全套；
+   * 手艺树点了 topping4（第 4 段「浇头台加一格」）再 +1，对齐开罗 More Toppings。
    */
   const rich = arch ? arch.budget >= 11 : false;
-  const toppingCap = MAX_TOPPING_ADDS + (rich ? 1 : 0);
+  const toppingCap = maxToppingAdds(state) + (rich ? 1 : 0);
 
   for (const def of toppings) {
     if (items.filter((i) => i.kind === "topping").length >= toppingCap) break;
@@ -142,11 +175,19 @@ export function pickSides(
   }
   if (items.length === 0) return EMPTY;
 
-  const combo = comboOf(items);
-  const paid = items.reduce((a, d) => a + d.priceYuan, 0);
+  // 组合与套餐都要知道「今天卖什么粉、什么季节」（P42 的冬夏限定）
+  const kind = noodleKindOf(state);
+  const season = currentSeason(state);
+  const combo = comboOf(items, kind, season);
+  const meal = mealDealOf(state, items);
+  const listPrice = items.reduce((a, d) => a + d.priceYuan, 0);
+  const paid = Math.max(0, listPrice - (meal ? meal.off : 0));
   const cost = items.reduce((a, d) => a + d.costYuan, 0);
   const satBonus =
-    items.reduce((a, d) => a + d.satBonus, 0) + (combo ? combo.satBonus : 0) + (rich ? 1 : 0);
+    items.reduce((a, d) => a + d.satBonus, 0) +
+    (combo ? combo.satBonus : 0) +
+    (meal ? meal.sat : 0) +
+    (rich ? 1 : 0);
 
   return { items, paid, cost, combo: combo?.name ?? null, satBonus };
 }

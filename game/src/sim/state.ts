@@ -9,9 +9,10 @@ import { closeMonth } from "./ledger";
 import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
+import { noodleKindOf } from "./noodles";
 import { START_SIDES } from "../data/sides";
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -293,6 +294,8 @@ export interface Tally {
 export interface SideState {
   active: string[];
   sold: Record<string, number>;
+  /** 粉 + 饮料套餐（P42）：开着时饮料便宜 ¥1，客人觉得划算 */
+  mealDeal: boolean;
 }
 
 export interface GameState {
@@ -362,6 +365,12 @@ export interface GameState {
   frenzy: FrenzyState;
   /** 加料台与饮料柜（P41 客单价结构），见 `data/sides.ts` */
   sides: SideState;
+  /**
+   * 现在卖哪种粉（P42 粉型本土化），见 `data/noodles.ts`：
+   * 切粉 / 圆粉 / 伊面 / 湿面（碱水）/ 干捞（夏）/ 砂锅（冬）。
+   * 粉型决定成本、出碗时间、与当前汤底的契合度，以及当季加成。
+   */
+  noodle: string;
   /** 年度结算单，非空时 HUD 强制弹出 */
   pendingReport: YearRecord | null;
   /** 36 个月跑完 */
@@ -470,6 +479,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     sides: {
       active: [...START_SIDES],
       sold: {},
+      mealDeal: false,
     },
     gradeLevel: 0,
     price: DEFAULT_PRICE,
@@ -544,6 +554,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     phase: "setup",
     site: "",
     shopName: "",
+    noodle: "flat",
     district: START_DISTRICT,
     districtSince: 0,
     equipment: {},
@@ -598,7 +609,8 @@ function endDay(state: GameState): void {
 export function advanceMinute(state: GameState): void {
   if (state.finished) return;
   if (state.events.pending) return;
-  const score = scoreRecipe(state.recipe, state.price);
+  // 粉型跟着走：切粉以外的粉会按「汤配不配它」加减粉分（P42）
+  const score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
   tickCustomers(state, score);
   tickEvents(state);
   state.flow.minuteOfDay += 1;

@@ -51,7 +51,7 @@ export const UNLOCKS: readonly UnlockDef[] = [
     id: "topping4",
     grade: 4,
     name: "浇头台加一格",
-    effect: "可勾浇头 3 → 4 格",
+    effect: "每碗可加 2 → 3 件，钱包宽的 3 → 4 件",
     kairo: "More Toppings（更多浇头）",
     line: "多一格就多种搭法，酸笋同花生可以一齐落。",
   },

@@ -1,5 +1,7 @@
 import { RAMEN_CALC, type CalcGroup } from "../data/ramen-calc";
 import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
+import type { NoodleId } from "../data/noodles";
+import { noodleFit } from "./noodles";
 import { evalRpn } from "./rpn";
 import type { Recipe } from "./state";
 
@@ -134,8 +136,8 @@ export function bowlCost(toppingIds: readonly string[]): number {
  * `total` 只算口味（汤 0.55 + 粉 0.45），保持回归锁不变；
  * 魅力/价格/成本是并列维度，最后合成 `storeScore` 供顾客循环使用。
  */
-export function scoreRecipe(recipe: Recipe, price: number = DEFAULT_PRICE): RecipeScore {
-  const key = `${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
+export function scoreRecipe(recipe: Recipe, price: number = DEFAULT_PRICE, kind: NoodleId = "flat"): RecipeScore {
+  const key = `${kind}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -148,7 +150,10 @@ export function scoreRecipe(recipe: Recipe, price: number = DEFAULT_PRICE): Reci
   }));
 
   const soup = groupScore(subs, "soup");
-  const noodle = groupScore(subs, "noodle");
+  // 粉型 × 汤 的契合度（REA soupaffinity）：切粉恒 100，所以默认粉型下分数不变。
+  // 选错粉最多把「粉」这半分砍掉四成，选对最多加四成 —— 不碰 total 的权重公式。
+  const fit = noodleFit(kind, recipe.soup);
+  const noodle = groupScore(subs, "noodle") * (0.6 + 0.4 * (fit / 100));
   const total = soup * 0.55 + noodle * 0.45;
 
   const safePrice = Math.max(0, price);

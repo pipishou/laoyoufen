@@ -17,8 +17,9 @@
  * 酸笋 + 豆豉 = 老友味；酸笋 + 辣椒 = 酸辣开胃。凑齐了客人更满意。
  */
 
-export type SideKind = "topping" | "drink";
+import type { NoodleId, SeasonId } from "./noodles";
 
+export type SideKind = "topping" | "drink";
 export type SideId =
   | "suansun"
   | "douchi"
@@ -204,6 +205,9 @@ export interface SideCombo {
   needs: SideId[];
   satBonus: number;
   line: string;
+  /** 季节限定（P42）：只在夏天/冬天成立，配的是干捞/砂锅 */
+  noodle?: NoodleId;
+  season?: SeasonId;
 }
 
 export const SIDE_COMBOS: SideCombo[] = [
@@ -228,7 +232,32 @@ export const SIDE_COMBOS: SideCombo[] = [
     satBonus: 3,
     line: "卤蛋切开泡汤，懂吃的人才这么点。",
   },
+  // ---- 冬夏限定（P42）----
+  // 南宁的夏天吃干捞配豆浆，冬天吃砂锅要配口热的 —— 这是节令，不是配置。
+  {
+    id: "summer_dry",
+    name: "干捞配豆浆",
+    needs: ["doujiang"],
+    satBonus: 3,
+    noodle: "dry",
+    season: "summer",
+    line: "天热，粉过冷水捞起，一口豆浆压下去才顺。",
+  },
+  {
+    id: "winter_claypot",
+    name: "砂锅配热浆",
+    needs: ["doujiang"],
+    satBonus: 3,
+    noodle: "claypot",
+    season: "winter",
+    line: "砂锅滚着上桌，边吃边喝口热豆浆，冬天就该这样。",
+  },
 ];
+
+/** 套餐：粉 + 饮料打包，饮料便宜一块，客人觉得划算（开罗 avgTicket 的思路） */
+export const MEAL_DEAL_OFF = 1;
+export const MEAL_DEAL_SAT = 1;
+
 
 /** 一顿最多加几件（照开罗：浇头受 max toppings 限制，我们给 2 件加料 + 1 份饮料） */
 export const MAX_TOPPING_ADDS = 2;

@@ -14,6 +14,7 @@ import { equipLevel, equipNextCost } from "../sim/equipment";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
 import { kindLabel, sideShareOf, sideSummary, sideViews } from "../sim/sides";
+import { noodleSummary, noodleViews } from "../sim/noodles";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -65,8 +66,6 @@ const NOODLE_DEFS: readonly ParamDef[] = [
   { label: "米香", min: 0, max: 100, step: 1 },
   { label: "韧性", min: 0, max: 100, step: 1 },
   { label: "汤水比", min: 20, max: 50, step: 1 },
-  { label: "粉宽", min: 0, max: 4, step: 1 },
-  { label: "粉型（0切/1圆/2细）", min: 0, max: 2, step: 1 },
 ];
 
 export interface PanelActions {
@@ -80,6 +79,10 @@ export interface PanelActions {
   buyExpand(): void;
   /** 加料/饮料上架或下架（P41） */
   toggleSide(id: string): void;
+  /** 换粉型（P42）：flat / round / yifu / wetchow / dry / claypot */
+  setNoodle(id: string): void;
+  /** 开关「粉 + 饮料」套餐（P42） */
+  toggleMealDeal(): void;
   /** 报名比赛：type = staff / customers / shop（见 data/contest.ts） */
   enterContest(type: string): void;
   /** 交费评段位 */
@@ -128,7 +131,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
             <div class="rcol">
               <div class="sechd">汤底 · 8 参</div>
               <div class="sliders" data-sliders="soup">${sliderRows("soup", SOUP_DEFS)}</div>
-              <div class="sechd">米粉 · 7 参</div>
+              <div class="sechd">粉型 · 卖哪种粉<span class="sechint" data-noodlesum></span></div>
+              <div class="noodles" data-noodles></div>
+              <div class="sechd">米粉 · 5 参</div>
               <div class="sliders" data-sliders="noodle">${sliderRows("noodle", NOODLE_DEFS)}</div>
               <div class="sechd">售价 · 客单价</div>
               <label class="sl"><span class="slk">每碗</span><input type="range" min="6" max="25" step="1" data-price><b data-pricev>12</b></label>
@@ -157,10 +162,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const gradeEl = wrap.querySelector("[data-grade]") as HTMLElement;
   const subList = wrap.querySelector("[data-sub-list]") as HTMLElement;
   const econ2 = wrap.querySelector("[data-econ2]") as HTMLElement;
+  const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
+  const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
 
   let current: PanelTab = "recipe";
   let lastReportYear = -1;
   const keys: Partial<Record<PanelTab, string>> = {};
+  /** 粉型卡片单独缓存（配方页里既有滑块又有卡片，不能共用一个 key） */
+  let noodleKey = "";
 
   const show = (tab: PanelTab): void => {
     current = tab;
@@ -226,6 +235,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "toggleside":
         actions.toggleSide(id);
+        break;
+      case "setnoodle":
+        actions.setNoodle(id);
+        break;
+      case "mealdeal":
+        actions.toggleMealDeal();
         break;
       case "dismiss":
         actions.dismissReport();
@@ -341,6 +356,11 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
             </div>`,
           )
           .join("")}
+        <div class="lrow">
+          <div class="lname">粉 + 饮料套餐<span class="tag2">${s.sides.mealDeal ? "开着" : "关着"}</span><span class="tag2">饮料 −¥1</span></div>
+          <div class="lmeta">打包一起卖，客人觉得划算（满意 +1），但饮料少收一块钱。开罗 avgTicket 的思路：客单价不是把粉卖贵，是多卖一件。</div>
+          <div class="lbtns"><button type="button" data-act="mealdeal">${s.sides.mealDeal ? "关掉套餐" : "开套餐"}</button></div>
+        </div>
         <div class="lmeta" style="padding:6px 2px 0">累计加购 ${money(s.tally.sideRevenue)}（占营业额 ${share}%）· 凑出组合 ${s.tally.comboHits} 次</div>
       </div>`;
 
@@ -550,6 +570,43 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const bodyOf = (tab: PanelTab): HTMLElement | null =>
     wrap.querySelector<HTMLElement>(`[data-body="${tab}"]`);
 
+  /**
+   * 粉型卡片（P42）：把原来「粉宽 / 粉型」两个滑块换成六种能点的粉。
+   *
+   * 滑块的问题是玩家在猜数字；粉型是离散选择，每张卡直接说清
+   * 「它跟现在的汤配不配（契合度）」「当季还是反季」「还差几位客人解锁」。
+   */
+  function renderNoodles(s: GameState): void {
+    const views = noodleViews(s);
+    const key = views
+      .map((v) => `${v.def.id}:${v.on ? 1 : 0}:${v.unlocked ? 1 : 0}:${v.fit}:${v.seasonFactor}`)
+      .join(",");
+    noodleSumEl.textContent = ` ${noodleSummary(s)}`;
+    if (key === noodleKey) return;
+    noodleKey = key;
+    noodlesEl.innerHTML = views
+      .map((v) => {
+        const cls = ["ncard"];
+        if (v.on) cls.push("on");
+        if (!v.unlocked) cls.push("locked");
+        const seasonTag = v.def.season
+          ? v.inSeason
+            ? `<b class="ntag hot">当季 ×1.15</b>`
+            : `<b class="ntag cold">反季 ×0.85</b>`
+          : `<b class="ntag all">全年</b>`;
+        const foot = v.unlocked
+          ? `<span class="nfit">契合 <b>${v.fit}%</b></span>`
+          : `<span class="nfit">还差 ${v.short} 位客人</span>`;
+        return `<button type="button" class="${cls.join(" ")}" data-act="setnoodle" data-id="${v.def.id}" ${v.unlocked ? "" : "disabled"}>
+          <span class="nname">${v.def.name}</span>
+          ${seasonTag}
+          ${foot}
+          <span class="nline">${v.def.line}</span>
+        </button>`;
+      })
+      .join("");
+  }
+
   function renderPane(s: GameState, score: RecipeScore): void {
     if (current === "recipe") {
       (["soup", "noodle"] as const).forEach((group) => {
@@ -570,6 +627,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       });
       if (document.activeElement !== priceInput) priceInput.value = String(s.price);
       priceV.textContent = `¥${s.price}`;
+      renderNoodles(s);
       scoreBig.textContent = String(score.total);
       gradeEl.textContent = score.grade;
       gradeEl.className = `grade g${score.grade}`;

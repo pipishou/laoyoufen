@@ -12,6 +12,7 @@ import { districtOptions, homeEnergyOf, moveShop } from "./district";
 import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
 import { auditPlaytest, verdictLabel } from "./playtest";
 import { nextFloat } from "./rng";
+import { noodleKindOf, noodleViews, setNoodleKind } from "./noodles";
 
 /**
  * 「替身」＝游戏测试员：一个按规矩办事的假玩家，完整玩 36 个月，跑完还要交体检单。
@@ -46,7 +47,7 @@ import { nextFloat } from "./rng";
  * 策略刻意笨：每月随机挑一个参数 ±4，满意分更高就留、否则回滚，试 6 次。
  */
 function climbRecipe(s: GameState): void {
-  let best = scoreRecipe(s.recipe, s.price).total;
+  let best = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
   for (let i = 0; i < 6; i += 1) {
     const useSoup = nextFloat(s.rng) < 0.5;
     const arr: number[] = useSoup ? s.recipe.soup : s.recipe.noodle;
@@ -56,10 +57,31 @@ function climbRecipe(s: GameState): void {
     const after = Math.max(0, Math.min(100, before + step));
     if (after === before) continue;
     arr[idx] = after;
-    const total = scoreRecipe(s.recipe, s.price).total;
+    const total = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
     if (total > best) best = total;
     else arr[idx] = before;
   }
+}
+
+/**
+ * 换粉型（P42）：在解锁过的粉里挑「契合度 × 季节系数」最高的。
+ *
+ * 粉型不是皮肤：砂锅要浓汤重蒜、干捞要豆豉辣、湿面怕酸。
+ * 替身如果永远卖切粉，那 P42 等于没做 —— 量尺自己得会用新动词。
+ */
+function pickNoodle(s: GameState): void {
+  const views = noodleViews(s).filter((v) => v.unlocked);
+  let bestId = noodleKindOf(s);
+  let bestScore = -1;
+  for (const v of views) {
+    // 反季的粉要打得过当季的才能选（×0.85 的惩罚已经在 seasonFactor 里）
+    const score = v.fit * v.seasonFactor - (v.def.serveFactor - 1) * 20;
+    if (score > bestScore) {
+      bestScore = score;
+      bestId = v.def.id;
+    }
+  }
+  if (bestId !== noodleKindOf(s)) setNoodleKind(s, bestId);
 }
 
 function play(seed: number): GameState {
@@ -107,7 +129,10 @@ function play(seed: number): GameState {
       // 所以流失率高时不许涨价（这条是替身自己踩过的坑：一路涨到 12，流失 77%、日均掉到 30 碗）。
       // ── 先调味道，再定价 ──
       climbRecipe(s);
-      const tasteNow = scoreRecipe(s.recipe, s.price).total;
+      // 换粉型（P42）：在已解锁的粉里挑「契合度 × 季节」最高的。
+      // 量尺自己也得会用新动词，否则新系统永远测不出东西（P40 的教训）。
+      pickNoodle(s);
+      const tasteNow = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
 
       // 定价三段（P40）：
       //  ① 上月试涨价 → 这月看营收：跌 5% 以上就退（比看流失准；高产能店流失永远几十个百分点）；
@@ -207,9 +232,9 @@ function play(seed: number): GameState {
     }
   }
 
-  const sc = scoreRecipe(s.recipe, s.price);
+  const sc = scoreRecipe(s.recipe, s.price, noodleKindOf(s));
   console.log(
-    `\n=== 种子 ${seed} · 味道 ${sc.total} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
+    `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
       ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 ===`,
   );
   for (const line of log) console.log(line);

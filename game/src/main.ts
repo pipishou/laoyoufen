@@ -30,7 +30,8 @@ import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
-import { sideSummary, toggleSide } from "./sim/sides";
+import { sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
+import { noodleKindOf, noodleSummary, setNoodleKind } from "./sim/noodles";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -63,7 +64,7 @@ function loadOrCreate(): GameState {
 }
 
 const state = loadOrCreate();
-let score = scoreRecipe(state.recipe, state.price);
+let score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
 /** 默认 ×4：一天 30 秒，一月 15 分钟，三年约 9 小时 */
 let speed = 4;
 let panels!: Panels;
@@ -149,7 +150,7 @@ const setupScreen: SetupScreen = mountSetup(document.body, {
     }
     playSfx("upgrade");
     hud.showToast(`${shopName} 开张了，先调好一碗粉的味道`, "like");
-    score = scoreRecipe(state.recipe, state.price);
+    score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
     refresh();
     tickFeedback();
     return true;
@@ -204,6 +205,19 @@ panels = mountPanels(hudRoot, {
     const r = toggleSide(state, String(id));
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
     else hud.showToast(sideSummary(state), "info");
+    playSfx("ui");
+    refresh();
+  },
+  setNoodle(id) {
+    const r = setNoodleKind(state, String(id));
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(`换粉了：${noodleSummary(state)}`, "info");
+    playSfx("ui");
+    refresh();
+  },
+  toggleMealDeal() {
+    toggleMealDeal(state);
+    hud.showToast(state.sides.mealDeal ? "套餐开了：饮料少收 ¥1，客人觉得划算" : "套餐关了", "info");
     playSfx("ui");
     refresh();
   },
@@ -377,7 +391,7 @@ function announce(key: string): void {
 /* ---------------- 主循环 ---------------- */
 
 function refresh(): void {
-  score = scoreRecipe(state.recipe, state.price);
+  score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
   hud.render(state, score);
   panels.render(state, score);
   guide.render(state);
