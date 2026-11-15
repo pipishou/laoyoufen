@@ -17,7 +17,8 @@ import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from
 import { noodleSummary, noodleViews } from "../sim/noodles";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
 import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
-import { dishNameOf } from "../sim/dish";
+import { dishNameOf, dishNameOfItem } from "../sim/dish";
+import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
@@ -90,6 +91,11 @@ export interface PanelActions {
   setNoodle(id: string): void;
   setMain(id: string): void;
   setPortion(size: number): void;
+  /** 菜单（P47）：切到某一款编辑 / 加一款 / 删一款 / 上下架 */
+  pickDish(index: number): void;
+  addDish(): void;
+  removeDish(index: number): void;
+  toggleDish(index: number): void;
   /** 开关「粉 + 饮料」套餐（P42） */
   toggleMealDeal(): void;
   /** 饮料冰 / 热（P43）：ice / hot */
@@ -146,6 +152,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <section class="pane" data-pane="recipe">
           <div class="rgrid">
             <div class="rcol">
+              <div class="sechd">菜单 · 今天卖几款<span class="sechint" data-menusum></span></div>
+              <div class="menucards" data-menu></div>
               <div class="sechd">汤底 · 8 参</div>
               <div class="sliders" data-sliders="soup">${sliderRows("soup", SOUP_DEFS)}</div>
               <div class="sechd">主料 · 这碗是什么肉<span class="sechint" data-mainsum></span></div>
@@ -189,6 +197,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
   const mainsEl = wrap.querySelector("[data-mains]") as HTMLElement;
   const mainSumEl = wrap.querySelector("[data-mainsum]") as HTMLElement;
+  const menuEl = wrap.querySelector("[data-menu]") as HTMLElement;
+  const menuSumEl = wrap.querySelector("[data-menusum]") as HTMLElement;
   const portionsEl = wrap.querySelector("[data-portions]") as HTMLElement;
   const portionSumEl = wrap.querySelector("[data-portionsum]") as HTMLElement;
   const dishNameEl = wrap.querySelector("[data-dishname]") as HTMLElement;
@@ -202,6 +212,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   /** 粉型卡片单独缓存（配方页里既有滑块又有卡片，不能共用一个 key） */
   let noodleKey = "";
   let mainKey = "";
+  /** 菜单卡片缓存键（P47） */
+  let menuKey = "";
   let portionKey = 0;
   /** 分店面板里选中的区县（不存档：纯粹是「我正要在这儿开」的界面状态） */
   let branchPick = "";
@@ -285,6 +297,18 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "drinktemp":
         actions.setDrinkTemp(id);
+        break;
+      case "pickdish":
+        actions.pickDish(Number(id));
+        break;
+      case "adddish":
+        actions.addDish();
+        break;
+      case "removedish":
+        actions.removeDish(Number(id));
+        break;
+      case "toggledish":
+        actions.toggleDish(Number(id));
         break;
       case "pickbranch":
         branchPick = id;
@@ -746,6 +770,44 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       .join("");
   }
 
+  /**
+   * 菜单（P47）：同时卖几款。
+   *
+   * 开罗的售卖机上挂一排券，客人自己挑一款买票（help.txt `Staff 3`），
+   * 店铺人气按菜单里所有款聚合（`Shop Stats`）。这里的卡片就是那排券：
+   * 点一张切过去编辑它，上架/下架决定客人今天买不买得到。
+   */
+  function renderMenu(s: GameState): void {
+    const views = menuViews(s);
+    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${s.gradeLevel}`;
+    menuSumEl.textContent = ` ${menuSummary(s)}`;
+    if (key === menuKey) return;
+    menuKey = key;
+    const cards = views
+      .map((v) => {
+        const cls = ["dcard"];
+        if (v.item.on) cls.push("on");
+        if (v.editing) cls.push("editing");
+        const sold = v.sold > 0 ? `已卖 ${v.sold} 碗` : "还没开张";
+        return `<div class="${cls.join(" ")}">
+          <button type="button" class="dhead" data-act="pickdish" data-id="${v.index}">
+            <span class="nname">${dishNameOfItem(s, v.item)}</span>
+            <b class="dprice">¥${v.price}</b>
+          </button>
+          <span class="nfit">味道 ${Math.round(v.score.total)} · ${v.score.grade} · ${sold}</span>
+          <div class="dacts">
+            <button type="button" class="dbtn${v.item.on ? " on" : ""}" data-act="toggledish" data-id="${v.index}" ${v.canToggle ? "" : "disabled"}>${v.item.on ? "在架" : "下架"}</button>
+            <button type="button" class="dbtn" data-act="removedish" data-id="${v.index}" ${v.canRemove ? "" : "disabled"}>删</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+    const cap = menuCap(s);
+    const full = views.length >= cap;
+    const addLabel = full ? `菜单位满了（${views.length}/${cap}）· 评到第 ${s.gradeLevel + 2} 段再挂一款` : `＋ 加一款（照着这碗改）`;
+    menuEl.innerHTML = `${cards}<button type="button" class="dcard add" data-act="adddish" ${full ? "disabled" : ""}>${addLabel}</button>`;
+  }
+
   /** 份量（P46）：店里的原话就是「二两还是三两」 */
   function renderPortions(s: GameState): void {
     const size = portionOf(s.portion).size;
@@ -784,7 +846,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       });
       if (document.activeElement !== priceInput) priceInput.value = String(s.price);
       priceV.textContent = `¥${s.price}`;
-      renderMains(s);
+      renderMenu(s);
+    renderMains(s);
       renderPortions(s);
       renderNoodles(s);
       // 这碗粉叫什么（P43）：四轴（做法×主料×粉型×加料）从当前配置推出来，评语按分数 5 档

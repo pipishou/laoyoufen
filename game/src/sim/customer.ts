@@ -16,12 +16,23 @@ import { queueMaxOf } from "./unlocks";
 import type { RecipeScore } from "./score";
 import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, surveyRate } from "./staff";
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
-import { noodleCostFactor, noodleSeasonBonus, noodleServeFactor } from "./noodles";
+import { costFactorOfKind, seasonBonusOfKind, serveFactorOfKind } from "./noodles";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
+import {
+  cheapestPrice,
+  currentDish,
+  dishPrice,
+  menuBestTaste,
+  menuStoreScore,
+  pickDish,
+  recordDishSale,
+  scoreDish,
+} from "./menu";
+import { priceTolerance } from "./score";
 import {
   frenzyAura,
   frenzyBudgetBoost,
@@ -149,26 +160,24 @@ function popularityMultiplier(state: GameState): number {
 
 /**
  * 味道能撑起的价格倍率（开罗 Rarity 的位置）。
- * 味道 55 及以下 = 1.0（街坊价），味道 100 = 1.25（敢卖贵 25%）。
- * 顾客进店前按这个乘自己的钱包判「吃不吃得起」，吃不起就掉头走 —— 
- * 所以涨价不是白捡的，得先把粉做好。 [INFERRED, MED]
+ * 实现已移到 `sim/score.ts`（菜单要按款判「这人买不买得起」，两边共用一个公式），
+ * 这里 re-export 保持 HUD 等旧 import 不改。
  */
-export function priceTolerance(total: number): number {
-  return 1 + Math.max(0, total - 55) / 180;
-}
+export { priceTolerance };
 
 /** 口碑越高、门店综合分越高、摆件越多、人气越旺，进店越密 */
-function spawnChance(state: GameState, score: RecipeScore): number {
+function spawnChance(state: GameState): number {
   const part = Math.min(3, Math.floor(state.flow.minuteOfDay / (DAY_MINUTES / 4)));
   const base = DAYPART_CHANCE[part] ?? 0.1;
   const repFactor = 0.35 + (state.reputation / 5) * 0.65;
-  const scoreFactor = 0.4 + (score.storeScore + shopCharmBonus(state)) / 160;
+  // 开罗 `Shop Stats`：人气是**菜单里所有款聚合**的。我们取最好的那款，再按款数给一点奖励。
+  const scoreFactor = 0.4 + (menuStoreScore(state) + shopCharmBonus(state)) / 160;
   /**
    * 味道直通来访率（开罗 Charisma I–IV「顾客来访率 +X%」）。
    * 之前味道只能经 满意度→口碑 这条慢通道影响客流，做得好与做得一般拉不开差距；
    * 系数 0.7/1.0/1.3 对应 味道 0/50/100 倍率 [INFERRED, MED]，靠 winnable.probe 校准。
    */
-  const tasteFactor = 0.7 + (score.total / 100) * 0.6;
+  const tasteFactor = 0.7 + (menuBestTaste(state) / 100) * 0.6;
   return (
     base *
     repFactor *
@@ -196,7 +205,7 @@ const MAX_ARRIVALS_PER_MINUTE = 4;
  *
  * 抽出来的原因：来客从「每分钟一次伯努利」改成「每分钟一批」时，这段要能被循环调用。
  */
-function arriveOne(state: GameState, score: RecipeScore): void {
+function arriveOne(state: GameState): void {
   const flow = state.flow;
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   if (waiting >= queueMaxOf(state)) {
@@ -209,15 +218,22 @@ function arriveOne(state: GameState, score: RecipeScore): void {
     ? ARCHETYPE_BY_ID.get(regularId)
     : pickArchetype(nextFloat(state.rng), state.trend);
   if (!arch) return;
-  // 看价牌：吃不起就走（开罗「售价超过顾客预算 → 不来」）。
-  // 溢价来自味道，所以涨价前必须先把粉做好，否则人全被价牌挡回去。
-  // 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
+  /**
+   * 到售卖机前挑券（开罗 `Staff 3`：After a customer buys a ticket…）。
+   *
+   * 多款同时上菜单（P47）之后，「吃不吃得起」不再是一句话，而是**按款判**：
+   * 每一款各按自己的味道算品质溢价，客人挑一款买得起的、味道好一点的。
+   * 一款都买不起 = 掉头走（开罗 `Customers 1`：超出钱包的产品更难卖）。
+   *
+   * 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
+   */
   const wallet = arch.budget * frenzyBudgetBoost(state);
-  const canPay = state.price <= wallet * priceTolerance(score.total);
-  if (!canPay) {
+  const dish = pickDish(state, wallet, nextFloat(state.rng));
+  if (!dish) {
     flow.lostToday += 1;
     state.monthLost += 1;
-    flow.lastLostReason = `${arch.name}看价牌走了（¥${state.price} 超预算 ¥${Math.round(wallet)}）`;
+    const cheap = cheapestPrice(state);
+    flow.lastLostReason = `${arch.name}看价牌走了（最便宜 ¥${cheap} 超预算 ¥${Math.round(wallet)}）`;
     return;
   }
   const regular = regularId !== null;
@@ -226,6 +242,7 @@ function arriveOne(state: GameState, score: RecipeScore): void {
   flow.customers.push({
     id: flow.nextId++,
     archetypeId: arch.id,
+    dishId: dish.id,
     status: "waiting",
     elapsed: 0,
     waited: 0,
@@ -288,40 +305,46 @@ function surveyTick(state: GameState, c: QueueCustomer): void {
 }
 
 /** 吃完结算：付款 + 口碑漂移 + 常客档案 + 图鉴解锁 */
-function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
+function settle(state: GameState, c: QueueCustomer): void {
   const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
   const regularBonus = c.regular ? regularSatisfactionBonus(state, c.archetypeId) : 0;
-  // 主料与份量（P46）：牛肉比碎肉香，三两比二两管饱
-  const mainDef = mainById(state.main);
-  const portionDef = portionOf(state.portion);
+  /**
+   * 他点的是哪一款（P47）：客人在售卖机上挑的那张券。
+   * 款可能在他等待期间被下架/删掉 —— 那就按当前编辑款结账，别让这人白吃。
+   */
+  const item = state.menu.find((d) => d.id === c.dishId) ?? currentDish(state);
+  const sc = scoreDish(item);
+  // 主料与份量（P46）：牛肉比碎肉香，三两比二两管饱 —— 现在按**这一款**算
+  const mainDef = mainById(item.main);
+  const portionDef = portionOf(item.portion);
   const menuBonus = (mainDef?.satBonus ?? 0) + portionDef.satBonus;
   let sat = arch
     ? satisfactionOf(
-        score,
+        sc,
         arch,
-        state.recipe,
-        state.price,
+        item.recipe,
+        item.price,
         c.waited,
         arch.lineLimit,
         // 热卖时店员起 aura（开罗 Frenzy 2），吃到的人更满意；
-        // 当季粉型（夏天干捞、冬天砂锅）+3，反季 −3（P42）
-        regularBonus + frenzyAura(state) + noodleSeasonBonus(state) + menuBonus,
+        // 当季粉型（夏天干捞、冬天砂锅）+3，反季 −3（P42），按款的粉型算
+        regularBonus + frenzyAura(state) + seasonBonusOfKind(state, item.noodle) + menuBonus,
       )
     : 50;
 
-  /** 这碗的实收价 = 菜单价 + 份量加成（三两 +¥2，见 data/mains.ts） */
-  const bowlPrice = state.price + portionDef.priceDelta;
+  /** 这碗的实收价 = 该款菜单价 + 份量加成（三两 +¥2，见 data/mains.ts） */
+  const bowlPrice = dishPrice(item);
 
   /**
    * 客单价结构（P41）：客人吃完这碗，还愿意再加一件吗？
    * 加购受钱包上限约束（开罗 Customers 1「Products that exceed a customer's wallet
-   * are harder for them to buy」），所以 room = 钱包 − 菜单价。
+   * are harder for them to buy」），所以 room = 钱包 − 这款的菜单价。
    *
    * 这里刻意**不扣份量加价**（P46）：点三两的人本来就饿，还会再加一份腐竹；
    * 把 +¥2 从 room 里扣掉，等于「多要一两粉就买不起加料了」，替身实测加购从 5.6% 掉到 0.7%。
    */
-  const wallet = arch ? arch.budget * priceTolerance(score.total) : bowlPrice;
-  const sidePick = arch ? pickSides(state, arch, sat, wallet - state.price) : { items: [], paid: 0, cost: 0, combo: null, satBonus: 0 };
+  const wallet = arch ? arch.budget * priceTolerance(sc.total) : bowlPrice;
+  const sidePick = arch ? pickSides(state, arch, sat, wallet - item.price) : { items: [], paid: 0, cost: 0, combo: null, satBonus: 0 };
   if (sidePick.items.length > 0) {
     sat = clamp(sat + sidePick.satBonus, 0, 100);
     recordSides(state, sidePick);
@@ -336,10 +359,8 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   }
 
   const paid = bowlPrice + sidePick.paid;
-  // 粉型影响一碗的成本：伊面贵、干捞省粉
-  const cost =
-    score.cost * costMultiplier(state) * equipCostMultiplier(state) * noodleCostFactor(state) +
-    sidePick.cost;
+  // 粉型影响一碗的成本：伊面贵、干捞省粉（按款的粉型）
+  const cost = sc.cost * costMultiplier(state) * equipCostMultiplier(state) * costFactorOfKind(item.noodle) + sidePick.cost;
   state.cash += paid - cost;
   state.monthRevenue += paid;
   state.flow.revenueToday += paid;
@@ -348,6 +369,7 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   state.monthServed += 1;
   state.flow.servedToday += 1;
   state.tally.bowls += 1; // K1 成就计数：累计出碗（只增不减）
+  recordDishSale(state, item.id); // 这一款卖出去一碗
   state.flow.lastSatisfaction = Math.round(sat);
   state.monthSatSum += sat;
   state.monthSatCount += 1;
@@ -357,9 +379,9 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   state.reputation = clamp(state.reputation + (sat - 55) / 800, 0, 5);
   if (sat < 35) state.reputation = clamp(state.reputation - 0.05, 0, 5);
 
-  const likeHits = arch ? likeHitsOf(state.recipe, arch.prefs) : [];
+  const likeHits = arch ? likeHitsOf(item.recipe, arch.prefs) : [];
   // 命中喜好 → 记进常客档案（开罗 AddRegularCount）；「问出口味」在顾客还在店里时由 surveyTick 完成
-  recordVisit(state, c.archetypeId, sat, state.recipe.toppings, likeHits.length > 0);
+  recordVisit(state, c.archetypeId, sat, item.recipe.toppings, likeHits.length > 0);
   // 熟客回礼（开罗 gift_ / GetGiftRatio）：喂对味累计到档位才给，不进货架、不冲营业额
   const gift = collectGift(state, c.archetypeId);
   if (gift > 0) {
@@ -367,15 +389,15 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
     state.flow.lastGift = `${arch?.name ?? "熟客"}回礼：+${gift} 元`;
   }
   unlock(state, "customers", c.archetypeId);
-  unlock(state, "grades", score.grade);
-  for (const id of state.recipe.toppings) unlock(state, "toppings", id);
+  unlock(state, "grades", sc.grade);
+  for (const id of item.recipe.toppings) unlock(state, "toppings", id);
 }
 
 /**
  * 推进一个游戏分钟：进店 → 等位 → 坐下吃 → 吃完结算。
  * 满座时排队；排到 QUEUE_MAX 之后不再放人进店（直接算流失）。
  */
-export function tickCustomers(state: GameState, score: RecipeScore): void {
+export function tickCustomers(state: GameState): void {
   const flow = state.flow;
   if (state.todayCustomers >= state.capacity) return;
   // 区客流池：这个区一天就这么多人，座位再多也喂不出更多碗（开罗 Sales Areas）。
@@ -389,13 +411,13 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   // 开罗 Popularity 影响「来访率」：来客是**每分钟一批**，不是一个个来。
   // 旧实现每分钟最多 1 人 → 一天上限 120 人，这个天花板比座位/灶位/人手都硬（P35）：
   // 8 座满编实测也只有 63 碗/日，扩建与雇人全被这道天花板吃掉。
-  const expected = spawnChance(state, score);
+  const expected = spawnChance(state);
   let arrivals = Math.floor(expected);
   if (nextFloat(state.rng) < expected - arrivals) arrivals += 1;
   for (let i = 0; i < Math.min(arrivals, MAX_ARRIVALS_PER_MINUTE); i++) {
     // 区池子到顶就停（开罗 Sales Areas：本区就这么多人；热卖时池子上浮）
     if (state.todayCustomers + flow.customers.length >= poolCap) break;
-    arriveOne(state, score);
+    arriveOne(state);
   }
 
   // 1. 推进已入座的人；吃完的结算离场
@@ -407,7 +429,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
       surveyTick(state, c);
       const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
       if (arch && c.elapsed >= Math.max(1, Math.round(arch.eatSpeed * FLOW.eatScale))) {
-        settle(state, score, c);
+        settle(state, c);
         continue;
       }
       eatingNow += 1;
@@ -425,11 +447,18 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
     // 旧版这里只出一碗，于是 8 座满编实测也只有 63 碗/日，座位与灶位形同装饰（P35）。
     let slots = Math.max(1, Math.floor(serveParallel(state) * frenzyServeBoost(state)));
     let servedAny = false;
+    // 这一批客人点的是不同款的粉（P47）：出碗时间取批内平均 ——
+    // 一锅同时下粉，锅里的进度看最慢那碗，但批次里大多数是普通款，用均值最稳。
+    let serveFactorSum = 0;
+    let serveFactorCount = 0;
     while (slots > 0) {
       const freeSeats = state.venue.seats - eatingNow;
       if (freeSeats <= 0) break;
       const next = flow.customers.find((c) => c.status === "waiting");
       if (!next) break;
+      const dish = state.menu.find((d) => d.id === next.dishId);
+      serveFactorSum += serveFactorOfKind(dish?.noodle ?? state.noodle);
+      serveFactorCount += 1;
       next.status = "eating";
       next.elapsed = 0;
       eatingNow += 1;
@@ -438,11 +467,12 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
     }
     // 空转（没人排队）就不进冷却，否则下一分钟来的客人要多等一轮
     if (servedAny) {
+      const noodleFactor = serveFactorCount > 0 ? serveFactorSum / serveFactorCount : 1;
       flow.serveCooldown =
         FLOW.serveMinutes *
         serveMultiplier(state) *
         equipServeMultiplier(state) *
-        noodleServeFactor(state) *
+        noodleFactor *
         // 三两的锅更满，一锅少下几碗（P46）
         portionOf(state.portion).serveFactor;
     }

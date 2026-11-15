@@ -95,6 +95,34 @@ function pickNoodle(s: GameState): void {
  * 量化口径 = 满意加成 − 料钱压力（料钱按「一个月卖多少碗」摊到每碗的毛利里）。
  * 替身只在解锁过的里面挑，挑不到更好的就维持现状 —— 和真人一样，不会为了换而换。
  */
+/**
+ * 研菜单（P47）：菜单没满就加一款，并让新款跟现有款错开。
+ *
+ * 量尺必须会用「多款」这个新动词（P40 的教训：不会用的系统等于没测过）。
+ * 做法照真店：先抄一碗卖得好的，再换个主料 —— 老友粉店就是
+ * 「老友粉 / 老友猪杂粉 / 老友牛肉粉」这样排出来的。
+ */
+function manageMenu(s: GameState): void {
+  const cap = menuCap(s);
+  if (s.menu.length >= cap) return;
+  // 现金留点周转（开店初期别把钱全压在推新品上）
+  if (s.cash < 2_000) return;
+  const r = addDish(s);
+  if (!r.ok) return;
+  const idx = s.menu.length - 1;
+  selectDish(s, idx);
+  // 换一个菜单里还没有的主料 —— 不然几款长得一模一样，等于一款
+  const used = new Set(s.menu.filter((_, i) => i !== idx).map((d) => d.main));
+  const cand = mainViews(s)
+    .filter((v) => v.unlocked && !used.has(v.def.id))
+    .sort((a, b) => b.def.satBonus - a.def.satBonus);
+  const pick = cand[0];
+  if (pick) setMain(s, pick.def.id);
+  syncEditing(s);
+  // 回主款，别把编辑指针留在新款上影响后面的定价逻辑
+  selectDish(s, 0);
+}
+
 function pickMain(s: GameState): void {
   const views = mainViews(s).filter((v) => v.unlocked);
   let bestId = s.main;
@@ -172,6 +200,8 @@ function play(seed: number): GameState {
       // 量尺不会这两下，就等于这一期做的东西没被测过（P40 的老教训）。
       pickMain(s);
       pickPortion(s);
+      // 菜单（P47）：够段位就多挂一款 —— 不然后面的定价/产能判断都只针对一碗
+      manageMenu(s);
       // 饮料冰热（P43）：冬天上热的、其余上冰的 —— 量尺不跟着季节换，冬天冰绿豆沙就白扣分。
       const seasonNow = currentSeason(s);
       const wantTemp = seasonNow === "winter" ? "hot" : "ice";
@@ -193,6 +223,8 @@ function play(seed: number): GameState {
         s.price += 1;
         trialPrice = s.price;
       }
+      // 价格与配方都是「这一款」的属性（P47）：不落笔，改的就是空气
+      syncEditing(s);
 
       // 先买设备再扩建：一个灶/一档粉篓 ¥1,500 起，比 ¥12,000 的扩建便宜一个数量级，
       // 而且直接改「每轮几碗」。旧版替身从不买设备，于是所有「产能不够」的结论
@@ -348,4 +380,5 @@ describe("替身 36 个月", () => {
       );
     }
   }, 900_000);
-});
+});import { addDish, menuCap, selectDish, syncEditing } from "./menu";
+

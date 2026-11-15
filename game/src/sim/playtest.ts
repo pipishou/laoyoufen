@@ -52,6 +52,10 @@ export interface Quant {
   sideShare: number;
   /** 凑出加料组合的次数 */
   comboHits: number;
+  /** 菜单里在架的款数（P47） */
+  menuCount: number;
+  /** 在架却一碗没卖出去的款数（挂了没人点 = 白占菜单位） */
+  deadDishCount: number;
 }
 
 export interface PlaytestReport {
@@ -130,6 +134,8 @@ export function quantOf(s: GameState): Quant {
         ? (s.tally?.sideRevenue ?? 0) / (s.monthRevenue + (s.tally?.sideRevenue ?? 0))
         : 0,
     comboHits: s.tally?.comboHits ?? 0,
+    menuCount: (s.menu ?? []).filter((d) => d.on).length,
+    deadDishCount: (s.menu ?? []).filter((d) => d.on && (d.sold ?? 0) === 0).length,
   };
 }
 
@@ -290,6 +296,32 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `三年加购只占营业额 ${(q.sideShare * 100).toFixed(1)}%（组合 ${q.comboHits} 次）`,
       kairo: "Toppings「Toppings also get XP when they are sold individually」＋ Customers 1「钱包是上限」",
       fix: "先看是不是价开太高（每人钱包 8–15 元）、或者上架的加料太少；中期收入不能只靠碗数",
+    });
+  }
+
+  // ── T10 多款菜单没被用起来：一年了还只卖一款 → 菜单系统等于没做（P47）──
+  if (q.months >= 12 && q.menuCount < 2) {
+    out.push({
+      id: "T10",
+      bucket: "design",
+      severity: "medium",
+      title: "一年下来菜单上只有一款",
+      evidence: `在架 ${q.menuCount} 款`,
+      kairo: "Staff 3「After a customer buys a ticket」＝售卖机上挂一排券；Shop Stats 人气按菜单聚合",
+      fix: "菜单位跟段位走（第 2 段就能挂 2 款）—— 去看是不是段位没升、或者从没点过「加一款」",
+    });
+  }
+
+  // ── T11 挂了没人点的款：白占菜单位，还摊薄客流（P47）──
+  if (q.months >= 12 && q.deadDishCount > 0) {
+    out.push({
+      id: "T11",
+      bucket: "polish",
+      severity: "low",
+      title: "有款挂上架却一碗没卖",
+      evidence: `${q.deadDishCount} 款在架零销量`,
+      kairo: "Ramen Lab「You can sell unneeded ramen recipes here」——卖不动的配方该下架",
+      fix: "下架或降价；菜单不是越多越好，卖不动的那款只是在占位",
     });
   }
 

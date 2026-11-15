@@ -212,3 +212,16 @@ export function scoreRecipe(
  */
 let memoKey = "";
 let memoScore: RecipeScore | null = null;
+
+/**
+ * 味道能撑起的价格倍率（开罗 Rarity 的位置）。
+ * 味道 55 及以下 = 1.0（街坊价），味道 100 = 1.25（敢卖贵 25%）。
+ * 顾客进店前按这个乘自己的钱包判「吃不吃得起」，吃不起就掉头走 ——
+ * 所以涨价不是白捡的，得先把粉做好。 [INFERRED, MED]
+ *
+ * 放在 score.ts 而不是 customer.ts：菜单（P47）在顾客进门前就要按款判
+ * 「这款我的钱够不够」，两边共用一个公式，别各写一套。
+ */
+export function priceTolerance(total: number): number {
+  return 1 + Math.max(0, total - 55) / 180;
+}

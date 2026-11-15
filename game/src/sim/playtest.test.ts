@@ -32,6 +32,9 @@ function goodState(): GameState {
   // P41：客单价结构也得真的用起来，否则 T9 会说「加料台没被用起来」
   s.tally.sideRevenue = 42_000;
   s.tally.comboHits = 120;
+  // P47：多款菜单也得真的挂起来，否则 T10 会说「一年下来只有一款」
+  s.menu.push({ ...s.menu[0]!, id: 2, main: "beef", price: 12, sold: 420 });
+  s.menu[0]!.sold = 900;
   s.contest.results = Array.from({ length: 6 }, (_, i) => ({
     month: i * 6,
     round: i,

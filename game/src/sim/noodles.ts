@@ -84,24 +84,39 @@ export function noodleFitOf(state: GameState): number {
   return noodleFit(noodleKindOf(state), state.recipe.soup);
 }
 
-/** 出碗时间系数：伊面要过油、砂锅要现煮 */
+/** 出碗时间系数：伊面要过油、砂锅要现煮（可按款指定粉型，见 P47 菜单） */
+export function serveFactorOfKind(kind: string): number {
+  return noodleById(kind)?.serveFactor ?? 1;
+}
+
+/** 出碗时间系数（当前编辑款） */
 export function noodleServeFactor(state: GameState): number {
-  return noodleById(noodleKindOf(state))?.serveFactor ?? 1;
+  return serveFactorOfKind(noodleKindOf(state));
 }
 
-/** 一碗粉本身的成本系数 */
+/** 一碗粉本身的成本系数（可按款指定粉型） */
+export function costFactorOfKind(kind: string): number {
+  return noodleById(kind)?.costFactor ?? 1;
+}
+
+/** 一碗粉本身的成本系数（当前编辑款） */
 export function noodleCostFactor(state: GameState): number {
-  return noodleById(noodleKindOf(state))?.costFactor ?? 1;
+  return costFactorOfKind(noodleKindOf(state));
 }
 
-/** 当季满意度加成（干捞夏天 +3、砂锅冬天 +3；反季 −3） */
-export function noodleSeasonBonus(state: GameState): number {
-  const def = noodleById(noodleKindOf(state));
+/** 当季满意度加成，按款算（干捞夏天 +3、砂锅冬天 +3；反季 −3） */
+export function seasonBonusOfKind(state: GameState, kind: string): number {
+  const def = noodleById(kind);
   if (!def?.season) return 0;
   const f = seasonFactorOf(state, def);
   if (f > 1) return 3;
   if (f < 1) return -3;
   return 0;
+}
+
+/** 当季满意度加成（当前编辑款） */
+export function noodleSeasonBonus(state: GameState): number {
+  return seasonBonusOfKind(state, noodleKindOf(state));
 }
 
 export interface SwitchResult {

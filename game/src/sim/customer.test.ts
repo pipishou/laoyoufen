@@ -59,7 +59,7 @@ describe("顾客循环", () => {
   it("吃完要付钱：营收与出餐数对账（基础价 + 加购）", () => {
     const s = createInitialState("p", 11);
     const before = s.cash;
-    for (let i = 0; i < DAY_MINUTES; i++) tickCustomers(s, scoreRecipe(s.recipe, s.price));
+    for (let i = 0; i < DAY_MINUTES; i++) tickCustomers(s);
     // 用营收对账而不是现金：现金还含食材成本与熟客回礼（会补现金），对不上是正常的。
     // P41 起营业额 = 基础价 × 碗数 + 加购（加料/饮料），所以要把加购那部分加回来。
     expect(s.flow.revenueToday).toBeCloseTo(

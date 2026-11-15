@@ -10,11 +10,12 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 import { noodleKindOf } from "./noodles";
+import { START_NOODLE, type NoodleId } from "../data/noodles";
 import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -57,10 +58,39 @@ export interface Trend {
   broth: number;
 }
 
+/**
+ * 菜单上的一款粉（P47）。
+ *
+ * 开罗的售卖机上挂一排拉面券，客人自己按钱包和口味选一款 —— 菜单是
+ * 「多款商品」，不是一个「当前商品」。我们的老友粉店也一样：老友粉、
+ * 老友牛肉粉、干捞老友粉可以同时卖，各定各的价。
+ *
+ * `state.recipe / price / noodle / main / portion` 是「正在编辑的这一款」的
+ * 编辑缓冲（滑块在改它），改完统一 `syncEditing()` 写回 `menu[editing]`。
+ */
+export interface MenuItem {
+  id: number;
+  recipe: Recipe;
+  /** 粉型，见 `data/noodles.ts` */
+  noodle: string;
+  /** 主料，见 `data/mains.ts` */
+  main: string;
+  /** 份量：2＝二两、3＝三两 */
+  portion: number;
+  /** 菜单价（二两的价；三两自动 +¥2） */
+  price: number;
+  /** 在架（下架的款不卖，但保留配方） */
+  on: boolean;
+  /** 这款累计卖出的碗数 */
+  sold: number;
+}
+
 /** 一个顾客在店里的状态。字段形状对应 REA `customer` 的 defParam 三元组。 */
 export interface QueueCustomer {
   id: number;
   archetypeId: string;
+  /** 他点的是菜单上哪一款（P47 菜单） */
+  dishId: number;
   status: "waiting" | "eating";
   /** 已进食的游戏分钟数 */
   elapsed: number;
@@ -397,6 +427,13 @@ export interface GameState {
    * 三两多一钱料、售价 +¥2、满意 +1，但出碗慢 10%。
    */
   portion: number;
+  /**
+   * 菜单（P47）：同时在架的多款粉，客人按钱包与口味自己挑一款。
+   * 开罗的售卖机上挂一排拉面券，也是这么卖的。
+   */
+  menu: MenuItem[];
+  /** 正在编辑 `menu` 里的第几款（配方页的滑块改的就是它） */
+  editing: number;
   /** 年度结算单，非空时 HUD 强制弹出 */
   pendingReport: YearRecord | null;
   /** 36 个月跑完 */
@@ -522,6 +559,25 @@ export function createInitialState(playerId: string, seed: number): GameState {
       noodle: DEFAULT_RECIPE.noodle.slice() as NoodleParams,
       toppings: [],
     },
+    // 菜单从一碗「老友粉」开始 —— 对齐开罗 Game Flow 1：
+    // 先做出一碗能卖的，才谈得上有第二款。
+    menu: [
+      {
+        id: 1,
+        recipe: {
+          soup: DEFAULT_RECIPE.soup.slice() as SoupParams,
+          noodle: DEFAULT_RECIPE.noodle.slice() as NoodleParams,
+          toppings: [],
+        },
+        noodle: START_NOODLE,
+        main: START_MAIN,
+        portion: DEFAULT_PORTION,
+        price: DEFAULT_PRICE,
+        on: true,
+        sold: 0,
+      },
+    ],
+    editing: 0,
     trend: {
       sourBamboo: roll(),
       douchi: roll(),
@@ -646,21 +702,38 @@ function endDay(state: GameState): void {
 export function advanceMinute(state: GameState): void {
   if (state.finished) return;
   if (state.events.pending) return;
-  // 粉型跟着走：切粉以外的粉会按「汤配不配它」加减粉分（P42）
-  // 主料与份量只动料钱，不动口味分（P46）
-  const score = scoreRecipe(state.recipe, state.price, noodleKindOf(state), {
-    main: state.main,
-    portion: state.portion,
-  });
-  tickCustomers(state, score);
+  // 菜单（P47）：一天里每款粉各有自己的价与分，客人进门时再挑；
+  // 所以这里不再有「一个全局评分」，评分在顾客循环里按款算。
+  tickCustomers(state);
   tickEvents(state);
   state.flow.minuteOfDay += 1;
   if (state.flow.minuteOfDay >= DAY_MINUTES) {
     // recordDay 会把 phase 置为 "closing" 并留下 dayReport；
     // 这里不能再写 prep，否则日结单永远等不到玩家确认（原本的 bug）
-    recordDay(state, score.total);
+    recordDay(state, bestTaste(state));
     endDay(state);
   }
+}
+
+/**
+ * 菜单里味道最好的那碗（日结单上「味道」那一格用）。
+ * 没有在架款时退回当前编辑款 —— 打烊时总得有个数。
+ */
+function bestTaste(state: GameState): number {
+  let best = -1;
+  for (const item of state.menu) {
+    if (!item.on) continue;
+    const sc = scoreRecipe(item.recipe, item.price, item.noodle as NoodleId, {
+      main: item.main,
+      portion: item.portion,
+    });
+    if (sc.total > best) best = sc.total;
+  }
+  if (best >= 0) return best;
+  return scoreRecipe(state.recipe, state.price, noodleKindOf(state), {
+    main: state.main,
+    portion: state.portion,
+  }).total;
 }
 
 /** 打烊：把今天的数字钉成一张日结单（必须在 endDay 清账之前调） */

@@ -153,7 +153,9 @@ export const MAINS: readonly MainDef[] = [
   },
   {
     id: "veg",
-    word: "素粉",
+    // 品名里词尾已经带「粉」（`老友${word}粉`），这里只能写「素」——
+    // 写「素粉」会拼出「老友素粉粉」（P47 真点验收抓到的）
+    word: "素",
     name: "素粉",
     costYuan: -0.8,
     suggestAddYuan: -1,

@@ -93,6 +93,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 17 &&
     v.saveVersion !== 16 &&
     v.saveVersion !== 15 &&
     v.saveVersion !== 14 &&
@@ -372,6 +373,55 @@ export function deserialize(raw: string): GameState | null {
   if (typeof mn !== "string" || !MAIN_BY_ID.has(mn as MainId)) parsed.main = START_MAIN;
   const pt = (parsed as { portion?: unknown }).portion;
   if (pt !== 2 && pt !== 3) parsed.portion = DEFAULT_PORTION;
+  // v17 → v18（P47 多款粉同时上菜单）：老档只有「一碗」，把它变成菜单里的第一款。
+  // 编辑缓冲（recipe/price/noodle/main/portion）原样保留，所以老档读进来就是在编辑那一款。
+  const mi = parsed as unknown as {
+    menu?: unknown;
+    editing?: unknown;
+    recipe: unknown;
+    noodle?: string;
+    main?: string;
+    portion?: number;
+    price?: number;
+  };
+  const rawMenu = mi.menu;
+  const menuOk =
+    Array.isArray(rawMenu) &&
+    rawMenu.length > 0 &&
+    rawMenu.every(
+      (d) =>
+        !!d &&
+        typeof d === "object" &&
+        typeof (d as { id?: unknown }).id === "number" &&
+        typeof (d as { price?: unknown }).price === "number" &&
+        typeof (d as { on?: unknown }).on === "boolean" &&
+        !!(d as { recipe?: unknown }).recipe,
+    );
+  if (!menuOk) {
+    mi.menu = [
+      {
+        id: 1,
+        recipe: mi.recipe,
+        noodle: mi.noodle ?? START_NOODLE,
+        main: mi.main ?? START_MAIN,
+        portion: mi.portion ?? DEFAULT_PORTION,
+        price: mi.price ?? 9,
+        on: true,
+        sold: 0,
+      },
+    ];
+    mi.editing = 0;
+  } else {
+    const menu = rawMenu as { noodle?: unknown; main?: unknown; portion?: unknown; sold?: unknown }[];
+    for (const d of menu) {
+      if (typeof d.noodle !== "string" || !NOODLE_BY_ID.has(d.noodle)) d.noodle = START_NOODLE;
+      if (typeof d.main !== "string" || !MAIN_BY_ID.has(d.main as MainId)) d.main = START_MAIN;
+      if (d.portion !== 2 && d.portion !== 3) d.portion = DEFAULT_PORTION;
+      if (typeof d.sold !== "number" || !Number.isFinite(d.sold)) d.sold = 0;
+    }
+    const ed = mi.editing;
+    if (typeof ed !== "number" || !Number.isInteger(ed) || ed < 0 || ed >= menu.length) mi.editing = 0;
+  }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

@@ -12,7 +12,7 @@ import { noodleById } from "../data/noodles";
 import { noodleKindOf } from "./noodles";
 import { scoreRecipe, type RecipeScore } from "./score";
 import { activeSides } from "./sides";
-import type { GameState } from "./state";
+import type { GameState, MenuItem } from "./state";
 
 /** 三件基础味型（酸笋/豆豉/辣椒）是「老友」的本分，不写进名字 */
 const BASE_SIDES = new Set(["suansun", "douchi", "lazhi"]);
@@ -71,4 +71,22 @@ export function dishSummary(state: GameState, total: number): string {
   const def = noodleById(kind);
   const note = dishNoteOf(total);
   return `${dishNameOf(state)} · ${def?.name ?? "切粉"} · ${note.word}`;
+}
+
+/**
+ * 菜单里某一款叫什么（P47）。
+ *
+ * 和 `dishNameOf(state)` 的区别：那个读**编辑缓冲**（玩家正在调的那碗），
+ * 这个读某一款的存档值 —— 菜单卡片上要同时看到五六款各自的品名。
+ */
+export function dishNameOfItem(state: GameState, item: MenuItem): string {
+  const noodle = item.noodle as Parameters<typeof methodOfNoodle>[0];
+  return dishName({
+    method: methodOfNoodle(noodle),
+    main: (mainById(item.main ?? "pork")?.id ?? "pork") as MainId,
+    noodle,
+    portion: portionOf(item.portion ?? DEFAULT_PORTION).size,
+    extras: extrasOf(state),
+    meal: state.sides.mealDeal === true,
+  });
 }

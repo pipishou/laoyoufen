@@ -37,6 +37,7 @@ import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide
 import { noodleSummary, setNoodleKind } from "./sim/noodles";
 import { scoreOf } from "./sim/dish";
 import { mainSummary, portionSummary, setMain, setPortion } from "./sim/mains";
+import { addDish, removeDish, selectDish, syncEditing, toggleDish } from "./sim/menu";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -165,10 +166,13 @@ const setupScreen: SetupScreen = mountSetup(document.body, {
 panels = mountPanels(hudRoot, {
   setParam(group, index, value) {
     state.recipe[group][index] = value;
+    // 配方是「这一款」的属性（P47）：改完立刻落笔，否则切到另一款时这一款的滑块白调
+    syncEditing(state);
     refresh();
   },
   setPrice(value) {
     state.price = Math.max(1, Math.min(99, Math.round(value)));
+    syncEditing(state);
     guide.notify("price");
     refresh();
   },
@@ -231,6 +235,33 @@ panels = mountPanels(hudRoot, {
     const r = setPortion(state, Number(size));
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
     else hud.showToast(portionSummary(state), "info");
+    // 份量是「这一款」的属性，改完要落笔（P47）
+    syncEditing(state);
+    playSfx("ui");
+    refresh();
+  },
+  pickDish(index) {
+    const r = selectDish(state, Number(index));
+    if (!r.ok) hud.showToast(r.reason ?? "换不了这款", "info");
+    playSfx("ui");
+    refresh();
+  },
+  addDish() {
+    const r = addDish(state);
+    if (!r.ok) hud.showToast(r.reason ?? "加不了新款", "info");
+    else hud.showToast("加了一款，照着这碗改改就能卖", "like");
+    playSfx("upgrade");
+    refresh();
+  },
+  removeDish(index) {
+    const r = removeDish(state, Number(index));
+    if (!r.ok) hud.showToast(r.reason ?? "删不掉这款", "info");
+    playSfx("ui");
+    refresh();
+  },
+  toggleDish(index) {
+    const r = toggleDish(state, Number(index));
+    if (!r.ok) hud.showToast(r.reason ?? "改不了上下架", "info");
     playSfx("ui");
     refresh();
   },

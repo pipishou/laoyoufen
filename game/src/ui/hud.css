@@ -1659,3 +1659,15 @@ button.pill[disabled] {
   background: var(--bamboo);
   color: var(--paper);
 }
+
+/* 菜单卡片（P47）：一排「券」，点一张切过去编辑它 */
+.menucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.dcard{border:2px solid #d8c9a8;background:#fffdf6;border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;text-align:left}
+.dcard.on{border-color:#2f7d4f}
+.dcard.editing{box-shadow:0 0 0 1px #2f7d4f inset;background:#f3fbf4}
+.dcard.add{justify-content:center;align-items:center;color:#7a6a55;font-size:12px;border-style:dashed;cursor:pointer}
+.dhead{display:flex;justify-content:space-between;align-items:baseline;gap:6px;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.dprice{color:#b8912f;font-weight:700}
+.dacts{display:flex;gap:6px;margin-top:2px}
+.dbtn{flex:1;font-size:11px;padding:3px 6px;border:1px solid #d8c9a8;background:#fff;border-radius:4px;cursor:pointer}
+.dbtn.on{border-color:#2f7d4f;color:#2f7d4f;background:#eefaf1}
