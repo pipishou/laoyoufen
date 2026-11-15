@@ -68,14 +68,26 @@ function avg(xs: number[]): number {
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
-function flatStreakOf(months: number[]): number {
+/**
+ * 「无事可做」的连续月数。
+ *
+ * 只看营收会误判：攒钱准备开分店的那两三个月，营收本来就该不动
+ * （钱在往账上堆，玩家在做「什么时候开第二家」的决策）。
+ * 所以持平要三个条件同时成立：营收没动、利润没动、也没新开分店。
+ */
+function flatStreakOf(
+  months: readonly { revenue: number; profit: number; branchCost?: number }[],
+): number {
   let best = 0;
   let run = 1;
   for (let i = 1; i < months.length; i += 1) {
     const prev = months[i - 1]!;
     const cur = months[i]!;
-    const ratio = prev === 0 ? 1 : Math.abs(cur - prev) / prev;
-    if (ratio < FLAT_EPS) {
+    const ratio = prev.revenue === 0 ? 1 : Math.abs(cur.revenue - prev.revenue) / prev.revenue;
+    const cashMove = Math.abs((cur.profit ?? 0) - (prev.profit ?? 0));
+    const cashScale = Math.max(1, Math.abs(prev.revenue) * 0.15);
+    const newBranch = (cur.branchCost ?? 0) !== (prev.branchCost ?? 0);
+    if (ratio < FLAT_EPS && cashMove < cashScale && !newBranch) {
       run += 1;
       if (run > best) best = run;
     } else {
@@ -108,7 +120,7 @@ export function quantOf(s: GameState): Quant {
     avgPrice: priced.length ? Number(avg(priced.map((d) => d.price)).toFixed(1)) : s.price,
     avgSat: Number(avg(sat).toFixed(1)),
     cashEnd: Math.round(s.cash),
-    flatStreak: flatStreakOf(revs),
+    flatStreak: flatStreakOf(months),
     contestCount: s.contest.results.length,
     championCount: s.contest.results.filter((r) => r.rank === 1).length,
     gradeLevel: s.gradeLevel,

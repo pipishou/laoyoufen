@@ -1,5 +1,6 @@
 import type { GameState, MonthRecord, YearRecord } from "./state";
 import { monthlyRentOf } from "./setup";
+import { branchMonthlyCost } from "./branches";
 const YEAR_BONUS: Record<YearRecord["rating"], number> = { S: 8000, A: 4000, B: 2000, C: 500, D: 0 };
 const GRADES: YearRecord["rating"][] = ["D", "C", "B", "A", "S"];
 
@@ -30,11 +31,13 @@ export function closeMonth(state: GameState): void {
   // 2026-11-15 之前是「月营收目标 × 22% × 系数」：目标每月 +2% 涨到 ¥42,000，
   // 而实际营收被客流封顶在 ¥27,200，第 36 个月租金 = 营收 34%，账上必亏。现实里房租是固定数。
   const rent = monthlyRentOf(state);
+  // 分店（S6）的月固定成本：每家店的房租 + 店长工资（料钱已在日结里按碗扣过）
+  const branchCost = branchMonthlyCost(state);
 
   // K1：日营收峰值在 endDay 里逐日更新（见 sim/state.ts），此处不再动 tally
 
-  state.cash -= rent;
-  const profit = Math.round(revenue - wages - rent);
+  state.cash -= rent + branchCost;
+  const profit = Math.round(revenue - wages - rent - branchCost);
 
   const record: MonthRecord = {
     month: state.month,
@@ -44,6 +47,7 @@ export function closeMonth(state: GameState): void {
     avgSat: Math.round(avgSat),
     wages,
     rent,
+    branchCost,
     profit,
     target: Math.round(target),
     grade: gradeByRatio(revenue / Math.max(1, target)),

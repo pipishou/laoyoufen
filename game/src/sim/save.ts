@@ -92,6 +92,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 14 &&
     v.saveVersion !== 13 &&
     v.saveVersion !== 12 &&
     v.saveVersion !== 11 &&
@@ -238,6 +239,7 @@ export function deserialize(raw: string): GameState | null {
       districts: ["xingning"],
       sideRevenue: 0,
       comboHits: 0,
+      branchBowls: 0,
     };
   } else {
     if (typeof parsed.tally.bowls !== "number") parsed.tally.bowls = 0;
@@ -347,14 +349,18 @@ export function deserialize(raw: string): GameState | null {
     };
   }
   if (parsed.tally && typeof parsed.tally === "object") {
-    const t = parsed.tally as { sideRevenue?: unknown; comboHits?: unknown };
+    const t = parsed.tally as { sideRevenue?: unknown; comboHits?: unknown; branchBowls?: unknown };
     if (typeof t.sideRevenue !== "number" || !isFinite(t.sideRevenue)) t.sideRevenue = 0;
     if (typeof t.comboHits !== "number" || !isFinite(t.comboHits)) t.comboHits = 0;
+    if (typeof t.branchBowls !== "number" || !isFinite(t.branchBowls)) t.branchBowls = 0;
   }
   // v13 → v14（粉型本土化）：老档没有 noodle，补成切粉（老友粉的正统）。
   // 非法值也回切粉 —— 否则 noodleFit 会读到 undefined 尺寸。
   const nd = (parsed as { noodle?: unknown }).noodle;
   if (typeof nd !== "string" || !NOODLE_BY_ID.has(nd)) parsed.noodle = START_NOODLE;
+  // v14 → v15（分店 S6）：老档没开过分店，补空数组；非数组也补空。
+  const br = (parsed as { branches?: unknown }).branches;
+  if (!Array.isArray(br)) parsed.branches = [];
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

@@ -15,6 +15,9 @@ import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expan
 import { gradeOf, unlockViews } from "../sim/unlocks";
 import { kindLabel, sideShareOf, sideSummary, sideViews } from "../sim/sides";
 import { noodleSummary, noodleViews } from "../sim/noodles";
+import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
+import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
+import { districtNameOf } from "../data/nanning";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -89,6 +92,12 @@ export interface PanelActions {
   applyGrade(): void;
   /** 换区（付转让费） */
   moveDistrict(id: string): void;
+  /** 在分店面板里选中一个区县（S6） */
+  pickBranchDistrict(id: string): void;
+  /** 在选中的区开一家分店，size = small / normal / big / amazing */
+  openBranch(size: string, district: string): void;
+  /** 关掉一家分店（退半个月租） */
+  closeBranch(id: string): void;
   dismissReport(): void;
 }
 
@@ -170,6 +179,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const keys: Partial<Record<PanelTab, string>> = {};
   /** 粉型卡片单独缓存（配方页里既有滑块又有卡片，不能共用一个 key） */
   let noodleKey = "";
+  /** 分店面板里选中的区县（不存档：纯粹是「我正要在这儿开」的界面状态） */
+  let branchPick = "";
 
   const show = (tab: PanelTab): void => {
     current = tab;
@@ -241,6 +252,16 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "mealdeal":
         actions.toggleMealDeal();
+        break;
+      case "pickbranch":
+        branchPick = id;
+        actions.pickBranchDistrict(id);
+        break;
+      case "openbranch":
+        actions.openBranch(id, branchPick);
+        break;
+      case "closebranch":
+        actions.closeBranch(id);
         break;
       case "dismiss":
         actions.dismissReport();
@@ -418,8 +439,48 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           .join("")}
       </div>`;
 
-    const ups = UPGRADES.map((u) => {
-      const lv = upgradeLevel(s, u.id);
+    // 分店（S6）：照开罗 Buy Small → Buy Amazing Shop 的四档店面
+    const bv = branchViews(s);
+    const bOpts = branchSizeOptions(s);
+    const pickName = branchPick ? districtNameOf(branchPick) : "";
+    const signed = (n: number): string => (n >= 0 ? `+${money(n)}` : `−${money(-n)}`);
+    const openRows = bv
+      .map(
+        (v) => `<div class="lrow">
+          <div class="lname">${v.districtName} · ${v.def.name}<span class="tag2">口碑 ${(v.branch.warmth * 100).toFixed(0)}%</span><span class="tag2">今天约 ${v.dayBowls} 碗</span></div>
+          <div class="lmeta">月租 ${money(v.def.rentMonthly)} + 店长 ${money(MANAGER_MONTHLY)} · 一个月约 ${signed(v.monthNet)}${
+            v.monthNet < 0 ? "（口碑还没养熟，满口碑后转正）" : ""
+          } · 累计 ${v.branch.bowlsTotal} 碗</div>
+          <div class="lbtns"><button type="button" class="danger" data-act="closebranch" data-id="${v.branch.id}">关店（退 ${money(v.refundYuan)}）</button></div>
+        </div>`,
+      )
+      .join("");
+    const branchSec = `<div class="sec">
+        <div class="sechd">分店 · 已开 ${bv.length}/${MAX_BRANCHES}${bv.length ? ` · ${branchSummary(s)}` : ""}</div>
+        <div class="lmeta" style="padding:0 2px 8px">主店评到第 8 段就能在别处再开一家（开罗：Buy Small Shop → Buy Amazing Shop；标准店第 9 段、大店第 10 段、旗舰第 11 段）。分店自己养口碑：开张时只有 45%，每天涨 3%，大约 18 天熟。同一个区连开几家要分客流，池子小的区开不了。</div>
+        ${openRows || `<div class="empty2">还没开分店。</div>`}
+        <div class="sechd" style="margin-top:10px">在哪个区开 · 点一下选中</div>
+        <div class="dpicks">${opts
+          .map(
+            (o) =>
+              `<button type="button" class="dpick${branchPick === o.id ? " on" : ""}${o.current ? " here" : ""}" data-act="pickbranch" data-id="${o.id}"><b>${o.name}</b><span>日客流 ${o.effective}</span></button>`,
+          )
+          .join("")}</div>
+        <div class="hint">${pickName ? `已选中 ${pickName}` : "先在上面点一个区，再挑店面大小。"}</div>
+        ${bOpts
+          .map(
+            (o) => `<div class="lrow${o.locked ? " locked" : ""}">
+              <div class="lname">${o.def.name}<span class="tag2">${money(o.def.openFeeYuan)}</span><span class="tag2">日做 ${o.def.dayBowls} 碗</span>${o.locked ? `<span class="tag2">需第 ${o.def.minGrade} 段</span>` : ""}</div>
+              <div class="lmeta">${o.def.pitch} · 月租 ${money(o.def.rentMonthly)} + 店长 ${money(MANAGER_MONTHLY)} · 满负荷月净 ${signed(o.monthNet)} · 约 ${o.payback} 个月回本</div>
+              <div class="lbtns"><button type="button" data-act="openbranch" data-id="${o.def.id}" ${
+                o.locked || !pickName || s.cash < o.def.openFeeYuan ? "disabled" : ""
+              }>${o.locked ? "段位不够" : pickName ? "在这里开" : "先选区"}</button></div>
+            </div>`,
+          )
+          .join("")}
+      </div>`;
+
+    const ups = UPGRADES.map((u) => {      const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
       const maxed = lv >= u.maxLevel;
       return `<div class="lrow">
@@ -445,6 +506,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       ${sidesSec}
       ${gradeSec}
       ${craftSec}
+      ${branchSec}
       ${districtSec}`;
   }
 
@@ -654,7 +716,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+﻿import { describe, it } from "vitest";
 import { FLOW } from "../data/balance";
 import { nextStaffNeed, staffSlots } from "../data/staff";
 import { ackDayReport, advanceMinute, createInitialState, type GameState } from "./state";
@@ -13,6 +13,8 @@ import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
 import { auditPlaytest, verdictLabel } from "./playtest";
 import { nextFloat } from "./rng";
 import { noodleKindOf, noodleViews, setNoodleKind } from "./noodles";
+import { MAX_BRANCHES } from "../data/branches";
+import { branchSizeOptions, branchViews, openBranch } from "./branches";
 
 /**
  * 「替身」＝游戏测试员：一个按规矩办事的假玩家，完整玩 36 个月，跑完还要交体检单。
@@ -217,6 +219,31 @@ function play(seed: number): GameState {
         }
       }
 
+      // 开分店（S6）：主店到第 10 段后，续得上就再开一家 —— 这是中期唯一的
+      // 「营收还能往上走」的出口（主店被座位/灶位/粉价三重封顶）。挑月净最高、
+      // 且买得起那一档。**必须留够 ¥60,000 周转**：分店头 18 天只养口碑，
+      // 不赚钱还要照付房租店长（第一版只留 ¥8,000，一个月连开四家直接现金链断）。
+      let branchNote = "";
+      if (s.branches.length < MAX_BRANCHES) {
+        const allProfitable = branchViews(s).every((v) => v.monthNet > 0);
+        const best = allProfitable
+          ? branchSizeOptions(s)
+              .filter((o) => !o.locked && s.cash >= o.def.openFeeYuan + 25_000)
+              .sort((a, b) => b.monthNet - a.monthNet)[0]
+          : undefined;
+        if (best) {
+          // 选区：优先挑「已经去过、有效客流最大、且这个区还没开过分店」的区
+          const used = new Set(s.branches.map((b) => b.district));
+          const spot = districtOptions(s)
+            .filter((o) => !used.has(o.id) && o.effective >= 60)
+            .sort((a, b) => b.effective - a.effective)[0];
+          if (spot) {
+            const br = openBranch(s, spot.id, best.def.id);
+            if (br.ok) branchNote = ` · 开分店 ${spot.name}·${best.def.name}（¥${best.def.openFeeYuan.toLocaleString("zh-CN")}）`;
+          }
+        }
+      }
+
       log.push(
         `M${String(m.month).padStart(2, "0")} 现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
           ` · 营收 ¥${m.revenue.toLocaleString("zh-CN")}` +
@@ -227,7 +254,8 @@ function play(seed: number): GameState {
           ` · 段 ${s.gradeLevel} · 区能量 ${(homeEnergyOf(s) * 100).toFixed(0)}%` +
           (need ? ` · 下一个还差 ${need.short} 位` : "") +
           contestNote +
-          moveNote,
+          moveNote +
+          branchNote,
       );
     }
   }

@@ -76,6 +76,19 @@ export function districtById(id: DistrictId): District {
   return d;
 }
 
+/**
+ * 宽松查找：界面与存档里拿到的是 `string`（可能是老档、可能是脏数据），
+ * 这里返回 `null` 而不是抛错。用它替代 `districtById` 的地方都不要假定一定有这个区。
+ */
+export function findDistrict(id: string): District | null {
+  return DISTRICT_BY_ID.get(id as DistrictId) ?? null;
+}
+
+/** 区名，找不到就原样返回 id（日志与 toast 用） */
+export function districtNameOf(id: string): string {
+  return findDistrict(id)?.name ?? id;
+}
+
 /** 该区的日潜在客流（人次）。开罗用区域人口，我们用 GDP×0.16。 */
 export function dailyTrafficOf(id: DistrictId): number {
   return Math.round(districtById(id).gdpYi * TRAFFIC_PER_GDP_YI);

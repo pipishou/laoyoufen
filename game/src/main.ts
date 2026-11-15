@@ -8,6 +8,9 @@ import { createGameConfig } from "./render/world";
 import { canEnter, enterContest } from "./sim/contest";
 import { applyGrade } from "./sim/grade";
 import { districtOptions, moveShop } from "./sim/district";
+import { closeBranch, openBranch } from "./sim/branches";
+import { branchSizeById } from "./data/branches";
+import { districtNameOf } from "./data/nanning";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
@@ -246,6 +249,33 @@ panels = mountPanels(hudRoot, {
       const d = districtOptions(state).find((o) => o.id === id);
       hud.showToast(`搬到${d?.name ?? id}：转让费 ¥${r.paid?.toLocaleString("zh-CN")}，日客流 ${d?.effective ?? "?"}`, "like");
       playSfx("upgrade");
+    } else if (r.reason) {
+      hud.showToast(r.reason, "info");
+    }
+    refresh();
+  },
+  pickBranchDistrict(id) {
+    // 只是界面状态：选中哪个区（真正开张在 openBranch）
+    const d = districtNameOf(String(id));
+    if (d) hud.showToast(`分店选址：${d}`, "info");
+    refresh();
+  },
+  openBranch(size, district) {
+    const def = branchSizeById(String(size));
+    const r = openBranch(state, String(district), String(size));
+    if (r.ok) {
+      const d = districtNameOf(String(district));
+      hud.showToast(`在${d || "外区"}开了${def?.name ?? "分店"}：转让费 ¥${(def?.openFeeYuan ?? 0).toLocaleString("zh-CN")}`, "like");
+      playSfx("upgrade");
+    } else if (r.reason) {
+      hud.showToast(r.reason, "info");
+    }
+    refresh();
+  },
+  closeBranch(id) {
+    const r = closeBranch(state, String(id));
+    if (r.ok) {
+      hud.showToast(`关掉一家分店，退回押金 ¥${(r.refund ?? 0).toLocaleString("zh-CN")}`, "info");
     } else if (r.reason) {
       hud.showToast(r.reason, "info");
     }

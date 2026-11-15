@@ -11,8 +11,9 @@ import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 import { noodleKindOf } from "./noodles";
 import { START_SIDES } from "../data/sides";
+import { runBranchDay, type BranchState } from "./branches";
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -181,6 +182,8 @@ export interface MonthRecord {
   avgSat: number;
   wages: number;
   rent: number;
+  /** 分店的房租 + 店长工资（S6；没有分店时为 0） */
+  branchCost?: number;
   profit: number;
   target: number;
   grade: "S" | "A" | "B" | "C" | "D";
@@ -270,6 +273,10 @@ export interface DayRecord {
   price: number;
   taste: number;
   cash: number;
+  /** 分店今天做的碗数（S6；没有分店时省略） */
+  branchBowls?: number;
+  /** 分店今天的净进账（已扣料钱与房租店长摊销） */
+  branchNet?: number;
 }
 
 export interface Tally {
@@ -285,6 +292,12 @@ export interface Tally {
   sideRevenue: number;
   /** 累计凑出组合（老友味/酸辣开胃/全套）的次数 */
   comboHits: number;
+  /**
+   * 分店累计出碗数（S6）。
+   * 单列一份是因为 `bowls` 是「主店端出去的碗」，月报里的 `customers` 也是主店客流；
+   * 混在一起账就对不上（测试员 T7 会当场抓到）。
+   */
+  branchBowls: number;
 }
 
 /**
@@ -390,6 +403,12 @@ export interface GameState {
   district: string;
   /** 搬进当前区的月份（0-35），区能量按住了多久衰减 */
   districtSince: number;
+  /**
+   * 分店（S6）：在别的区县另开的店，见 `data/branches.ts`。
+   * 每家有自己的区、档位、口碑（warmth）与累计碗数；日结在 `recordDay` 里跑，
+   * 月租与店长工资在 `closeMonth` 里扣。
+   */
+  branches: BranchState[];
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -475,6 +494,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       districts: [START_DISTRICT],
       sideRevenue: 0,
       comboHits: 0,
+      branchBowls: 0,
     },
     sides: {
       active: [...START_SIDES],
@@ -557,6 +577,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     noodle: "flat",
     district: START_DISTRICT,
     districtSince: 0,
+    branches: [],
     equipment: {},
     dayReport: null,
     days: [],
@@ -624,6 +645,9 @@ export function advanceMinute(state: GameState): void {
 
 /** 打烊：把今天的数字钉成一张日结单（必须在 endDay 清账之前调） */
 function recordDay(state: GameState, taste: number): void {
+  // 分店先跑完自己那一天（进账、涨口碑、扣料钱与摊销），
+  // 这样日结单与月报里都能看到分店那一行，而不是账外收入。
+  const day = runBranchDay(state);
   const f = state.flow;
   const rec: DayRecord = {
     month: state.month,
@@ -636,6 +660,10 @@ function recordDay(state: GameState, taste: number): void {
     taste: Math.round(taste),
     cash: Math.round(state.cash),
   };
+  if (day.active) {
+    rec.branchBowls = day.bowls;
+    rec.branchNet = day.net;
+  }
   state.dayReport = rec;
   state.days.push(rec);
   if (state.days.length > 120) state.days.shift();
