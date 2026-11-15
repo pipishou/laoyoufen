@@ -18,7 +18,7 @@ function fmtProgress(n: number): string {
   return String(Math.round(n));
 }
 import type { RecipeScore } from "../sim/score";
-import { serveMultiplier } from "../sim/staff";
+import { bowlMinutes, serveMultiplier, serveParallel } from "../sim/staff";
 import { equipServeMultiplier } from "../sim/equipment";
 
 /**
@@ -471,12 +471,13 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.sat.textContent = sat < 0 ? "--" : String(sat);
     el.satbar.style.width = sat < 0 ? "0%" : `${sat}%`;
     el.satbar.className = sat < 40 ? "hot" : sat < 60 ? "warm" : "";
-    const serveNow = Math.max(0.5, SERVE_MINUTES * serveMultiplier(s) * equipServeMultiplier(s));
-    el.caprow.textContent = `座位 ${s.venue.seats} · 出餐 ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} 碗`;
+    const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
+    const batch = serveParallel(s);
+    el.caprow.textContent = `座位 ${s.venue.seats} · 每轮出 ${batch} 碗 · 合 ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} 碗`;
     // 开罗 Sales Areas：本区越做越腻、别区越长肉。这两行就是「什么时候搬家／什么时候报比赛」的提示。
     const pool = demandCapOf(s);
-    const contest = isContestMonth(s.month) ? "本月比赛月" : `下场比赛还有 ${monthsToContest(s.month)} 个月`;
-    el.caprow.textContent += ` · 区客流 ${pool}/日 · ${contest}`;
+    const contest = isContestMonth(s.month) ? "本月比赛" : `比赛 ${monthsToContest(s.month)} 个月后`;
+    el.caprow.textContent = `座位 ${s.venue.seats} · 每轮 ${batch} 碗 · ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} · 客流 ${pool}/日 · ${contest}`;
     const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}`).join("|");
     if (custKey !== lastCustKey) {
       lastCustKey = custKey;
@@ -545,10 +546,10 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
 
     // 工序：serveCooldown 从满值倒数，正好当一碗的进度条。
     // 前 55% 炒料与煮粉两口锅并行，55%–95% 合煮，95% 之后盛装出餐。
-    const bowlMinutes = Math.max(1, SERVE_MINUTES * serveMultiplier(s));
+    const bowlSpan = Math.max(1, SERVE_MINUTES * serveMultiplier(s));
     const cool = s.flow.serveCooldown;
     const cooking = cool > 0;
-    const progress = cooking ? Math.min(1, Math.max(0, 1 - cool / bowlMinutes)) : 0;
+    const progress = cooking ? Math.min(1, Math.max(0, 1 - cool / bowlSpan)) : 0;
     const half = progress >= 0.55;
     const done = progress >= 0.95;
     el.cookSteps.forEach((node, i) => {
@@ -564,7 +565,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.cookbar.style.width = cooking ? `${Math.round(progress * 100)}%` : "0%";
     const left = Math.max(1, Math.ceil(cool));
     el.cooknow.textContent = !cooking
-      ? `等客落座 · 一碗约 ${bowlMinutes.toFixed(1)} 分钟`
+      ? `等客落座 · 一碗约 ${bowlSpan.toFixed(1)} 分钟`
       : done
         ? `盛装 · 撒葱花与酸料 · ${s.venue.stoves} 口灶`
         : half

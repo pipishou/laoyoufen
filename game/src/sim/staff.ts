@@ -8,6 +8,7 @@ import {
   type StaffTemplate,
 } from "../data/staff";
 import { dayIndex } from "./calendar";
+import { equipLevel } from "./equipment";
 import { shuffled } from "./rng";
 import type { GameState, StaffMember } from "./state";
 
@@ -88,13 +89,14 @@ const SETOUT_CUT_PER_SKILL = 0.05;
 /**
  * 每口灶一轮能下几份。
  *
- * 开罗 HumanClerk.GetInNoodlesNum() / hotWaterLimit_ 是一个「批量」上限：
- * 一锅水里同时煮 N 份，而不是一锅只出一碗。REA 原来是一锅一碗，
- * 所以厨师只线性降时间，边际收益跑不过工资。
- * 1 + 厨师总技能/50，封顶 +2，是自定标定 [GUESS, LOW]。
+ * 开罗 Staff 2 原文：「When a staff member's cooking skill increases, they will be
+ * **able to boil more noodles at once**」——产能是**同时煮的份数**，不是把时间除一下。
+ *
+ * 所以：基础 3 份（粉篓本来就有几格，南宁粉店的粉篓也是多格的）＋粉篓设备等级
+ * ＋厨师总技能每 50 点 +1（封顶 +2）。
  */
 export function inNoodlesNum(state: GameState): number {
-  return 1 + Math.min(2, Math.floor(sumSkill(state, "cook") / 50));
+  return 3 + equipLevel(state, "strainer") + Math.min(2, Math.floor(sumSkill(state, "cook") / 50));
 }
 
 /**
@@ -115,12 +117,32 @@ export function cookSlots(state: GameState): number {
   return 1 + cooks;
 }
 
+/**
+ * 一轮（一个 `serveCooldown`）能同时端出几碗 —— 真正的日产能上限。
+ *
+ * 开罗 Staff 2 还说：「When service increases, they will be **able to carry more at
+ * once**」——上菜也是一批一批端。所以并行槽 = 开着的灶 × 每灶的批量。
+ *
+ * 2026-11-15 改这一条的原因：旧版是「一段全局冷却、冷却到点出**一碗**」，
+ * 于是 8 座满编实测也只有 63 碗/日，加座位、加灶、雇人都只改小数位（P35）。
+ * 现在冷却到点一次出 `serveParallel()` 碗，日产能 = 120 分钟 / 冷却 × 并行槽。
+ */
+export function serveParallel(state: GameState): number {
+  const stoves = Math.max(1, state.venue.stoves);
+  return Math.max(1, Math.min(stoves, cookSlots(state))) * inNoodlesNum(state);
+}
+
+/** 一碗的平均出餐时间（分钟），给 HUD / 面板显示用 */
+export function bowlMinutes(state: GameState, baseMinutes: number, equipFactor: number): number {
+  // 一轮出 N 碗，摊到每碗就是 cooldown / N；空锅也不可能是 0，钉 0.1 分钟。
+  return Math.max(0.1, (baseMinutes * serveMultiplier(state) * equipFactor) / serveParallel(state));
+}
+
+/** 技法熟练度只影响「一轮有多快」，不再承担并行度 */
 export function serveMultiplier(state: GameState): number {
   const boil = 1 - Math.min(COOK_CUT_MAX, sumSkill(state, "cook") * COOK_CUT_PER_SKILL);
   const setout = 1 - Math.min(SETOUT_CUT_MAX, sumSkill(state, "server") * SETOUT_CUT_PER_SKILL);
-  const stoves = Math.max(1, state.venue.stoves);
-  const parallel = Math.max(1, Math.min(stoves, cookSlots(state))) * inNoodlesNum(state);
-  return (boil * setout) / parallel;
+  return boil * setout;
 }
 
 /** 跑堂让顾客更愿意等 */

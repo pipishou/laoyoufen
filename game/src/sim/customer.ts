@@ -13,7 +13,7 @@ import { unlock } from "./collection";
 import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } from "./regulars";
 import { nextFloat } from "./rng";
 import type { RecipeScore } from "./score";
-import { costMultiplier, patienceMultiplier, serveMultiplier, surveyRate } from "./staff";
+import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, surveyRate } from "./staff";
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
@@ -169,6 +169,56 @@ function spawnChance(state: GameState, score: RecipeScore): number {
   );
 }
 
+/**
+ * 一分钟里最多来几个人（开罗把「来访率」做成连续量，我们每分钟结算一次，需要上限）。
+ * 4 是安全阀：再高就不是嗦粉店，是早高峰地铁站。
+ */
+const MAX_ARRIVALS_PER_MINUTE = 4;
+
+/**
+ * 一位客人到店：掷「来不来」的骰子在调用方已经掷完，这里只负责
+ * 「队满就走 / 看价牌就走 / 坐下等」。
+ *
+ * 抽出来的原因：来客从「每分钟一次伯努利」改成「每分钟一批」时，这段要能被循环调用。
+ */
+function arriveOne(state: GameState, score: RecipeScore): void {
+  const flow = state.flow;
+  const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
+  if (waiting >= FLOW.queueMax) {
+    flow.lostToday += 1;
+    state.monthLost += 1;
+    return;
+  }
+  const regularId = maybePickRegular(state);
+  const arch = regularId
+    ? ARCHETYPE_BY_ID.get(regularId)
+    : pickArchetype(nextFloat(state.rng), state.trend);
+  if (!arch) return;
+  // 看价牌：吃不起就走（开罗「售价超过顾客预算 → 不来」）。
+  // 溢价来自味道，所以涨价前必须先把粉做好，否则人全被价牌挡回去。
+  const canPay = state.price <= arch.budget * priceTolerance(score.total);
+  if (!canPay) {
+    flow.lostToday += 1;
+    state.monthLost += 1;
+    flow.lastLostReason = `${arch.name}看价牌走了（¥${state.price} 超预算 ¥${arch.budget}）`;
+    return;
+  }
+  const regular = regularId !== null;
+  const patienceScale =
+    patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1) * FLOW.patienceScale;
+  flow.customers.push({
+    id: flow.nextId++,
+    archetypeId: arch.id,
+    status: "waiting",
+    elapsed: 0,
+    waited: 0,
+    patience: Math.round((arch.lineLimit + 1) * 6 * patienceScale),
+    satisfaction: -1,
+    regular,
+    survey: 0,
+  });
+}
+
 /** 三维偏好（粉宽/粉型/汤种）与配方的贴合度 0-100：命中一维 1/3 */
 export function prefMatch(recipe: Recipe, prefs: CustomerPrefs): number {
   return (likeHitsOf(recipe, prefs).length / LIKE_DIMS_ORDER.length) * 100;
@@ -274,42 +324,16 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
 
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   if (waiting > state.tally.maxQueue) state.tally.maxQueue = waiting; // K1 成就：排队峰值
-  // 先掷骰再判断队满：看到长队掉头走的人也算流失，不能静默吞掉
-  if (nextFloat(state.rng) < spawnChance(state, score)) {
-    if (waiting >= FLOW.queueMax) {
-      flow.lostToday += 1;
-      state.monthLost += 1;
-    } else {
-      const regularId = maybePickRegular(state);
-      const arch = regularId
-        ? ARCHETYPE_BY_ID.get(regularId)
-        : pickArchetype(nextFloat(state.rng), state.trend);
-      if (arch) {
-        // 看价牌：吃不起就走（开罗「售价超过顾客预算 → 不来」）。
-        // 溢价来自味道，所以涨价前必须先把粉做好，否则人全被价牌挡回去。
-        const canPay = state.price <= arch.budget * priceTolerance(score.total);
-        if (!canPay) {
-          flow.lostToday += 1;
-          state.monthLost += 1;
-          flow.lastLostReason = `${arch.name}看价牌走了（¥${state.price} 超预算 ¥${arch.budget}）`;
-        } else {
-          const regular = regularId !== null;
-          const patienceScale =
-            patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1) * FLOW.patienceScale;
-          flow.customers.push({
-            id: flow.nextId++,
-            archetypeId: arch.id,
-            status: "waiting",
-            elapsed: 0,
-            waited: 0,
-            patience: Math.round((arch.lineLimit + 1) * 6 * patienceScale),
-            satisfaction: -1,
-            regular,
-            survey: 0,
-          });
-        }
-      }
-    }
+  // 开罗 Popularity 影响「来访率」：来客是**每分钟一批**，不是一个个来。
+  // 旧实现每分钟最多 1 人 → 一天上限 120 人，这个天花板比座位/灶位/人手都硬（P35）：
+  // 8 座满编实测也只有 63 碗/日，扩建与雇人全被这道天花板吃掉。
+  const expected = spawnChance(state, score);
+  let arrivals = Math.floor(expected);
+  if (nextFloat(state.rng) < expected - arrivals) arrivals += 1;
+  for (let i = 0; i < Math.min(arrivals, MAX_ARRIVALS_PER_MINUTE); i++) {
+    // 区池子到顶就停（开罗 Sales Areas：本区就这么多人）
+    if (state.todayCustomers + flow.customers.length >= demandCapOf(state)) break;
+    arriveOne(state, score);
   }
 
   // 1. 推进已入座的人；吃完的结算离场
@@ -335,11 +359,23 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   //    实测差 2 倍（57.7 vs 119 碗/日的上限）。
   if (flow.serveCooldown > 0) flow.serveCooldown = Math.max(0, flow.serveCooldown - 1);
   if (flow.serveCooldown <= 0) {
-    const freeSeats = state.venue.seats - eatingNow;
-    const next = flow.customers.find((c) => c.status === "waiting");
-    if (freeSeats > 0 && next) {
+    // 开罗 Staff 2：一锅同时煮 N 份、一趟同时端 N 碗 —— 冷却到点一次出一批。
+    // 旧版这里只出一碗，于是 8 座满编实测也只有 63 碗/日，座位与灶位形同装饰（P35）。
+    let slots = Math.max(1, Math.floor(serveParallel(state)));
+    let servedAny = false;
+    while (slots > 0) {
+      const freeSeats = state.venue.seats - eatingNow;
+      if (freeSeats <= 0) break;
+      const next = flow.customers.find((c) => c.status === "waiting");
+      if (!next) break;
       next.status = "eating";
       next.elapsed = 0;
+      eatingNow += 1;
+      slots -= 1;
+      servedAny = true;
+    }
+    // 空转（没人排队）就不进冷却，否则下一分钟来的客人要多等一轮
+    if (servedAny) {
       flow.serveCooldown = FLOW.serveMinutes * serveMultiplier(state) * equipServeMultiplier(state);
     }
   }

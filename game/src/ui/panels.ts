@@ -14,7 +14,7 @@ import { equipLevel, equipNextCost } from "../sim/equipment";
 import { expansionLevel, nextExpansion } from "../sim/expansion";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
-import { dailyWage, serveMultiplier } from "../sim/staff";
+import { bowlMinutes, dailyWage } from "../sim/staff";
 import { SERVE_MINUTES } from "../sim/customer";
 import { equipServeMultiplier } from "../sim/equipment";
 import type { GameState } from "../sim/state";
@@ -296,7 +296,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? "已到顶档" : money(cost)}</button></div>
       </div>`;
     }).join("");
-    const serveNow = Math.max(0.5, SERVE_MINUTES * serveMultiplier(s) * equipServeMultiplier(s));
+    const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
 
     // 扩建：两档，按顺序买（data/expansion.ts）。座位与灶位只从这里涨。
     const nextExp = nextExpansion(s);
