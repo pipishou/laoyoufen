@@ -263,6 +263,25 @@ export const MEAL_DEAL_SAT = 1;
 export const MAX_TOPPING_ADDS = 2;
 export const MAX_DRINK_ADDS = 1;
 
+/**
+ * 饮料冰热（P43）。
+ *
+ * 现实里南宁的饮料是分季节的：夏天槐花粉要冰的、生地绿豆沙要冰的，
+ * 冬天豆浆要热的。开罗的售货机没这一层，我们补上——同一个 `seasonOf` 月份表，
+ * 对得上 +1 满意，反季节 −1（冬天喝冰绿豆沙没人说好）。
+ */
+export type DrinkTemp = "ice" | "hot";
+
+export const DRINK_TEMP_WORD: Record<DrinkTemp, string> = { ice: "冰", hot: "热" };
+export const DRINK_TEMP_BONUS = 1;
+
+/** 这个季节该喝什么：夏→冰、冬→热、春秋→随便（0） */
+export function tempFitOf(temp: DrinkTemp, season: "summer" | "winter" | null): number {
+  if (season === "summer") return temp === "ice" ? DRINK_TEMP_BONUS : -DRINK_TEMP_BONUS;
+  if (season === "winter") return temp === "hot" ? DRINK_TEMP_BONUS : -DRINK_TEMP_BONUS;
+  return 0;
+}
+
 /** 客人愿意加购的基础概率；吃得满意的人更爱加（0.22 → 0.47） */
 export function sideChanceOf(sat: number): number {
   return Math.min(0.5, 0.22 + Math.max(0, sat) / 400);

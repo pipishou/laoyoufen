@@ -1,4 +1,4 @@
-import { DAYS_PER_MONTH, dayIndex } from "./calendar";
+﻿import { DAYS_PER_MONTH, dayIndex } from "./calendar";
 import { GUANGXI, TARGET_BASE_YUAN, monthTargetFor } from "../data/balance";
 
 /** 起步区：兴宁区（祖传铺面，转让费 0），见 data/nanning.ts 与账本行 18 */
@@ -10,10 +10,10 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 import { noodleKindOf } from "./noodles";
-import { START_SIDES } from "../data/sides";
+import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { runBranchDay, type BranchState } from "./branches";
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -309,6 +309,8 @@ export interface SideState {
   sold: Record<string, number>;
   /** 粉 + 饮料套餐（P42）：开着时饮料便宜 ¥1，客人觉得划算 */
   mealDeal: boolean;
+  /** 饮料冰还是热（P43）：夏天上冰、冬天上热，对得上季 +1 满意，反季 −1 */
+  drinkTemp: DrinkTemp;
 }
 
 export interface GameState {
@@ -500,6 +502,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       active: [...START_SIDES],
       sold: {},
       mealDeal: false,
+      drinkTemp: "ice",
     },
     gradeLevel: 0,
     price: DEFAULT_PRICE,

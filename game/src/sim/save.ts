@@ -92,6 +92,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 15 &&
     v.saveVersion !== 14 &&
     v.saveVersion !== 13 &&
     v.saveVersion !== 12 &&
@@ -338,7 +339,7 @@ export function deserialize(raw: string): GameState | null {
   // tally 补两个累加字段。不补的话 settle 里读 state.sides.sold 会炸。
   const sd = (parsed as { sides?: unknown }).sides as Record<string, unknown> | undefined;
   if (!sd || typeof sd !== "object") {
-    parsed.sides = { active: [...START_SIDES], sold: {}, mealDeal: false };
+    parsed.sides = { active: [...START_SIDES], sold: {}, mealDeal: false, drinkTemp: "ice" };
   } else {
     const active = Array.isArray(sd.active) ? sd.active.filter((x): x is string => typeof x === "string") : [];
     const sold = sd.sold && typeof sd.sold === "object" ? (sd.sold as Record<string, number>) : {};
@@ -346,6 +347,8 @@ export function deserialize(raw: string): GameState | null {
       active: active.length > 0 ? active : [...START_SIDES],
       sold,
       mealDeal: sd.mealDeal === true,
+      // v15 → v16（P43 饮料冰热）：老档没有这个字段，按夏天默认冰的
+      drinkTemp: sd.drinkTemp === "hot" ? "hot" : "ice",
     };
   }
   if (parsed.tally && typeof parsed.tally === "object") {

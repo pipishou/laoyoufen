@@ -7,7 +7,10 @@ import {
   SIDE_COMBOS,
   SIDES,
   START_SIDES,
+  DRINK_TEMP_WORD,
   sideChanceOf,
+  tempFitOf,
+  type DrinkTemp,
   type SideDef,
   type SideKind,
 } from "../data/sides";
@@ -124,6 +127,25 @@ export function toggleMealDeal(state: GameState): { ok: boolean; reason?: string
   return { ok: true };
 }
 
+/** 饮料冰 / 热（P43）：夏天上冰、冬天上热的才对味 */
+export function setDrinkTemp(state: GameState, temp: DrinkTemp): { ok: boolean; reason?: string } {
+  if (temp !== "ice" && temp !== "hot") return { ok: false, reason: "只有冰的和热的" };
+  state.sides.drinkTemp = temp;
+  return { ok: true };
+}
+
+/** 一句话：现在饮料是冰的还是热的，对不对季 */
+export function drinkTempSummary(state: GameState): string {
+  const season = currentSeason(state);
+  const temp = state.sides.drinkTemp;
+  const word = DRINK_TEMP_WORD[temp];
+  const fit = tempFitOf(temp, season);
+  const seasonWord = season === "summer" ? "夏天" : season === "winter" ? "冬天" : "这季节";
+  if (fit > 0) return `饮料上${word}的 · ${seasonWord}就该这么上（满意 +${fit}）`;
+  if (fit < 0) return `饮料上${word}的 · 反季，客人不一定受（满意 ${fit}）`;
+  return `饮料上${word}的 · ${seasonWord}冰热都行`;
+}
+
 /** 初始化一份默认上架表（存档迁移也用） */
 export function defaultActive(): string[] {
   return [...START_SIDES];
@@ -187,9 +209,18 @@ export function pickSides(
     items.reduce((a, d) => a + d.satBonus, 0) +
     (combo ? combo.satBonus : 0) +
     (meal ? meal.sat : 0) +
+    (tempBonus(items, season, state.sides.drinkTemp)) +
     (rich ? 1 : 0);
 
   return { items, paid, cost, combo: combo?.name ?? null, satBonus };
+}
+
+/**
+ * 饮料冰热了对不对季（P43）：只有点了饮料才算。
+ * 夏天上冰的、冬天上热的 +1，反季节 −1，春秋不加减。
+ */
+function tempBonus(items: SideDef[], season: SeasonId | null, temp: DrinkTemp): number {
+  return items.some((d) => d.kind === "drink") ? tempFitOf(temp, season) : 0;
 }
 
 /** 结算记账：卖出计数 + 累计加购收入（测试员判据看这个） */

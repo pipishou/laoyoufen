@@ -13,8 +13,10 @@ import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost } from "../sim/equipment";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
-import { kindLabel, sideShareOf, sideSummary, sideViews } from "../sim/sides";
+import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from "../sim/sides";
 import { noodleSummary, noodleViews } from "../sim/noodles";
+import { dishNameOf } from "../sim/dish";
+import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
@@ -86,6 +88,8 @@ export interface PanelActions {
   setNoodle(id: string): void;
   /** 开关「粉 + 饮料」套餐（P42） */
   toggleMealDeal(): void;
+  /** 饮料冰 / 热（P43）：ice / hot */
+  setDrinkTemp(temp: string): void;
   /** 报名比赛：type = staff / customers / shop（见 data/contest.ts） */
   enterContest(type: string): void;
   /** 交费评段位 */
@@ -149,6 +153,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
             </div>
             <div class="rcol narrow">
               <div class="sechd">实时评分</div>
+              <div class="dishname" data-dishname>老友粉</div>
+              <div class="dishnote" data-dishnote></div>
               <div class="scorebig"><b data-scorebig>--</b><span data-grade>B</span></div>
               <div class="subs" data-sub-list></div>
               <div class="econ2" data-econ2></div>
@@ -173,6 +179,10 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const econ2 = wrap.querySelector("[data-econ2]") as HTMLElement;
   const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
   const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
+  const dishNameEl = wrap.querySelector("[data-dishname]") as HTMLElement;
+  const dishNoteEl = wrap.querySelector("[data-dishnote]") as HTMLElement;
+  /** 品名 + 评语的缓存，避免每帧重写 DOM */
+  let lastDishKey = "";
 
   let current: PanelTab = "recipe";
   let lastReportYear = -1;
@@ -252,6 +262,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "mealdeal":
         actions.toggleMealDeal();
+        break;
+      case "drinktemp":
+        actions.setDrinkTemp(id);
         break;
       case "pickbranch":
         branchPick = id;
@@ -381,6 +394,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           <div class="lname">粉 + 饮料套餐<span class="tag2">${s.sides.mealDeal ? "开着" : "关着"}</span><span class="tag2">饮料 −¥1</span></div>
           <div class="lmeta">打包一起卖，客人觉得划算（满意 +1），但饮料少收一块钱。开罗 avgTicket 的思路：客单价不是把粉卖贵，是多卖一件。</div>
           <div class="lbtns"><button type="button" data-act="mealdeal">${s.sides.mealDeal ? "关掉套餐" : "开套餐"}</button></div>
+        </div>
+        <div class="lrow">
+          <div class="lname">饮料冰热<span class="tag2">${s.sides.drinkTemp === "ice" ? "冰" : "热"}</span></div>
+          <div class="lmeta">${drinkTempSummary(s)}</div>
+          <div class="lbtns">
+            <button type="button" data-act="drinktemp" data-id="ice"${s.sides.drinkTemp === "ice" ? ' class="on"' : ""}>上冰的</button>
+            <button type="button" data-act="drinktemp" data-id="hot"${s.sides.drinkTemp === "hot" ? ' class="on"' : ""}>上热的</button>
+          </div>
         </div>
         <div class="lmeta" style="padding:6px 2px 0">累计加购 ${money(s.tally.sideRevenue)}（占营业额 ${share}%）· 凑出组合 ${s.tally.comboHits} 次</div>
       </div>`;
@@ -690,6 +711,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       if (document.activeElement !== priceInput) priceInput.value = String(s.price);
       priceV.textContent = `¥${s.price}`;
       renderNoodles(s);
+      // 这碗粉叫什么（P43）：四轴（做法×主料×粉型×加料）从当前配置推出来，评语按分数 5 档
+      const dishKey = `${dishNameOf(s)}|${score.total}`;
+      if (dishKey !== lastDishKey) {
+        lastDishKey = dishKey;
+        const note = dishNoteOf(score.total);
+        dishNameEl.textContent = dishNameOf(s);
+        dishNoteEl.textContent = `${note.word} —— ${note.line}`;
+      }
       scoreBig.textContent = String(score.total);
       gradeEl.textContent = score.grade;
       gradeEl.className = `grade g${score.grade}`;
@@ -716,7 +745,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

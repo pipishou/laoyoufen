@@ -33,7 +33,7 @@ import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
-import { sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
+import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
 import { noodleKindOf, noodleSummary, setNoodleKind } from "./sim/noodles";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
@@ -221,6 +221,13 @@ panels = mountPanels(hudRoot, {
   toggleMealDeal() {
     toggleMealDeal(state);
     hud.showToast(state.sides.mealDeal ? "套餐开了：饮料少收 ¥1，客人觉得划算" : "套餐关了", "info");
+    playSfx("ui");
+    refresh();
+  },
+  setDrinkTemp(temp) {
+    const r = setDrinkTemp(state, String(temp) === "hot" ? "hot" : "ice");
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(drinkTempSummary(state), "info");
     playSfx("ui");
     refresh();
   },

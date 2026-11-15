@@ -1,4 +1,4 @@
-﻿import { describe, it } from "vitest";
+import { describe, it } from "vitest";
 import { FLOW } from "../data/balance";
 import { nextStaffNeed, staffSlots } from "../data/staff";
 import { ackDayReport, advanceMinute, createInitialState, type GameState } from "./state";
@@ -12,9 +12,10 @@ import { districtOptions, homeEnergyOf, moveShop } from "./district";
 import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
 import { auditPlaytest, verdictLabel } from "./playtest";
 import { nextFloat } from "./rng";
-import { noodleKindOf, noodleViews, setNoodleKind } from "./noodles";
+import { noodleKindOf, noodleViews, setNoodleKind, currentSeason } from "./noodles";
 import { MAX_BRANCHES } from "../data/branches";
 import { branchSizeOptions, branchViews, openBranch } from "./branches";
+import { setDrinkTemp } from "./sides";
 
 /**
  * 「替身」＝游戏测试员：一个按规矩办事的假玩家，完整玩 36 个月，跑完还要交体检单。
@@ -134,6 +135,10 @@ function play(seed: number): GameState {
       // 换粉型（P42）：在已解锁的粉里挑「契合度 × 季节」最高的。
       // 量尺自己也得会用新动词，否则新系统永远测不出东西（P40 的教训）。
       pickNoodle(s);
+      // 饮料冰热（P43）：冬天上热的、其余上冰的 —— 量尺不跟着季节换，冬天冰绿豆沙就白扣分。
+      const seasonNow = currentSeason(s);
+      const wantTemp = seasonNow === "winter" ? "hot" : "ice";
+      if (s.sides.drinkTemp !== wantTemp) setDrinkTemp(s, wantTemp);
       const tasteNow = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
 
       // 定价三段（P40）：
