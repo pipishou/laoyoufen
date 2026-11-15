@@ -8,6 +8,8 @@ import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
 import { nextThree } from "../sim/achievements";
+import { demandCapOf } from "../sim/district";
+import { isContestMonth, monthsToContest } from "../sim/calendar";
 
 /** 成就进度显示：上万用「1.2万」，避免长串数字把成就条挤爆 */
 function fmtProgress(n: number): string {
@@ -471,7 +473,10 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.satbar.className = sat < 40 ? "hot" : sat < 60 ? "warm" : "";
     const serveNow = Math.max(0.5, SERVE_MINUTES * serveMultiplier(s) * equipServeMultiplier(s));
     el.caprow.textContent = `座位 ${s.venue.seats} · 出餐 ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} 碗`;
-
+    // 开罗 Sales Areas：本区越做越腻、别区越长肉。这两行就是「什么时候搬家／什么时候报比赛」的提示。
+    const pool = demandCapOf(s);
+    const contest = isContestMonth(s.month) ? "本月比赛月" : `下场比赛还有 ${monthsToContest(s.month)} 个月`;
+    el.caprow.textContent += ` · 区客流 ${pool}/日 · ${contest}`;
     const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}`).join("|");
     if (custKey !== lastCustKey) {
       lastCustKey = custKey;

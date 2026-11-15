@@ -1,0 +1,138 @@
+/**
+ * 区县的能量与换区（S6 的一半，对齐开罗 `help.txt` 的 Sales Areas 2）。
+ *
+ * 开罗原文：「The energy and appetite of your **current area will gradually decrease**,
+ * while they will **increase in other areas**. Energy: Affects shop visitation rate.
+ * Appetite: Affects how much ramen is eaten.」
+ *
+ * 我们把它落成「客流池的能量」：同一个区待久了两件事同时发生 ——
+ *   ① 你所在的区，客人逐渐吃腻（energy 每季度 −9%，最低 0.55）；
+ *   ② 别处的区在长（每季度 +6%，最高 1.25）。
+ * 于是「什么时候搬家、搬到哪」变成每 6–9 个月必须算一次的事，
+ * 而这正是 P24 里缺的那根「中期压力」。
+ *
+ * 换区不是免费：要付 `transferFeeYuan`（¥0–¥120,000），并且能量从 1.0 重新开始。
+ */
+
+import { DISTRICTS, dailyTrafficOf, districtById, type DistrictId } from "../data/nanning";
+import type { GameState } from "./state";
+
+/** 待满一个季度，本区掉多少客流 */
+export const HOME_DECAY_PER_QUARTER = 0.09;
+/** 待满一个季度，别区长多少客流 */
+export const AWAY_GROWTH_PER_QUARTER = 0.06;
+export const ENERGY_MIN = 0.55;
+export const ENERGY_MAX = 1.25;
+
+function quarters(month: number): number {
+  return Math.floor(Math.max(0, month) / 3);
+}
+
+/** 本区能量：按「住进这个区多久」衰减，不看全局月份 */
+export function homeEnergyOf(state: GameState): number {
+  const age = quarters(state.month - state.districtSince);
+  return Math.max(ENERGY_MIN, 1 - HOME_DECAY_PER_QUARTER * age);
+}
+
+/** 某区此刻的能量（本区衰减、别区增长） */
+export function energyOf(state: GameState, id: string): number {
+  if (id === state.district) return homeEnergyOf(state);
+  const age = quarters(state.month - state.districtSince);
+  return Math.min(ENERGY_MAX, 1 + AWAY_GROWTH_PER_QUARTER * age);
+}
+
+/** 现在进店概率要乘的系数（本区能量） */
+export function districtEnergy(state: GameState): number {
+  return homeEnergyOf(state);
+}
+
+/**
+ * 区客流池的放大系数。
+ *
+ * `dailyTrafficOf` 的 0.16 是当初拿「兴宁 71 客/日 = 4 座店产能」反解出来的，
+ * 那是**店铺**的产能标定，不是**城区**的人流上限。开罗的人口是 500 起、30,000 封顶，
+ * 一直远大于一家店的翻台量；所以这里把城区池子放大到 2.25 倍：
+ * 兴宁满能量 ≈ 160 客/日（> 8 座满编 113），衰减到 55% ≈ 88 客/日（< 113）——
+ * 于是「产能先顶住、能量衰减后池子反超」这个交替约束才真的成立。
+ */
+export const DEMAND_TRAFFIC_SCALE = 2.25;
+
+/**
+ * 这个区一天能喂饱多少人 = 区潜在客流 × 能量 × 放大系数。
+ *
+ * 开罗原文 Sales Areas 2：「Energy: Affects shop visitation rate. Appetite: Affects how
+ * much ramen is eaten.」我们的「客流池」就是这一层：区池子比你的座位大，扩建才有意义；
+ * 池子比你座位小，怎么加灶也没用 —— 这才是「什么时候搬家」这个决策的算术。
+ */
+export function demandCapOf(state: GameState): number {
+  const district = state.district || "xingning";
+  const base = dailyTrafficOf(district as DistrictId) * DEMAND_TRAFFIC_SCALE;
+  return Math.max(8, Math.round(base * homeEnergyOf(state)));
+}
+
+/** 换区时给玩家看的「池子对比」用：满能量下这个区一天能喂饱多少人 */
+export function demandCapAtFullEnergy(id: string): number {
+  return Math.round(dailyTrafficOf(id as DistrictId) * DEMAND_TRAFFIC_SCALE);
+}
+
+/** 换区面板要的一行数据 */
+export interface DistrictOption {
+  id: DistrictId;
+  name: string;
+  pitch: string;
+  /** 日潜在客流（未乘能量） */
+  traffic: number;
+  /** 此刻能量 */
+  energy: number;
+  /** 实际能指望的日客流 = traffic × energy */
+  effective: number;
+  /** 转让费（元） */
+  feeYuan: number;
+  affordable: boolean;
+  /** 是不是现在待的区 */
+  current: boolean;
+}
+
+export function districtOptions(state: GameState): DistrictOption[] {
+  return DISTRICTS.map((d) => {
+    const energy = energyOf(state, d.id);
+    // 面板上的数字必须与顾客循环里真正用的那个池子同源（demandCapOf 乘了 DEMAND_TRAFFIC_SCALE），
+    // 否则玩家看到「这个区 71 客」而引擎喂 160 客，换区判断全是错的。
+    const traffic = Math.round(dailyTrafficOf(d.id) * DEMAND_TRAFFIC_SCALE);
+    return {
+      id: d.id,
+      name: d.name,
+      pitch: d.pitch,
+      traffic,
+      energy,
+      effective: Math.round(traffic * energy),
+      feeYuan: d.transferFeeYuan,
+      affordable: state.cash >= d.transferFeeYuan,
+      current: d.id === state.district,
+    };
+  }).sort((a, b) => b.effective - a.effective);
+}
+
+export interface MoveResult {
+  ok: boolean;
+  reason?: string;
+  paid?: number;
+}
+
+/**
+ * 换区。只允许在「还没开门」时搬（开罗也是在营业窗口之间调区域），
+ * 钱不够不扣钱；搬完能量从 1.0 重新开始。
+ */
+export function moveShop(state: GameState, id: string): MoveResult {
+  if (state.phase !== "prep") return { ok: false, reason: "打烊后再搬" };
+  if (id === state.district) return { ok: false, reason: "已经在这个区了" };
+  const d = districtById(id as DistrictId);
+  if (state.cash < d.transferFeeYuan) {
+    return { ok: false, reason: `转让费还差 ¥${Math.ceil(d.transferFeeYuan - state.cash).toLocaleString("zh-CN")}` };
+  }
+  state.cash -= d.transferFeeYuan;
+  state.district = d.id;
+  state.districtSince = state.month;
+  if (!state.tally.districts.includes(d.id)) state.tally.districts.push(d.id);
+  return { ok: true, paid: d.transferFeeYuan };
+}

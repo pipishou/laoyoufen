@@ -5,7 +5,10 @@ import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
 import { playSfx } from "./audio/sfx";
 import { EVENTS_BY_ID } from "./data/events";
 import { createGameConfig } from "./render/world";
-import { enterContest } from "./sim/contest";
+import { canEnter, enterContest } from "./sim/contest";
+import { applyGrade } from "./sim/grade";
+import { districtOptions, moveShop } from "./sim/district";
+import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
 import { guideState, mountGuide, type Guide } from "./ui/guide";
@@ -193,9 +196,34 @@ panels = mountPanels(hudRoot, {
     playSfx("upgrade");
     refresh();
   },
-  enterContest() {
-    enterContest(state, score.total);
+  enterContest(type) {
+    const r = enterContest(state, type as ContestTypeId);
+    if (!r) {
+      hud.showToast(canEnter(state).reason || "现在报不了名", "info");
+    } else {
+      hud.showToast(
+        `${type === "staff" ? "后厨擂台" : type === "customers" ? "街坊口碑赛" : "招牌评比"} 第 ${r.rank} 名 · 奖金 ¥${r.prize.toLocaleString("zh-CN")}`,
+        r.rank <= 3 ? "like" : "info",
+      );
+    }
     playSfx("contest");
+    refresh();
+  },
+  applyGrade() {
+    const r = applyGrade(state);
+    hud.showToast(r.reason, r.ok ? "like" : "info");
+    if (r.ok) playSfx("upgrade");
+    refresh();
+  },
+  moveDistrict(id) {
+    const r = moveShop(state, id);
+    if (r.ok) {
+      const d = districtOptions(state).find((o) => o.id === id);
+      hud.showToast(`搬到${d?.name ?? id}：转让费 ¥${r.paid?.toLocaleString("zh-CN")}，日客流 ${d?.effective ?? "?"}`, "like");
+      playSfx("upgrade");
+    } else if (r.reason) {
+      hud.showToast(r.reason, "info");
+    }
     refresh();
   },
   dismissReport() {

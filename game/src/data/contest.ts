@@ -54,8 +54,96 @@ export const CONTEST_RIVALS: readonly ContestRival[] = [
   { id: "tw", province: "台湾", city: "台北", signature: "牛肉面", strength: 85 },
 ];
 
-/** 报名费（元） */
-export const CONTEST_ENTRY_FEE = 300;
-/** 每月只能报一次 */
+/** 报名费（元）：一档免费让人先尝到甜头，往上才收钱 */
 export const CONTEST_PRIZE: readonly number[] = [5000, 3000, 2000];
 export const CONTEST_TOP10_PRIZE = 800;
+
+// ───────────────────── 三种比赛（开罗 Contest 1-2 原文） ─────────────────────
+
+/**
+ * 开罗原文 `help.txt`：
+ * - 「Contests 1 … You can choose the contest you want to participate in from 3 different types.」
+ * - 「Contests 2  Staff: Based on your staff's total cooking, speed and service stats /
+ *    Customers: Based on total levels for all customers / Shop: Based on total popularity
+ *    and charisma for all shops.」
+ * - 「Grading Tests … There are some arenas that you cannot enter unless you are a certain grade.」
+ *
+ * 于是三件事必须同时成立，中期才有决策：
+ *   ① 一年只有两次（见 `sim/calendar.ts` 的六月/十二月）；
+ *   ② 三条不同的备战路线（练人 / 养客 / 立招牌）；
+ *   ③ 档位由段位卡着 —— 段位不升，只能报低档，奖金封顶。
+ */
+export type ContestTypeId = "staff" | "customers" | "shop";
+
+export interface ContestType {
+  id: ContestTypeId;
+  name: string;
+  /** 比什么（给 UI 的副标题） */
+  basis: string;
+  /** 怎么练（给玩家的备战提示） */
+  prep: string;
+}
+
+export const CONTEST_TYPES: readonly ContestType[] = [
+  {
+    id: "staff",
+    name: "后厨擂台",
+    basis: "在职员工的厨艺、速度、服务总和",
+    prep: "雇人、别让人累跑、扩建灶位让人手使得上",
+  },
+  {
+    id: "customers",
+    name: "街坊口碑赛",
+    basis: "累计接待人次、常客数、出碗总数",
+    prep: "稳客流：味道、定价、座位翻台",
+  },
+  {
+    id: "shop",
+    name: "招牌评比",
+    basis: "口碑、门店魅力、味道分、现有段位",
+    prep: "换招牌摆件、把味道做到 70 分以上、先评段位",
+  },
+];
+
+export const CONTEST_TYPE_BY_ID: ReadonlyMap<ContestTypeId, ContestType> = new Map(
+  CONTEST_TYPES.map((t) => [t.id, t]),
+);
+
+/**
+ * 五档（开罗每类比赛也是 5 档门槛）。段位卡档，跟开罗「certain grade 才能进某些 arena」同构。
+ * 门槛是「竞技分」，不是营业额：低于门槛的档位连报名都不给。
+ */
+export interface ContestTier {
+  /** 1-5 */
+  tier: number;
+  /** 报名费（元） */
+  feeYuan: number;
+  /** 报名需要的段位（0 = 没评过也能报最低档） */
+  minGrade: number;
+  /** 冠军奖金（元），2/3 名按 60%/40% */
+  prizeYuan: number;
+  /** 对手基准分（实际 ±12% 噪声） */
+  rivalScore: number;
+}
+
+export const CONTEST_TIERS: readonly ContestTier[] = [
+  { tier: 1, feeYuan: 0, minGrade: 0, prizeYuan: 1_200, rivalScore: 70 },
+  { tier: 2, feeYuan: 300, minGrade: 2, prizeYuan: 3_000, rivalScore: 130 },
+  { tier: 3, feeYuan: 800, minGrade: 4, prizeYuan: 8_000, rivalScore: 210 },
+  { tier: 4, feeYuan: 2_000, minGrade: 6, prizeYuan: 20_000, rivalScore: 310 },
+  { tier: 5, feeYuan: 5_000, minGrade: 8, prizeYuan: 50_000, rivalScore: 430 },
+] as const;
+
+export function tierOf(tier: number): ContestTier {
+  return CONTEST_TIERS[Math.min(CONTEST_TIERS.length, Math.max(1, tier)) - 1] as ContestTier;
+}
+
+/** 名次奖金：1 名全额，2 名 60%，3 名 40%，4-10 名固定 1/10 */
+export function prizeOf(tier: number, rank: number): number {
+  const t = tierOf(tier);
+  if (rank === 1) return t.prizeYuan;
+  if (rank === 2) return Math.round(t.prizeYuan * 0.6);
+  if (rank === 3) return Math.round(t.prizeYuan * 0.4);
+  if (rank <= 10) return Math.round(t.prizeYuan * 0.1);
+  return 0;
+}

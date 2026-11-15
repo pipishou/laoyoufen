@@ -6,6 +6,9 @@ import { resolveEvent } from "./events";
 import { scoreRecipe } from "./score";
 import { buyExpansion, nextExpansion } from "./expansion";
 import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
+import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
+import { applyGrade, checkGrade } from "./grade";
+import { districtOptions, homeEnergyOf, moveShop } from "./district";
 
 /**
  * 「替身」记录：一个按规矩办事的假玩家，完整玩 36 个月。
@@ -56,8 +59,11 @@ function play(seed: number): GameState {
       const lostRate = m.lost / Math.max(1, m.customers + m.lost);
 
       // 决策点：一个月看一次
-      if (sat >= 0 && sat < 55 && s.price > 8) s.price -= 1;
-      else if (sat >= 70 && lostRate > 0.25 && s.price < 12) s.price += 1;
+      // 定价贴着南宁现实（老友粉主力价 10 元）：只有「卖出去的人不满意」才降价，
+      // 只有「人人满意且几乎没人走」才敢涨。流失多不等于需求旺 —— 也可能是价太高把人吓走，
+      // 所以流失率高时不许涨价（这条是替身自己踩过的坑：一路涨到 12，流失 77%、日均掉到 30 碗）。
+      if (sat >= 0 && sat < 50 && s.price > 8) s.price -= 1;
+      else if (s.price < 11 && sat >= 75 && lostRate < 0.05) s.price += 1;
 
       const exp = nextExpansion(s);
       if (exp && s.cash >= exp.costYuan + 8_000) {
@@ -78,13 +84,49 @@ function play(seed: number): GameState {
       // 排班：疲劳过 70 就让他今天休（半薪），别等到 100 辞职
       // （每天开门那一刻统一处理，见上面的 minuteOfDay === 0 分支）
       const need = nextStaffNeed(s.totalCustomers);
+
+      // ── 开罗式中期三件事：评段位 → 报比赛 → 该换区就换区 ──
+      // 段位能评就评（升了才能报更高档比赛）
+      const gc = checkGrade(s);
+      if (gc.ready) {
+        const g = applyGrade(s);
+        if (g.ok) log.push(`  ↳ 升段：${g.level} 段（花 ¥${g.spentYuan}，奖 ¥${g.rewardYuan}）`);
+      }
+
+      // 比赛月就报最擅长的那一类，用段位允许的最高档
+      let contestNote = "";
+      if (canEnter(s, maxTierOf(s)).ok) {
+        const types: Array<"staff" | "customers" | "shop"> = ["staff", "customers", "shop"];
+        const best = types
+          .map((t) => ({ t, score: contestScore(s, t) }))
+          .sort((a, b) => b.score - a.score)[0]!;
+        const r = enterContest(s, best.t, maxTierOf(s));
+        if (r) contestNote = ` · 比赛 ${best.t} 第 ${r.rank} 名 奖 ¥${r.prize}`;
+      }
+
+      // 本区能量掉到 0.85 以下，且有个买得起、有效客流至少高 25% 的区，就搬
+      let moveNote = "";
+      if (homeEnergyOf(s) < 0.85) {
+        const cur = districtOptions(s).find((o) => o.current)!;
+        const target = districtOptions(s)
+          .filter((o) => !o.current && o.affordable && o.effective > cur.effective * 1.25)
+          .sort((a, b) => b.effective - a.effective)[0];
+        if (target) {
+          const mv = moveShop(s, target.id);
+          if (mv.ok) moveNote = ` · 搬到 ${target.name}（¥${mv.paid}，日客流 ${target.effective}）`;
+        }
+      }
+
       log.push(
         `M${String(m.month).padStart(2, "0")} 现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
           ` · 营收 ¥${m.revenue.toLocaleString("zh-CN")}` +
           ` · 客 ${m.customers} · 流失 ${(lostRate * 100).toFixed(0)}%` +
           ` · 价 ¥${s.price} · 座 ${s.venue.seats}/灶 ${s.venue.stoves}` +
           ` · 工 ${s.staff.roster.length}/${slots}（日薪 ¥${dailyWage(s)}）` +
-          (need ? ` · 下一个还差 ${need.short} 位` : ""),
+          ` · 段 ${s.gradeLevel} · 区能量 ${(homeEnergyOf(s) * 100).toFixed(0)}%` +
+          (need ? ` · 下一个还差 ${need.short} 位` : "") +
+          contestNote +
+          moveNote,
       );
     }
   }

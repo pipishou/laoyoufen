@@ -16,6 +16,7 @@ import type { RecipeScore } from "./score";
 import { costMultiplier, patienceMultiplier, serveMultiplier, surveyRate } from "./staff";
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
+import { demandCapOf, districtEnergy } from "./district";
 import type { GameState, QueueCustomer, Recipe } from "./state";
 
 /**
@@ -162,6 +163,8 @@ function spawnChance(state: GameState, score: RecipeScore): number {
     tasteFactor *
     shopAttractMultiplier(state) *
     popularityMultiplier(state) *
+    // 区能量（开罗 Sales Areas 2：本区吃腻、别区长肉）
+    districtEnergy(state) *
     FLOW.spawnScale
   );
 }
@@ -265,6 +268,9 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
 export function tickCustomers(state: GameState, score: RecipeScore): void {
   const flow = state.flow;
   if (state.todayCustomers >= state.capacity) return;
+  // 区客流池：这个区一天就这么多人，座位再多也喂不出更多碗（开罗 Sales Areas）。
+  // 今天到过店的人数 = 已服务 + 还在店里（吃/等）。
+  if (state.todayCustomers + flow.customers.length >= demandCapOf(state)) return;
 
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   if (waiting > state.tally.maxQueue) state.tally.maxQueue = waiting; // K1 成就：排队峰值

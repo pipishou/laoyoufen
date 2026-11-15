@@ -68,6 +68,8 @@ function isYearRecord(v: unknown): v is Record<string, unknown> {
 
 function isContestResult(v: unknown): boolean {
   if (!isRecord(v)) return false;
+  // 老档（v10 以前）的比赛记录只有 month/score/rank/champion/prize，没有 round/type/tier，
+  // 所以这几项不参与判废，由 deserialize 的迁移补默认值。
   return (
     isFiniteNumber(v.month) &&
     isFiniteNumber(v.score) &&
@@ -88,6 +90,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 10 &&
     v.saveVersion !== 9 &&
     v.saveVersion !== 8 &&
     v.saveVersion !== 7 &&
@@ -275,6 +278,29 @@ export function deserialize(raw: string): GameState | null {
   if (!isRecord(parsed.venue)) parsed.venue = { seats: 4, stoves: 1, upgrades: {}, expansion: 0 };
   if (typeof parsed.venue.expansion !== "number" || !isFinite(parsed.venue.expansion)) {
     parsed.venue.expansion = 0;
+  }
+  // v10 → v11（中期节奏：竞赛日历 / 区县能量）：
+  // ① contest 多出 lastRound 与 wins —— 老档的比赛记录没有 round/type/tier，补默认值；
+  // ② 老档没有 district/districtSince，默认就是起始区、从第 0 个月算起（能量满格）。
+  if (typeof parsed.contest.lastRound !== "number" || !isFinite(parsed.contest.lastRound)) {
+    parsed.contest.lastRound = -1;
+  }
+  if (typeof parsed.contest.wins !== "number" || !isFinite(parsed.contest.wins)) {
+    parsed.contest.wins = parsed.contest.results.filter((r) => r.rank <= 3).length;
+  }
+  parsed.contest.results = parsed.contest.results.map((r) => ({
+    ...r,
+    round: typeof r.round === "number" ? r.round : 0,
+    type: typeof r.type === "string" ? r.type : "shop",
+    tier: typeof r.tier === "number" ? r.tier : 1,
+  }));
+  if (typeof parsed.district !== "string" || parsed.district === "") {
+    parsed.district = "xingning";
+  }
+  if (typeof parsed.districtSince !== "number" || !isFinite(parsed.districtSince)) {
+    parsed.districtSince = 0;
+  } else if (parsed.districtSince > parsed.month) {
+    parsed.districtSince = parsed.month;
   }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;

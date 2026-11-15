@@ -1,4 +1,4 @@
-import { CONTEST_ENTRY_FEE, CONTEST_RIVALS } from "../data/contest";
+import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, tierOf } from "../data/contest";
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
@@ -6,7 +6,10 @@ import { EQUIPMENT } from "../data/equipment";
 import { HIRE_FEE_RATE, MAX_STAFF, ROLE_LABEL, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
 import { UPGRADES } from "../data/shop";
 import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
-import { canEnter } from "../sim/contest";
+import { canEnter, contestScore, maxTierOf } from "../sim/contest";
+import { isContestMonth, monthsToContest } from "../sim/calendar";
+import { districtOptions } from "../sim/district";
+import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost } from "../sim/equipment";
 import { expansionLevel, nextExpansion } from "../sim/expansion";
 import type { RecipeScore } from "../sim/score";
@@ -73,7 +76,12 @@ export interface PanelActions {
   buy(id: string): void;
   buyEquip(id: string): void;
   buyExpand(): void;
-  enterContest(): void;
+  /** 报名比赛：type = staff / customers / shop（见 data/contest.ts） */
+  enterContest(type: string): void;
+  /** 交费评段位 */
+  applyGrade(): void;
+  /** 换区（付转让费） */
+  moveDistrict(id: string): void;
   dismissReport(): void;
 }
 
@@ -204,7 +212,13 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         actions.buyExpand();
         break;
       case "contest":
-        actions.enterContest();
+        actions.enterContest(id);
+        break;
+      case "grade":
+        actions.applyGrade();
+        break;
+      case "movedistrict":
+        actions.moveDistrict(id);
         break;
       case "dismiss":
         actions.dismissReport();
@@ -295,6 +309,42 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>`
       : `<div class="lrow"><div class="lname">已经扩到顶了<span class="tag2">座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</span></div><div class="lmeta">下一步是换区开分店（S6）。</div></div>`;
 
+    // 段位评定（开罗 Grading Tests）：交费 + 累计人次达标才升段，升段才能报更高档比赛
+    const gc = checkGrade(s);
+    const gradeSec = `<div class="sec">
+        <div class="sechd">段位评定 · 现在第 ${gc.current} 段</div>
+        ${
+          gc.next
+            ? `<div class="lrow">
+                 <div class="lname">评「${gc.next.title}」<span class="tag2">评定费 ${money(gc.next.feeYuan)}</span></div>
+                 <div class="lmeta">${gc.next.note}｜门槛 ${gc.next.minCustomers.toLocaleString("zh-CN")} 位客人（已接待 ${s.totalCustomers.toLocaleString("zh-CN")}）｜通过奖励 ${money(gc.next.rewardYuan)}</div>
+                 <div class="lbtns"><button type="button" data-act="grade" ${gc.ready ? "" : "disabled"}>${gc.ready ? "交费评定" : gc.shortCustomers > 0 ? `还差 ${gc.shortCustomers.toLocaleString("zh-CN")} 位` : `还差 ¥${Math.ceil(gc.shortCash).toLocaleString("zh-CN")}`}</button></div>
+               </div>`
+            : `<div class="lrow"><div class="lname">已经是最高段位</div><div class="lmeta">非遗传承人 —— 账本翻到最后一页。</div></div>`
+        }
+      </div>`;
+
+    // 换区（开罗 Sales Areas 2）：本区客人吃腻、别处越长越旺
+    const opts = districtOptions(s);
+    const districtSec = `<div class="sec">
+        <div class="sechd">换区 · 现在 ${opts.find((o) => o.current)?.name ?? s.district}</div>
+        <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%（开罗：your current area will gradually decrease）。转让费一次性，搬完能量从 100%% 重新开始。</div>
+        ${opts
+          .slice(0, 6)
+          .map(
+            (o) => `<div class="lrow">
+              <div class="lname">${o.name}${o.current ? '<span class="tag2">当前</span>' : ""}<span class="tag2">日客流 ${o.effective}</span></div>
+              <div class="lmeta">能量 ${(o.energy * 100).toFixed(0)}%% · 潜在 ${o.traffic} 客/日 · ${o.pitch}</div>
+              ${
+                o.current
+                  ? ""
+                  : `<div class="lbtns"><button type="button" data-act="movedistrict" data-id="${o.id}" ${o.affordable ? "" : "disabled"}>搬过去 ${money(o.feeYuan)}</button></div>`
+              }
+            </div>`,
+          )
+          .join("")}
+      </div>`;
+
     const ups = UPGRADES.map((u) => {
       const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
@@ -318,33 +368,54 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       <div class="sec">
         <div class="sechd">摆件</div>
         ${ups}
-      </div>`;
+      </div>
+      ${gradeSec}
+      ${districtSec}`;
   }
 
-  function contestHtml(s: GameState, score: RecipeScore): string {
-    const gate = canEnter(s);
+  function contestHtml(s: GameState, _score: RecipeScore): string {
+    const open = isContestMonth(s.month);
+    const wait = monthsToContest(s.month);
+    const maxTier = maxTierOf(s);
+    const t = tierOf(maxTier);
+    const gate = canEnter(s, maxTier);
+    const typeRows = CONTEST_TYPES.map((c) => {
+      const mine = contestScore(s, c.id);
+      const g = canEnter(s, maxTier);
+      return `<div class="lrow">
+          <div class="lname">${c.name} <span class="lmeta" style="display:inline">· 你的竞技分 ${mine}</span></div>
+          <div class="lmeta">${c.basis}｜备战：${c.prep}</div>
+          <button type="button" class="widebtn" data-act="contest" data-id="${c.id}" ${g.ok ? "" : "disabled"}>报名（${money(t.feeYuan)}）</button>
+        </div>`;
+    }).join("");
     const history = s.contest.results
       .slice(-6)
       .reverse()
-      .map(
-        (r) =>
-          `<div class="lrow"><div class="lname">第 ${r.month + 1} 月 · 第 ${r.rank} 名</div>
-           <div class="lmeta">口味分 ${r.score} · 冠军 ${r.champion} · 奖金 ${money(r.prize)}</div></div>`,
-      )
+      .map((r) => {
+        const name = CONTEST_TYPES.find((x) => x.id === r.type)?.name ?? r.type;
+        return `<div class="lrow"><div class="lname">第 ${r.month + 1} 月 · ${name} · 第 ${r.rank} 名</div>
+           <div class="lmeta">${r.tier} 档 · 竞技分 ${r.score} · 冠军 ${r.champion} · 奖金 ${money(r.prize)}</div></div>`;
+      })
       .join("");
-    const top = [...CONTEST_RIVALS].sort((a, b) => b.strength - a.strength).slice(0, 5);
     return `<div class="sec">
-        <div class="sechd">参赛 · 本月口味分 ${score.total}</div>
-        <div class="lmeta" style="padding:0 2px 8px">34 个省级代表，按口味分排名。报名费 ${money(CONTEST_ENTRY_FEE)}，前三有奖金。</div>
-        <button type="button" class="widebtn" data-act="contest" ${gate.ok ? "" : "disabled"}>报名参赛</button>
-        <div class="hint">${gate.ok ? "本月还没报名" : gate.reason}</div>
+        <div class="sechd">${open ? "比赛月 · 可以报名" : `不是比赛月 · 还有 ${wait} 个月`}</div>
+        <div class="lmeta" style="padding:0 2px 8px">
+          开罗的老规矩：一年两场，六月和十二月。你现在的段位能报 <b>${maxTier} 档</b>
+          （冠军 ${money(t.prizeYuan)}，对手基准 ${t.rivalScore} 分）。段位不升，奖金封顶。
+        </div>
+        ${gate.ok ? "" : `<div class="hint">${gate.reason}</div>`}
+        ${typeRows}
       </div>
       <div class="sec">
-        <div class="sechd">夺冠热门</div>
-        ${top.map((r) => `<div class="lrow"><div class="lname">${r.province} · ${r.signature}</div><div class="lmeta">实力 ${r.strength}</div></div>`).join("")}
+        <div class="sechd">档位与段位门槛</div>
+        ${CONTEST_TIERS.map(
+          (x) =>
+            `<div class="lrow"><div class="lname">${x.tier} 档 · 冠军 ${money(x.prizeYuan)}</div>
+             <div class="lmeta">报名 ${x.feeYuan === 0 ? "免费" : money(x.feeYuan)} · 需第 ${x.minGrade} 段 · 对手 ${x.rivalScore}</div></div>`,
+        ).join("")}
       </div>
       <div class="sec">
-        <div class="sechd">参赛记录</div>
+        <div class="sechd">参赛记录（前三 ${s.contest.wins} 次）</div>
         ${history || `<div class="empty2">还没参加过。</div>`}
       </div>`;
   }

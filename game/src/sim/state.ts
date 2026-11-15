@@ -10,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -191,6 +191,12 @@ export interface YearRecord {
 
 export interface ContestResult {
   month: number;
+  /** 第几届（一年两场，0 起） */
+  round: number;
+  /** 哪个赛事：后厨擂台 / 街坊口碑赛 / 招牌评比 */
+  type: string;
+  /** 报的档位 1-5 */
+  tier: number;
   score: number;
   rank: number;
   champion: string;
@@ -311,6 +317,10 @@ export interface GameState {
     results: ContestResult[];
     /** 上次报名月份，-1 = 没报过 */
     lastMonth: number;
+    /** 上次报名的届次（一年两场，见 sim/calendar.ts），-1 = 没报过 */
+    lastRound: number;
+    /** 进过前三的次数 —— 段位与成就都要看这个 */
+    wins: number;
   };
   events: EventRuntime;
   /** 年度结算单，非空时 HUD 强制弹出 */
@@ -323,6 +333,15 @@ export interface GameState {
   site: string;
   /** 店名（setup 阶段为空串；开张时定下，之后写进档口招牌与月结单） */
   shopName: string;
+  /**
+   * 现在的店在哪个区（`data/nanning.ts` 的 DistrictId）。
+   * 开罗原文 `help.txt`：「The energy and appetite of your current area will gradually
+   * decrease, while they will increase in other areas.」—— 所以「在哪个区」是状态，
+   * 不是常数：待久了这块池子会瘦，换区要付转让费。
+   */
+  district: string;
+  /** 搬进当前区的月份（0-35），区能量按住了多久衰减 */
+  districtSince: number;
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -460,6 +479,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     contest: {
       results: [],
       lastMonth: -1,
+      lastRound: -1,
+      wins: 0,
     },
     events: {
       pending: null,
@@ -474,6 +495,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     phase: "setup",
     site: "",
     shopName: "",
+    district: START_DISTRICT,
+    districtSince: 0,
     equipment: {},
     dayReport: null,
     days: [],

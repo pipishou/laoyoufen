@@ -64,6 +64,11 @@ function sumSkill(state: GameState, role: StaffMember["role"]): number {
   return sum;
 }
 
+/** 某一工种的技能总和（含疲劳折损）。比赛评分与 UI 都用这一个口径。 */
+export function skillTotal(state: GameState, role: StaffMember["role"]): number {
+  return sumSkill(state, role);
+}
+
 /**
  * 出碗时间的倍率：煮面段 × 上菜段 ÷ 灶位数。
  *

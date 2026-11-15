@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { unlock } from "./collection";
-import { canEnter, enterContest } from "./contest";
+import { canEnter, contestScore, enterContest } from "./contest";
 import { closeMonth, closeYear } from "./ledger";
 import { monthlyRentOf } from "./setup";
 import {
@@ -218,30 +218,70 @@ describe("常客", () => {
   });
 });
 
-describe("全国竞赛", () => {
-  it("报名扣费、同月不能重复、排名与奖金一致", () => {
+describe("全国竞赛（开罗式：一年两场 / 三种 / 段位卡档）", () => {
+  it("非比赛月报不了名 —— 官方口径是六月和十二月", () => {
     const s = createInitialState("contest-1", 7);
-    s.cash = 5000;
-    expect(canEnter(s).ok).toBe(true);
-    const r = enterContest(s, 200);
-    expect(r).not.toBeNull();
-    expect(r!.rank).toBe(1);
-    expect(r!.prize).toBe(5000);
-    expect(s.cash).toBe(5000 - 300 + 5000);
-    expect(canEnter(s).ok).toBe(false);
-    expect(enterContest(s, 200)).toBeNull();
-    expect(s.collection.provinces.length).toBeGreaterThan(0);
+    s.month = 0; // 一月
+    const g = canEnter(s, 1);
+    expect(g.ok).toBe(false);
+    expect(g.reason).toContain("还要等");
+    expect(enterContest(s, "shop")).toBeNull();
   });
 
-  it("同存档同月份，NPC 分数可复算", () => {
-    const a = createInitialState("contest-2", 7);
-    const b = createInitialState("contest-2", 7);
-    a.cash = 5000;
-    b.cash = 5000;
-    const ra = enterContest(a, 70);
-    const rb = enterContest(b, 70);
+  it("比赛月能报名，结果入档，同一届不能报第二次", () => {
+    const s = createInitialState("contest-2", 7);
+    s.month = 5; // 六月
+    s.cash = 5_000;
+    const before = s.cash;
+    expect(canEnter(s, 1).ok).toBe(true);
+    const r = enterContest(s, "shop", 1);
+    expect(r).not.toBeNull();
+    expect(r!.tier).toBe(1);
+    expect(r!.type).toBe("shop");
+    // 一档报名费 0，所以现金只增（奖金）不减
+    expect(s.cash).toBeGreaterThanOrEqual(before);
+    expect(s.contest.results.length).toBe(1);
+    expect(canEnter(s, 1).ok).toBe(false);
+    expect(enterContest(s, "shop", 1)).toBeNull();
+  });
+
+  it("段位不够报不了高档 —— 这就是「评段位」的意义", () => {
+    const s = createInitialState("contest-3", 7);
+    s.month = 5;
+    s.cash = 100_000;
+    const g = canEnter(s, 4);
+    expect(g.ok).toBe(false);
+    expect(g.reason).toContain("第 6 段");
+    s.gradeLevel = 6;
+    expect(canEnter(s, 4).ok).toBe(true);
+  });
+
+  it("同存档同月份同类型可复算：名次与冠军一致", () => {
+    const a = createInitialState("contest-4", 7);
+    const b = createInitialState("contest-4", 7);
+    a.month = 5;
+    b.month = 5;
+    a.cash = 9_000;
+    b.cash = 9_000;
+    const ra = enterContest(a, "staff", 1);
+    const rb = enterContest(b, "staff", 1);
     expect(ra!.rank).toBe(rb!.rank);
     expect(ra!.champion).toBe(rb!.champion);
+    expect(ra!.score).toBe(rb!.score);
+  });
+
+  it("三种比赛的口径不同：雇人不涨街坊分，卖粉不涨后厨分", () => {
+    const s = createInitialState("contest-5", 7);
+    const base = {
+      staff: contestScore(s, "staff"),
+      customers: contestScore(s, "customers"),
+      shop: contestScore(s, "shop"),
+    };
+    s.totalCustomers = 1_800;
+    s.tally.bowls = 1_200;
+    expect(contestScore(s, "customers")).toBeGreaterThan(base.customers);
+    expect(contestScore(s, "staff")).toBe(base.staff);
+    expect(contestScore(s, "shop")).toBe(base.shop);
   });
 });
 
