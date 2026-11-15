@@ -1300,6 +1300,42 @@ button.pill[disabled] {
   letter-spacing:.2px;
 }
 
+/* 热卖槽（开罗 Ramen Frenzy）：平时是灰条慢慢涨，热卖时整条变红并呼吸 */
+.frenzy{
+  margin-top:5px;
+}
+.frenzy .fzbar{
+  height:6px;
+  border:1px solid rgba(59,43,29,.35);
+  background:rgba(59,43,29,.10);
+  overflow:hidden;
+}
+.frenzy .fzbar i{
+  display:block;
+  height:100%;
+  width:0;
+  background:#b8452c;
+  transition:width .25s linear;
+}
+.frenzy .fztxt{
+  margin-top:3px;
+  font-size:10px;
+  color:#8a7a63;
+  letter-spacing:.2px;
+}
+.frenzy.live .fzbar i{
+  background:linear-gradient(90deg,#e0663a,#b8452c);
+  animation:fzbreathe 1.1s ease-in-out infinite;
+}
+.frenzy.live .fztxt{
+  color:#b8452c;
+  font-weight:700;
+}
+@keyframes fzbreathe{
+  0%,100%{opacity:.75}
+  50%{opacity:1}
+}
+
 /* ---------- 日结单：打烊报数（对齐开罗「閉店→売上/客数」） ---------- */
 .dayreport {
   z-index: 70;

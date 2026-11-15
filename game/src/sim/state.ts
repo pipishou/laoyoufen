@@ -10,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -98,6 +98,8 @@ export interface CustomerFlow {
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;
   satCountToday: number;
+  /** 最近一次「热卖开始了」的提示文案，HUD 读完即消费 */
+  lastFrenzy: string | null;
 }
 
 export type StaffRole = "cook" | "prep" | "server";
@@ -201,6 +203,18 @@ export interface ContestResult {
   rank: number;
   champion: string;
   prize: number;
+}
+
+/** 热卖槽（开罗 Ramen Frenzy） */
+export interface FrenzyState {
+  /** 0..100，满了触发一次热卖 */
+  gauge: number;
+  /** 热卖结束的绝对分钟（见 sim/frenzy.ts 的 absMinuteOf），-1 = 没在热卖 */
+  until: number;
+  /** 冷却结束的绝对分钟：热卖结束后这段时间槽不涨，免得天天热卖 */
+  restUntil: number;
+  /** 累计触发次数（成就/统计用） */
+  count: number;
 }
 
 export interface EventLogEntry {
@@ -323,6 +337,11 @@ export interface GameState {
     wins: number;
   };
   events: EventRuntime;
+  /**
+   * 热卖槽（开罗 Ramen Frenzy，见 sim/frenzy.ts）：
+   * 门口有人排队且今天吃得满意 → 槽涨满 → 30 分钟来客翻倍、店员 aura 涨满意度。
+   */
+  frenzy: FrenzyState;
   /** 年度结算单，非空时 HUD 强制弹出 */
   pendingReport: YearRecord | null;
   /** 36 个月跑完 */
@@ -451,6 +470,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastLikeFound: null,
       lastGift: null,
       lastLostReason: null,
+      lastFrenzy: null,
       satSumToday: 0,
       satCountToday: 0,
     },
@@ -482,6 +502,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastRound: -1,
       wins: 0,
     },
+    frenzy: { gauge: 0, until: -1, restUntil: -1, count: 0 },
     events: {
       pending: null,
       lastFired: {},

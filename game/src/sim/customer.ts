@@ -17,6 +17,14 @@ import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, sur
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
+import {
+  frenzyAura,
+  frenzyBudgetBoost,
+  frenzyPoolBoost,
+  frenzyServeBoost,
+  frenzySpawnBoost,
+  frenzyTick,
+} from "./frenzy";
 import type { GameState, QueueCustomer, Recipe } from "./state";
 
 /**
@@ -165,6 +173,8 @@ function spawnChance(state: GameState, score: RecipeScore): number {
     popularityMultiplier(state) *
     // 区能量（开罗 Sales Areas 2：本区吃腻、别区长肉）
     districtEnergy(state) *
+    // 热卖（开罗 Ramen Frenzy 2：一旦热卖，很多人会来）
+    frenzySpawnBoost(state) *
     FLOW.spawnScale
   );
 }
@@ -196,11 +206,13 @@ function arriveOne(state: GameState, score: RecipeScore): void {
   if (!arch) return;
   // 看价牌：吃不起就走（开罗「售价超过顾客预算 → 不来」）。
   // 溢价来自味道，所以涨价前必须先把粉做好，否则人全被价牌挡回去。
-  const canPay = state.price <= arch.budget * priceTolerance(score.total);
+  // 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
+  const wallet = arch.budget * frenzyBudgetBoost(state);
+  const canPay = state.price <= wallet * priceTolerance(score.total);
   if (!canPay) {
     flow.lostToday += 1;
     state.monthLost += 1;
-    flow.lastLostReason = `${arch.name}看价牌走了（¥${state.price} 超预算 ¥${arch.budget}）`;
+    flow.lastLostReason = `${arch.name}看价牌走了（¥${state.price} 超预算 ¥${Math.round(wallet)}）`;
     return;
   }
   const regular = regularId !== null;
@@ -275,7 +287,16 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
   const regularBonus = c.regular ? regularSatisfactionBonus(state, c.archetypeId) : 0;
   const sat = arch
-    ? satisfactionOf(score, arch, state.recipe, state.price, c.waited, arch.lineLimit, regularBonus)
+    ? satisfactionOf(
+        score,
+        arch,
+        state.recipe,
+        state.price,
+        c.waited,
+        arch.lineLimit,
+        // 热卖时店员起 aura（开罗 Frenzy 2），吃到的人更满意
+        regularBonus + frenzyAura(state),
+      )
     : 50;
 
   const paid = state.price;
@@ -320,7 +341,9 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   if (state.todayCustomers >= state.capacity) return;
   // 区客流池：这个区一天就这么多人，座位再多也喂不出更多碗（开罗 Sales Areas）。
   // 今天到过店的人数 = 已服务 + 还在店里（吃/等）。
-  if (state.todayCustomers + flow.customers.length >= demandCapOf(state)) return;
+  // 热卖期间池子上浮（开罗 Frenzy 2「很多人会来」）—— 否则翻倍的来客全被池子吃掉，等于没发生。
+  const poolCap = Math.round(demandCapOf(state) * frenzyPoolBoost(state));
+  if (state.todayCustomers + flow.customers.length >= poolCap) return;
 
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   if (waiting > state.tally.maxQueue) state.tally.maxQueue = waiting; // K1 成就：排队峰值
@@ -331,8 +354,8 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   let arrivals = Math.floor(expected);
   if (nextFloat(state.rng) < expected - arrivals) arrivals += 1;
   for (let i = 0; i < Math.min(arrivals, MAX_ARRIVALS_PER_MINUTE); i++) {
-    // 区池子到顶就停（开罗 Sales Areas：本区就这么多人）
-    if (state.todayCustomers + flow.customers.length >= demandCapOf(state)) break;
+    // 区池子到顶就停（开罗 Sales Areas：本区就这么多人；热卖时池子上浮）
+    if (state.todayCustomers + flow.customers.length >= poolCap) break;
     arriveOne(state, score);
   }
 
@@ -361,7 +384,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
   if (flow.serveCooldown <= 0) {
     // 开罗 Staff 2：一锅同时煮 N 份、一趟同时端 N 碗 —— 冷却到点一次出一批。
     // 旧版这里只出一碗，于是 8 座满编实测也只有 63 碗/日，座位与灶位形同装饰（P35）。
-    let slots = Math.max(1, Math.floor(serveParallel(state)));
+    let slots = Math.max(1, Math.floor(serveParallel(state) * frenzyServeBoost(state)));
     let servedAny = false;
     while (slots > 0) {
       const freeSeats = state.venue.seats - eatingNow;
@@ -392,4 +415,15 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
     }
     return true;
   });
+
+  // 4. 热卖槽（开罗 Ramen Frenzy）：门口还在排队 + 今天吃得满意 → 槽涨。
+  //    这一句必须放在最后：此时的 waiting 与今日满意度才是「这一分钟的真实盘面」。
+  const waitingNow = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
+  const satToday =
+    flow.satCountToday > 0 ? flow.satSumToday / flow.satCountToday : -1;
+  const tick = frenzyTick(state, waitingNow, satToday);
+  if (tick.triggered) {
+    state.monthRevenue += 0; // 热卖本身不进账，账由卖出的碗产生
+    flow.lastFrenzy = `热卖！门口排起长队，今天后面 30 分钟人多一倍（第 ${state.frenzy.count} 次）`;
+  }
 }

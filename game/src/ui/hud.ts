@@ -9,6 +9,7 @@ import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
 import { nextThree } from "../sim/achievements";
 import { demandCapOf } from "../sim/district";
+import { frenzyActive, frenzyLeftMinutes } from "../sim/frenzy";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
 
 /** 成就进度显示：上万用「1.2万」，避免长串数字把成就条挤爆 */
@@ -178,6 +179,10 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <span class="pct" data-sat>--</span>
     </div>
     <div class="caprow" data-caprow title="产能 = 座位数 × 每碗出餐时间；扩充座位或换灶才提得上去">座位 4 · 出餐 6 分/碗</div>
+    <div class="frenzy" data-frenzy title="开罗 Ramen Frenzy：门口有人排队、客人又吃得满意时，槽会涨；涨满后 30 分钟来客翻倍">
+      <div class="fzbar"><i data-frenzybar></i></div>
+      <div class="fztxt" data-frenzytxt>热卖槽 0%</div>
+    </div>
   </div>
 
   <div id="float" class="card">
@@ -318,6 +323,9 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     sat: q("[data-sat]"),
     satbar: q("[data-satbar]"),
     caprow: q("[data-caprow]"),
+    frenzy: q("[data-frenzy]"),
+    frenzybar: q("[data-frenzybar]"),
+    frenzytxt: q("[data-frenzytxt]"),
     econ: q("[data-econ]"),
     code: q("[data-code]"),
     total: q("[data-total]"),
@@ -478,6 +486,15 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     const pool = demandCapOf(s);
     const contest = isContestMonth(s.month) ? "本月比赛" : `比赛 ${monthsToContest(s.month)} 个月后`;
     el.caprow.textContent = `座位 ${s.venue.seats} · 每轮 ${batch} 碗 · ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} · 客流 ${pool}/日 · ${contest}`;
+    // 热卖槽（开罗 Ramen Frenzy）：排队 + 吃得满意 → 槽涨；满了 30 分钟来客翻倍。
+    // 放在 HUD 上是因为它是**可主动经营的**：想攒满就得留一点排队、又不能把满意度压下去。
+    const live = frenzyActive(s);
+    const fzLeft = frenzyLeftMinutes(s);
+    el.frenzytxt.textContent = live
+      ? `🔥 热卖中 · 还剩 ${fzLeft} 分（人比平时多一倍）`
+      : `热卖槽 ${Math.round(s.frenzy.gauge)}%（有人排队且满意才涨）`;
+    el.frenzybar.style.width = live ? "100%" : `${Math.round(s.frenzy.gauge)}%`;
+    el.frenzy.className = `frenzy${live ? " live" : ""}`;
     const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}`).join("|");
     if (custKey !== lastCustKey) {
       lastCustKey = custKey;

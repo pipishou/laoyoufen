@@ -302,6 +302,24 @@ export function deserialize(raw: string): GameState | null {
   } else if (parsed.districtSince > parsed.month) {
     parsed.districtSince = parsed.month;
   }
+  // v11 → v12（热卖槽 Ramen Frenzy）：老档没有 frenzy，补成「槽空、没在热卖、0 次」。
+  // 不补的话 frenzyTick 里 `state.frenzy` 为 undefined 会直接跳过，热卖永远不触发——
+  // 老档玩家会以为这功能坏了，而不是「还没攒到」。
+  const fz = (parsed as { frenzy?: unknown }).frenzy as Record<string, unknown> | undefined;
+  if (!fz || typeof fz !== "object") {
+    parsed.frenzy = { gauge: 0, until: -1, restUntil: -1, count: 0 };
+  } else {
+    parsed.frenzy = {
+      gauge: typeof fz.gauge === "number" && isFinite(fz.gauge) ? fz.gauge : 0,
+      until: typeof fz.until === "number" && isFinite(fz.until) ? fz.until : -1,
+      restUntil: typeof fz.restUntil === "number" && isFinite(fz.restUntil) ? fz.restUntil : -1,
+      count: typeof fz.count === "number" && isFinite(fz.count) ? fz.count : 0,
+    };
+  }
+  if (parsed.flow && typeof parsed.flow === "object") {
+    const fl = parsed.flow as { lastFrenzy?: unknown };
+    if (typeof fl.lastFrenzy !== "string") fl.lastFrenzy = null;
+  }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

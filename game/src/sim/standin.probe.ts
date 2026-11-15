@@ -159,6 +159,7 @@ describe("替身 36 个月", () => {
         `\n[替身 ${seed}] ${months} 个月 · 月均营收 ¥${Math.round(rev / months).toLocaleString("zh-CN")}` +
           ` · 月均工资 ¥${Math.round(wages / months).toLocaleString("zh-CN")}` +
           ` · 日均 ${(cust / (months * 30)).toFixed(1)} 碗 · 总流失率 ${((lost / (cust + lost)) * 100).toFixed(0)}%` +
+          ` · 热卖 ${s.frenzy.count} 次` +
           ` · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}`,
       );
     }

@@ -329,6 +329,12 @@ function tickFeedback(): void {
     prevLostReason = reason;
     hud.showToast(reason, "info");
   }
+
+  // 热卖开始要报喜：这是玩家自己经营出来的（排队＋满意），必须让 ta 知道成了
+  if (s.flow.lastFrenzy) {
+    hud.showToast(s.flow.lastFrenzy, "like");
+    s.flow.lastFrenzy = null;
+  }
 }
 
 /**
