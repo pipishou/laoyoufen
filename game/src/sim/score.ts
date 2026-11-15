@@ -1,6 +1,7 @@
 import { RAMEN_CALC, type CalcGroup } from "../data/ramen-calc";
 import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
 import type { NoodleId } from "../data/noodles";
+import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
 import { noodleFit } from "./noodles";
 import { evalRpn } from "./rpn";
 import type { Recipe } from "./state";
@@ -132,12 +133,29 @@ export function bowlCost(toppingIds: readonly string[]): number {
 }
 
 /**
+ * 主料与份量带来的额外料钱（P46）。
+ * 主料是菜单 SKU（牛肉比碎肉贵），份量是「二两/三两」（三两多一钱料）。
+ * 两者都**只动成本**，不动 `total` 的口味分 —— 口味是配方的事，主料是卖什么的事。
+ */
+export interface ScoreExtra {
+  main?: string;
+  portion?: number;
+}
+
+/**
  * 纯函数：同一份配方永远得到同一个分数，服务端可原样复算（不用客户端结果）。
  * `total` 只算口味（汤 0.55 + 粉 0.45），保持回归锁不变；
  * 魅力/价格/成本是并列维度，最后合成 `storeScore` 供顾客循环使用。
  */
-export function scoreRecipe(recipe: Recipe, price: number = DEFAULT_PRICE, kind: NoodleId = "flat"): RecipeScore {
-  const key = `${kind}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
+export function scoreRecipe(
+  recipe: Recipe,
+  price: number = DEFAULT_PRICE,
+  kind: NoodleId = "flat",
+  extra: ScoreExtra = {},
+): RecipeScore {
+  const mainId = extra.main ?? START_MAIN;
+  const portion = extra.portion ?? DEFAULT_PORTION;
+  const key = `${kind}|${mainId}|${portion}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -159,7 +177,8 @@ export function scoreRecipe(recipe: Recipe, price: number = DEFAULT_PRICE, kind:
   const safePrice = Math.max(0, price);
   const charm = charmOf(recipe.toppings);
   const valueScore = valueScoreOf(safePrice);
-  const cost = bowlCost(recipe.toppings);
+  const cost =
+    Math.round((bowlCost(recipe.toppings) + mainCostYuan(mainId) + portionCostYuan(portion)) * 100) / 100;
   const margin = safePrice - cost;
   const marginRate = safePrice > 0 ? margin / safePrice : 0;
   // 毛利率 55% 视为优秀；低于 0 直接 0 分

@@ -21,6 +21,7 @@ import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from ".
 import { demandCapOf, districtEnergy } from "./district";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
+import { mainById, portionOf } from "../data/mains";
 import {
   frenzyAura,
   frenzyBudgetBoost,
@@ -290,6 +291,10 @@ function surveyTick(state: GameState, c: QueueCustomer): void {
 function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
   const arch = ARCHETYPE_BY_ID.get(c.archetypeId);
   const regularBonus = c.regular ? regularSatisfactionBonus(state, c.archetypeId) : 0;
+  // 主料与份量（P46）：牛肉比碎肉香，三两比二两管饱
+  const mainDef = mainById(state.main);
+  const portionDef = portionOf(state.portion);
+  const menuBonus = (mainDef?.satBonus ?? 0) + portionDef.satBonus;
   let sat = arch
     ? satisfactionOf(
         score,
@@ -300,16 +305,22 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
         arch.lineLimit,
         // 热卖时店员起 aura（开罗 Frenzy 2），吃到的人更满意；
         // 当季粉型（夏天干捞、冬天砂锅）+3，反季 −3（P42）
-        regularBonus + frenzyAura(state) + noodleSeasonBonus(state),
+        regularBonus + frenzyAura(state) + noodleSeasonBonus(state) + menuBonus,
       )
     : 50;
+
+  /** 这碗的实收价 = 菜单价 + 份量加成（三两 +¥2，见 data/mains.ts） */
+  const bowlPrice = state.price + portionDef.priceDelta;
 
   /**
    * 客单价结构（P41）：客人吃完这碗，还愿意再加一件吗？
    * 加购受钱包上限约束（开罗 Customers 1「Products that exceed a customer's wallet
-   * are harder for them to buy」），所以 room = 钱包 − 基础价。
+   * are harder for them to buy」），所以 room = 钱包 − 菜单价。
+   *
+   * 这里刻意**不扣份量加价**（P46）：点三两的人本来就饿，还会再加一份腐竹；
+   * 把 +¥2 从 room 里扣掉，等于「多要一两粉就买不起加料了」，替身实测加购从 5.6% 掉到 0.7%。
    */
-  const wallet = arch ? arch.budget * priceTolerance(score.total) : state.price;
+  const wallet = arch ? arch.budget * priceTolerance(score.total) : bowlPrice;
   const sidePick = arch ? pickSides(state, arch, sat, wallet - state.price) : { items: [], paid: 0, cost: 0, combo: null, satBonus: 0 };
   if (sidePick.items.length > 0) {
     sat = clamp(sat + sidePick.satBonus, 0, 100);
@@ -324,7 +335,7 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
     }
   }
 
-  const paid = state.price + sidePick.paid;
+  const paid = bowlPrice + sidePick.paid;
   // 粉型影响一碗的成本：伊面贵、干捞省粉
   const cost =
     score.cost * costMultiplier(state) * equipCostMultiplier(state) * noodleCostFactor(state) +
@@ -428,7 +439,12 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
     // 空转（没人排队）就不进冷却，否则下一分钟来的客人要多等一轮
     if (servedAny) {
       flow.serveCooldown =
-    FLOW.serveMinutes * serveMultiplier(state) * equipServeMultiplier(state) * noodleServeFactor(state);
+        FLOW.serveMinutes *
+        serveMultiplier(state) *
+        equipServeMultiplier(state) *
+        noodleServeFactor(state) *
+        // 三两的锅更满，一锅少下几碗（P46）
+        portionOf(state.portion).serveFactor;
     }
   }
 

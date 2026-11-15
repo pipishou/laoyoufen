@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 这碗粉叫什么 —— 开罗 `ramen_name.txt` 的本土化替代。
  *
  * ## 开罗的做法
@@ -23,33 +23,17 @@
  * 开罗那套「形容词随品质升级」搬到**评语**里（`dishNoteOf`），按分数 5 档，用南宁话讲。
  */
 
+import { MAIN_BY_ID, portionOf, type MainId, type Portion } from "./mains";
 import type { NoodleId } from "./noodles";
 
 /** 做法：汤粉是默认，不写进名字 */
 export type MethodId = "soup" | "dry" | "sandpot";
 
-/** 主料：碎肉是默认（最基础的老友粉就是碎肉），其余靠加料台解锁 */
-export type MainId = "pork" | "offal" | "egg" | "fuzhu" | "youtiao" | "greens";
-
-export interface MainDef {
-  id: MainId;
-  /** 写进品名的词；空字符串＝默认项，名字里省掉 */
-  word: string;
-  /** 对应哪件加料（默认项没有） */
-  side: string | null;
-  line: string;
-}
-
-export const MAINS: MainDef[] = [
-  { id: "pork", word: "", side: null, line: "老友粉的本分——碎肉、酸笋、豆豉一起下锅爆。" },
-  { id: "offal", word: "猪杂", side: "zhuzai", line: "粉肠、猪肝、生肠，南宁人点得最多的一碗。" },
-  { id: "egg", word: "加蛋", side: "ludan", line: "卤蛋切开泡在汤里，蛋黄的油会化进汤。" },
-  { id: "fuzhu", word: "腐竹", side: "fuzhu", line: "腐竹先炸后泡，吸汤。" },
-  { id: "youtiao", word: "油条", side: "youtiao", line: "油条掰段泡汤，脆的软的都有人爱。" },
-  { id: "greens", word: "青菜", side: "qingcai", line: "一把青菜下去，汤立刻清一点。" },
-];
-
-export const MAIN_BY_ID = new Map<MainId, MainDef>(MAINS.map((m) => [m.id, m]));
+/**
+ * 主料表在 `data/mains.ts`（P46 起独立成表：主料是菜单的 SKU，不是从加料反推出来的）。
+ * 这里只 re-export，方便老调用点继续 `import { MAIN_BY_ID } from "./dish-name"`。
+ */
+export { MAIN_BY_ID, type MainId, type Portion } from "./mains";
 
 /** 做法 → 品名前缀（汤粉是默认，不写） */
 export const METHOD_WORD: Record<MethodId, string> = {
@@ -79,7 +63,9 @@ export interface DishParts {
   method: MethodId;
   main: MainId;
   noodle: NoodleId;
-  /** 除主料之外的加料（写「+加腐竹」这种尾巴） */
+  /** 份量；二两是默认项，不写进名字 */
+  portion?: Portion;
+  /** 除主料之外的加料（写「＋腐竹」这种尾巴） */
   extras: string[];
   /** 是否配了粉+饮料套餐 */
   meal: boolean;
@@ -88,10 +74,10 @@ export interface DishParts {
 /**
  * 拼出这碗粉的名字。
  *
- * - 汤粉 + 切粉 + 碎肉 → 「老友粉」（一个字都不多，跟店里一样）
+ * - 汤粉 + 切粉 + 碎肉 + 二两 → 「老友粉」（一个字都不多，跟店里一样）
  * - 干捞 + 切粉 + 猪杂 → 「干捞老友猪杂粉」
  * - 汤粉 + 伊面 + 碎肉 → 「老友伊面」
- * - 砂锅 + 切粉 + 碎肉 + 套餐 → 「砂锅老友粉（配豆浆）」
+ * - 砂锅 + 切粉 + 碎肉 + 三两 + 套餐 → 「砂锅老友粉＋腐竹（三两）（配饮料）」
  */
 export function dishName(parts: DishParts): string {
   const method = METHOD_WORD[parts.method] ?? "";
@@ -101,6 +87,9 @@ export function dishName(parts: DishParts): string {
   let name = `${method}老友${main}${tail}`;
   // 圆粉/伊面/湿面已经带「粉/面」字，不再补「粉」
   if (parts.extras.length > 0) name += `＋${parts.extras.join("＋")}`;
+  // 份量跟在主名后面：店里写「老友猪杂粉（三两）」
+  const portionWord = portionOf(parts.portion ?? 2).word;
+  if (portionWord) name += `（${portionWord}）`;
   if (parts.meal) name += "（配饮料）";
   return name;
 }

@@ -1,6 +1,7 @@
 import { ARCHETYPE_BY_ID, LIKE_DIMS_ORDER } from "../data/customers";
 import { START_SIDES } from "../data/sides";
 import { NOODLE_BY_ID, START_NOODLE } from "../data/noodles";
+import { DEFAULT_PORTION, MAIN_BY_ID, START_MAIN, type MainId } from "../data/mains";
 import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -92,6 +93,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 16 &&
     v.saveVersion !== 15 &&
     v.saveVersion !== 14 &&
     v.saveVersion !== 13 &&
@@ -364,6 +366,12 @@ export function deserialize(raw: string): GameState | null {
   // v14 → v15（分店 S6）：老档没开过分店，补空数组；非数组也补空。
   const br = (parsed as { branches?: unknown }).branches;
   if (!Array.isArray(br)) parsed.branches = [];
+  // v16 → v17（P46 主料与份量）：老档没有 main/portion。
+  // 主料认不出就回碎肉（老友粉的本分），份量只认 2/3，其余回二两。
+  const mn = (parsed as { main?: unknown }).main;
+  if (typeof mn !== "string" || !MAIN_BY_ID.has(mn as MainId)) parsed.main = START_MAIN;
+  const pt = (parsed as { portion?: unknown }).portion;
+  if (pt !== 2 && pt !== 3) parsed.portion = DEFAULT_PORTION;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

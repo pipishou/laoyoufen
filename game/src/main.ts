@@ -29,12 +29,14 @@ import {
   uploadPending,
   uploadPlaytest,
 } from "./sim/telemetry";
-import { scoreRecipe } from "./sim/score";
+import {  } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
 import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
-import { noodleKindOf, noodleSummary, setNoodleKind } from "./sim/noodles";
+import { noodleSummary, setNoodleKind } from "./sim/noodles";
+import { scoreOf } from "./sim/dish";
+import { mainSummary, portionSummary, setMain, setPortion } from "./sim/mains";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -67,7 +69,7 @@ function loadOrCreate(): GameState {
 }
 
 const state = loadOrCreate();
-let score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
+let score = scoreOf(state);
 /** 默认 ×4：一天 30 秒，一月 15 分钟，三年约 9 小时 */
 let speed = 4;
 let panels!: Panels;
@@ -153,7 +155,7 @@ const setupScreen: SetupScreen = mountSetup(document.body, {
     }
     playSfx("upgrade");
     hud.showToast(`${shopName} 开张了，先调好一碗粉的味道`, "like");
-    score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
+    score = scoreOf(state);
     refresh();
     tickFeedback();
     return true;
@@ -215,6 +217,20 @@ panels = mountPanels(hudRoot, {
     const r = setNoodleKind(state, String(id));
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
     else hud.showToast(`换粉了：${noodleSummary(state)}`, "info");
+    playSfx("ui");
+    refresh();
+  },
+  setMain(id) {
+    const r = setMain(state, String(id));
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(`换主料了：${mainSummary(state)}`, "info");
+    playSfx("ui");
+    refresh();
+  },
+  setPortion(size) {
+    const r = setPortion(state, Number(size));
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(portionSummary(state), "info");
     playSfx("ui");
     refresh();
   },
@@ -428,7 +444,7 @@ function announce(key: string): void {
 /* ---------------- 主循环 ---------------- */
 
 function refresh(): void {
-  score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
+  score = scoreOf(state);
   hud.render(state, score);
   panels.render(state, score);
   guide.render(state);

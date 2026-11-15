@@ -3,7 +3,7 @@ import { FLOW } from "../data/balance";
 import { nextStaffNeed, staffSlots } from "../data/staff";
 import { ackDayReport, advanceMinute, createInitialState, type GameState } from "./state";
 import { resolveEvent } from "./events";
-import { scoreRecipe } from "./score";
+import {  } from "./score";
 import { buyExpansion, nextExpansion } from "./expansion";
 import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
@@ -13,6 +13,8 @@ import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
 import { auditPlaytest, verdictLabel } from "./playtest";
 import { nextFloat } from "./rng";
 import { noodleKindOf, noodleViews, setNoodleKind, currentSeason } from "./noodles";
+import { scoreOf } from "./dish";
+import { mainViews, setMain, setPortion } from "./mains";
 import { MAX_BRANCHES } from "../data/branches";
 import { branchSizeOptions, branchViews, openBranch } from "./branches";
 import { setDrinkTemp } from "./sides";
@@ -50,7 +52,7 @@ import { setDrinkTemp } from "./sides";
  * 策略刻意笨：每月随机挑一个参数 ±4，满意分更高就留、否则回滚，试 6 次。
  */
 function climbRecipe(s: GameState): void {
-  let best = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
+  let best = scoreOf(s).total;
   for (let i = 0; i < 6; i += 1) {
     const useSoup = nextFloat(s.rng) < 0.5;
     const arr: number[] = useSoup ? s.recipe.soup : s.recipe.noodle;
@@ -60,7 +62,7 @@ function climbRecipe(s: GameState): void {
     const after = Math.max(0, Math.min(100, before + step));
     if (after === before) continue;
     arr[idx] = after;
-    const total = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
+    const total = scoreOf(s).total;
     if (total > best) best = total;
     else arr[idx] = before;
   }
@@ -85,6 +87,37 @@ function pickNoodle(s: GameState): void {
     }
   }
   if (bestId !== noodleKindOf(s)) setNoodleKind(s, bestId);
+}
+
+/**
+ * 选主料（P46）：牛肉贵但客人更满意，碎肉便宜但平。
+ *
+ * 量化口径 = 满意加成 − 料钱压力（料钱按「一个月卖多少碗」摊到每碗的毛利里）。
+ * 替身只在解锁过的里面挑，挑不到更好的就维持现状 —— 和真人一样，不会为了换而换。
+ */
+function pickMain(s: GameState): void {
+  const views = mainViews(s).filter((v) => v.unlocked);
+  let bestId = s.main;
+  let bestScore = -Infinity;
+  for (const v of views) {
+    // 每 +¥1 料钱扣 1.6 分（替身怕贵），满意加成直接加分
+    const score = v.def.satBonus - v.def.costYuan * 1.6;
+    if (score > bestScore) {
+      bestScore = score;
+      bestId = v.def.id;
+    }
+  }
+  if (bestId !== s.main) setMain(s, bestId);
+}
+
+/**
+ * 选份量（P46）：三两多 ¥2 但多一分满意、出碗慢一成。
+ * 只在「产能还有余量」时上三两 —— 排队排到门口的时候，多卖二两更划算。
+ */
+function pickPortion(s: GameState): void {
+  const waiting = s.flow.customers.filter((c) => c.status === "waiting").length;
+  const want = waiting <= 1 ? 3 : 2;
+  if (want !== s.portion) setPortion(s, want);
 }
 
 function play(seed: number): GameState {
@@ -135,11 +168,15 @@ function play(seed: number): GameState {
       // 换粉型（P42）：在已解锁的粉里挑「契合度 × 季节」最高的。
       // 量尺自己也得会用新动词，否则新系统永远测不出东西（P40 的教训）。
       pickNoodle(s);
+      // 主料与份量（P46）：牛肉/牛腩比碎肉卖得贵也更受欢迎，三两比二两多卖 ¥2。
+      // 量尺不会这两下，就等于这一期做的东西没被测过（P40 的老教训）。
+      pickMain(s);
+      pickPortion(s);
       // 饮料冰热（P43）：冬天上热的、其余上冰的 —— 量尺不跟着季节换，冬天冰绿豆沙就白扣分。
       const seasonNow = currentSeason(s);
       const wantTemp = seasonNow === "winter" ? "hot" : "ice";
       if (s.sides.drinkTemp !== wantTemp) setDrinkTemp(s, wantTemp);
-      const tasteNow = scoreRecipe(s.recipe, s.price, noodleKindOf(s)).total;
+      const tasteNow = scoreOf(s).total;
 
       // 定价三段（P40）：
       //  ① 上月试涨价 → 这月看营收：跌 5% 以上就退（比看流失准；高产能店流失永远几十个百分点）；
@@ -265,7 +302,7 @@ function play(seed: number): GameState {
     }
   }
 
-  const sc = scoreRecipe(s.recipe, s.price, noodleKindOf(s));
+  const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
       ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 ===`,

@@ -1,4 +1,4 @@
-﻿import { DAYS_PER_MONTH, dayIndex } from "./calendar";
+import { DAYS_PER_MONTH, dayIndex } from "./calendar";
 import { GUANGXI, TARGET_BASE_YUAN, monthTargetFor } from "../data/balance";
 
 /** 起步区：兴宁区（祖传铺面，转让费 0），见 data/nanning.ts 与账本行 18 */
@@ -11,9 +11,10 @@ import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 import { noodleKindOf } from "./noodles";
 import { START_SIDES, type DrinkTemp } from "../data/sides";
+import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -386,6 +387,16 @@ export interface GameState {
    * 粉型决定成本、出碗时间、与当前汤底的契合度，以及当季加成。
    */
   noodle: string;
+  /**
+   * 主料（P46）：碎肉 / 猪杂 / 牛肉 / 牛杂 / 猪脚 / 烧鸭 / 牛腩 / 三鲜 / 鱼片 / 素粉。
+   * 见 `data/mains.ts` —— 主料是菜单的 SKU，改料钱、改满意、靠累计客流解锁。
+   */
+  main: string;
+  /**
+   * 份量（P46）：2＝二两（默认）、3＝三两。
+   * 三两多一钱料、售价 +¥2、满意 +1，但出碗慢 10%。
+   */
+  portion: number;
   /** 年度结算单，非空时 HUD 强制弹出 */
   pendingReport: YearRecord | null;
   /** 36 个月跑完 */
@@ -578,6 +589,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     site: "",
     shopName: "",
     noodle: "flat",
+    main: START_MAIN,
+    portion: DEFAULT_PORTION,
     district: START_DISTRICT,
     districtSince: 0,
     branches: [],
@@ -634,7 +647,11 @@ export function advanceMinute(state: GameState): void {
   if (state.finished) return;
   if (state.events.pending) return;
   // 粉型跟着走：切粉以外的粉会按「汤配不配它」加减粉分（P42）
-  const score = scoreRecipe(state.recipe, state.price, noodleKindOf(state));
+  // 主料与份量只动料钱，不动口味分（P46）
+  const score = scoreRecipe(state.recipe, state.price, noodleKindOf(state), {
+    main: state.main,
+    portion: state.portion,
+  });
   tickCustomers(state, score);
   tickEvents(state);
   state.flow.minuteOfDay += 1;
