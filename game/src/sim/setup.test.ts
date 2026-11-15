@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GUANGXI, monthTargetFor, rentFor } from "../data/balance";
-import { CAPITAL, BOWL, bowls, monthsOf, totalCapital, totalGradeFee } from "../data/anchors";
+import { CAPITAL, BOWL, bowls, monthsOf, RENT, totalCapital, totalGradeFee } from "../data/anchors";
 import { nameCandidates, validShopName } from "../data/shop-names";
 import { SITES, affordableSites, siteById } from "../data/sites";
 import { canTakeSite, openForBusiness, rentFactorOf } from "./setup";
@@ -72,7 +72,7 @@ describe("建店 S0", () => {
     expect(s.cash).toBe(GUANGXI.startCashYuan);
     expect(s.venue.seats).toBe(2);
     expect(s.venue.stoves).toBe(1);
-    expect(rentFactorOf(s)).toBe(0.6);
+    expect(rentFactorOf(s)).toBe(0.33);
   });
 });
 
@@ -96,19 +96,20 @@ describe("店名", () => {
 });
 
 describe("坐标系（钱 / 碗 / 月营收）", () => {
-  it("一碗的构成加总等于锚点成本 4.2 元，售价 10 元，毛利率约 58%", () => {
+  it("一碗的构成加总等于锚点成本 4.8 元（粉 0.6＋猪杂 1.2＋料 0.9＋汤 0.7＋能耗 0.8＋损耗 0.6），售价 10 元", () => {
     expect(BOWL.costYuan).toBeCloseTo(GUANGXI.bowlCostYuan, 6);
+    expect(BOWL.costYuan).toBe(4.8);
     expect(BOWL.priceYuan).toBe(GUANGXI.bowlPriceYuan);
-    expect(BOWL.marginYuan).toBeCloseTo(5.8, 6);
-    expect(BOWL.marginRate).toBeGreaterThan(0.55);
-    expect(BOWL.marginRate).toBeLessThan(0.62);
+    expect(BOWL.marginYuan).toBeCloseTo(5.2, 6);
+    expect(BOWL.marginYuan / BOWL.priceYuan).toBeGreaterThan(0.5);
+    expect(BOWL.marginYuan / BOWL.priceYuan).toBeLessThan(0.55);
   });
 
   it("bows() 把元折成碗：月营收 21,000 ≈ 2,100 碗", () => {
     expect(monthTargetFor(1)).toBe(21_000);
     expect(bowls(21_000)).toBe(2_100);
     expect(monthsOf(21_000)).toBe(1);
-    expect(monthsOf(120_000)).toBeCloseTo(5.71, 2);
+    expect(monthsOf(120_000)).toBe(5.7);
   });
 
   it("资本阶梯有份量：单件设备最贵 3 万元 = 3,000 碗，远高于旧值 2,400 元", () => {
@@ -132,11 +133,12 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     expect(cap).toBeLessThan(totalGradeFee() * 2);
   });
 
-  it("房租系数落在现实区间：街边摊 < 巷内 < 临街，且巷内与现实一致", () => {
+  it("房租落在现实区间：街边摊 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600（2025 实测）", () => {
     const base = rentFor(monthTargetFor(1));
     expect(base).toBe(4_620);
-    expect(Math.round(base * 0.6)).toBe(2_772);
-    expect(Math.round(base * 1.4)).toBe(6_468);
-    expect(GUANGXI.rentYuan).toBe(4_500);
+    expect(Math.round(base * 0.33)).toBe(1_525);
+    expect(Math.round(base * 1.65)).toBe(7_623);
+    expect(GUANGXI.rentYuan).toBe(4_600);
+    expect(RENT.streetMonthly).toBe(7_600);
   });
 });

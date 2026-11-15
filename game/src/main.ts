@@ -25,6 +25,7 @@ import {
 } from "./sim/telemetry";
 import { scoreRecipe } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
+import { buyEquipment } from "./sim/equipment";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -174,6 +175,13 @@ panels = mountPanels(hudRoot, {
   },
   buy(id) {
     buyUpgrade(state, id);
+    playSfx("upgrade");
+    refresh();
+  },
+  buyEquip(id) {
+    const r = buyEquipment(state, id);
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast("设备换了，明天出碗更快", "info");
     playSfx("upgrade");
     refresh();
   },

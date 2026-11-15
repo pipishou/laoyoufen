@@ -1,0 +1,24 @@
+{
+ "before": {
+  "cash": 15000,
+  "stove": 0,
+  "caprow": "座位 4 · 出餐 6.0 分/碗 · 日上限 200 碗"
+ },
+ "panel_serve_line": "设备 · 现在出碗 6.0 分/碗",
+ "after": {
+  "cash": 13508.400000000001,
+  "stove": 1,
+  "caprow": "座位 4 · 出餐 5.1 分/碗 · 日上限 200 碗",
+  "serveLine": "设备 · 现在出碗 5.1 分/碗"
+ },
+ "after_bench": {
+  "capacity": 240,
+  "bench": 1,
+  "caprow": "座位 4 · 出餐 5.1 分/碗 · 日上限 240 碗"
+ },
+ "cash_spent": 1491.5999999999985,
+ "serve_minutes_dropped": true,
+ "console_error_count": 0,
+ "console_errors": [],
+ "ok": true
+}

@@ -14,6 +14,7 @@ import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } 
 import { nextFloat } from "./rng";
 import type { RecipeScore } from "./score";
 import { costMultiplier, patienceMultiplier, serveMultiplier, surveyRate } from "./staff";
+import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import type { GameState, QueueCustomer, Recipe } from "./state";
 
@@ -225,7 +226,7 @@ function settle(state: GameState, score: RecipeScore, c: QueueCustomer): void {
     : 50;
 
   const paid = state.price;
-  const cost = score.cost * costMultiplier(state);
+  const cost = score.cost * costMultiplier(state) * equipCostMultiplier(state);
   state.cash += paid - cost;
   state.monthRevenue += paid;
   state.flow.revenueToday += paid;
@@ -333,7 +334,7 @@ export function tickCustomers(state: GameState, score: RecipeScore): void {
     if (freeSeats > 0 && next) {
       next.status = "eating";
       next.elapsed = 0;
-      flow.serveCooldown = FLOW.serveMinutes * serveMultiplier(state);
+      flow.serveCooldown = FLOW.serveMinutes * serveMultiplier(state) * equipServeMultiplier(state);
     }
   }
 

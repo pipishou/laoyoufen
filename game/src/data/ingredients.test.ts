@@ -37,7 +37,7 @@ describe("配料/原料表", () => {
     const allMaterials =
       SOUP_MATERIALS.reduce((a, m) => a + m.cost, 0) + NOODLE_MATERIALS.reduce((a, m) => a + m.cost, 0);
     expect(BASE_COST).toBeCloseTo(GUANGXI.bowlCostYuan, 6);
-    // 一碗不可能用完全部料：料表加总必须是单碗成本的 1.4 倍以上
-    expect(allMaterials / BASE_COST).toBeGreaterThan(1.4);
+    // 一碗不可能用完全部料：料表加总必须明显高于单碗成本（现实 1.25 倍以上）
+    expect(allMaterials / BASE_COST).toBeGreaterThan(1.25);
   });
 });

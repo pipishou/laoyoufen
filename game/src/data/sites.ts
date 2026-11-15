@@ -7,7 +7,8 @@
  * **钱怎么定的（坐标系规则，见 `data/anchors.ts`）**：
  *   - 起始现金 `GUANGXI.startCashYuan = ¥30,000`（现实下限：押金＋简装＋首批原料）
  *   - 转让费按「拿走起始现金的 0% / 50% / 93%」定，于是三种开局都是**现金取舍**而不是难度选项
- *   - 房租系数乘在 `rentFor(月目标)` 上：现实临街小铺 ¥4,500/月 对应系数 1.0
+ *   - 房租系数乘在 `rentFor(月目标)` 上：现实社区店 ¥4,600/月 对应系数 1.0（`rentFor(21000)=4620`）；
+ *     街边摊 0.33（摊位费 ¥1,500）、临街铺面 1.65（实测 ¥7,600/月，良庆 58 ㎡）
  */
 
 export type SiteId = "stall" | "alley" | "streetfront";
@@ -40,7 +41,7 @@ export const SITES: readonly SiteDef[] = [
     seats: 2,
     stoves: 1,
     capacity: 120,
-    rentFactor: 0.6,
+    rentFactor: 0.33,
     openingLine: "炉子一支，锅一放，老友粉的香味先把人引过来。",
   },
   {
@@ -62,7 +63,7 @@ export const SITES: readonly SiteDef[] = [
     seats: 6,
     stoves: 2,
     capacity: 260,
-    rentFactor: 1.4,
+    rentFactor: 1.65,
     openingLine: "玻璃门擦到能照人，灶火一起，两条街都闻得到。",
   },
 ] as const;

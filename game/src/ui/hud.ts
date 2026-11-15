@@ -17,6 +17,7 @@ function fmtProgress(n: number): string {
 }
 import type { RecipeScore } from "../sim/score";
 import { serveMultiplier } from "../sim/staff";
+import { equipServeMultiplier } from "../sim/equipment";
 
 /**
  * 老友粉工序：炒料（煸酸笋、爆蒜米豆豉辣椒酱）与煮粉同步起锅，
@@ -468,7 +469,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.sat.textContent = sat < 0 ? "--" : String(sat);
     el.satbar.style.width = sat < 0 ? "0%" : `${sat}%`;
     el.satbar.className = sat < 40 ? "hot" : sat < 60 ? "warm" : "";
-    el.caprow.textContent = `座位 ${s.venue.seats} · 出餐 ${SERVE_MINUTES} 分/碗 · 日上限 ${s.capacity} 碗`;
+    const serveNow = Math.max(0.5, SERVE_MINUTES * serveMultiplier(s) * equipServeMultiplier(s));
+    el.caprow.textContent = `座位 ${s.venue.seats} · 出餐 ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} 碗`;
 
     const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}`).join("|");
     if (custKey !== lastCustKey) {

@@ -1,13 +1,18 @@
 import { CONTEST_ENTRY_FEE, CONTEST_RIVALS } from "../data/contest";
+import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
+import { EQUIPMENT } from "../data/equipment";
 import { MAX_STAFF, ROLE_LABEL } from "../data/staff";
 import { UPGRADES } from "../data/shop";
 import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
 import { canEnter } from "../sim/contest";
+import { equipLevel, equipNextCost } from "../sim/equipment";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
-import { dailyWage } from "../sim/staff";
+import { dailyWage, serveMultiplier } from "../sim/staff";
+import { SERVE_MINUTES } from "../sim/customer";
+import { equipServeMultiplier } from "../sim/equipment";
 import type { GameState } from "../sim/state";
 
 export type PanelTab = "recipe" | "staff" | "shop" | "contest" | "collection" | "ledger";
@@ -65,6 +70,7 @@ export interface PanelActions {
   fire(uid: string): void;
   toggleRest(uid: string): void;
   buy(id: string): void;
+  buyEquip(id: string): void;
   enterContest(): void;
   dismissReport(): void;
 }
@@ -189,6 +195,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       case "buy":
         actions.buy(id);
         break;
+      case "buyequip":
+        actions.buyEquip(id);
+        break;
       case "contest":
         actions.enterContest();
         break;
@@ -249,7 +258,19 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   }
 
   function shopHtml(s: GameState): string {
-    return UPGRADES.map((u) => {
+    const equipRows = EQUIPMENT.map((e) => {
+      const lv = equipLevel(s, e.id);
+      const cost = equipNextCost(s, e.id);
+      const maxed = !Number.isFinite(cost);
+      const next = maxed ? "已到顶档" : e.effects[lv] ?? "";
+      return `<div class="lrow">
+        <div class="lname">${e.name}<span class="tag2">Lv ${lv}/4</span><span class="tag2">${next}</span></div>
+        <div class="lmeta">${e.desc}</div>
+        <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? "已到顶档" : money(cost)}</button></div>
+      </div>`;
+    }).join("");
+    const serveNow = Math.max(0.5, SERVE_MINUTES * serveMultiplier(s) * equipServeMultiplier(s));
+    const ups = UPGRADES.map((u) => {
       const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
       const maxed = lv >= u.maxLevel;
@@ -259,6 +280,15 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="lbtns"><button type="button" data-act="buy" data-id="${u.id}" ${maxed ? "disabled" : ""}>${maxed ? "已满级" : money(cost)}</button></div>
       </div>`;
     }).join("");
+    return `<div class="sec">
+        <div class="sechd">设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
+        <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
+        ${equipRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">扩建与摆件</div>
+        ${ups}
+      </div>`;
   }
 
   function contestHtml(s: GameState, score: RecipeScore): string {

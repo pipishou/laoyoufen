@@ -1,120 +1,169 @@
 /**
- * 坐标系（anchors）—— 钱、碗、时间三把尺子的唯一换算点。
+ * 坐标系（anchors）—— 「钱 / 一碗粉 / 一小时劳动」的唯一换算点。
  *
- * 起这个文件的原因（用户 m04226 明确要求「本土化的内容特别是钱和老友粉等坐标系内容要做好」）：
- * 之前每个新数值都是「拍一个看起来合理的元数」，于是出现三种病：
- *   1) 灶 ¥2,400 与房租 ¥4,620/月 同量级 → 一次性投入没有份量；
- *   2) 段位费 ¥50–20,000 与月营收 ¥27,000 同量级 → 门槛等于免费；
- *   3) 开罗的 250 KCU 被折成 ¥2.5 → 跨作品坐标系混用（开罗一碗 ≈1,000 KCU，我们一碗 ¥9）。
+ * 为什么有这个文件：数值散落时，谁也说不清「灶 ¥30,000」到底贵不贵。
+ * 这里只做三件事：① 记下现实锚点的**出处与日期**；② 提供三个换算函数；③ 给出所有资本品的价表。
+ * 任何新价格都必须先过三关（几碗 / 几个月营收 / 几小时工资），才有资格写成元。
  *
- * 规则（新数值必须先过这三关，再写成元）：
- *   - **第一关：几碗**。资本性支出写「值多少碗」（`bowls()`）。
- *   - **第二关：几个月营收**。跨月支出写「占几个月流水」（`monthRevenue()`、`monthsOf()`）。
- *   - **第三关：几小时工时**。工资类写「几小时工资」（南宁 2025 最低工资 ¥1,990/月、21.75 天 → 约 ¥11.4/小时）。
- * 三条尺子都在本文件里，任何一处换算改动只能改这里。
+ * 现实锚点全部来自 2025 年公开报道（见 SOURCES），取值口径写在每条常量后面。
+ * 开罗 KCU **不能**直接折成元：开罗一碗约 1,000 KCU，本作一碗 ¥10，直折会把门槛折成零头。
  */
 
 import { GUANGXI } from "./balance";
 
-/** 一碗老友粉的成本构成（元）。合计 = GUANGXI.bowlCostYuan = 4.2 */
+/** 现实出处（写进文档与账本，避免下次又凭感觉改数）。 */
+export const SOURCES = [
+  {
+    key: "wage",
+    what: "广西最低工资：一类（含南宁城区）2200 元/月、22.4 元/小时，2025-07-01 起执行；此前为 1990 / 20.1",
+    url: "https://m.weixin.qq.com/s?__biz=Mzg4OTgyNjIxMw==&mid=2247521747&idx=1&sn=4bb3c00698ca3f87e23f26766bbdbb06",
+    date: "2025-07-02",
+  },
+  {
+    key: "bowl",
+    what: "老友粉定价：老友猪杂粉 / 碎肉粉 10 元、老友牛肉粉 12 元（老南街传统老友粉店，兴宁区秀厢大道）",
+    url: "https://m.weibo.cn/search?containerid=231522type%3D1%26t%3D10%26q%3D%23南宁美食c位老友粉%23",
+    date: "2025-08-05",
+  },
+  {
+    key: "pork",
+    what: "南宁淡村农贸市场猪肉：五花 12、梅头 11、前后腿 10、排骨 20（元/斤）；超市促销瘦肉 8.8",
+    url: "https://m.gmw.cn/2025-10/26/content_1304199800.htm",
+    date: "2025-10-26",
+  },
+  {
+    key: "rent_street",
+    what: "良庆区 58 ㎡ 临街铺面（做粉店）月租 7600 元",
+    url: "http://mp.weixin.qq.com/s?__biz=MzIyMjQwMzIzNQ==&mid=2247507660&idx=2&sn=d9e4445e6ae97f1d3da3cbfab8b3b94d",
+    date: "2025-10-08",
+  },
+  {
+    key: "rent_real",
+    what: "青秀/兴宁临街 30 ㎡ 年租 10.6 万（≈8800/月）；社区店比临街便宜 3–5 成；客单价 12–15，一碗净利 3–4 元",
+    url: "http://mp.weixin.qq.com/s?__biz=MzYzNTk2OTc0MA==&mid=2247484002&idx=2&sn=6594e188d9a336d623174398b5bab3be",
+    date: "2026-07-07",
+  },
+] as const;
+
+/** 一碗老友粉的构成（元）。合计 = 食材成本，不含房租人工。 */
 export const BOWL_BREAKDOWN = {
-  /** 二两切粉 */
-  riceNoodle: 1.1,
-  /** 猪杂（粉肠/瘦肉/猪肝） */
-  porkOffal: 2.3,
-  /** 酸笋 + 豆豉 + 蒜 + 辣椒 + 油 */
-  seasoning: 0.8,
+  /** 鲜湿米粉：¥3/斤，二两一碗 → 5 碗/斤 */
+  riceNoodle: 0.6,
+  /** 猪杂/碎肉：12 元/斤，二两一碗 */
+  porkOffal: 1.2,
+  /** 酸笋、豆豉、蒜、辣椒、酱油 */
+  seasoning: 0.9,
+  /** 骨汤料与油 */
+  broth: 0.7,
+  /** 水电燃料（一碗摊到的煤气与电） */
+  energy: 0.8,
+  /** 损耗（当天卖不完的湿粉报废） */
+  spoilage: 0.6,
 } as const;
 
-/** 一碗的售价 / 成本 / 毛利（元）。售价取现实二两猪杂老友粉的常见价。 */
 export const BOWL = {
-  priceYuan: GUANGXI.bowlPriceYuan, // 10
-  costYuan: GUANGXI.bowlCostYuan, // 4.2
+  /** 默认售价：猪杂老友粉（现实 10 元） */
+  priceYuan: GUANGXI.bowlPriceYuan,
+  /** 牛肉老友粉（现实 12 元），做「加料」用 */
+  beefPriceYuan: 12,
+  /** 人均客单（含加料/饮料）：现实 12–15 */
+  avgTicketYuan: 15,
+  costYuan: Math.round(
+    (BOWL_BREAKDOWN.riceNoodle +
+      BOWL_BREAKDOWN.porkOffal +
+      BOWL_BREAKDOWN.seasoning +
+      BOWL_BREAKDOWN.broth +
+      BOWL_BREAKDOWN.energy +
+      BOWL_BREAKDOWN.spoilage) *
+      10,
+  ) / 10,
   get marginYuan(): number {
-    return this.priceYuan - this.costYuan;
-  },
-  get marginRate(): number {
-    return this.marginYuan / this.priceYuan;
+    return Math.round((this.priceYuan - this.costYuan) * 10) / 10;
   },
 } as const;
 
-/** 时间尺：一局 36 个月 = 3 年；1 月 30 天；1 天 120 游戏分钟 = 12 现实小时 */
 export const TIME = {
   monthsTotal: 36,
   daysPerMonth: 30,
   minutesPerDay: 120,
-  /** 1 游戏分钟 = 6 现实分钟（见 balance.REAL_MINUTES_PER_GAME_MINUTE） */
+  /** 1 游戏分钟 = 6 现实分钟（见 balance.ts 的注释与实测） */
   realMinutesPerGameMinute: 6,
 } as const;
 
-/** 现实工资锚（南宁 2025 量级，月薪制） */
 export const LABOR = {
-  /** 最低工资 ¥1,990/月，按 21.75 天 → 91.5 元/天 → 11.4 元/小时（8 小时） */
-  minWageMonthly: 1_990,
+  /** 南宁城区最低工资（一类区） */
+  minWageMonthly: 2200,
+  minWageHourly: 22.4,
   workDaysPerMonth: 21.75,
   get dayYuan(): number {
-    return this.minWageMonthly / this.workDaysPerMonth;
+    return Math.round((this.minWageMonthly / this.workDaysPerMonth) * 10) / 10;
   },
-  get hourYuan(): number {
-    return this.dayYuan / 8;
-  },
+  /** 帮工（洗碗买菜）月薪：现实粉店 3500–4500，取中位 */
+  helperMonthly: 3800,
+  /** 炒锅师傅月薪 */
+  chefMonthly: 4500,
 } as const;
 
-/** 把元折成「几碗」（保留 1 位小数） */
+export const RENT = {
+  /** 街边摊：摊位费 + 水电分摊 */
+  stallMonthly: 1500,
+  /** 社区店 / 巷内小店 30 ㎡：临街价 ×0.6 */
+  communityMonthly: 4600,
+  /** 临街铺面 58 ㎡（实测租金） */
+  streetMonthly: 7600,
+} as const;
+
+/** 资本品价表：先过三关，再落成元。 */
+export const CAPITAL = {
+  /** 布置：整套风格（地板/墙/入口/椅/桌） */
+  styleSetYuan: [3000, 4500, 6000, 8000] as const,
+  /** 设备：灶 / 粉篓 / 案台，各四档 */
+  equipmentYuan: [1500, 3800, 9000, 30000] as const,
+  /** 扩建：加两张桌 / 整层扩 */
+  expansionYuan: [12000, 35000] as const,
+  /** 区县转让费上限（12 区县） */
+  districtMaxYuan: 120000,
+  /** 段位审查费（11 级，末级免费＝终局认定） */
+  gradeFeeYuan: [500, 1500, 3000, 6000, 12000, 20000, 35000, 55000, 80000, 120000, 0] as const,
+} as const;
+
+/** 多少碗 = 这笔钱 */
 export function bowls(yuan: number): number {
-  return Math.round((yuan / BOWL.priceYuan) * 10) / 10;
+  return Math.round(yuan / BOWL.priceYuan);
 }
 
-/** 一碗的毛利能抵多少碗的售价（即「卖几碗才够这笔钱」按毛利算） */
-export function bowlsByMargin(yuan: number): number {
-  return Math.round((yuan / BOWL.marginYuan) * 10) / 10;
+/** 多少个月营收 = 这笔钱（按 70 碗/日 的稳定期） */
+export function monthsOf(yuan: number): number {
+  return Math.round((yuan / monthRevenue()) * 10) / 10;
 }
 
-/** 月营收（默认按现实 70 碗/日 × 30 天，即 ¥21,000；与 balance.TARGET_BASE_YUAN 同源） */
+/** 多少小时工资 = 这笔钱（按南宁最低工资的小时价） */
+export function laborHours(yuan: number): number {
+  return Math.round((yuan / LABOR.minWageHourly) * 10) / 10;
+}
+
+/** 一个月营收（默认 70 碗/日） */
 export function monthRevenue(bowlsPerDay: number = GUANGXI.dailyBowls[1]): number {
   return Math.round(bowlsPerDay * BOWL.priceYuan * TIME.daysPerMonth);
 }
 
-/** 这笔钱相当于几个月的（默认档）营收 */
-export function monthsOf(yuan: number, bowlsPerDay: number = GUANGXI.dailyBowls[1]): number {
-  return Math.round((yuan / monthRevenue(bowlsPerDay)) * 100) / 100;
-}
-
-/** 这笔钱相当于多少小时的最低工资 */
-export function laborHours(yuan: number): number {
-  return Math.round((yuan / LABOR.hourYuan) * 10) / 10;
-}
-
-/**
- * 资本阶梯（S3–S6 的全部价格，一次写清）。
- *
- * 定法：每一档写「值多少碗」，再折成元；档间级差 ≥ 2.5 倍，跨档总量必须
- * 与三年现金（约 ¥25 万量级）同阶，否则「钱没去处」的病会复发。
- */
-export const CAPITAL = {
-  /** S3 布置：整套风格（5 部件） */
-  styleSetYuan: [3_000, 4_500, 6_000, 8_000] as const,
-  /** S4 设备：四档（灶 / 粉篓 / 案台同价梯度） */
-  equipmentYuan: [1_500, 3_800, 9_000, 30_000] as const,
-  /** S5 扩建：加座 / 排队区+二楼 */
-  expansionYuan: [12_000, 35_000] as const,
-  /** S6 区县转让费：见 data/nanning.ts（¥0–¥120,000） */
-  districtMaxYuan: 120_000,
-  /** 段位审查费 11 级（第 11 级是终局，不收费） */
-  gradeFeeYuan: [
-    500, 1_500, 3_000, 6_000, 12_000, 20_000, 35_000, 55_000, 80_000, 120_000, 0,
-  ] as const,
-} as const;
-
-/** 段位费合计（用于「钱有没有去处」的自检断言） */
+/** 段位费合计 */
 export function totalGradeFee(): number {
-  return CAPITAL.gradeFeeYuan.reduce<number>((a, b) => a + b, 0);
+  return CAPITAL.gradeFeeYuan.reduce((a: number, b: number) => a + b, 0);
 }
 
-/** 资本品总投入（布置 4 套 + 设备 3 类 × 4 档 + 扩建 2 项） */
+/** 资本品总量（布置顶档 + 设备顶档 ×3 + 扩建两档 + 区县一档） */
 export function totalCapital(): number {
-  const style = CAPITAL.styleSetYuan.reduce((a, b) => a + b, 0);
-  const equip = CAPITAL.equipmentYuan.reduce((a, b) => a + b, 0) * 3;
-  const expand = CAPITAL.expansionYuan.reduce((a, b) => a + b, 0);
-  return style + equip + expand;
+  const equip = CAPITAL.equipmentYuan[CAPITAL.equipmentYuan.length - 1]! * 3;
+  return (
+    CAPITAL.styleSetYuan[CAPITAL.styleSetYuan.length - 1]! +
+    equip +
+    CAPITAL.expansionYuan.reduce((a, b) => a + b, 0) +
+    CAPITAL.districtMaxYuan
+  );
+}
+
+/** 把一笔钱说成人话：几碗 / 几个月 / 几小时 */
+export function explain(yuan: number): string {
+  return `${bowls(yuan)} 碗 · ${monthsOf(yuan)} 个月营收 · ${laborHours(yuan)} 小时工资`;
 }

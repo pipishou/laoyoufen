@@ -10,7 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -318,6 +318,8 @@ export interface GameState {
   site: string;
   /** 店名（setup 阶段为空串；开张时定下，之后写进档口招牌与月结单） */
   shopName: string;
+  /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
+  equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
   dayReport: DayRecord | null;
   /** 最近若干天的日结单，账本面板用；只留 120 天 */
@@ -466,6 +468,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     phase: "setup",
     site: "",
     shopName: "",
+    equipment: {},
     dayReport: null,
     days: [],
   };

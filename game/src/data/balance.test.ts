@@ -70,18 +70,19 @@ describe("平衡数值：月营收目标与房租", () => {
 });
 
 describe("平衡数值：产能与保本", () => {
-  it("一碗毛利 = 售价 − 食材成本", () => {
-    expect(bowlMargin()).toBeCloseTo(5.8, 5);
+  it("一碗毛利 = 售价 − 食材成本 = 10 − 4.8", () => {
+    expect(bowlMargin()).toBeCloseTo(5.2, 5);
   });
 
-  it("保本碗数覆盖房租+一个帮工，折成日均落在现实区间（45–55 碗/日）", () => {
+  it("保本碗数覆盖房租+一个帮工，折成日均落在现实区间（50–58 碗/日）", () => {
     const bowls = breakEvenBowls();
-    // (4500 + 3800) / 5.8 ≈ 1432 碗/月 ≈ 47.7 碗/日 —— 这正是「4 座小店撑一个帮工很薄」的证据
-    expect(bowls).toBeGreaterThan(1200);
-    expect(bowls).toBeLessThan(1600);
+    // (4600 社区店房租 + 3800 帮工) / 5.2 ≈ 1616 碗/月 ≈ 53.9 碗/日
+    // —— 现实里 4 座小店日销 70 碗才「撑得起一个帮工还有得剩」，这就是那段厚度。
+    expect(bowls).toBeGreaterThan(1400);
+    expect(bowls).toBeLessThan(1700);
     const perDay = bowls / 30;
-    expect(perDay).toBeGreaterThan(45);
-    expect(perDay).toBeLessThan(55);
+    expect(perDay).toBeGreaterThan(50);
+    expect(perDay).toBeLessThan(58);
   });
 
   it("座位数决定日产能上限（4 座 × 10 翻台 = 40 碗/日）", () => {

@@ -84,15 +84,16 @@ function isEventLogEntry(v: unknown): boolean {
 
 function isGameState(v: unknown): v is GameState {
   if (!isRecord(v)) return false;
-  // v7 = 一天三态（prep / open / closing）＋日结单。v5/v6 老档允许读入，
-  // 缺的字段在 deserialize 里补默认值，不判废 —— 玩家练了三年的店不该因为一次改版清零。
+  // v5..v8 老档允许读入（缺的字段在 deserialize 里补默认值），不判废
+  // ——玩家练了三年的店不该因为一次改版清零。
   if (
-  v.saveVersion !== SAVE_VERSION &&
-  v.saveVersion !== 7 &&
-  v.saveVersion !== 6 &&
-  v.saveVersion !== 5
-)
-  return false;
+    v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 8 &&
+    v.saveVersion !== 7 &&
+    v.saveVersion !== 6 &&
+    v.saveVersion !== 5
+  )
+    return false;
   if (typeof v.playerId !== "string" || v.playerId.length === 0) return false;
   if (typeof v.connectCode !== "string" || v.connectCode.length !== 6) return false;
   if (!isRecord(v.rng) || !isFiniteNumber(v.rng.s)) return false;
@@ -263,6 +264,10 @@ export function deserialize(raw: string): GameState | null {
   }
   if (typeof parsed.shopName !== "string" || parsed.shopName.trim() === "") {
     parsed.shopName = parsed.phase === "setup" ? "" : "老友粉店";
+  }
+  // v8 → v9（设备 S4）：老档没有 equipment，补成空对象（全 0 档＝原样不变）。
+  if (typeof parsed.equipment !== "object" || parsed.equipment === null || Array.isArray(parsed.equipment)) {
+    parsed.equipment = {};
   }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
