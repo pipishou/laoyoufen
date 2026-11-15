@@ -114,7 +114,7 @@ describe("店铺扩建（S5 两档资本开支）", () => {
     expect(expansionLevel(s)).toBe(1);
   });
 
-  it("第二档加后厨：座位再 +2、灶 +1、日上限 +140；钱不够就拒绝且不扣钱", () => {
+  it("第二档加后厨：座位再 +2、灶 +1、日上限 +140；再往上一档卡段位", () => {
     const s = createInitialState("shop-2", 7);
     s.cash = 50_000;
     buyExpansion(s);
@@ -128,11 +128,33 @@ describe("店铺扩建（S5 两档资本开支）", () => {
     expect(s.venue.seats - seats).toBe(2);
     expect(s.venue.stoves - stoves).toBe(1);
     expect(s.capacity - cap).toBe(140);
-    // 到顶后再买：拒绝，不扣钱
+    // 第三档（后巷雨棚 ¥60,000）挂第 3 段门槛：没评段就是拒绝，且不扣钱
     const cashAfter = s.cash;
-    expect(buyExpansion(s).ok).toBe(false);
+    expect(expansionNextCost(s)).toBe(60_000);
+    const locked = buyExpansion(s);
+    expect(locked.ok).toBe(false);
+    expect(locked.reason).toContain("第 3 段");
     expect(s.cash).toBe(cashAfter);
+  });
+
+  it("后两档（P39）：第 3 段→后巷 +3 座，第 6 段→二楼 +4 座 +1 灶，买完到顶", () => {
+    const s = createInitialState("shop-2b", 7);
+    s.cash = 300_000;
+    buyExpansion(s);
+    buyExpansion(s);
+    s.gradeLevel = 3;
+    const seats = s.venue.seats;
+    expect(buyExpansion(s).ok).toBe(true);
+    expect(s.venue.seats - seats).toBe(3);
+    // 第四档要第 6 段
+    expect(buyExpansion(s).ok).toBe(false);
+    s.gradeLevel = 6;
+    const stoves = s.venue.stoves;
+    expect(buyExpansion(s).ok).toBe(true);
+    expect(s.venue.stoves - stoves).toBe(1);
+    expect(expansionLevel(s)).toBe(4);
     expect(nextExpansion(s)).toBeNull();
+    expect(expansionNextCost(s)).toBe(Infinity);
   });
 
   it("钱不够买扩建：明确拒绝，现金不动", () => {

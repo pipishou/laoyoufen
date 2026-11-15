@@ -82,6 +82,9 @@ const hud = mountHud(hudRoot, {
     playSfx("ui");
     if (tab === "recipe") guide.notify("recipe");
     panels.open(tab as PanelTab);
+    // 面板内容是在 render 里填的，而 render 跟着游戏 tick 走 ——
+    // 准备阶段时间不推进，没有 tick，于是刚打开的面板是空的（真 bug）。
+    refresh();
   },
   onSpeed: (v) => {
     playSfx("ui");

@@ -11,6 +11,7 @@ import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
 import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
 import { auditPlaytest, verdictLabel } from "./playtest";
+import { nextFloat } from "./rng";
 
 /**
  * 「替身」＝游戏测试员：一个按规矩办事的假玩家，完整玩 36 个月，跑完还要交体检单。
@@ -31,8 +32,36 @@ import { auditPlaytest, verdictLabel } from "./playtest";
  *  - 现金 ≥ 下一档扩建价 + ¥8,000 → 扩建（S5，两档 ¥12,000/¥35,000）；
  *  - 有空坑（累计接待解锁的人手）且现金 ≥ 介绍费 + ¥6,000 → 只补掌勺（S2）；
  *  - 能评段位就评、比赛月报最擅长类型、本区能量掉到 85% 且别区好 25% 就搬；
+ *  - 每月先爬山调配方（P40），再按味道定价；
  *  - 事件一律选第一项。
  */
+
+/**
+ * 配方爬山（P40）——真人玩家最常做的事：试一勺汤、换一档粉，满意就留着。
+ *
+ * 替身原来从不碰配方，于是味道永远停在初始分，`priceTolerance()` 只有 1.0，
+ * 价格卡在 ¥9，营收 = 碗数 × ¥9 = 产能曲线 —— 于是「产能一满营收就不动」，
+ * 被 T3 判成「长期没有决策点」。真凶不是游戏没内容，是这把量尺不会做菜。
+ *
+ * 策略刻意笨：每月随机挑一个参数 ±4，满意分更高就留、否则回滚，试 6 次。
+ */
+function climbRecipe(s: GameState): void {
+  let best = scoreRecipe(s.recipe, s.price).total;
+  for (let i = 0; i < 6; i += 1) {
+    const useSoup = nextFloat(s.rng) < 0.5;
+    const arr: number[] = useSoup ? s.recipe.soup : s.recipe.noodle;
+    const idx = Math.floor(nextFloat(s.rng) * arr.length);
+    const before = arr[idx] ?? 0;
+    const step = nextFloat(s.rng) < 0.5 ? -4 : 4;
+    const after = Math.max(0, Math.min(100, before + step));
+    if (after === before) continue;
+    arr[idx] = after;
+    const total = scoreRecipe(s.recipe, s.price).total;
+    if (total > best) best = total;
+    else arr[idx] = before;
+  }
+}
+
 function play(seed: number): GameState {
   const s = createInitialState("standin", seed);
   let lastMonth = 0;
@@ -41,6 +70,9 @@ function play(seed: number): GameState {
   let expands = 0;
   let hires = 0;
   let equips = 0;
+  /** 上月试涨价时的价与营收（这月用来判断该不该退） */
+  let trialPrice = 0;
+  let trialRevenue = 0;
 
   while (!s.finished && s.months.length < 36 && guard < 5_000_000) {
     if (s.events.pending) {
@@ -73,8 +105,25 @@ function play(seed: number): GameState {
       // 定价贴着南宁现实（老友粉主力价 10 元）：只有「卖出去的人不满意」才降价，
       // 只有「人人满意且几乎没人走」才敢涨。流失多不等于需求旺 —— 也可能是价太高把人吓走，
       // 所以流失率高时不许涨价（这条是替身自己踩过的坑：一路涨到 12，流失 77%、日均掉到 30 碗）。
+      // ── 先调味道，再定价 ──
+      climbRecipe(s);
+      const tasteNow = scoreRecipe(s.recipe, s.price).total;
+
+      // 定价三段（P40）：
+      //  ① 上月试涨价 → 这月看营收：跌 5% 以上就退（比看流失准；高产能店流失永远几十个百分点）；
+      //  ② 味道不行（满意 <50）且价还高于南宁现实价 ¥9 → 降回 ¥9；
+      //  ③ 味道上来了（满意 ≥65）且忙不过来（有人被挡门外，流失 >25%）→ 涨 1 元试一个月。
+      // 旧规则要求「流失 <5% 才敢涨」，可产能一满流失就到 60%+，于是价永远卡 ¥9。
+      if (trialPrice > 0) {
+        if (s.price === trialPrice && m.revenue < trialRevenue * 0.95) s.price -= 1;
+        trialPrice = 0;
+      }
       if (sat >= 0 && sat < 50 && s.price > 9) s.price -= 1;
-      else if (s.price < 11 && sat >= 75 && lostRate < 0.05) s.price += 1;
+      else if (sat >= 65 && s.price < 12 && lostRate > 0.25) {
+        trialRevenue = m.revenue;
+        s.price += 1;
+        trialPrice = s.price;
+      }
 
       // 先买设备再扩建：一个灶/一档粉篓 ¥1,500 起，比 ¥12,000 的扩建便宜一个数量级，
       // 而且直接改「每轮几碗」。旧版替身从不买设备，于是所有「产能不够」的结论
@@ -147,7 +196,7 @@ function play(seed: number): GameState {
         `M${String(m.month).padStart(2, "0")} 现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
           ` · 营收 ¥${m.revenue.toLocaleString("zh-CN")}` +
           ` · 客 ${m.customers} · 流失 ${(lostRate * 100).toFixed(0)}%` +
-          ` · 价 ¥${s.price} · 座 ${s.venue.seats}/灶 ${s.venue.stoves}` +
+          ` · 价 ¥${s.price} · 味 ${tasteNow} · 座 ${s.venue.seats}/灶 ${s.venue.stoves}` +
           ` · 工 ${s.staff.roster.length}/${slots}（日薪 ¥${dailyWage(s)}）` +
           ` · 设备 ${equipLevel(s, "stove")}/${equipLevel(s, "strainer")}/${equipLevel(s, "bench")}` +
           ` · 段 ${s.gradeLevel} · 区能量 ${(homeEnergyOf(s) * 100).toFixed(0)}%` +

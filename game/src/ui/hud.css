@@ -998,6 +998,12 @@ button.pill[disabled] {
   padding: 4px 6px;
 }
 
+/* 未解锁的手艺（P39）：压暗但保持可读，别让人以为坏了 */
+.lrow.locked {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+
 .lname {
   flex: 1;
   font-size: 12px;

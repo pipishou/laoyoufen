@@ -12,6 +12,7 @@ import { FLOW } from "../data/balance";
 import { unlock } from "./collection";
 import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } from "./regulars";
 import { nextFloat } from "./rng";
+import { queueMaxOf } from "./unlocks";
 import type { RecipeScore } from "./score";
 import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, surveyRate } from "./staff";
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
@@ -194,7 +195,7 @@ const MAX_ARRIVALS_PER_MINUTE = 4;
 function arriveOne(state: GameState, score: RecipeScore): void {
   const flow = state.flow;
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
-  if (waiting >= FLOW.queueMax) {
+  if (waiting >= queueMaxOf(state)) {
     flow.lostToday += 1;
     state.monthLost += 1;
     return;

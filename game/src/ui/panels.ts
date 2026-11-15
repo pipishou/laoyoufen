@@ -11,7 +11,8 @@ import { isContestMonth, monthsToContest } from "../sim/calendar";
 import { districtOptions } from "../sim/district";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost } from "../sim/equipment";
-import { expansionLevel, nextExpansion } from "../sim/expansion";
+import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
+import { gradeOf, unlockViews } from "../sim/unlocks";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -24,7 +25,7 @@ export type PanelTab = "recipe" | "staff" | "shop" | "contest" | "collection" | 
 const TAB_TITLE: Record<PanelTab, string> = {
   recipe: "配方研发 · 汤 / 粉 / 浇头",
   staff: "员工 · 招募与疲劳",
-  shop: "店铺 · 扩建与摆件",
+  shop: "店铺 · 门面与手艺",
   contest: "全国老友粉大赛",
   collection: "图鉴 · 收集进度",
   ledger: "账本 · 月度与年度结算",
@@ -298,14 +299,15 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     }).join("");
     const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
 
-    // 扩建：两档，按顺序买（data/expansion.ts）。座位与灶位只从这里涨。
+    // 扩建：四档，按顺序买（data/expansion.ts），后两档挂段位门槛（开罗 rank）
     const nextExp = nextExpansion(s);
     const expLv = expansionLevel(s);
+    const expLock = expansionLockReason(s);
     const expRow = nextExp
-      ? `<div class="lrow">
-          <div class="lname">${nextExp.name}<span class="tag2">第 ${expLv + 1}/2 步</span></div>
+      ? `<div class="lrow${expLock ? " locked" : ""}">
+          <div class="lname">${nextExp.name}<span class="tag2">第 ${expLv + 1}/4 步</span>${nextExp.minGrade > 0 ? `<span class="tag2">需第 ${nextExp.minGrade} 段</span>` : ""}</div>
           <div class="lmeta">${nextExp.desc} · 座位 +${nextExp.seats}${nextExp.stoves ? ` · 灶 +${nextExp.stoves}` : ""}</div>
-          <div class="lbtns"><button type="button" data-act="buildexpand" ${s.cash < nextExp.costYuan ? "disabled" : ""}>${money(nextExp.costYuan)}</button></div>
+          <div class="lbtns"><button type="button" data-act="buildexpand" ${s.cash < nextExp.costYuan || expLock ? "disabled" : ""}>${expLock ? "段位不够" : money(nextExp.costYuan)}</button></div>
         </div>`
       : `<div class="lrow"><div class="lname">已经扩到顶了<span class="tag2">座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</span></div><div class="lmeta">下一步是换区开分店（S6）。</div></div>`;
 
@@ -322,6 +324,24 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
                </div>`
             : `<div class="lrow"><div class="lname">已经是最高段位</div><div class="lmeta">非遗传承人 —— 账本翻到最后一页。</div></div>`
         }
+      </div>`;
+
+    // 手艺树（P39，对齐开罗 rank.txt）：升一段 → 多一件能做的事
+    const views = unlockViews(s);
+    const liveViews = views.filter((v) => !v.pending);
+    const gotCount = liveViews.filter((v) => v.unlocked).length;
+    const craftSec = `<div class="sec">
+        <div class="sechd">手艺树 · 第 ${gradeOf(s)} 段 · 已会 ${gotCount}/${liveViews.length}</div>
+        <div class="lmeta" style="padding:0 2px 8px">开罗 rank.txt 十七行奖励就是这张表：扩建、排队位、买更大的店 —— 升一段多一件能做的事，不是多一个数字。灰色的要先去评段位。</div>
+        ${views
+          .map(
+            (v) => `<div class="lrow${v.unlocked ? "" : " locked"}">
+              <div class="lname">第 ${v.grade} 段 · ${v.name}<span class="tag2">${v.unlocked ? (v.pending ? "预告" : "已会") : `还差 ${v.short} 段`}</span></div>
+              <div class="lmeta">${v.effect}｜开罗：${v.kairo}</div>
+              <div class="lmeta" style="color:#8a7a63">「${v.line}」</div>
+            </div>`,
+          )
+          .join("")}
       </div>`;
 
     // 换区（开罗 Sales Areas 2）：本区客人吃腻、别处越长越旺
@@ -370,6 +390,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ${ups}
       </div>
       ${gradeSec}
+      ${craftSec}
       ${districtSec}`;
   }
 
@@ -541,7 +562,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

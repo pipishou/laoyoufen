@@ -16,6 +16,7 @@
 
 import { DISTRICTS, dailyTrafficOf, districtById, type DistrictId } from "../data/nanning";
 import type { GameState } from "./state";
+import { roadworkBoostOf } from "./unlocks";
 
 /** 待满一个季度，本区掉多少客流 */
 export const HOME_DECAY_PER_QUARTER = 0.09;
@@ -67,7 +68,8 @@ export const DEMAND_TRAFFIC_SCALE = 2.25;
 export function demandCapOf(state: GameState): number {
   const district = state.district || "xingning";
   const base = dailyTrafficOf(district as DistrictId) * DEMAND_TRAFFIC_SCALE;
-  return Math.max(8, Math.round(base * homeEnergyOf(state)));
+  // 巷口灯箱（手艺树 roadwork，第 5 段）：开罗 Road Work 同样是「修路 → 来的人多」
+  return Math.max(8, Math.round(base * homeEnergyOf(state) * roadworkBoostOf(state)));
 }
 
 /** 换区时给玩家看的「池子对比」用：满能量下这个区一天能喂饱多少人 */
