@@ -33,3 +33,6 @@ __pycache__/
 # 部署私钥与本地服务端沙盒
 deploy/ecs_ed25519
 .tmp_srv*
+
+# 试玩报告原始压缩包（含 26 张截图，3MB 二进制；正文已归档为 docs/试玩报告原文-*.md）
+docs/*.zip
