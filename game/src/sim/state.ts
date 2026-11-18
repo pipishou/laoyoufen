@@ -16,7 +16,7 @@ import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
 
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -470,6 +470,10 @@ export interface GameState {
   rivals: RivalState[];
   /** 已经接手下来的铺子（同行 id）：租金打折、那个区池子变大 */
   takenOver: string[];
+  /** 街面（M2）：这条街上修好的公共设施 id（见 `data/streets.ts`） */
+  streets: string[];
+  /** 已经播过台词的街面（一次性，避免每帧刷屏） */
+  streetSeen: string[];
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -665,6 +669,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     branches: [],
     rivals: initRivals(),
     takenOver: [],
+    streets: [],
+    streetSeen: [],
     equipment: {},
     dayReport: null,
     days: [],

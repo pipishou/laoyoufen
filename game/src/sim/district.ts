@@ -18,6 +18,7 @@ import { DISTRICTS, dailyTrafficOf, districtById, type DistrictId } from "../dat
 import type { GameState } from "./state";
 import { roadworkBoostOf } from "./unlocks";
 import { rivalShareOf, takeoverPoolBoostOf } from "./rivals";
+import { streetPoolMult } from "./streets";
 
 /** 待满一个季度，本区掉多少客流 */
 export const HOME_DECAY_PER_QUARTER = 0.09;
@@ -72,7 +73,8 @@ export function demandCapOf(state: GameState): number {
   // 巷口灯箱（手艺树 roadwork，第 5 段）：开罗 Road Work 同样是「修路 → 来的人多」
   // M1 同条街：这条街上的同行也在抢同一批人 —— 他们拿走 share，你能卖的就少这么多。
   // 接过铺子（同行倒闭后你盘下来）会把池子做大一点：你的门面变成了两个入口。
-  const street = (1 - rivalShareOf(state)) * (1 + takeoverPoolBoostOf(state));
+  const street =
+    (1 - rivalShareOf(state)) * (1 + takeoverPoolBoostOf(state)) * streetPoolMult(state);
   return Math.max(
     8,
     Math.round(base * homeEnergyOf(state) * roadworkBoostOf(state) * street),

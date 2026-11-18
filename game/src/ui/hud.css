@@ -1688,3 +1688,29 @@ button.pill[disabled] {
 .dacts{display:flex;gap:6px;margin-top:2px}
 .dbtn{flex:1;font-size:11px;padding:3px 6px;border:1px solid #d8c9a8;background:#fff;border-radius:4px;cursor:pointer}
 .dbtn.on{border-color:#2f7d4f;color:#2f7d4f;background:#eefaf1}
+
+/* ── M2 街面小地图：16×16 的像素格子，一格一个色块 ── */
+.minimap {
+  display: grid;
+  grid-template-columns: repeat(16, 7px);
+  gap: 1px;
+  padding: 6px;
+  margin: 0 2px 10px;
+  background: #efe3c8;
+  border: 2px solid #d8c9a8;
+  border-radius: 3px;
+  width: max-content;
+  image-rendering: pixelated;
+}
+.minimap i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: #fffdf6;
+}
+.minimap .mc-r { background: #c9b28f; }
+.minimap .mc-s { background: #b5493a; }
+.minimap .mc-v { background: #8a6f52; }
+.minimap .mc-k { background: #2f7d4f; }
+.minimap .mc-t { background: #4a6f8a; }
+.minimap .mc-m { background: #b8912f; }

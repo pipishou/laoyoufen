@@ -61,6 +61,8 @@ export interface Quant {
   rivalShare: number;
   /** 已经服气的同行家数（M1） */
   pacifiedCount: number;
+  /** 街面上修了几件（M2，0–12） */
+  streetCount: number;
 }
 
 export interface PlaytestReport {
@@ -141,6 +143,7 @@ export function quantOf(s: GameState): Quant {
     comboHits: s.tally?.comboHits ?? 0,
     menuCount: (s.menu ?? []).filter((d) => d.on).length,
     deadDishCount: (s.menu ?? []).filter((d) => d.on && (d.sold ?? 0) === 0).length,
+  streetCount: (s.streets ?? []).length,
     rivalShare: rivalShareOf(s),
     pacifiedCount: (s.rivals ?? []).filter((r) => r.pacified).length,
   };
@@ -342,6 +345,19 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `同行抢走 ${(q.rivalShare * 100).toFixed(0)} 个点的客 · 服气 0 家`,
       kairo: "Sales Areas 2「energy and appetite ... decrease」——门前这条街的客流是有限的，同行吃掉的不会回来",
       fix: "赢比赛让最强的同行服气（3 次份额砍半），或者直接搬家到同行少的区；硬扛只会一直少卖那么多",
+    });
+  }
+
+  // ── T13 街面一直没修：这条街只有你的店在，客流全靠路过（M2）──
+  if (q.months >= 12 && q.streetCount === 0) {
+    out.push({
+      id: "T13",
+      bucket: "design",
+      severity: "medium",
+      title: "三年下来这条街一点没变",
+      evidence: `街面修了 ${q.streetCount}/12 件`,
+      kairo: "Construction「the size of the shop determines ...」——这一带的路、灯、斑马线都是人流的一部分，不修就只有路过的人",
+      fix: "从最便宜的公告栏（¥4,000）开始修：进店率、耐心、排队位都是乘在客流上的，比再买一件设备划算",
     });
   }
 

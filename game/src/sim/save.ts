@@ -4,6 +4,7 @@ import { NOODLE_BY_ID, START_NOODLE } from "../data/noodles";
 import { DEFAULT_PORTION, MAIN_BY_ID, START_MAIN, type MainId } from "../data/mains";
 import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
 import { initRivals } from "./rivals";
+import { STREET_BY_ID } from "../data/streets";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -95,6 +96,7 @@ function isGameState(v: unknown): v is GameState {
   if (
     v.saveVersion !== SAVE_VERSION &&
     v.saveVersion !== 18 &&
+    v.saveVersion !== 19 &&
     v.saveVersion !== 17 &&
     v.saveVersion !== 16 &&
     v.saveVersion !== 15 &&
@@ -381,6 +383,16 @@ export function deserialize(raw: string): GameState | null {
   }
   const to = (parsed as { takenOver?: unknown }).takenOver;
   if (!Array.isArray(to)) parsed.takenOver = [];
+  // v19 → v20（M2 街面）：老档街上什么都没修。
+  // 只认数据表里存在的 id，坏值直接丢掉，免得面板渲染出一行空条目。
+  const st = (parsed as { streets?: unknown }).streets;
+  parsed.streets = Array.isArray(st)
+    ? st.filter((x): x is string => typeof x === "string" && STREET_BY_ID.has(x))
+    : [];
+  const seen = (parsed as { streetSeen?: unknown }).streetSeen;
+  parsed.streetSeen = Array.isArray(seen)
+    ? seen.filter((x): x is string => typeof x === "string")
+    : [];
   if (typeof parsed.flow?.lastStreet !== "string" && parsed.flow) {
     parsed.flow.lastStreet = null;
   }

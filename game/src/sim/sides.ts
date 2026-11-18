@@ -18,6 +18,7 @@ import type { CustomerArchetype } from "../data/customers";
 import type { NoodleId, SeasonId } from "../data/noodles";
 import { currentSeason, noodleKindOf } from "./noodles";
 import { isUnlocked } from "./unlocks";
+import { streetDrinkMult } from "./streets";
 import { nextFloat } from "./rng";
 import type { GameState } from "./state";
 
@@ -166,7 +167,9 @@ export function pickSides(
   if (room < 0.5) return EMPTY;
   const on = activeSides(state);
   if (on.length === 0) return EMPTY;
-  if (nextFloat(state.rng) >= sideChanceOf(sat)) return EMPTY;
+  // 街面（M2）凉茶铺：门口就有一杯凉的，加购概率跟着涨（上限仍受 sideChanceOf 约束）
+  const chance = Math.min(0.85, sideChanceOf(sat) * streetDrinkMult(state));
+  if (nextFloat(state.rng) >= chance) return EMPTY;
 
   const toppings = on.filter((d) => d.kind === "topping").sort((a, b) => a.priceYuan - b.priceYuan);
   const drinks = on.filter((d) => d.kind === "drink").sort((a, b) => a.priceYuan - b.priceYuan);

@@ -1,6 +1,7 @@
 import { FLOW } from "../data/balance";
 import { UNLOCKS, UNLOCK_BY_ID, type UnlockDef } from "../data/unlocks";
 import type { GameState } from "./state";
+import { streetQueuePlus } from "./streets";
 
 /** 当前段位（0 = 还没评过段） */
 export function gradeOf(state: GameState): number {
@@ -41,7 +42,8 @@ export function queueMaxOf(state: GameState): number {
   let q = FLOW.queueMax;
   if (isUnlocked(state, "queue2")) q += 2;
   if (isUnlocked(state, "queue4")) q += 4;
-  return q;
+  // 街面（M2）榕树石凳：门口有地方坐，等的人自然多两个
+  return q + streetQueuePlus(state);
 }
 
 // ── 生效点 2：巷口灯箱（开罗 Road Work）——乘在本区客流池上

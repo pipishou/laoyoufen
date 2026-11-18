@@ -8,6 +8,7 @@ import { buyExpansion, nextExpansion } from "./expansion";
 import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
 import { takeOverShop } from "./rivals";
+import { buyStreet, streetViews } from "./streets";
 import { RIVAL_BY_ID } from "../data/rivals";
 import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
@@ -331,6 +332,18 @@ function play(seed: number): GameState {
             const br = openBranch(s, spot.id, best.def.id);
             if (br.ok) branchNote = ` · 开分店 ${spot.name}·${best.def.name}（¥${best.def.openFeeYuan.toLocaleString("zh-CN")}）`;
           }
+        }
+      }
+
+      // 街面（M2）放最后：钱先给分店（那是营收出口），剩下的才修街。
+      // 顺序反了会抢分店的启动金 —— 种子 1 试过，月均从 ¥69,553 掉到 ¥46,251。
+      {
+        const todo = streetViews(s)
+          .filter((v) => !v.built && s.cash >= v.def.costYuan + 12_000)
+          .sort((a, b) => a.def.costYuan - b.def.costYuan)[0];
+        if (todo) {
+          const r = buyStreet(s, todo.def.id);
+          if (r.ok) log.push(`  ↳ 修街面：${todo.def.name}（¥${todo.def.costYuan.toLocaleString("zh-CN")}）`);
         }
       }
 

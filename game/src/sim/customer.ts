@@ -19,6 +19,7 @@ import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
 import { costFactorOfKind, seasonBonusOfKind, serveFactorOfKind } from "./noodles";
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
+import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
@@ -185,6 +186,8 @@ function spawnChance(state: GameState): number {
     scoreFactor *
     tasteFactor *
     shopAttractMultiplier(state) *
+    // 街面（M2）：路灯/广告牌/公告栏，以及只在某一段生效的斑马线、球场、棋牌室
+    streetAttractMult(state) *
     popularityMultiplier(state) *
     // 区能量（开罗 Sales Areas 2：本区吃腻、别区长肉）
     districtEnergy(state) *
@@ -239,7 +242,11 @@ function arriveOne(state: GameState): void {
   }
   const regular = regularId !== null;
   const patienceScale =
-    patienceMultiplier(state) * shopPatienceMultiplier(state) * (regular ? 1.6 : 1) * FLOW.patienceScale;
+    patienceMultiplier(state) *
+    shopPatienceMultiplier(state) *
+    streetPatienceMult(state) *
+    (regular ? 1.6 : 1) *
+    FLOW.patienceScale;
   flow.customers.push({
     id: flow.nextId++,
     archetypeId: arch.id,
@@ -388,7 +395,8 @@ function settle(state: GameState, c: QueueCustomer): void {
   // 命中喜好 → 记进常客档案（开罗 AddRegularCount）；「问出口味」在顾客还在店里时由 surveyTick 完成
   recordVisit(state, c.archetypeId, sat, item.recipe.toppings, likeHits.length > 0);
   // 熟客回礼（开罗 gift_ / GetGiftRatio）：喂对味累计到档位才给，不进货架、不冲营业额
-  const gift = collectGift(state, c.archetypeId);
+  // 街面（M2）充电桩：骑手愿意多停一会，回礼更常来（乘数只放大金额，不改触发频率）
+  const gift = Math.round(collectGift(state, c.archetypeId) * streetGiftMult(state));
   if (gift > 0) {
     state.cash += gift;
     state.flow.lastGift = `${arch?.name ?? "熟客"}回礼：+${gift} 元`;

@@ -24,6 +24,7 @@ import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
+import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { devNote } from "./dev";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
@@ -115,6 +116,7 @@ export interface PanelActions {
   /** 关掉一家分店（退半个月租） */
   closeBranch(id: string): void;
   takeOver(id: string): void;
+  buyStreet(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -332,7 +334,10 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       case "openbranch":
         actions.openBranch(id, branchPick);
         break;
-      case "takeover":
+      case "buystreet":
+      actions.buyStreet(id);
+      break;
+    case "takeover":
       actions.takeOver(id);
       break;
     case "closebranch":
@@ -579,6 +584,34 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="lmeta"><b>你在这条街的口碑 ${standing}</b>（跟这条街最强的同行比：越高越是你说了算）</div>
         ${streetRows || `<div class="empty2">这条街就你一家。</div>`}
       </div>`;
+    // 街面（M2）：这条街上属于大家的东西，你出钱修，客人顺着这些路走进来
+    const bViews = streetViews(s);
+    const bNext = nextRequest(s);
+    const grid = streetMap(s);
+    const miniTiles = grid
+      .flat()
+      .map((c) => `<i class="mc-${c === "." ? "e" : c}"></i>`)
+      .join("");
+    const blockRows = bViews
+      .map(
+        (v) => `<div class="lrow${v.built ? " locked" : ""}">
+          <div class="lname">${v.def.name}<span class="tag2">${v.scope}</span>${v.built ? '<span class="tag2">已修</span>' : ""}</div>
+          <div class="lmeta">${v.def.effect}${v.built ? "" : ` · ¥${v.def.costYuan.toLocaleString("zh-CN")}`}</div>
+          ${
+            v.built
+              ? ""
+              : `<div class="lbtns"><button type="button" data-act="buystreet" data-id="${v.def.id}" ${v.affordable ? "" : "disabled"}>${v.affordable ? `修 ${money(v.def.costYuan)}` : "钱不够"}</button></div>`
+          }
+        </div>`,
+      )
+      .join("");
+    const blockSec = `<div class="sec">
+        <div class="sechd">街面 · ${blockSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">这条街不只有店：路灯、雨棚、斑马线修好了，别人才愿意走过来。修好了就一直是你这条街的。</div>
+        <div class="minimap" title="本区俯视：红点是你，棕点是同行，绿点是修好的街面">${miniTiles}</div>
+        ${bNext ? `<div class="lmeta" style="padding:6px 2px 8px">街坊来提：「${bNext.request}」</div>` : `<div class="lmeta" style="padding:6px 2px 8px">这条街该有的都修齐了。</div>`}
+        ${blockRows}
+      </div>`;
     const branchSec = `<div class="sec">
         <div class="sechd">分店 · 已开 ${bv.length}/${MAX_BRANCHES}${bv.length ? ` · ${branchSummary(s)}` : ""}</div>
         <div class="lmeta" style="padding:0 2px 8px">主店评到第 8 段就能在别处再开一家（标准店第 9 段、大店第 10 段、旗舰第 11 段）。分店自己养口碑：开张时只有 45%，每天涨 3%，大约 18 天熟。同一个区连开几家要分客流，池子小的区开不了。</div>
@@ -631,6 +664,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       ${gradeSec}
       ${craftSec}
       ${streetSec}
+      ${blockSec}
       ${branchSec}
       ${districtSec}
       <div class="sechd">换一局</div>
@@ -952,7 +986,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

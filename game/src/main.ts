@@ -12,6 +12,7 @@ import { closeBranch, openBranch } from "./sim/branches";
 import { branchSizeById } from "./data/branches";
 import { districtNameOf } from "./data/nanning";
 import { takeOverShop } from "./sim/rivals";
+import { buyStreet } from "./sim/streets";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
@@ -333,6 +334,16 @@ panels = mountPanels(hudRoot, {
     localStorage.removeItem(SAVE_STORAGE_KEY);
     localStorage.removeItem("laoyou.guide.v2");
     location.reload();
+  },
+  buyStreet(id) {
+    const r = buyStreet(state, String(id));
+    if (r.ok) {
+      playSfx("upgrade");
+      hud.showToast(r.line ?? "修好了", "like");
+    } else if (r.reason) {
+      hud.showToast(r.reason, "info");
+    }
+    refresh();
   },
   takeOver(id) {
     const r = takeOverShop(state, String(id));
