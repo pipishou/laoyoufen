@@ -1761,3 +1761,13 @@ button.pill[disabled] {
 .smlegend .smk.sm-wall { background: #4a6f8a; }
 .smlegend .smk.sm-counter { background: #2f7d4f; }
 .smlegend .smk.sm-decor { background: #8a6f52; }
+
+/* 同行传闻（落点②）：一行小字，本地有兜底，配了代理会换成在线版 */
+.lmeta.rumour {
+  color: #7a6a55;
+  font-size: 12px;
+  opacity: .9;
+  border-left: 2px solid #d8c9a8;
+  padding-left: 6px;
+  margin-top: 2px;
+}

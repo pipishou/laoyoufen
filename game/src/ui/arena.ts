@@ -7,6 +7,7 @@
  *
  * 组件只做三件事：把 state.arena 画出来、把点击/键盘转成 arenaStrike、每帧调 arenaAdvance。
  */
+import { getLine, localLine } from "../ai/lines";
 import {
   ARENA_SECONDS,
   COMMANDS,
@@ -64,6 +65,7 @@ export function mountArena(root: HTMLElement, opts: ArenaUiOptions): ArenaUi {
         <span class="arunner me" data-arunnerme>我</span>
         <span class="arunner rival" data-arunnerrival>对</span>
       </div>
+      <div class="acall" data-acall></div>
       <div class="alog" data-alog></div>
       <div class="acmds" data-acmds></div>
       <div class="afoot">
@@ -87,6 +89,7 @@ export function mountArena(root: HTMLElement, opts: ArenaUiOptions): ArenaUi {
     runnerMe: q<HTMLElement>("[data-arunnerme]"),
     runnerRival: q<HTMLElement>("[data-arunnerrival]"),
     log: q<HTMLElement>("[data-alog]"),
+    call: q<HTMLElement>("[data-acall]"),
     cmds: q<HTMLElement>("[data-acmds]"),
     result: q<HTMLElement>("[data-aresult]"),
   };
@@ -167,6 +170,17 @@ export function mountArena(root: HTMLElement, opts: ArenaUiOptions): ArenaUi {
     el.runnerRival.style.transform = `translateX(${Math.min(1, run.rival / top) * span}px)`;
 
     el.log.innerHTML = run.log.slice(-4).map((line) => `<div>${esc(line)}</div>`).join("");
+    // 落点④：场边那一声喊。key 按「场地+第几条」固定，开局前就预取好了，
+    // 局内只读缓存，绝不在 rAF 里等网络；没预取到就用本地句。
+    const callIdx = (run.hits + run.burstsDone) % 3;
+    const callAsk = {
+      kind: "arena_call" as const,
+      key: `${run.arena}:${callIdx}`,
+      context: { 场: def ? def.name : "落场" },
+      month: s.month,
+      day: s.day,
+    };
+    el.call.textContent = getLine(callAsk, localLine(callAsk));
     for (const c of COMMANDS) {
       const cd = run.cds[c.id] ?? 0;
       const btn = el.cmds.querySelector<HTMLButtonElement>(`[data-id="${c.id}"]`);

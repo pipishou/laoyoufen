@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { fetchEventNarrative, localNarrative, localReaction } from "./ai/director";
+import { fetchLine, type LineAsk } from "./ai/lines";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
 import { playSfx } from "./audio/sfx";
@@ -12,7 +13,8 @@ import { closeBranch, openBranch } from "./sim/branches";
 import { branchSizeById } from "./data/branches";
 import { districtNameOf } from "./data/nanning";
 import { takeOverShop } from "./sim/rivals";
-import { buyStreet } from "./sim/streets";
+import { RIVAL_BY_ID } from "./data/rivals";
+import { buyStreet, nextRequest } from "./sim/streets";
 import { buyGear } from "./sim/gear";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
@@ -47,7 +49,7 @@ import { ackDayReport, createInitialState, openShop, tickMinute, type GameState 
 import { openForBusiness } from "./sim/setup";
 import { mountSetup, type SetupScreen } from "./ui/setup";
 import { mountArena, type ArenaUi } from "./ui/arena";
-import { COMMAND_BY_ID, COMMAND_KEY_MAP } from "./data/arena";
+import { COMMAND_BY_ID, COMMAND_KEY_MAP, arenaById } from "./data/arena";
 import { startArena } from "./sim/arena";
 import { mountHud } from "./ui/hud";
 import { mountPanels, type Panels, type PanelTab } from "./ui/panels";
@@ -297,6 +299,16 @@ panels = mountPanels(hudRoot, {
       const got = addFavorFree(state, r.favor ?? 0, `「${name}」转手了`);
       hud.showToast(`把「${name}」转手，换来 ${got} 点人情`, "like");
       playSfx("upgrade");
+      // 落点③：收配方那人说一句。异步补一条 toast，不挡手的动作；拿不到就只留上面那句
+      void fetchLine({
+        kind: "recipe_buyer",
+        key: item ? `${item.noodle}-${item.main}` : "unknown",
+        context: { 粉: name, 街: districtNameOf(state.district) },
+        month: state.month,
+        day: state.day,
+      }).then((line) => {
+        if (line) hud.showToast(`收配方的人说：「${line}」`, "info");
+      });
     }
     refresh();
   },
@@ -391,6 +403,17 @@ panels = mountPanels(hudRoot, {
     } else {
       lastArenaId = String(id);
       playSfx("upgrade");
+      // 落点④：局内的三声喊，开局前一次性预取。局里只读缓存，绝不卡帧
+      const arenaDef = arenaById(String(id));
+      for (let i = 0; i < 3; i++) {
+        void fetchLine({
+          kind: "arena_call",
+          key: `${String(id)}:${i}`,
+          context: { 场: arenaDef ? arenaDef.name : "落场" },
+          month: state.month,
+          day: state.day,
+        });
+      }
     }
     refresh();
   },
@@ -606,8 +629,49 @@ function onMinute(): void {
   // 飞轮自动运转：不再依赖玩家按 Shift+E / Shift+U。
   // 每分钟问一次，节流在 uploadPlaytest 内部（≥10 分钟才传、间隔≥2 分钟、每推进 15 分钟补一次）。
   void uploadPlaytest();
+  void prefetchLines();
   refresh();
   tickFeedback();
+}
+
+/**
+ * AI 文案预取（落点 ①②）：每天最多问一次代理，回来就 refresh 换字。
+ *
+ * 只预取「会被看到的那几条」：街坊今天提的那件事 + 本区抢得最凶的两家同行传闻。
+ * 拿不到就一直是本地句，界面上不留痕迹；也绝不因为等文案而卡钟。
+ */
+let lastLineDay = -1;
+async function prefetchLines(): Promise<void> {
+  const dayKey = state.month * 100 + state.day;
+  if (dayKey === lastLineDay) return;
+  lastLineDay = dayKey;
+
+  const req = nextRequest(state);
+  const mine = state.district || "xingning";
+  const hot = (state.rivals ?? [])
+    .filter((r) => !r.closed && RIVAL_BY_ID.get(r.id)?.district === mine)
+    .slice(0, 2);
+
+  const asks: LineAsk[] = [];
+  if (req) {
+    asks.push({ kind: "street_request", key: req.id, context: { 街: req.name }, month: state.month, day: state.day });
+  }
+  for (const r of hot) {
+    const def = RIVAL_BY_ID.get(r.id);
+    if (!def) continue;
+    asks.push({ kind: "rival_rumor", key: def.id, context: { 店: def.name }, month: state.month, day: state.day });
+  }
+  if (asks.length === 0) return;
+
+  let got = false;
+  await Promise.all(
+    asks.map((ask) =>
+      fetchLine(ask).then((line) => {
+        if (line) got = true;
+      }),
+    ),
+  );
+  if (got) refresh();
 }
 
 refresh();
@@ -671,6 +735,8 @@ declare global {
       flush: typeof flushTelemetry;
       pending: typeof uploadPending;
       device: typeof deviceId;
+      refresh: () => void;
+      prefetch: () => Promise<void>;
     };
   }
 }
@@ -686,6 +752,8 @@ window.__laoyou = {
   flush: flushTelemetry,
   pending: uploadPending,
   device: deviceId,
+  refresh: () => refresh(),
+  prefetch: () => prefetchLines(),
 };
 
 new Phaser.Game(createGameConfig(onMinute, () => speed, () => state));

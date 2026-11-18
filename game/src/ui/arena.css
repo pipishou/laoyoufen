@@ -305,3 +305,18 @@
     height: 96px;
   }
 }
+
+/* 落点④：场边那一声喊（AI 文案位，没网时是本地句） */
+.acall {
+  margin: 2px 0 6px;
+  padding: 2px 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b4a2f;
+  text-align: center;
+  letter-spacing: 1px;
+  min-height: 20px;
+}
+.acall::before { content: "「"; opacity: .55; }
+.acall::after { content: "」"; opacity: .55; }
+.acall:empty { display: none; }

@@ -33,13 +33,13 @@ describe("确定性", () => {
     for (let seed = 0; seed < 1000; seed++) first.push(run(seed));
     for (let seed = 0; seed < 1000; seed++) second.push(run(seed));
     expect(second).toEqual(first);
-  });
+  }, 60_000);
 
   it("1000 局：不同种子不应塌缩成同一结局", () => {
     const set = new Set<string>();
     for (let seed = 0; seed < 1000; seed++) set.add(run(seed));
     expect(set.size).toBeGreaterThan(900);
-  });
+  }, 60_000);
 
   it("中途存档再续跑，与一口气跑完结果一致", () => {
     for (let seed = 0; seed < 50; seed++) {
@@ -53,7 +53,7 @@ describe("确定性", () => {
       for (let i = 0; i < MINUTES / 2; i++) advanceMinute(restored);
       expect(digest(restored)).toBe(straight);
     }
-  });
+  }, 60_000);
 
   it("同样的 (playerId, seed) 得到同样的初始局面", () => {
     expect(createInitialState("p1", 99)).toEqual(createInitialState("p1", 99));

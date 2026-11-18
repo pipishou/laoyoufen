@@ -30,6 +30,7 @@ import { gearSummary, gearViews } from "../sim/gear";
 import { GEAR_SPOT_LABEL, shopGrid } from "../data/gear";
 import { favorSummary, favorViews } from "../sim/favor";
 import { devNote } from "./dev";
+import { getLine, remoteLineCount } from "../ai/lines";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -593,9 +594,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           : v.takeoverReason
             ? `<div class="lbtns"><button type="button" disabled>${v.takeoverReason}</button></div>`
             : "";
+        const rumour = getLine(
+          { kind: "rival_rumor", key: v.def.id, context: { 店: v.def.name, 档: v.tierWord }, month: s.month, day: s.day },
+          state2.lastLine,
+        );
         return `<div class="lrow">
           <div class="lname">${v.def.name}${tags}</div>
           <div class="lmeta">${meta}</div>
+          ${rumour ? `<div class="lmeta rumour">街坊说：${rumour}</div>` : ""}
           ${btn}
         </div>`;
       })
@@ -609,6 +615,11 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     // 街面（M2）：这条街上属于大家的东西，你出钱修，客人顺着这些路走进来
     const bViews = streetViews(s);
     const bNext = nextRequest(s);
+    // 街坊提的事：本地有兜底句，配了代理时由 main.ts 预取换成在线版（只换文字，不动机制）
+    const bAsk = bNext
+      ? { kind: "street_request" as const, key: bNext.id, context: { 街: bNext.name }, month: s.month, day: s.day }
+      : null;
+    const bLine = bNext ? getLine(bAsk!, bNext.request) : "";
     const grid = streetMap(s);
     const miniTiles = grid
       .flat()
@@ -631,7 +642,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd">街面 · ${blockSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">这条街不只有店：路灯、雨棚、斑马线修好了，别人才愿意走过来。修好了就一直是你这条街的。</div>
         <div class="minimap" title="本区俯视：红点是你，棕点是同行，绿点是修好的街面">${miniTiles}</div>
-        ${bNext ? `<div class="lmeta" style="padding:6px 2px 8px">街坊来提：「${bNext.request}」</div>` : `<div class="lmeta" style="padding:6px 2px 8px">这条街该有的都修齐了。</div>`}
+        ${bNext ? `<div class="lmeta" style="padding:6px 2px 8px">街坊来提：「${bLine}」</div>` : `<div class="lmeta" style="padding:6px 2px 8px">这条街该有的都修齐了。</div>`}
         ${blockRows}
       </div>`;
     const branchSec = `<div class="sec">
@@ -1078,7 +1089,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

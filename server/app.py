@@ -244,6 +244,85 @@ def deepseek_narrative(event_id: str, month: int, day: int, tone: str) -> dict |
     return {"body": line, "reactions": [], "source": "remote"}
 
 
+# ───────────────────────── /line：四个落点共用的一句话通道 ─────────────────────────
+#
+# 与 /event 的区别：/event 讲一件「已经选好的事」，/line 讲一句「场面上的话」。
+# 四个落点（前端 ai/lines.ts 同名）：街区请求 / 同行传闻 / 转手买家 / 落场喊话。
+# 同样只出文字、同样带缓存、同样有本地兜底（兜底在前端，这里返回空串即可）。
+
+LINE_SCENES = {
+    "street_request": "街坊来提一件街上的事：想凑钱修个东西，说说为什么非它不可。",
+    "rival_rumor": "街上传的一句闲话，说的是同一条街上另一家粉店最近怎么样。",
+    "recipe_buyer": "有人花钱买下你手里一份多余的配方，接过方子时他开口说了句。",
+    "arena_call": "落场上，冲自家摊位喊的一声。要短、有火气、像在灶边吼出来的。",
+}
+
+LINE_RULES = (
+    "要求：只输出这一句（二十到四十个汉字；arena_call 可以短到十个字以内），"
+    "南宁街坊口吻，具体、有画面、有锅气；不煽情、不说教、不加引号、不加解释。"
+    "**绝对不要出现任何阿拉伯数字、金额、百分比、名次**（硬性红线）。"
+    "不要提游戏机制词（菜单、段位、口碑、人气、份额、评分、数值、版本）。"
+)
+
+MECH_WORD = re.compile(r"菜单|段位|口碑|人气|份额|评分|数值|版本|AI|系统")
+
+
+def sanitize_voice(text: str, max_len: int = 160) -> str | None:
+    """一句话通道的红线：不含阿拉伯数字、不提机制词、不空、不超长。"""
+    line = sanitize_line(text, max_len)
+    if not line:
+        return None
+    if MECH_WORD.search(line):
+        return None
+    return line
+
+
+def deepseek_line(kind: str, key: str, context: dict[str, str], month: int, day: int) -> dict | None:
+    if CFG.offline_only or not CFG.ai_key:
+        return None
+    scene = LINE_SCENES.get(kind)
+    if not scene:
+        return None
+    ctx = "；".join(f"{k}={v}" for k, v in list(context.items())[:4] if v)
+    prompt = (
+        "你在为一款广西老友粉老店的经营游戏写街坊台词。\n"
+        f"场景：{scene}\n"
+        f"对象：{key}\n"
+        + (f"细节：{ctx}\n" if ctx else "")
+        + f"这是第 {month} 月第 {day} 天。\n"
+        + LINE_RULES
+    )
+    req = {
+        "model": CFG.ai_model,
+        "messages": [
+            {"role": "system", "content": "你是本地游戏台词写手，只输出一句台词，不加标题与引号。"},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.95,
+        "max_tokens": 180,
+    }
+    data = json.dumps(req).encode()
+    r = urllib.request.Request(
+        "https://api.deepseek.com/chat/completions",
+        data=data,
+        headers={"content-type": "application/json", "authorization": f"Bearer {CFG.ai_key}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(r, timeout=12) as resp:
+            payload = json.loads(resp.read().decode())
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+        return None
+    try:
+        text = payload["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return None
+    line = sanitize_voice(text)
+    if not line:
+        return None
+    return {"body": line, "source": "remote"}
+
+
 def digest_markdown(report: dict, reasons: list[dict]) -> str:
     """把 /report 的聚合结果写成人能读的一页日报（给定时任务用，也可 GET /digest 看）。"""
     stamp = now_iso()
@@ -400,6 +479,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/event") or path == "/event":
             self._handle_event(payload)
             return
+        if path.endswith("/line") or path == "/line":
+            self._handle_line(payload)
+            return
         self._send(404, {"ok": False, "error": "not_found"})
 
     # ---------- 业务 ----------
@@ -460,6 +542,37 @@ class Handler(BaseHTTPRequestHandler):
         out = deepseek_narrative(event_id, month, day, tone) or local_narrative(event_id, month, day)
         if out.get("source") == "remote":
             jsonl_append(CFG.cache_file, {"key": key, "payload": out, "ts": now_iso()})
+        self._send(200, out)
+
+    def _handle_line(self, payload: dict) -> None:
+        """一句话通道：kind + key + 上下文（只有名词）+ 日期，缓存键含 kind。"""
+        if not isinstance(payload, dict):
+            self._send(400, {"ok": False, "error": "not_object"})
+            return
+        kind = str(payload.get("kind") or "")
+        key = str(payload.get("key") or "")[:48]
+        if kind not in LINE_SCENES or not key:
+            self._send(400, {"ok": False, "error": "bad_kind_or_key"})
+            return
+        try:
+            month = int(payload.get("month") or 0)
+            day = int(payload.get("day") or 0)
+        except (TypeError, ValueError):
+            month, day = 0, 0
+        raw_ctx = payload.get("context")
+        ctx: dict[str, str] = {}
+        if isinstance(raw_ctx, dict):
+            for k, v in list(raw_ctx.items())[:6]:
+                if isinstance(k, str) and isinstance(v, str) and v.strip():
+                    ctx[k.strip()[:12]] = v.strip()[:24]
+        cache_key = f"line:{kind}:{key}:{month}:{day}"
+        cached = cache_lookup(cache_key)
+        if cached:
+            self._send(200, cached)
+            return
+        out = deepseek_line(kind, key, ctx, month, day) or {"body": "", "source": "local"}
+        if out.get("source") == "remote":
+            jsonl_append(CFG.cache_file, {"key": cache_key, "payload": out, "ts": now_iso()})
         self._send(200, out)
 
     def _daily_reasons(self) -> list[dict]:

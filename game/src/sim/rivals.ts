@@ -228,7 +228,15 @@ export function rivalMonthTick(state: GameState): { closed: string[]; lines: str
       continue;
     }
 
-    const line = def.lines[Math.floor(Math.random() * def.lines.length)] ?? def.lines[0] ?? "";
+    // 台词按「月:日:店」哈希选，不用 Math.random —— 同一局存档读回来得是同一句，
+    // 而且不消耗 state.rng（否则台词会把整条经济链的随机数拨歪）
+    const seed = `${state.month}:${state.day}:${def.id}`;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    const line = def.lines[h % def.lines.length] ?? def.lines[0] ?? "";
     rs.lastLine = line;
     if (here) lines.push(line);
   }
