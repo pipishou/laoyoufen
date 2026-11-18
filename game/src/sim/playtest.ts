@@ -63,6 +63,8 @@ export interface Quant {
   pacifiedCount: number;
   /** 街面上修了几件（M2，0–12） */
   streetCount: number;
+  /** 买了多少件家当（M3） */
+  gearCount: number;
 }
 
 export interface PlaytestReport {
@@ -144,6 +146,7 @@ export function quantOf(s: GameState): Quant {
     menuCount: (s.menu ?? []).filter((d) => d.on).length,
     deadDishCount: (s.menu ?? []).filter((d) => d.on && (d.sold ?? 0) === 0).length,
   streetCount: (s.streets ?? []).length,
+    gearCount: (s.gear ?? []).length,
     rivalShare: rivalShareOf(s),
     pacifiedCount: (s.rivals ?? []).filter((r) => r.pacified).length,
   };
@@ -358,6 +361,19 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `街面修了 ${q.streetCount}/12 件`,
       kairo: "Construction「the size of the shop determines ...」——这一带的路、灯、斑马线都是人流的一部分，不修就只有路过的人",
       fix: "从最便宜的公告栏（¥4,000）开始修：进店率、耐心、排队位都是乘在客流上的，比再买一件设备划算",
+    });
+  }
+
+  // ── T14 三年一件家当没买：几十块的东西都不买，说明玩家没看到这一层（M3）──
+  if (q.months >= 12 && q.gearCount === 0) {
+    out.push({
+      id: "T14",
+      bucket: "design",
+      severity: "medium",
+      title: "三年下来店里还是那几件旧家当",
+      evidence: `家当买了 ${q.gearCount}/12 件`,
+      kairo: "storeequip 后 12 件设施（Faucet / Cutting Board / Fan / Refrigerator）——单件都很小，叠起来才是「店越开越顺手」",
+      fix: "从塑料矮凳（¥100）和壁扇（¥500）开始：出碗、料钱、疲劳、满意各有一件便宜的入口，比攒钱等扩建划算",
     });
   }
 

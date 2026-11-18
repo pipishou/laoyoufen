@@ -5,6 +5,7 @@ import { DEFAULT_PORTION, MAIN_BY_ID, START_MAIN, type MainId } from "../data/ma
 import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
 import { initRivals } from "./rivals";
 import { STREET_BY_ID } from "../data/streets";
+import { GEAR_BY_ID } from "../data/gear";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -97,6 +98,7 @@ function isGameState(v: unknown): v is GameState {
     v.saveVersion !== SAVE_VERSION &&
     v.saveVersion !== 18 &&
     v.saveVersion !== 19 &&
+    v.saveVersion !== 20 &&
     v.saveVersion !== 17 &&
     v.saveVersion !== 16 &&
     v.saveVersion !== 15 &&
@@ -388,6 +390,11 @@ export function deserialize(raw: string): GameState | null {
   const st = (parsed as { streets?: unknown }).streets;
   parsed.streets = Array.isArray(st)
     ? st.filter((x): x is string => typeof x === "string" && STREET_BY_ID.has(x))
+    : [];
+  // v20 → v21（M3 家当）：老档店里还没有这些旧东西。只认表里存在的 id。
+  const gs = (parsed as { gear?: unknown }).gear;
+  parsed.gear = Array.isArray(gs)
+    ? gs.filter((x): x is string => typeof x === "string" && GEAR_BY_ID.has(x))
     : [];
   const seen = (parsed as { streetSeen?: unknown }).streetSeen;
   parsed.streetSeen = Array.isArray(seen)

@@ -9,6 +9,7 @@ import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
 import { takeOverShop } from "./rivals";
 import { buyStreet, streetViews } from "./streets";
+import { buyGear, nextGear } from "./gear";
 import { RIVAL_BY_ID } from "../data/rivals";
 import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
@@ -159,6 +160,7 @@ function play(seed: number): GameState {
   let expands = 0;
   let hires = 0;
   let equips = 0;
+let gears = 0;
   /** 上月试涨价时的价与营收（这月用来判断该不该退） */
   let trialPrice = 0;
   let trialRevenue = 0;
@@ -242,6 +244,13 @@ function play(seed: number): GameState {
             break;
           }
         }
+      }
+
+      // 家当（M3）：一件几十到几千、买了常驻，是这张表里性价比最高的一层。
+      // 替身不买，T14 就永远测不到 —— 新动词必须让量尺会用（P40 的老教训）。
+      const gearPick = nextGear(s);
+      if (gearPick && s.cash >= gearPick.costYuan + 8_000) {
+        if (buyGear(s, gearPick.id).ok) gears += 1;
       }
 
       const exp = nextExpansion(s);
@@ -366,7 +375,7 @@ function play(seed: number): GameState {
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 ===`,
   );
   for (const line of log) console.log(line);
 

@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "name": "before",
+      "cash": 50000,
+      "seats": 4,
+      "gear": []
+    },
+    {
+      "name": "gear",
+      "header": "家当 · 店里还都是最基础的家当",
+      "rows": 12,
+      "buttons": 12,
+      "names": [
+        "塑料矮凳¥100",
+        "壁扇¥500",
+        "巷口洗碗池¥800"
+      ],
+      "hasKairoName": false
+    },
+    {
+      "name": "after_stool",
+      "cash": 49900,
+      "seats": 5,
+      "gear": [
+        "plastic_stool"
+      ],
+      "header": "家当 · 1/12 件 · 花了 ¥100",
+      "stillBuyable": 0,
+      "boughtRows": 1
+    },
+    {
+      "name": "after_freezer",
+      "cash": 46300,
+      "gear": [
+        "plastic_stool",
+        "freezer"
+      ]
+    }
+  ],
+  "console_errors": []
+}

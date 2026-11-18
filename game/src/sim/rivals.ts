@@ -24,6 +24,7 @@ import {
   type RivalDef,
 } from "../data/rivals";
 import type { GameState } from "./state";
+import { gearRivalShield } from "./gear";
 
 export interface RivalState {
   id: string;
@@ -73,7 +74,8 @@ export function rivalShareOf(state: GameState): number {
     if (!def || def.district !== district) continue;
     sum += shareOfOne(rs);
   }
-  return Math.min(SHARE_CAP, sum);
+  // 家当（M3）街坊锦旗：街坊认你家，同行抢不走那么多
+  return Math.min(SHARE_CAP, sum) * gearRivalShield(state);
 }
 
 /** 接手过的铺子给的租金折扣（1 = 没接） */

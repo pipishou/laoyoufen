@@ -68,7 +68,7 @@ describe("买街面", () => {
     const before = s.cash;
     const r = buyStreet(s, "banyan_bench");
     expect(r.ok).toBe(true);
-    expect(r.line).toContain("榕树石凳");
+    expect(r.line).toContain("青秀山下石凳");
     expect(s.cash).toBe(before - 8_000);
     expect(hasStreet(s, "banyan_bench")).toBe(true);
     expect(s.streetSeen).toContain("banyan_bench");
@@ -225,7 +225,7 @@ describe("存档", () => {
     const back = deserialize(serialize(s))!;
     expect(back.streets.sort()).toEqual(["banyan_bench", "lane_lamp"]);
     expect(back.streetSeen.length).toBeGreaterThanOrEqual(1);
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
   });
 
   it("v19 老档没有街面 → 补空；坏 id 丢掉", () => {

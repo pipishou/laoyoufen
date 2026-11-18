@@ -25,6 +25,7 @@ import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
+import { gearSummary, gearViews } from "../sim/gear";
 import { devNote } from "./dev";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
@@ -117,6 +118,7 @@ export interface PanelActions {
   closeBranch(id: string): void;
   takeOver(id: string): void;
   buyStreet(id: string): void;
+  buyGear(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -336,6 +338,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "buystreet":
       actions.buyStreet(id);
+      break;
+    case "buygear":
+      actions.buyGear(id);
       break;
     case "takeover":
       actions.takeOver(id);
@@ -637,6 +642,20 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           .join("")}
       </div>`;
 
+    const gv = gearViews(s);
+    const gearRows = gv
+      .map(
+        (v) => `<div class="lrow${v.owned ? " locked" : ""}">
+          <div class="lname">${v.def.name}<span class="tag2">${v.owned ? "已买" : money(v.def.costYuan)}</span></div>
+          <div class="lbtns">${
+            v.owned
+              ? ""
+              : `<button type="button" data-act="buygear" data-id="${v.def.id}" ${v.affordable ? "" : "disabled"}>${v.affordable ? "搬进来" : "钱不够"}</button>`
+          }</div>
+          <div class="lmeta">${v.def.effect}｜${v.def.line}</div>
+        </div>`,
+      )
+      .join("");
     const ups = UPGRADES.map((u) => {      const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
       const maxed = lv >= u.maxLevel;
@@ -655,6 +674,11 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd">设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
         <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">家当 · ${gearSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">店里那些不值钱、但天天用得上的旧东西。一件几十到几千，买一件算一件，效果都是常驻的。</div>
+        ${gearRows}
       </div>
       <div class="sec">
         <div class="sechd">摆件</div>
@@ -986,7 +1010,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

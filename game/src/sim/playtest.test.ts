@@ -34,6 +34,7 @@ function goodState(): GameState {
   s.tally.comboHits = 120;
   // 街面（M2）：三年下来街上总得修点东西，否则 T13 会说「这条街一点没变」
   s.streets = ["lane_lamp", "notice_board", "banyan_bench"];
+  s.gear = ["plastic_stool", "wall_fan", "wash_sink", "freezer"];
   // P47：多款菜单也得真的挂起来，否则 T10 会说「一年下来只有一款」
   s.menu.push({ ...s.menu[0]!, id: 2, main: "beef", price: 12, sold: 420 });
   s.menu[0]!.sold = 900;

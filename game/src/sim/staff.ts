@@ -9,6 +9,7 @@ import {
 } from "../data/staff";
 import { dayIndex } from "./calendar";
 import { equipLevel } from "./equipment";
+import { gearFatigueMult } from "./gear";
 import { shuffled } from "./rng";
 import type { GameState, StaffMember } from "./state";
 
@@ -225,7 +226,11 @@ export function settleStaffDay(state: GameState): number {
       m.fatigue = Math.max(0, m.fatigue - REST_RECOVERY);
       m.resting = false;
     } else {
-      m.fatigue = Math.min(QUIT_FATIGUE + 20, m.fatigue + FATIGUE_PER_DAY[m.role]);
+      // 家当（M3）壁扇：墙上一台老风扇，后厨的人能多撑两个钟
+    m.fatigue = Math.min(
+      QUIT_FATIGUE + 20,
+      m.fatigue + FATIGUE_PER_DAY[m.role] * gearFatigueMult(state),
+    );
     }
   }
   state.cash -= wages;

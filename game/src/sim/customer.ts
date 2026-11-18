@@ -20,6 +20,7 @@ import { costFactorOfKind, seasonBonusOfKind, serveFactorOfKind } from "./noodle
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
+import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
@@ -188,6 +189,8 @@ function spawnChance(state: GameState): number {
     shopAttractMultiplier(state) *
     // 街面（M2）：路灯/广告牌/公告栏，以及只在某一段生效的斑马线、球场、棋牌室
     streetAttractMult(state) *
+    // 家当（M3）：排风扇把香味吹到街上
+    gearAttractMult(state) *
     popularityMultiplier(state) *
     // 区能量（开罗 Sales Areas 2：本区吃腻、别区长肉）
     districtEnergy(state) *
@@ -245,6 +248,7 @@ function arriveOne(state: GameState): void {
     patienceMultiplier(state) *
     shopPatienceMultiplier(state) *
     streetPatienceMult(state) *
+    gearPatienceMult(state) *
     (regular ? 1.6 : 1) *
     FLOW.patienceScale;
   flow.customers.push({
@@ -336,7 +340,11 @@ function settle(state: GameState, c: QueueCustomer): void {
         arch.lineLimit,
         // 热卖时店员起 aura（开罗 Frenzy 2），吃到的人更满意；
         // 当季粉型（夏天干捞、冬天砂锅）+3，反季 −3（P42），按款的粉型算
-        regularBonus + frenzyAura(state) + seasonBonusOfKind(state, item.noodle) + menuBonus,
+        regularBonus +
+      frenzyAura(state) +
+      seasonBonusOfKind(state, item.noodle) +
+      menuBonus +
+      gearSatBonus(state),
       )
     : 50;
 
@@ -368,7 +376,13 @@ function settle(state: GameState, c: QueueCustomer): void {
 
   const paid = bowlPrice + sidePick.paid;
   // 粉型影响一碗的成本：伊面贵、干捞省粉（按款的粉型）
-  const cost = sc.cost * costMultiplier(state) * equipCostMultiplier(state) * costFactorOfKind(item.noodle) + sidePick.cost;
+  const cost =
+    sc.cost *
+      costMultiplier(state) *
+      equipCostMultiplier(state) *
+      costFactorOfKind(item.noodle) *
+      gearCostFactor(state) +
+    sidePick.cost;
   state.cash += paid - cost;
   state.monthRevenue += paid;
   state.flow.revenueToday += paid;
@@ -487,7 +501,9 @@ export function tickCustomers(state: GameState): void {
         equipServeMultiplier(state) *
         noodleFactor *
         // 三两的锅更满，一锅少下几碗（P46）
-        portionOf(state.portion).serveFactor;
+        portionOf(state.portion).serveFactor *
+        // 家当（M3）巷口洗碗池：碗当场冲，不用堆到收摊
+        gearServeFactor(state);
     }
   }
 
