@@ -200,8 +200,35 @@ function spawnChance(state: GameState): number {
     districtEnergy(state) *
     // 热卖（开罗 Ramen Frenzy 2：一旦热卖，很多人会来）
     frenzySpawnBoost(state) *
-    FLOW.spawnScale
+    FLOW.spawnScale *
+    // 开局分流（P67）：前七天别把产能压垮
+    spawnScaleByDay(state)
   );
+}
+
+/**
+ * 开局客流分档（P67 / 账本行 50 的方案 A）。
+ *
+ * 现实里巷口新开的小店，头几天是「街坊来试一口」，不是「半条街的人都来」。
+ * 我们原来的配平是首日到店 146 人、产能约 70 碗 —— **一半客人从门口走掉**，
+ * 玩家的第一课变成「我做不好」。试玩报告里两个真人都是这么停的。
+ *
+ * 只压进店频率，不动产能、耐心、钱包：修的是配平，不是难度。
+ *
+ * **分档是量出来的，不是拍的**（`src/sim/start.probe.ts` + `probe:standin` 对照）：
+ * - 「前 3 天 ×0.55」：首日漂亮，但替身种子 1 的月均从 ¥78,485 掉到 **¥62,385**、
+ *   热卖从 138 次掉到 **12 次** —— 开局少的那点现金流掐断了热卖正反馈，36 个月都追不回来。
+ * - 「只压首日 ×0.55、第 2–7 天 ×0.85」：首日流失 24%（判据 ≤40%），
+ *   替身 ¥69,992 / 热卖 151 次 / 成长 ×3.03 / T3 8 月，**没有退化**。
+ *
+ * 结论：**只压第 1 天**。玩家第一次开门是「街坊来试」，第 2 天街坊会带人来 ——
+ * 那天开始该让他练习「接不住」这件事，正是买矮凳、扩门面的动力。
+ */
+export function spawnScaleByDay(state: GameState): number {
+  if (state.month !== 0) return 1;
+  if (state.day <= 1) return 0.55;
+  if (state.day <= 7) return 0.85;
+  return 1;
 }
 
 /**

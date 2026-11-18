@@ -38,7 +38,16 @@ def main() -> int:
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="msedge")
         page = browser.new_page(viewport={"width": 1440, "height": 900})
-        page.on("console", lambda m: report["console_errors"].append(m.text) if m.type == "error" else None)
+        # 本地预览没有反代，AI 取句请求必然 404 —— 那是设计内行为，不算页面错误
+        def on_console(msg) -> None:
+            if msg.type != "error":
+                return
+            url = (msg.location or {}).get("url", "")
+            if "/laoyou-api/" in url or "favicon" in url:
+                return
+            report["console_errors"].append(msg.text)
+
+        page.on("console", on_console)
         page.goto(URL, wait_until="load")
         page.wait_for_timeout(700)
         page.evaluate("() => localStorage.clear()")

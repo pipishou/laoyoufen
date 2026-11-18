@@ -6,6 +6,7 @@ import { LIKES_TOTAL } from "../sim/collection";
 import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
 import { queueMaxOf } from "../sim/unlocks";
 import { favorOf } from "../sim/favor";
+import { nextHookOf } from "../sim/hook";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
@@ -48,18 +49,6 @@ const MENU_ITEMS = [
 ] as const;
 
 const SPEEDS = [1, 4, 8, 16] as const;
-
-const ICONS: Record<string, string> = {
-  book: '<rect x="3" y="2" width="10" height="12" fill="#fdf6e3" stroke="#3b2b1d" stroke-width="1"/><rect x="6" y="1" width="4" height="2" fill="#8a5a3b"/><g fill="#3b2b1d"><rect x="5" y="5" width="6" height="1"/><rect x="5" y="8" width="6" height="1"/><rect x="5" y="11" width="4" height="1"/></g>',
-  bowl: '<g fill="#3b2b1d"><rect x="1" y="7" width="14" height="1"/><rect x="2" y="8" width="12" height="1"/><rect x="3" y="9" width="10" height="2"/><rect x="5" y="11" width="6" height="1"/></g><g fill="#ffc845"><rect x="4" y="6" width="2" height="1"/><rect x="9" y="5" width="2" height="1"/></g>',
-  crate:
-    '<rect x="2" y="6" width="12" height="7" fill="#f2a33c" stroke="#3b2b1d" stroke-width="1"/><path d="M4 6 L6 2 h4 l2 4" fill="none" stroke="#3b2b1d" stroke-width="1"/><g fill="#3b2b1d"><rect x="5" y="8" width="1" height="3"/><rect x="8" y="8" width="1" height="3"/><rect x="11" y="8" width="1" height="3"/></g>',
-  staff:
-    '<g fill="#3b2b1d"><rect x="6" y="2" width="4" height="4"/><rect x="4" y="7" width="8" height="7"/></g><g fill="#fdf6e3"><rect x="7" y="8" width="2" height="5"/></g>',
-  shop:
-    '<path d="M2 7 L4 3 h8 l2 4 z" fill="#d05b4f" stroke="#3b2b1d" stroke-width="1"/><rect x="3" y="7" width="10" height="7" fill="#fff8e6" stroke="#3b2b1d" stroke-width="1"/><rect x="6" y="10" width="4" height="4" fill="#8a5a3b"/>',
-  cup: '<path d="M4 3 h8 v5 a4 4 0 0 1 -8 0 z" fill="#ffc845" stroke="#3b2b1d" stroke-width="1"/><rect x="6" y="11" width="4" height="2" fill="#3b2b1d"/><rect x="4" y="13" width="8" height="1" fill="#3b2b1d"/>',
-};
 
 function formatMoney(n: number): string {
   return `¥${Math.round(n).toLocaleString("zh-CN")}`;
@@ -119,7 +108,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const menuBtns = MENU_ITEMS.map(
     (m) =>
       `<button type="button" class="btn" data-tab="${m.tab}">` +
-      `<svg class="ico" viewBox="0 0 16 16" shape-rendering="crispEdges">${ICONS[m.icon] ?? ""}</svg>${m.label}</button>`,
+      `${icon(m.icon)}${m.label}</button>`,
   ).join("");
 
   const speedBtns = SPEEDS.map(
@@ -254,6 +243,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
         <div class="dcell"><span class="dk">平均满意</span><span class="dv" data-day-sat>--</span></div>
       </div>
       <div class="daynote" data-day-note></div>
+      <div class="dayhook" data-day-hook></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -269,6 +259,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const dayDate = dayWrap.querySelector("[data-day-date]") as HTMLElement;
   const dayCash = dayWrap.querySelector("[data-day-cash]") as HTMLElement;
   const dayNote = dayWrap.querySelector("[data-day-note]") as HTMLElement;
+  const dayHook = dayWrap.querySelector("[data-day-hook]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
@@ -436,6 +427,10 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
           : visited > 0 && rep.lost / visited > 0.3
             ? `走了 ${rep.lost} 位：多半是嫌贵或者等太久——价牌和产能看一眼。`
             : `今天站住了：一碗毛利约 ¥${score.margin.toFixed(1)}，明天试试多卖几碗。`;
+      // 「明天做点什么」：一笔账不看目标就只是数字（P69）
+      const hook = nextHookOf(s);
+      dayHook.textContent = hook;
+      dayHook.hidden = hook === "";
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);

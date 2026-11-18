@@ -32,6 +32,7 @@ import { shopMap, shopMapSummary } from "../sim/shopmap";
 import { favorSummary, favorViews } from "../sim/favor";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
+import { icon } from "./icons";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -171,23 +172,23 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <section class="pane" data-pane="recipe">
           <div class="rgrid">
             <div class="rcol">
-              <div class="sechd">菜单 · 今天卖几款<span class="sechint" data-menusum></span></div>
+              <div class="sechd">${icon("bowl")}菜单 · 今天卖几款<span class="sechint" data-menusum></span></div>
               <div class="menucards" data-menu></div>
-              <div class="sechd">汤底 · 8 参</div>
+              <div class="sechd">${icon("pan")}汤底 · 8 参</div>
               <div class="sliders" data-sliders="soup">${sliderRows("soup", SOUP_DEFS)}</div>
-              <div class="sechd">主料 · 这碗是什么肉<span class="sechint" data-mainsum></span></div>
+              <div class="sechd">${icon("pan")}主料 · 这碗是什么肉<span class="sechint" data-mainsum></span></div>
               <div class="mains" data-mains></div>
-              <div class="sechd">份量 · 二两还是三两<span class="sechint" data-portionsum></span></div>
+              <div class="sechd">${icon("grade")}份量 · 二两还是三两<span class="sechint" data-portionsum></span></div>
               <div class="portions" data-portions></div>
-              <div class="sechd">粉型 · 卖哪种粉<span class="sechint" data-noodlesum></span></div>
+              <div class="sechd">${icon("bowl")}粉型 · 卖哪种粉<span class="sechint" data-noodlesum></span></div>
               <div class="noodles" data-noodles></div>
-              <div class="sechd">米粉 · 5 参</div>
+              <div class="sechd">${icon("pan")}米粉 · 5 参</div>
               <div class="sliders" data-sliders="noodle">${sliderRows("noodle", NOODLE_DEFS)}</div>
-              <div class="sechd">售价 · 客单价</div>
+              <div class="sechd">${icon("coin")}售价 · 客单价</div>
               <label class="sl"><span class="slk">每碗</span><input type="range" min="6" max="25" step="1" data-price><b data-pricev>12</b></label>
             </div>
             <div class="rcol narrow">
-              <div class="sechd">实时评分</div>
+              <div class="sechd">${icon("star")}实时评分</div>
               <div class="dishname" data-dishname>老友粉</div>
               <div class="dishnote" data-dishnote></div>
               <div class="scorebig"><b data-scorebig>--</b><span data-grade>B</span></div>
@@ -419,12 +420,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       .join("");
 
     return `<div class="sec">
-        <div class="sechd">在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))}</div>
+        <div class="sechd">${icon("staff")}在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))}</div>
         ${roster || `<div class="empty2">还没雇人。你自己一个人炒锅，出碗 6 分钟。</div>`}
         <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"}</div>
       </div>
       <div class="sec">
-        <div class="sechd">今日候选 · 每天换一批</div>
+        <div class="sechd">${icon("staff")}今日候选 · 每天换一批</div>
         ${cands || `<div class="empty2">今天没人来问工。</div>`}
         <div class="hint">${
           nxt
@@ -464,7 +465,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     const sv = sideViews(s);
     const share = (sideShareOf(s) * 100).toFixed(1);
     const sidesSec = `<div class="sec">
-        <div class="sechd">加料台与饮料柜 · ${sideSummary(s)}</div>
+        <div class="sechd">${icon("cup")}加料台与饮料柜 · ${sideSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">一碗粉之外再卖一件 —— 加料不占座、不占灶，只加客单价。客人钱包是硬上限，价钱开到钱包外头就没人点了。三样加料凑齐才算组合（老友味 / 全套加蛋），两样是本分，不稀奇。</div>
         ${sv
           .map(
@@ -503,7 +504,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     // 段位评定（开罗 Grading Tests）：交费 + 累计人次达标才升段，升段才能报更高档比赛
     const gc = checkGrade(s);
     const gradeSec = `<div class="sec">
-        <div class="sechd">段位评定 · 现在第 ${gc.current} 段</div>
+        <div class="sechd">${icon("grade")}段位评定 · 现在第 ${gc.current} 段</div>
         ${
           gc.next
             ? `<div class="lrow">
@@ -520,7 +521,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     const liveViews = views.filter((v) => !v.pending);
     const gotCount = liveViews.filter((v) => v.unlocked).length;
     const craftSec = `<div class="sec">
-        <div class="sechd">手艺树 · 第 ${gradeOf(s)} 段 · 已会 ${gotCount}/${liveViews.length}</div>
+        <div class="sechd">${icon("grade")}手艺树 · 第 ${gradeOf(s)} 段 · 已会 ${gotCount}/${liveViews.length}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建、排队位、买更大的店 —— 升一段多一件能做的事，不是多一个数字。灰色的要先去评段位。</div>
         ${views
           .map(
@@ -536,7 +537,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     // 换区（开罗 Sales Areas 2）：本区客人吃腻、别处越长越旺
     const opts = districtOptions(s);
     const districtSec = `<div class="sec">
-        <div class="sechd">换区 · 现在 ${opts.find((o) => o.current)?.name ?? s.district}</div>
+        <div class="sechd">${icon("street")}换区 · 现在 ${opts.find((o) => o.current)?.name ?? s.district}</div>
         <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%。转让费一次性，搬完能量从 100%% 重新开始。</div>
         ${opts
           .slice(0, 6)
@@ -608,7 +609,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       })
       .join("");
     const streetSec = `<div class="sec">
-        <div class="sechd">同条街 · ${streetSummary(s)}</div>
+        <div class="sechd">${icon("people")}同条街 · ${streetSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">这条街不止你一家，客人是同一批人：他们抢走多少，你就少卖多少。比赛赢多了他们会服气（每家 3 次），服气后抢的人砍半；撑不下去关门的铺子可以接手，租金打折。</div>
         <div class="lmeta"><b>你在这条街的口碑 ${standing}</b>（跟这条街最强的同行比：越高越是你说了算）</div>
         ${streetRows || `<div class="empty2">这条街就你一家。</div>`}
@@ -640,14 +641,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       )
       .join("");
     const blockSec = `<div class="sec">
-        <div class="sechd">街面 · ${blockSummary(s)}</div>
+        <div class="sechd">${icon("street")}街面 · ${blockSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">这条街不只有店：路灯、雨棚、斑马线修好了，别人才愿意走过来。修好了就一直是你这条街的。</div>
         <div class="minimap" title="本区俯视：红点是你，棕点是同行，绿点是修好的街面">${miniTiles}</div>
         ${bNext ? `<div class="lmeta" style="padding:6px 2px 8px">街坊来提：「${bLine}」</div>` : `<div class="lmeta" style="padding:6px 2px 8px">这条街该有的都修齐了。</div>`}
         ${blockRows}
       </div>`;
     const branchSec = `<div class="sec">
-        <div class="sechd">分店 · 已开 ${bv.length}/${MAX_BRANCHES}${bv.length ? ` · ${branchSummary(s)}` : ""}</div>
+        <div class="sechd">${icon("shop")}分店 · 已开 ${bv.length}/${MAX_BRANCHES}${bv.length ? ` · ${branchSummary(s)}` : ""}</div>
         <div class="lmeta" style="padding:0 2px 8px">主店评到第 8 段就能在别处再开一家（标准店第 9 段、大店第 10 段、旗舰第 11 段）。分店自己养口碑：开张时只有 45%，每天涨 3%，大约 18 天熟。同一个区连开几家要分客流，池子小的区开不了。</div>
         ${openRows || `<div class="empty2">还没开分店。</div>`}
         <div class="sechd" style="margin-top:10px">在哪个区开 · 点一下选中</div>
@@ -718,33 +719,33 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
     }).join("");
     return `<div class="sec">
-        <div class="sechd">店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
+        <div class="sechd">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
         ${expRow}
       </div>
       <div class="sec">
-        <div class="sechd">设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
+        <div class="sechd">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
         <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
       <div class="sec">
-        <div class="sechd">店里 · 摆了 ${gearCount}/12 件家当<span class="sechint" data-shopmap-sum> ${shopMapSummary(s)}</span></div>
+        <div class="sechd">${icon("crate")}店里 · 摆了 ${gearCount}/12 件家当<span class="sechint" data-shopmap-sum> ${shopMapSummary(s)}</span></div>
         <div class="lmeta" style="padding:0 2px 8px">买下一件就摆进店里，空格是还没添的东西。左边四列是后厨，中间是堂食，靠右是门口 —— 排队的人从门口往里站，绿点是在店里帮忙的人。</div>
         <div class="shopmap">${mapCells}</div>
         <div class="smlegend"><span class="smk sm-seat"></span>座位 <span class="smk sm-kitchen"></span>后厨 <span class="smk sm-wall"></span>墙面 <span class="smk sm-counter"></span>柜台 <span class="smk sm-decor"></span>摆设 <span class="smk sm-cust"></span>客人 <span class="smk sm-staff"></span>店员</div>
       </div>
       <div class="sec">
-        <div class="sechd">人情 · ${favorSummary(s)}</div>
+        <div class="sechd">${icon("heart")}人情 · ${favorSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">街坊给的面子：一碗吃到底、把不要的配方转手、比赛拿名次、熟客回礼都会攒。钱买不到，只能攒。</div>
         ${favorRows}
       </div>
       <div class="sec">
-        <div class="sechd">家当 · ${gearSummary(s)}</div>
+        <div class="sechd">${icon("crate")}家当 · ${gearSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">店里那些不值钱、但天天用得上的旧东西。一件几十到几千，买一件算一件，效果都是常驻的。</div>
         ${gearRows}
       </div>
       <div class="sec">
-        <div class="sechd">摆件</div>
+        <div class="sechd">${icon("crate")}摆件</div>
         ${ups}
       </div>
       ${sidesSec}
@@ -754,7 +755,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       ${blockSec}
       ${branchSec}
       ${districtSec}
-      <div class="sechd">换一局</div>
+      <div class="sechd">${icon("flag")}换一局</div>
       <div class="lrow">
         <div class="lmeta">存档只保留这一局。想换个铺位、换个区从头再试，点右边（会清掉现在的存档）。</div>
         <button data-act="restart">新开一局</button>
@@ -797,7 +798,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       })
       .join("");
     return `<div class="sec">
-        <div class="sechd">${open ? "比赛月 · 可以报名" : `不是比赛月 · 还有 ${wait} 个月`}</div>
+        <div class="sechd">${icon("cup")}${open ? "比赛月 · 可以报名" : `不是比赛月 · 还有 ${wait} 个月`}</div>
         <div class="lmeta" style="padding:0 2px 8px">
           一年两场，六月和十二月。你现在的段位能报 <b>${maxTier} 档</b>
           （冠军 ${money(t.prizeYuan)}，对手基准 ${t.rivalScore} 分）。段位不升，奖金封顶。
@@ -806,15 +807,16 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ${typeRows}
       </div>
       <div class="sec">
-        <div class="sechd">落场 · ${arenaSummary(s)}</div>
+        <div class="sechd">${icon("flag")}落场 · ${arenaSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">
           六十秒一场，按 1 / 2 / 3 出招，分数高的赢。一天一场，多打一场要 6 点人情。
           同一个场地看重的味道不一样：菜市口认份量，江边认香气，擂台上四样都要齐。
+          赢了会当场压低同条街最强的那家：它掉一格名气，赢满三场就服气，往后少抢你一半的客。
         </div>
         ${arenaCards}
       </div>
       <div class="sec">
-        <div class="sechd">档位与段位门槛</div>
+        <div class="sechd">${icon("grade")}档位与段位门槛</div>
         ${CONTEST_TIERS.map(
           (x) =>
             `<div class="lrow"><div class="lname">${x.tier} 档 · 冠军 ${money(x.prizeYuan)}</div>
@@ -822,7 +824,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ).join("")}
       </div>
       <div class="sec">
-        <div class="sechd">参赛记录（前三 ${s.contest.wins} 次）</div>
+        <div class="sechd">${icon("flag")}参赛记录（前三 ${s.contest.wins} 次）</div>
         ${history || `<div class="empty2">还没参加过。</div>`}
       </div>`;
   }
@@ -895,8 +897,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       .join("");
 
     return `${reportHtml}
-      <div class="sec"><div class="sechd">月度账本 · 最近 8 个月</div>${months || `<div class="empty2">还没走完一个月。</div>`}</div>
-      <div class="sec"><div class="sechd">年度成绩</div>${years || `<div class="empty2">满 12 个月出一次年度结算。</div>`}</div>`;
+      <div class="sec"><div class="sechd">${icon("crate")}月度账本 · 最近 8 个月</div>${months || `<div class="empty2">还没走完一个月。</div>`}</div>
+      <div class="sec"><div class="sechd">${icon("crate")}年度成绩</div>${years || `<div class="empty2">满 12 个月出一次年度结算。</div>`}</div>`;
   }
 
   const bodyOf = (tab: PanelTab): HTMLElement | null =>

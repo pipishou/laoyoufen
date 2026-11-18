@@ -29,6 +29,7 @@ import {
 } from "../data/arena";
 import { currentDish, scoreDish } from "./menu";
 import { rivalsOfDistrict } from "../data/rivals";
+import { noteWin } from "./rivals";
 import type { GameState } from "./state";
 
 export interface ArenaResult {
@@ -99,14 +100,24 @@ function currentAxes(state: GameState) {
 }
 
 /** 本区最强的同行（没人就造一个「路过的高手」） */
-export function arenaRivalOf(state: GameState): { name: string; taste: number } {
-  let best: { name: string; taste: number } | null = null;
+/** 本区最强那家（未关门）；落场赢了要落在它头上，所以带 id */
+export function arenaRivalEntryOf(
+  state: GameState,
+): { id: string; name: string; taste: number } | null {
+  let best: { id: string; name: string; taste: number } | null = null;
   for (const def of rivalsOfDistrict(state.district)) {
     const rs = (state.rivals ?? []).find((r) => r.id === def.id);
     if (!rs || rs.closed) continue;
-    if (!best || def.signature.taste > best.taste) best = { name: def.name, taste: def.signature.taste };
+    if (!best || def.signature.taste > best.taste) {
+      best = { id: def.id, name: def.name, taste: def.signature.taste };
+    }
   }
-  return best ?? { name: "路口新开的摊", taste: 58 };
+  return best;
+}
+
+export function arenaRivalOf(state: GameState): { name: string; taste: number } {
+  const best = arenaRivalEntryOf(state);
+  return best ? { name: best.name, taste: best.taste } : { name: "路口新开的摊", taste: 58 };
 }
 
 /** 对手在这 60 秒里能到多少分 */
@@ -223,10 +234,9 @@ function settle(state: GameState, run: ArenaRun, def: ArenaDef): ArenaResult {
   const rival = Math.round(run.rival);
   const win = mine >= rival * (1 + ARENA_REWARD.winMargin);
   const adj = win ? "赢" : "没赢";
-  const line = win
+  let line = win
     ? `${def.name}${adj}了 —— ${mine} 比 ${rival}，评审把分打给了这碗粉`
     : `${def.name}${adj} —— ${mine} 比 ${rival}，回去把粉再调调`;
-
   const repGain = win ? ARENA_REWARD.repWin : ARENA_REWARD.repLose;
   const favorGain = win ? ARENA_REWARD.favorWin : ARENA_REWARD.favorLose;
   const cashGain = win ? def.prizeYuan : 0;
@@ -244,6 +254,22 @@ function settle(state: GameState, run: ArenaRun, def: ArenaDef): ArenaResult {
     : `落场没赢，街坊还是给了 ${favorGain} 点人情`;
   state.tally.arenaRuns = (state.tally.arenaRuns ?? 0) + 1;
   if (win) state.tally.arenaWins = (state.tally.arenaWins ?? 0) + 1;
+
+  // 赢了当场把对面按下去：记一次胜 + 名气压一格。
+  // 赢满三次它就服气（份额砍半），名气掉到零则月底关门 ——
+  // 落场与「同条街」共用一套规则，不做第二套计数器（P60）。
+  if (win) {
+    const target = arenaRivalEntryOf(state);
+    const rs = target ? (state.rivals ?? []).find((r) => r.id === target.id) : null;
+    if (target && rs) {
+      const justPacified = noteWin(state, target.id);
+      rs.fame = Math.max(0, rs.fame - 1);
+      rs.lastLine = justPacified
+        ? `${target.name}服气了：「做不过你，客人都往你那边跑。」`
+        : `${target.name}在落场上输了一场，脸色不太好看。`;
+      if (justPacified) line += `；${target.name}服气了，往后少抢你一半的客`;
+    }
+  }
 
   const result: ArenaResult = { win, mine, rival, repGain, favorGain, cashGain, line };
   run.result = result;

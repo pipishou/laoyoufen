@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 段位评定（K1 目标换骨的第二根轴，六阶里「钱有去处」的主 sink）。
  *
  * 开罗原文 `grade_review.txt` 11 级：判定费 5,000 → 2,000,000 KCU，
@@ -12,6 +12,12 @@
  *
  * 条件列在开罗里是「累计顾客」之类的门槛，我们统一用累计接待人次（百人）。
  * 判定费进 sink（现金出口），奖励进 cash —— 这样段位同时是目标与钱去处。
+ *
+ * **2026-11-18 改前两级门槛（账本行 51 / P69）**：原来第一段要 400 位客人
+ * （首日 68–73 碗 → 第 6 个游戏日），第二段 700（第 10 天）—— 前 30 分钟里
+ * 玩家拿不到任何「段位级」奖励，而开罗 rank 前几级几分钟就一级。
+ * 前两级改成 150 / 350，**第三级起一律不动**：中期节奏不受影响，
+ * 变化只发生在「玩家第一次觉得自己升级了」的那十分钟。
  */
 
 import { CAPITAL } from "../data/anchors";
@@ -32,8 +38,8 @@ export interface GradeDef {
 }
 
 export const GRADES: readonly GradeDef[] = [
-  { level: 1, title: "摆摊仔", feeYuan: CAPITAL.gradeFeeYuan[0], minCustomers: 400, rewardYuan: 500, note: "街边支一口锅，先让人知道有你这家" },
-  { level: 2, title: "街边小店", feeYuan: CAPITAL.gradeFeeYuan[1], minCustomers: 700, rewardYuan: 800, note: "有两张桌子，坐得下四个人" },
+  { level: 1, title: "摆摊仔", feeYuan: CAPITAL.gradeFeeYuan[0], minCustomers: 110, rewardYuan: 500, note: "街边支一口锅，先让人知道有你这家" },
+  { level: 2, title: "街边小店", feeYuan: CAPITAL.gradeFeeYuan[1], minCustomers: 350, rewardYuan: 800, note: "有两张桌子，坐得下四个人" },
   { level: 3, title: "巷口老铺", feeYuan: CAPITAL.gradeFeeYuan[2], minCustomers: 1_000, rewardYuan: 1_200, note: "街坊开始记得你的招牌" },
   { level: 4, title: "街知巷闻", feeYuan: CAPITAL.gradeFeeYuan[3], minCustomers: 1_500, rewardYuan: 2_000, note: "隔壁街的人也过来吃" },
   { level: 5, title: "区级名店", feeYuan: CAPITAL.gradeFeeYuan[4], minCustomers: 2_000, rewardYuan: 3_000, note: "本区的老友粉，数得上你一家" },

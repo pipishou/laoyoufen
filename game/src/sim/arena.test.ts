@@ -8,6 +8,7 @@ import {
   
   arenaAdvance,
   arenaOpen,
+  arenaRivalEntryOf,
   arenaRunsToday,
   arenaStrike,
   arenaSummary,
@@ -240,5 +241,53 @@ describe("落场：面板与存档", () => {
     expect(back.arenaRuns).toBe(0);
     expect(back.tally.arenaRuns).toBe(0);
     expect(back.tally.arenaWins).toBe(0);
+  });
+});
+
+describe("落场：赢了会压同条街", () => {
+  it("赢一场：对面记一次胜、名气压一格", () => {
+    const s = fresh();
+    const target = arenaRivalEntryOf(s);
+    expect(target).not.toBeNull();
+    const before = s.rivals.find((r) => r.id === target!.id)!;
+    const fame0 = before.fame;
+    const wins0 = before.wins;
+    expect(startArena(s, "market").ok).toBe(true);
+    if (s.arena) s.arena.mine = 9_999;
+    const step = runToEnd(s);
+    expect(step.finished).toBe(true);
+    const after = s.rivals.find((r) => r.id === target!.id)!;
+    expect(after.wins).toBe(wins0 + 1);
+    expect(after.fame).toBe(Math.max(0, fame0 - 1));
+  });
+
+  it("连赢三场：对面服气，结算文案里说出来", () => {
+    const s = fresh();
+    const target = arenaRivalEntryOf(s)!;
+    let last = "";
+    for (let i = 0; i < 3; i += 1) {
+      s.arenaDay = -1;
+      s.arenaRuns = 0;
+      expect(startArena(s, "market").ok).toBe(true);
+      if (s.arena) s.arena.mine = 9_999;
+      last = runToEnd(s).result!.line;
+    }
+    const rs = s.rivals.find((r) => r.id === target.id)!;
+    expect(rs.pacified).toBe(true);
+    expect(last).toContain("服气了");
+  });
+
+  it("输一场：不动对面的战绩", () => {
+    const s = fresh();
+    const target = arenaRivalEntryOf(s)!;
+    const rs0 = s.rivals.find((r) => r.id === target.id)!;
+    const wins0 = rs0.wins;
+    const fame0 = rs0.fame;
+    expect(startArena(s, "market").ok).toBe(true);
+    // 一招不出，站着必输
+    runToEnd(s);
+    const rs = s.rivals.find((r) => r.id === target.id)!;
+    expect(rs.wins).toBe(wins0);
+    expect(rs.fame).toBe(fame0);
   });
 });

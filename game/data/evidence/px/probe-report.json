@@ -11,6 +11,11 @@
       "legend": 7
     },
     {
+      "step": "shop_map_motion",
+      "cust": "smbob",
+      "staff": "smbob"
+    },
+    {
       "step": "arena_act",
       "me": "arunner me act-pot",
       "rival": "arunner rival knock",

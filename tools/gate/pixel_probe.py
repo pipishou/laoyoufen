@@ -107,6 +107,16 @@ def main() -> int:
             }"""
         )
         report["steps"].append({"step": "shop_map", **(cells or {})})
+        # 店里的人得是动的：静态色块玩家会以为卡住了
+        anim = page.evaluate(
+            """() => {
+                const c = document.querySelector(".shopmap .sm-cust");
+                const s = document.querySelector(".shopmap .sm-staff");
+                const name = (el) => el ? getComputedStyle(el, "::after").animationName : null;
+                return { cust: name(c), staff: name(s) };
+            }"""
+        )
+        report["steps"].append({"step": "shop_map_motion", **(anim or {})})
         page.screenshot(path=str(OUT / "06-shop-map.png"))
 
         # ② 落场：出招后那一刻本人带 act-* 类，对面挨重了带 knock
@@ -139,7 +149,8 @@ def main() -> int:
 
         report["console_errors"] = [e for e in report["console_errors"] if "favicon" not in e]
         s1 = report["steps"][0]
-        s2 = report["steps"][1]
+        sm = report["steps"][1]
+        s2 = report["steps"][2]
         report["ok"] = bool(
             s1.get("total") == 96
             and s1.get("cust") == 5
@@ -147,9 +158,11 @@ def main() -> int:
             and s1.get("gear") == 6
             and "排队 5 人" in s1.get("sum", "")
             and s1.get("legend") == 7
+            and sm.get("cust") == "smbob"
+            and sm.get("staff") == "smbob"
             and s2.get("fig") is True
             and "act-pot" in (s2.get("me") or "")
-            and "act-" not in (report["steps"][2].get("me") or "")
+            and "act-" not in (report["steps"][3].get("me") or "")
             and not report["console_errors"]
         )
         browser.close()

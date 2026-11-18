@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   /* 12 色板的唯一真源在 hud.css；本文件只用变量，不重复声明色值 */
   --px: 4px;
   --stroke: 2px;
@@ -22,7 +22,7 @@
   src:
     local("Fusion Pixel 12px Proportional SC"),
     local("Fusion Pixel 12px Monospaced SC"),
-    url("/fonts/fusion-pixel-12px-proportional-sc.woff2") format("woff2");
+    url("./fonts/fusion-pixel-12px-proportional-sc.woff2") format("woff2");
   font-display: swap;
   unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
 }
@@ -130,4 +130,22 @@ img,
 }
 .pchip.grade {
   color: var(--ink2);
+}
+
+/* 图标在页签与段标题里的落位（.ic 由 icons.ts 产出，颜色跟 currentColor）
+   像素图必须整数倍：页签 24px（1:1），段标题 12px（2:1），非整数倍会把缝抹平成一坨 */
+.btn .ic {
+  width: 24px;
+  height: 24px;
+  vertical-align: -6px;
+  margin-right: 4px;
+}
+.sechd .ic {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: var(--wood);
+  /* 段标题比页签小：这里交给矢量平滑缩放，硬吸附会把 2px 的边挤成一坨 */
+  shape-rendering: auto;
 }
