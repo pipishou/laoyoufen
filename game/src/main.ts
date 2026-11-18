@@ -52,6 +52,8 @@ import { mountArena, type ArenaUi } from "./ui/arena";
 import { COMMAND_BY_ID, COMMAND_KEY_MAP, arenaById } from "./data/arena";
 import { startArena } from "./sim/arena";
 import { mountHud } from "./ui/hud";
+import { applyPalette } from "./ui/palette";
+import { mountIcons } from "./ui/icons";
 import { mountPanels, type Panels, type PanelTab } from "./ui/panels";
 import { initViewport } from "./ui/viewport";
 
@@ -93,6 +95,11 @@ loadTelemetry();
  * 先挂会被整块抹掉（第一版就是这么消失的）。
  */
 let guide: Guide;
+
+// 像素化的两件启动活：先把 12 色板同步成 CSS 变量（画布与内联样式要读），
+// 再把 24×24 图标图集插进 body —— hud 会重写 #hud 的 innerHTML，所以图集只能挂在 body 上。
+applyPalette();
+mountIcons();
 
 const hud = mountHud(hudRoot, {
   onToggleTopping,

@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "step": "shop_map",
+      "total": 96,
+      "cust": 5,
+      "staff": 2,
+      "gear": 6,
+      "sum": " 排队 5 人 · 店里 2 人帮忙",
+      "legend": 7
+    },
+    {
+      "step": "arena_act",
+      "me": "arunner me act-pot",
+      "rival": "arunner rival knock",
+      "fig": true
+    },
+    {
+      "step": "arena_act_cleared",
+      "me": "arunner me"
+    }
+  ],
+  "console_errors": []
+}

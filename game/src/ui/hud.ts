@@ -21,8 +21,9 @@ function fmtProgress(n: number): string {
   return String(Math.round(n));
 }
 import type { RecipeScore } from "../sim/score";
-import { bowlMinutes, serveMultiplier, serveParallel } from "../sim/staff";
+import { bowlMinutes, serveMultiplier } from "../sim/staff";
 import { equipServeMultiplier } from "../sim/equipment";
+import { icon } from "./icons";
 
 /**
  * 老友粉工序：炒料（煸酸笋、爆蒜米豆豉辣椒酱）与煮粉同步起锅，
@@ -180,7 +181,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <span class="track"><i data-satbar></i></span>
       <span class="pct" data-sat>--</span>
     </div>
-    <div class="caprow" data-caprow title="产能 = 座位数 × 每碗出餐时间；扩充座位或换灶才提得上去">座位 4 · 出餐 6 分/碗</div>
+    <div class="caprow chips" data-caprow title="产能 = 座位数 × 每碗出餐时间；扩充座位或换灶才提得上去">座位 4 · 出餐 6 分/碗</div>
     <div class="frenzy" data-frenzy title="热卖：门口有人排队、客人又吃得满意，槽会涨；涨满后半小时来客翻倍">
       <div class="fzbar"><i data-frenzybar></i></div>
       <div class="fztxt" data-frenzytxt>热卖槽 0%</div>
@@ -483,12 +484,17 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.satbar.style.width = sat < 0 ? "0%" : `${sat}%`;
     el.satbar.className = sat < 40 ? "hot" : sat < 60 ? "warm" : "";
     const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
-    const batch = serveParallel(s);
-    el.caprow.textContent = `座位 ${s.venue.seats} · 每轮出 ${batch} 碗 · 合 ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} 碗`;
-    // 开罗 Sales Areas：本区越做越腻、别区越长肉。这两行就是「什么时候搬家／什么时候报比赛」的提示。
+    // 开罗 Sales Areas：本区越做越腻、别区越长肉。这几枚小牌就是「什么时候搬家／什么时候报比赛」的提示。
     const pool = demandCapOf(s);
     const contest = isContestMonth(s.month) ? "本月比赛" : `比赛 ${monthsToContest(s.month)} 个月后`;
-    el.caprow.textContent = `座位 ${s.venue.seats} · 每轮 ${batch} 碗 · ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} · 客流 ${pool}/日 · 人情 ${favorOf(s)} 点 · ${contest}`;
+    // 五枚胶囊，各带一枚像素图标：数字靠 tabular-nums 对齐，扫一眼就能读出今天的产能与压力
+    el.caprow.innerHTML = [
+      `<span class="chip people">${icon("people")}座位 ${s.venue.seats} · ${serveNow.toFixed(1)} 分/碗</span>`,
+      `<span class="chip bowl">${icon("bowl")}日上限 ${s.capacity} 碗</span>`,
+      `<span class="chip flow">${icon("street")}客流 ${pool}/日</span>`,
+      `<span class="chip favor">${icon("heart")}人情 ${favorOf(s)}</span>`,
+      `<span class="chip grade">${icon("flag")}${contest}</span>`,
+    ].join("");
     // 热卖槽（开罗 Ramen Frenzy）：排队 + 吃得满意 → 槽涨；满了 30 分钟来客翻倍。
     // 放在 HUD 上是因为它是**可主动经营的**：想攒满就得留一点排队、又不能把满意度压下去。
     const live = frenzyActive(s);

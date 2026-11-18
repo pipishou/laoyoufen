@@ -1,0 +1,133 @@
+﻿:root {
+  /* 12 色板的唯一真源在 hud.css；本文件只用变量，不重复声明色值 */
+  --px: 4px;
+  --stroke: 2px;
+  --font-num: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+}
+
+/* 像素层：字体、描边、切角、图标、渲染开关
+ *
+ * 设计口径（与 palette.ts 一致）：
+ *   - 颜色只从 12 色板来，本文件不写字面色值（需要的都走 var())
+ *   - 尺寸都是 4px 的整数倍（--px），避免半像素发虚
+ *   - 笔画用 2px 硬描边 + 内高光，不用圆角、不用模糊阴影（除落场浮层的背板）
+ */
+
+
+
+/* 像素中文字体：有就吃，没有就安静回落 —— 不引外部 CDN，离线也能玩。
+ * 想换成像素字，把 fusion-pixel.woff2 放到 game/public/fonts/ 下即可，无需改代码。 */
+@font-face {
+  font-family: "Laoyou Pixel";
+  src:
+    local("Fusion Pixel 12px Proportional SC"),
+    local("Fusion Pixel 12px Monospaced SC"),
+    url("/fonts/fusion-pixel-12px-proportional-sc.woff2") format("woff2");
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
+}
+
+/* 数字与拉丁：等宽 + 定宽数字，读数不跳动 */
+.num,
+.dprice,
+.caprow,
+.abar b,
+.ahead b,
+.lprice {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* 画布与图像一律硬边 */
+canvas,
+img,
+.shopmap,
+.minimap {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ── 像素框 ── 2px 硬描边 + 1px 内高光 + 切角（用 outline 模拟去掉四角） */
+.pixel-frame {
+  border: var(--stroke) solid var(--ink);
+  box-shadow:
+    inset 0 0 0 1px var(--cream),
+    3px 3px 0 0 rgba(47, 33, 24, 0.22);
+}
+
+/* 切角：把四个角各盖一个 2×2 的小方块（像素风常见做法，不用 border-radius） */
+.pixel-cut {
+  position: relative;
+}
+.pixel-cut::before,
+.pixel-cut::after {
+  content: "";
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: var(--ink);
+  pointer-events: none;
+}
+.pixel-cut::before {
+  top: calc(-1 * var(--stroke));
+  left: calc(-1 * var(--stroke));
+  box-shadow: calc(100% + var(--px)) 0 0 var(--ink);
+}
+.pixel-cut::after {
+  bottom: calc(-1 * var(--stroke));
+  left: calc(-1 * var(--stroke));
+  box-shadow: calc(100% + var(--px)) 0 0 var(--ink);
+}
+
+/* ── 图标 ── 24×24 网格，crispEdges，颜色跟 currentColor */
+.ic {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: -3px;
+  shape-rendering: crispEdges;
+  fill: currentColor;
+  flex: 0 0 auto;
+}
+.ic.lg {
+  width: 20px;
+  height: 20px;
+  vertical-align: -5px;
+}
+
+/* 图标 + 数字的小胶囊：把钱、口碑、人情、客流排成一行 */
+.pchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.pchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border: 1px solid var(--cream);
+  background: var(--paper2);
+  color: var(--ink);
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  line-height: 16px;
+}
+.pchip.money {
+  color: var(--gold);
+}
+.pchip.rep {
+  color: var(--red);
+}
+.pchip.favor {
+  color: var(--green);
+}
+.pchip.flow {
+  color: var(--blue);
+}
+.pchip.grade {
+  color: var(--ink2);
+}

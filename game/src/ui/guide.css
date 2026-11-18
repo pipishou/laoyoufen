@@ -7,12 +7,12 @@
   z-index:72;
   width:min(460px,74%);
   transform:translateX(-50%);
-  background:#fff8e6;
-  border:3px solid #3b2b1d;
+  background:var(--paper2);
+  border:3px solid var(--ink);
   box-shadow:5px 5px 0 rgba(59,43,29,.4);
   padding:12px 14px 10px;
   font:14px/1.6 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-  color:#3b2b1d;
+  color:var(--ink);
   pointer-events:auto;
 }
 .guide[hidden]{display:none}
@@ -28,7 +28,7 @@
   font-weight:800;
   letter-spacing:.3px;
 }
-.guide .gbody{color:#5a4632}
+.guide .gbody{color:var(--ink2)}
 .guide .gfoot{
   display:flex;
   align-items:center;
@@ -40,15 +40,15 @@
 }
 .guide .gstep{
   font-size:12.5px;
-  color:#8a6f52;
+  color:var(--wood);
   letter-spacing:.5px;
   flex:0 0 auto;
 }
 .guide .gbtn{
   appearance:none;
-  border:2px solid #3b2b1d;
-  background:#f2ecdc;
-  color:#3b2b1d;
+  border:2px solid var(--ink);
+  background:var(--paper2);
+  color:var(--ink);
   font:inherit;
   font-size:13px;
   padding:5px 12px;
@@ -56,21 +56,21 @@
   cursor:pointer;
   box-shadow:2px 2px 0 rgba(59,43,29,.35);
 }
-.guide .gbtn:hover{background:#e8dcc0}
+.guide .gbtn:hover{background:var(--cream)}
 .guide .gbtn:active{transform:translate(1px,1px);box-shadow:none}
 .guide .gbtn.ghost{
   background:transparent;
   border-color:rgba(59,43,29,.45);
-  color:#7a6449;
+  color:var(--wood);
   box-shadow:none;
   font-size:12px;
   padding:4px 9px;
 }
-.guide .gbtn.ghost:hover{background:#efe5cd;color:#3b2b1d}
+.guide .gbtn.ghost:hover{background:var(--cream);color:var(--ink)}
 .guide .gbtn.main{
-  background:#b8452c;
-  color:#fff8e6;
-  border-color:#3b2b1d;
+  background:var(--red);
+  color:var(--paper2);
+  border-color:var(--ink);
 }
 
 /* 收起后的恢复入口：原来教程关掉就再也回不来了 */
@@ -80,9 +80,9 @@
   bottom:132px;
   z-index:41;
   appearance:none;
-  border:2px solid #3b2b1d;
-  background:#fff8e6;
-  color:#3b2b1d;
+  border:2px solid var(--ink);
+  background:var(--paper2);
+  color:var(--ink);
   font:12px/1 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
   padding:7px 10px;
   min-height:32px;
@@ -91,7 +91,7 @@
   pointer-events:auto; /* #hud 整体 pointer-events:none，漏了这句按钮会被画布吃掉点击 */
 }
 .guiderestore[hidden]{display:none}
-.guiderestore:hover{background:#f2ecdc}
+.guiderestore:hover{background:var(--paper2)}
 
 /* 当前这一步要点的按钮：呼吸式描边，不改变布局 */
 .guide-target{

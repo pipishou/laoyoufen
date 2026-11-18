@@ -7,13 +7,7 @@
  *  3. 断点只影响「外框与提示」，不影响内部布局；真要大改布局，得另开一条证据链（眼睛绿）来验。
  */
 
-:root {
-  --stage-scale: 1;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
-}
+
 
 /* 安全区：刘海屏横屏时左右会挡住舞台边缘 */
 body {
@@ -82,7 +76,7 @@ body {
   }
 
   body {
-    background: #1b1510;
+    background: var(--ink);
   }
 }
 

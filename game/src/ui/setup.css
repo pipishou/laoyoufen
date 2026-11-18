@@ -13,7 +13,7 @@
   /* #hud 整体 pointer-events:none，浮层必须自己接事件 */
   pointer-events: auto;
   font-family: "Fusion Pixel 12px Monospaced", "Zpix", ui-monospace, monospace;
-  color: #3b2b1d;
+  color: var(--ink);
 }
 
 .setup[hidden] { display: none; }
@@ -23,9 +23,9 @@
   max-height: 92vh;
   overflow: auto;
   padding: 20px 22px 18px;
-  background: #fff8e6;
-  border: 3px solid #3b2b1d;
-  box-shadow: 6px 6px 0 #3b2b1d;
+  background: var(--paper2);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
 }
 
 .shead { margin-bottom: 12px; }
@@ -38,7 +38,7 @@
   margin-top: 6px;
   font-size: 12px;
   line-height: 1.7;
-  color: #6b5540;
+  color: var(--ink2);
 }
 
 .sitegrid {
@@ -52,20 +52,20 @@
   width: 100%;
   text-align: left;
   padding: 10px 11px;
-  background: #fffcf2;
-  border: 2px solid #3b2b1d;
-  box-shadow: 3px 3px 0 #d8c9a8;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--cream);
   cursor: pointer;
   color: inherit;
   font: inherit;
   pointer-events: auto;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.sitecard:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #d8c9a8; }
+.sitecard:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--cream); }
 .sitecard.picked {
-  background: #fff1cf;
-  border-color: #b8452c;
-  box-shadow: 3px 3px 0 #b8452c;
+  background: var(--paper2);
+  border-color: var(--red);
+  box-shadow: 3px 3px 0 var(--red);
   transform: translate(-1px, -1px);
 }
 .sitecard.broke {
@@ -81,12 +81,12 @@
   gap: 6px;
 }
 .sname { font-size: 15px; font-weight: 700; }
-.sfee { font-size: 11px; color: #b8452c; }
+.sfee { font-size: 11px; color: var(--red); }
 .spitch {
   margin-top: 6px;
   font-size: 11px;
   line-height: 1.6;
-  color: #6b5540;
+  color: var(--ink2);
   min-height: 34px;
 }
 .sstats {
@@ -95,14 +95,14 @@
   gap: 8px;
   margin-top: 8px;
   font-size: 11px;
-  color: #4a382a;
+  color: var(--ink2);
 }
 .sstats span {
   padding: 1px 6px;
-  background: #f2e7cd;
-  border: 1px solid #c9b48c;
+  background: var(--cream);
+  border: 1px solid var(--sand);
 }
-.sbadge { margin-top: 6px; font-size: 11px; color: #b8452c; min-height: 14px; }
+.sbadge { margin-top: 6px; font-size: 11px; color: var(--red); min-height: 14px; }
 
 .namerow {
   display: flex;
@@ -117,12 +117,12 @@
   padding: 6px 8px;
   font: inherit;
   font-size: 14px;
-  color: #3b2b1d;
-  background: #fffcf2;
-  border: 2px solid #3b2b1d;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
   pointer-events: auto;
 }
-.ninput:focus { outline: 2px solid #b8452c; outline-offset: 1px; }
+.ninput:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 
 .namechips {
   display: flex;
@@ -134,13 +134,13 @@
   padding: 3px 9px;
   font: inherit;
   font-size: 12px;
-  color: #3b2b1d;
-  background: #f2e7cd;
-  border: 2px solid #b9a179;
+  color: var(--ink);
+  background: var(--cream);
+  border: 2px solid var(--sand);
   cursor: pointer;
   pointer-events: auto;
 }
-.chip:hover { background: #ffe9b8; border-color: #b8452c; }
+.chip:hover { background: var(--cream); border-color: var(--red); }
 
 .sfoot {
   display: flex;
@@ -149,24 +149,24 @@
   gap: 12px;
   margin-top: 16px;
   padding-top: 12px;
-  border-top: 2px dashed #c9b48c;
+  border-top: 2px dashed var(--sand);
 }
-.scash { font-size: 12px; color: #6b5540; }
+.scash { font-size: 12px; color: var(--ink2); }
 
 .sbtn {
   font: inherit;
   font-size: 13px;
   padding: 7px 14px;
-  color: #3b2b1d;
-  background: #f2e7cd;
-  border: 2px solid #3b2b1d;
-  box-shadow: 3px 3px 0 #3b2b1d;
+  color: var(--ink);
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
   cursor: pointer;
   pointer-events: auto;
 }
 .sbtn.main {
-  background: #b8452c;
-  color: #fff8e6;
+  background: var(--red);
+  color: var(--paper2);
   font-size: 15px;
   padding: 9px 20px;
   letter-spacing: 2px;
@@ -174,15 +174,15 @@
 .sbtn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  box-shadow: 2px 2px 0 #8a7a63;
+  box-shadow: 2px 2px 0 var(--wood);
 }
-.sbtn.ghost { background: #fffcf2; }
+.sbtn.ghost { background: var(--paper); }
 
 .snote {
   margin-top: 8px;
   min-height: 16px;
   font-size: 11px;
-  color: #b8452c;
+  color: var(--red);
 }
 
 @media (max-width: 720px) {

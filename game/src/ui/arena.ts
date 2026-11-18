@@ -62,8 +62,8 @@ export function mountArena(root: HTMLElement, opts: ArenaUiOptions): ArenaUi {
       </div>
       <div class="astage">
         <i class="alane l1"></i><i class="alane l2"></i><i class="alane l3"></i>
-        <span class="arunner me" data-arunnerme>我</span>
-        <span class="arunner rival" data-arunnerrival>对</span>
+        <span class="arunner me" data-arunnerme aria-label="我"><i class="fig"></i></span>
+        <span class="arunner rival" data-arunnerrival aria-label="对面"><i class="fig"></i></span>
       </div>
       <div class="acall" data-acall></div>
       <div class="alog" data-alog></div>
@@ -97,6 +97,12 @@ export function mountArena(root: HTMLElement, opts: ArenaUiOptions): ArenaUi {
   let raf = 0;
   let lastTs = 0;
   let shownResult: ArenaResult | null = null;
+  /** 三招动作帧的时长，与 arena.css 里的 keyframes 同步 */
+  const ACT_MS = 460;
+  /** 单招打到这个分，对面才配晃一下（小招只有十几分） */
+  const KNOCK_AT = 20;
+  let actTimer = 0;
+  let knockTimer = 0;
   let cmdsBuilt = false;
 
   const cmdButton = (c: CommandDef): string =>
@@ -233,8 +239,30 @@ export function mountArena(root: HTMLElement, opts: ArenaUiOptions): ArenaUi {
     const s = opts.getState();
     if (!s.arena || shownResult) return false;
     const r = arenaStrike(s, cmdId);
-    if (r.ok) render();
+    if (r.ok) {
+      render();
+      playAct(cmdId, r.gained ?? 0);
+    }
     return true;
+  }
+
+  /** 出一招时本人做一次像素动作；打疼了对面会晃一下（P58） */
+  function playAct(cmdId: string, gained: number): void {
+    const cls = `act-${cmdId}`;
+    el.runnerMe.classList.remove("act-holler", "act-show", "act-pot");
+    // 连按同一招也要从第一帧重播：先强制一次回流，浏览器才会重启动画
+    void el.runnerMe.offsetWidth;
+    el.runnerMe.classList.add(cls);
+    window.clearTimeout(actTimer);
+    actTimer = window.setTimeout(() => el.runnerMe.classList.remove(cls), ACT_MS);
+
+    if (gained >= KNOCK_AT) {
+      el.runnerRival.classList.remove("knock");
+      void el.runnerRival.offsetWidth;
+      el.runnerRival.classList.add("knock");
+      window.clearTimeout(knockTimer);
+      knockTimer = window.setTimeout(() => el.runnerRival.classList.remove("knock"), 360);
+    }
   }
 
   function flee(): void {

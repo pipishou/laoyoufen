@@ -20,9 +20,9 @@
   width: min(640px, 100%);
   max-height: calc(100vh - 32px);
   overflow: auto;
-  background: #fff8e6;
-  border: 4px solid #2f2118;
-  box-shadow: inset 0 0 0 3px #8a6f52, 6px 6px 0 rgba(47, 33, 24, 0.35);
+  background: var(--paper2);
+  border: 4px solid var(--ink);
+  box-shadow: inset 0 0 0 3px var(--wood), 6px 6px 0 rgba(47, 33, 24, 0.35);
   padding: 12px 14px 14px;
   image-rendering: pixelated;
 }
@@ -31,8 +31,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #2f2118;
-  color: #fff8e6;
+  background: var(--ink);
+  color: var(--paper2);
   padding: 6px 10px;
   letter-spacing: 2px;
   font-size: 15px;
@@ -42,7 +42,7 @@
 .arena .ahead .atime {
   font-variant-numeric: tabular-nums;
   font-size: 18px;
-  color: #e8dcc4;
+  color: var(--cream);
 }
 
 .arena .abars {
@@ -60,7 +60,7 @@
 }
 
 .arena .arow .aname {
-  color: #5a4632;
+  color: var(--ink2);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -69,13 +69,13 @@
 .arena .arow b {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: #2f2118;
+  color: var(--ink);
 }
 
 .arena .atrack {
   height: 16px;
-  background: #e8dcc4;
-  border: 2px solid #2f2118;
+  background: var(--cream);
+  border: 2px solid var(--ink);
   box-shadow: inset -2px -2px 0 rgba(90, 70, 50, 0.25);
   overflow: hidden;
 }
@@ -88,20 +88,20 @@
 }
 
 .arena .arow.me .atrack i {
-  background: #b5493a;
+  background: var(--red);
 }
 
 .arena .arow.rival .atrack i {
-  background: #8a6f52;
+  background: var(--wood);
 }
 
 .arena .astage {
   position: relative;
   height: 118px;
   margin: 10px 0;
-  background: #c9b28f;
-  border: 3px solid #2f2118;
-  box-shadow: inset 0 0 0 3px #fff8e6, inset -4px -4px 0 rgba(47, 33, 24, 0.18);
+  background: var(--sand);
+  border: 3px solid var(--ink);
+  box-shadow: inset 0 0 0 3px var(--paper2), inset -4px -4px 0 rgba(47, 33, 24, 0.18);
   overflow: hidden;
 }
 
@@ -122,26 +122,32 @@
   bottom: 14px;
   width: 22px;
   height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  color: #fff8e6;
-  border: 2px solid #2f2118;
+  border: 2px solid var(--ink);
   transition: transform 140ms linear;
 }
 
-.arena .arunner.me {
-  background: #b5493a;
-  left: 12px;
+/* 擂台上的两块钱：外面那层只负责「横向走到第几名」，里面的 fig 负责会动 */
+.arena .arunner .fig {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--red);
+  box-shadow: inset -3px -3px 0 rgba(47, 33, 24, 0.25), inset 0 -3px 0 var(--ink);
   animation: astep 0.5s steps(2, end) infinite;
 }
 
-.arena .arunner.rival {
-  background: #5a4632;
-  bottom: 44px;
+.arena .arunner.me {
   left: 12px;
-  animation: astep 0.7s steps(2, end) infinite;
+}
+
+.arena .arunner.rival {
+  left: 12px;
+  bottom: 44px;
+}
+
+.arena .arunner.rival .fig {
+  background: var(--ink2);
+  animation-duration: 0.7s;
 }
 
 @keyframes astep {
@@ -149,12 +155,58 @@
   50% { margin-bottom: 4px; }
 }
 
+/* —— P58 三招动作帧：吆喝跳两下、端碗侧身递出去、一锅端先蹲后弹 —— */
+.arena .arunner.me.act-holler .fig {
+  animation: act-holler 0.46s steps(4, end) 1;
+}
+
+.arena .arunner.me.act-show .fig {
+  animation: act-show 0.46s steps(3, end) 1;
+}
+
+.arena .arunner.me.act-pot .fig {
+  animation: act-pot 0.46s steps(3, end) 1;
+}
+
+/* 对面挨了一下重的：往后退一格、白闪一下 */
+.arena .arunner.rival.knock .fig {
+  animation: knock 0.36s steps(3, end) 1;
+}
+
+@keyframes act-holler {
+  0% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-6px) scale(1.05, 0.95); }
+  50% { transform: translateY(0) scale(1); }
+  75% { transform: translateY(-4px) scale(1.05, 0.95); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes act-show {
+  0% { transform: rotate(0deg) translateX(0); }
+  40% { transform: rotate(-10deg) translateX(4px); }
+  70% { transform: rotate(-4deg) translateX(6px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+
+@keyframes act-pot {
+  0% { transform: scale(1, 1) translateY(0); }
+  30% { transform: scale(1.15, 0.8) translateY(4px); }
+  60% { transform: scale(0.9, 1.25) translateY(-8px); }
+  100% { transform: scale(1, 1) translateY(0); }
+}
+
+@keyframes knock {
+  0% { transform: translateX(0); filter: none; }
+  40% { transform: translateX(-6px); filter: brightness(1.7) saturate(0); }
+  100% { transform: translateX(0); filter: none; }
+}
+
 .arena .alog {
   min-height: 34px;
   font-size: 12px;
   line-height: 1.5;
-  color: #7a6a55;
-  border-left: 3px solid #d8c9a8;
+  color: var(--wood);
+  border-left: 3px solid var(--cream);
   padding-left: 8px;
   margin-bottom: 10px;
 }
@@ -170,22 +222,22 @@
   display: grid;
   gap: 2px;
   padding: 10px 6px 8px;
-  background: #fffdf6;
-  border: 3px solid #2f2118;
-  box-shadow: inset 0 0 0 2px #d8c9a8, 3px 3px 0 rgba(47, 33, 24, 0.22);
-  color: #2f2118;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: inset 0 0 0 2px var(--cream), 3px 3px 0 rgba(47, 33, 24, 0.22);
+  color: var(--ink);
   cursor: pointer;
   font: inherit;
 }
 
 .arena .acmd:hover:not(:disabled) {
-  background: #fff3d6;
-  border-color: #b8912f;
+  background: var(--paper2);
+  border-color: var(--gold);
 }
 
 .arena .acmd:active:not(:disabled) {
   transform: translate(1px, 1px);
-  box-shadow: inset 0 0 0 2px #d8c9a8;
+  box-shadow: inset 0 0 0 2px var(--cream);
 }
 
 .arena .acmd:disabled {
@@ -195,7 +247,7 @@
 
 .arena .acmd .akey {
   font-size: 11px;
-  color: #7a6a55;
+  color: var(--wood);
   letter-spacing: 1px;
 }
 
@@ -210,7 +262,7 @@
   right: 6px;
   top: 6px;
   font-size: 12px;
-  color: #b5493a;
+  color: var(--red);
   font-variant-numeric: tabular-nums;
 }
 
@@ -224,33 +276,33 @@
 
 .arena .ahint {
   font-size: 12px;
-  color: #7a6a55;
+  color: var(--wood);
 }
 
 .arena .aflee,
 .arena .abtn {
   padding: 6px 12px;
-  background: #fffdf6;
-  border: 2px solid #2f2118;
-  box-shadow: inset 0 0 0 2px #d8c9a8, 3px 3px 0 rgba(47, 33, 24, 0.2);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: inset 0 0 0 2px var(--cream), 3px 3px 0 rgba(47, 33, 24, 0.2);
   font: inherit;
   font-size: 13px;
-  color: #2f2118;
+  color: var(--ink);
   cursor: pointer;
 }
 
 .arena .abtn.main {
-  background: #2f7d4f;
-  color: #fffdf6;
-  box-shadow: inset 0 0 0 2px #245f3c, 3px 3px 0 rgba(47, 33, 24, 0.28);
+  background: var(--green);
+  color: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--green), 3px 3px 0 rgba(47, 33, 24, 0.28);
 }
 
 .arena .aresult {
   margin-top: 12px;
   padding: 12px;
-  border: 3px solid #2f2118;
-  background: #fffdf6;
-  box-shadow: inset 0 0 0 2px #d8c9a8;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--cream);
 }
 
 .arena .aresult[hidden] {
@@ -265,16 +317,16 @@
 }
 
 .arena .aresult.win .artitle {
-  color: #2f7d4f;
+  color: var(--green);
 }
 
 .arena .aresult.lose .artitle {
-  color: #b5493a;
+  color: var(--red);
 }
 
 .arena .aresult .arline {
   font-size: 13px;
-  color: #5a4632;
+  color: var(--ink2);
   margin-bottom: 8px;
 }
 
@@ -283,12 +335,12 @@
   flex-wrap: wrap;
   gap: 4px 14px;
   font-size: 13px;
-  color: #5a4632;
+  color: var(--ink2);
   margin-bottom: 10px;
 }
 
 .arena .aresult .argrid b {
-  color: #2f2118;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
@@ -312,7 +364,7 @@
   padding: 2px 4px;
   font-size: 13px;
   line-height: 1.5;
-  color: #6b4a2f;
+  color: var(--ink2);
   text-align: center;
   letter-spacing: 1px;
   min-height: 20px;

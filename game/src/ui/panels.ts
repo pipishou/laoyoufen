@@ -27,7 +27,8 @@ import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { gearSummary, gearViews } from "../sim/gear";
-import { GEAR_SPOT_LABEL, shopGrid } from "../data/gear";
+import { GEAR_SPOT_LABEL } from "../data/gear";
+import { shopMap, shopMapSummary } from "../sim/shopmap";
 import { favorSummary, favorViews } from "../sim/favor";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
@@ -671,13 +672,15 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
 
     // 店里那 12×8 格：买下一件家当，它就在格子里出现（P53）
-    const mapCells = shopGrid(s)
+    const mapCells = shopMap(s)
       .flat()
-      .map((c) =>
-        c
+      .map((c) => {
+        if (c === "cust") return '<i class="sm sm-cust" title="等位的客人"></i>';
+        if (c === "staff") return '<i class="sm sm-staff" title="店里帮忙的人"></i>';
+        return c
           ? `<i class="sm sm-${c}" title="${GEAR_SPOT_LABEL[c]}"></i>`
-          : '<i class="sm sm-e"></i>',
-      )
+          : '<i class="sm sm-e"></i>';
+      })
       .join("");
     const gearCount = (s.gear ?? []).length;
     // 人情（M3b）：三样花法，用不了就写还差多少
@@ -725,10 +728,10 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ${equipRows}
       </div>
       <div class="sec">
-        <div class="sechd">店里 · 摆了 ${gearCount}/12 件家当</div>
-        <div class="lmeta" style="padding:0 2px 8px">买下一件就摆进店里，空格是还没添的东西。左边四列是后厨，中间是堂食，靠右是门口。</div>
+        <div class="sechd">店里 · 摆了 ${gearCount}/12 件家当<span class="sechint" data-shopmap-sum> ${shopMapSummary(s)}</span></div>
+        <div class="lmeta" style="padding:0 2px 8px">买下一件就摆进店里，空格是还没添的东西。左边四列是后厨，中间是堂食，靠右是门口 —— 排队的人从门口往里站，绿点是在店里帮忙的人。</div>
         <div class="shopmap">${mapCells}</div>
-        <div class="smlegend"><span class="smk sm-seat"></span>座位 <span class="smk sm-kitchen"></span>后厨 <span class="smk sm-wall"></span>墙面 <span class="smk sm-counter"></span>柜台 <span class="smk sm-decor"></span>摆设</div>
+        <div class="smlegend"><span class="smk sm-seat"></span>座位 <span class="smk sm-kitchen"></span>后厨 <span class="smk sm-wall"></span>墙面 <span class="smk sm-counter"></span>柜台 <span class="smk sm-decor"></span>摆设 <span class="smk sm-cust"></span>客人 <span class="smk sm-staff"></span>店员</div>
       </div>
       <div class="sec">
         <div class="sechd">人情 · ${favorSummary(s)}</div>

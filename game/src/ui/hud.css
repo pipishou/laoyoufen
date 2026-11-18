@@ -1,16 +1,27 @@
+/* 12 色板 —— 全站唯一的颜色来源（与 game/src/ui/palette.ts 同值）
+ * 十二个色相，每相最多两阶；组件里不许再写字面色值，一律 var(--token)。 */
 :root {
-  --paper: #fff8e6;
-  --paper2: #f5e9cc;
-  --ink: #3b2b1d;
-  --shadow: #c3ad84;
-  --brick: #d05b4f;
-  --bamboo: #5fa34f;
-  --mustard: #ffc845;
-  --wood: #8a5a3b;
-  --sky: #3f8bc9;
-  --chili: #c8442f;
-  --sour: #7fa650;
-  --orange: #f2a33c;
+  --ink: #2f2118;
+  --ink2: #5a4632;
+  --wood: #8a6f52;
+  --sand: #c9b28f;
+  --cream: #e8dcc4;
+  --paper2: #fff8e6;
+  --paper: #fffdf6;
+  --red: #b5493a;
+  --orange: #d97b52;
+  --green: #2f7d4f;
+  --gold: #b8912f;
+  --blue: #4a6f8a;
+
+  /* 旧变量名保留成别名：老样式逐条指过来，不必改三百处引用 */
+  --shadow: var(--sand);
+  --brick: var(--red);
+  --bamboo: var(--green);
+  --mustard: var(--gold);
+  --sky: var(--blue);
+  --chili: var(--red);
+  --sour: var(--green);
 }
 
 * {
@@ -22,7 +33,7 @@
 html,
 body {
   height: 100%;
-  background: #241c14;
+  background: var(--ink);
   overflow: hidden;
 }
 
@@ -115,13 +126,13 @@ body {
 /* 还没起店名时的招牌：淡一点，提示这是占位 */
 .dhint {
   font-size: 11px;
-  color: #8a7a63;
+  color: var(--wood);
   max-width: 190px;
   line-height: 1.35;
 }
 
 .devnote {
-  color: var(--muted, #8a7a63);
+  color: var(--muted, var(--wood));
   font-size: 12px;
   opacity: 0.85;
 }
@@ -148,7 +159,7 @@ body {
 }
 
 .stat .k {
-  color: #8a7a63;
+  color: var(--wood);
   font-size: 11px;
 }
 
@@ -215,8 +226,8 @@ button.pill {
 }
 
 button.pill.prep {
-  background: var(--chili, #b8452c);
-  color: #fff8e6;
+  background: var(--chili, var(--red));
+  color: var(--paper2);
   animation: pillbreathe 2.4s ease-in-out infinite;
 }
 
@@ -226,7 +237,7 @@ button.pill.live {
 }
 
 button.pill.done {
-  background: #8a7a63;
+  background: var(--wood);
   color: var(--paper2);
 }
 
@@ -253,7 +264,7 @@ button.pill[disabled] {
 }
 
 .clock.closed {
-  color: #8a7a63;
+  color: var(--wood);
 }
 
 /* ---------- 音频开关 ---------- */
@@ -271,7 +282,7 @@ button.pill[disabled] {
 }
 
 .audio.off {
-  background: #8a7a63;
+  background: var(--wood);
   color: var(--paper2);
 }
 
@@ -307,8 +318,8 @@ button.pill[disabled] {
   line-height: 1;
   padding: 3px 0 2px;
   border: 2px solid var(--shadow);
-  background: #e9dcc0;
-  color: #a89a80;
+  background: var(--cream);
+  color: var(--sand);
 }
 
 .cookstage span.on {
@@ -352,7 +363,7 @@ button.pill[disabled] {
 .cooknow {
   font-size: 10px;
   line-height: 1.5;
-  color: #8a7a63;
+  color: var(--wood);
   padding: 3px 8px 0;
 }
 
@@ -429,7 +440,7 @@ button.pill[disabled] {
 
 .goal .lab {
   font-size: 11px;
-  color: #8a7a63;
+  color: var(--wood);
   margin-bottom: 4px;
 }
 
@@ -469,7 +480,7 @@ button.pill[disabled] {
 .achrow .an {
   grid-area: an;
   font-weight: 700;
-  color: #4a3527;
+  color: var(--ink2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -477,14 +488,14 @@ button.pill[disabled] {
 
 .achrow .av {
   grid-area: av;
-  color: #7a6a52;
+  color: var(--wood);
   font-variant-numeric: tabular-nums;
 }
 
 .achrow .abar {
   grid-area: abar;
   height: 7px;
-  background: #e7dcc2;
+  background: var(--cream);
   border: 2px solid var(--shadow);
   border-radius: 2px;
   overflow: hidden;
@@ -493,7 +504,7 @@ button.pill[disabled] {
 .achrow .abar i {
   display: block;
   height: 100%;
-  background: #b8452c;
+  background: var(--red);
 }
 
 /* 右栏：B2 之前只有空态 */
@@ -501,7 +512,7 @@ button.pill[disabled] {
   padding: 10px 8px 12px;
   font-size: 11px;
   line-height: 1.7;
-  color: #8a7a63;
+  color: var(--wood);
   border-bottom: 2px dashed var(--shadow);
 }
 
@@ -513,7 +524,7 @@ button.pill[disabled] {
 .row.queue .nm {
   width: auto;
   flex: 0 0 auto;
-  color: #8a7a63;
+  color: var(--wood);
   font-size: 11px;
 }
 
@@ -562,14 +573,14 @@ button.pill[disabled] {
   flex: 0 0 auto;
   font-size: 10px;
   font-weight: 700;
-  color: #6b5238;
-  background: #f2e7cd;
+  color: var(--ink2);
+  background: var(--cream);
   border: 1px solid rgba(59, 43, 29, 0.35);
   padding: 0 4px;
 }
 
 .cust.short .cw {
-  color: #fff;
+  color: var(--paper);
   background: var(--orange);
   border-color: var(--orange);
 }
@@ -584,7 +595,7 @@ button.pill[disabled] {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: #8a7a63;
+  color: var(--wood);
   font-size: 9px;
 }
 
@@ -617,7 +628,7 @@ button.pill[disabled] {
 
 #float .t2 {
   font-size: 10px;
-  color: #8a7a63;
+  color: var(--wood);
   line-height: 1.3;
 }
 
@@ -642,7 +653,7 @@ button.pill[disabled] {
 .trayttl span {
   float: right;
   letter-spacing: 0;
-  color: #8a7a63;
+  color: var(--wood);
 }
 
 .chips {
@@ -673,6 +684,28 @@ button.pill[disabled] {
   color: var(--paper);
   box-shadow: 2px 2px 0 var(--wood);
 }
+
+/* 产能条上的五枚胶囊：只读，不点；每枚带一枚像素图标 */
+.caprow.chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: default;
+  box-shadow: 1px 1px 0 var(--shadow);
+}
+.caprow.chips .chip:hover {
+  background: var(--paper);
+}
+.caprow.chips .chip .ic {
+  width: 12px;
+  height: 12px;
+  vertical-align: 0;
+}
+.caprow.chips .chip.people { color: var(--ink2); }
+.caprow.chips .chip.bowl { color: var(--red); }
+.caprow.chips .chip.flow { color: var(--blue); }
+.caprow.chips .chip.favor { color: var(--green); }
+.caprow.chips .chip.grade { color: var(--ink2); }
 
 /* ---------- 底栏 ---------- */
 #bottombar {
@@ -719,7 +752,7 @@ button.pill[disabled] {
   margin-left: auto;
   text-align: right;
   font-size: 10px;
-  color: #8a7a63;
+  color: var(--wood);
   line-height: 1.7;
   padding-right: 4px;
 }
@@ -751,7 +784,7 @@ button.pill[disabled] {
 
 .speedttl {
   font-size: 9px;
-  color: #8a7a63;
+  color: var(--wood);
   letter-spacing: 2px;
   margin-bottom: 3px;
 }
@@ -924,21 +957,21 @@ button.pill[disabled] {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #2f2118;
+  color: var(--ink);
   line-height: 1.3;
 }
 
 .dishnote {
   margin-bottom: 2px;
   font-size: 12px;
-  color: #7a6a55;
+  color: var(--wood);
   line-height: 1.5;
 }
 
 .lbtns button.on {
-  background: #2f7d4f;
-  color: #fffdf6;
-  border-color: #256b41;
+  background: var(--green);
+  color: var(--paper);
+  border-color: var(--green);
   font-weight: 700;
 }
 
@@ -975,7 +1008,7 @@ button.pill[disabled] {
 }
 
 .gD {
-  background: #8a7a63;
+  background: var(--wood);
 }
 
 .subs {
@@ -1018,7 +1051,7 @@ button.pill[disabled] {
   border-top: 2px dashed var(--shadow);
   font-size: 11px;
   line-height: 1.9;
-  color: #5d4c39;
+  color: var(--ink2);
 }
 
 /* 列表面板 */
@@ -1068,10 +1101,10 @@ button.pill[disabled] {
   align-items: flex-start;
   gap: 3px;
   padding: 8px 10px;
-  border: 2px solid #d8c9a8;
+  border: 2px solid var(--cream);
   border-radius: 10px;
-  background: #fffdf6;
-  color: #3b2b1d;
+  background: var(--paper);
+  color: var(--ink);
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -1079,14 +1112,14 @@ button.pill[disabled] {
 }
 
 .ncard:hover:not(:disabled) {
-  border-color: #b8912f;
+  border-color: var(--gold);
   transform: translateY(-1px);
 }
 
 .ncard.on {
-  border-color: #2f7d4f;
-  background: #f2fbf4;
-  box-shadow: 0 0 0 1px #2f7d4f inset;
+  border-color: var(--green);
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--green) inset;
 }
 
 .ncard:disabled,
@@ -1106,22 +1139,22 @@ button.pill[disabled] {
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 999px;
-  background: #efe6d2;
+  background: var(--cream);
 }
 
 .ntag.hot {
-  background: #ffe6b3;
-  color: #8a5a00;
+  background: var(--cream);
+  color: var(--wood);
 }
 
 .ntag.cold {
-  background: #e2ecf7;
-  color: #2c5c8a;
+  background: var(--paper2);
+  color: var(--blue);
 }
 
 .ntag.all {
-  background: #e9ecdf;
-  color: #4a5533;
+  background: var(--cream);
+  color: var(--ink2);
 }
 
 .nfit {
@@ -1163,9 +1196,9 @@ button.pill[disabled] {
   padding: 8px 10px;
   text-align: left;
   font: inherit;
-  color: #2f2118;
-  background: #fffdf6;
-  border: 2px solid #d8c9a8;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--cream);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -1181,13 +1214,13 @@ button.pill[disabled] {
 }
 
 .pbtn:hover {
-  border-color: #b8912f;
+  border-color: var(--gold);
 }
 
 .pbtn.on {
-  border-color: #2f7d4f;
-  box-shadow: 0 0 0 1px #2f7d4f inset;
-  background: #f3fbf4;
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green) inset;
+  background: var(--paper);
 }
 
 /* 分店选区（S6）：一行小卡片，点一个就选中 */
@@ -1204,10 +1237,10 @@ button.pill[disabled] {
   align-items: flex-start;
   gap: 1px;
   padding: 5px 9px;
-  border: 2px solid #d8c9a8;
+  border: 2px solid var(--cream);
   border-radius: 8px;
-  background: #fffdf6;
-  color: #3b2b1d;
+  background: var(--paper);
+  color: var(--ink);
   font: inherit;
   font-size: 12px;
   line-height: 1.2;
@@ -1225,13 +1258,13 @@ button.pill[disabled] {
 }
 
 .dpick:hover {
-  border-color: #b8912f;
+  border-color: var(--gold);
 }
 
 .dpick.on {
-  border-color: #2f7d4f;
-  background: #f2fbf4;
-  box-shadow: 0 0 0 1px #2f7d4f inset;
+  border-color: var(--green);
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--green) inset;
 }
 
 .dpick.here b::after {
@@ -1249,7 +1282,7 @@ button.pill[disabled] {
 .lmeta {
   flex: 1 0 100%;
   font-size: 10px;
-  color: #8a7a63;
+  color: var(--wood);
 }
 
 .lbtns {
@@ -1322,13 +1355,13 @@ button.pill[disabled] {
 
 .hint {
   font-size: 10px;
-  color: #8a7a63;
+  color: var(--wood);
   padding: 5px 2px 0;
 }
 
 .empty2 {
   font-size: 11px;
-  color: #8a7a63;
+  color: var(--wood);
   padding: 10px 6px;
   border-bottom: 1px dotted rgba(195, 173, 132, 0.75);
 }
@@ -1349,8 +1382,8 @@ button.pill[disabled] {
   font-size: 10px;
   padding: 3px 6px;
   border: 2px solid var(--shadow);
-  background: #e9dcc0;
-  color: #a89a80;
+  background: var(--cream);
+  color: var(--sand);
   letter-spacing: 0;
 }
 
@@ -1426,7 +1459,7 @@ button.pill[disabled] {
 .eventbody {
   font-size: 12px;
   line-height: 1.9;
-  color: #5d4c39;
+  color: var(--ink2);
   padding: 0 14px 10px;
   border-bottom: 2px dashed var(--shadow);
   margin: 0 4px 10px;
@@ -1436,7 +1469,7 @@ button.pill[disabled] {
   margin: -4px 16px 8px;
   font-size: 9px;
   letter-spacing: 1px;
-  color: #a89a80;
+  color: var(--sand);
 }
 
 .evtsrc.remote {
@@ -1477,7 +1510,7 @@ button.pill[disabled] {
 
 .evtbtn span {
   font-size: 10px;
-  color: #8a7a63;
+  color: var(--wood);
   margin-left: auto;
 }
 
@@ -1510,8 +1543,8 @@ button.pill[disabled] {
 /* 喜好「新发现」：开罗式高亮，和普通流水提示区分开 */
 .toast.like {
   background: rgba(59, 92, 43, 0.96);
-  border-color: #ffc845;
-  color: #fff6dc;
+  border-color: var(--sand);
+  color: var(--paper2);
 }
 
 @keyframes toastin {
@@ -1539,7 +1572,7 @@ button.pill[disabled] {
   padding-top:5px;
   border-top:1px dashed rgba(59,43,29,.3);
   font-size:10px;
-  color:#8a7a63;
+  color:var(--wood);
   letter-spacing:.2px;
 }
 
@@ -1557,21 +1590,21 @@ button.pill[disabled] {
   display:block;
   height:100%;
   width:0;
-  background:#b8452c;
+  background:var(--red);
   transition:width .25s linear;
 }
 .frenzy .fztxt{
   margin-top:3px;
   font-size:10px;
-  color:#8a7a63;
+  color:var(--wood);
   letter-spacing:.2px;
 }
 .frenzy.live .fzbar i{
-  background:linear-gradient(90deg,#e0663a,#b8452c);
+  background:linear-gradient(90deg,var(--orange),var(--red));
   animation:fzbreathe 1.1s ease-in-out infinite;
 }
 .frenzy.live .fztxt{
-  color:#b8452c;
+  color:var(--red);
   font-weight:700;
 }
 @keyframes fzbreathe{
@@ -1611,7 +1644,7 @@ button.pill[disabled] {
 .ddate {
   font-size: 10px;
   letter-spacing: 1px;
-  color: #8a7a63;
+  color: var(--wood);
 }
 
 .daygrid {
@@ -1627,13 +1660,13 @@ button.pill[disabled] {
   gap: 2px;
   padding: 6px 8px;
   border: 2px solid var(--shadow);
-  background: #fff8e6;
+  background: var(--paper2);
 }
 
 .dk {
   font-size: 10px;
   letter-spacing: 1px;
-  color: #8a7a63;
+  color: var(--wood);
 }
 
 .dv {
@@ -1645,7 +1678,7 @@ button.pill[disabled] {
   padding: 10px 16px 6px;
   font-size: 11px;
   line-height: 1.8;
-  color: #5d4c39;
+  color: var(--ink2);
 }
 
 .dayfoot {
@@ -1657,7 +1690,7 @@ button.pill[disabled] {
 
 .dcash {
   font-size: 11px;
-  color: #8a7a63;
+  color: var(--wood);
 }
 
 .daybtn {
@@ -1679,15 +1712,15 @@ button.pill[disabled] {
 
 /* 菜单卡片（P47）：一排「券」，点一张切过去编辑它 */
 .menucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
-.dcard{border:2px solid #d8c9a8;background:#fffdf6;border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;text-align:left}
-.dcard.on{border-color:#2f7d4f}
-.dcard.editing{box-shadow:0 0 0 1px #2f7d4f inset;background:#f3fbf4}
-.dcard.add{justify-content:center;align-items:center;color:#7a6a55;font-size:12px;border-style:dashed;cursor:pointer}
+.dcard{border:2px solid var(--cream);background:var(--paper);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;text-align:left}
+.dcard.on{border-color:var(--green)}
+.dcard.editing{box-shadow:0 0 0 1px var(--green) inset;background:var(--paper)}
+.dcard.add{justify-content:center;align-items:center;color:var(--wood);font-size:12px;border-style:dashed;cursor:pointer}
 .dhead{display:flex;justify-content:space-between;align-items:baseline;gap:6px;background:none;border:0;padding:0;cursor:pointer;text-align:left}
-.dprice{color:#b8912f;font-weight:700}
+.dprice{color:var(--gold);font-weight:700}
 .dacts{display:flex;gap:6px;margin-top:2px}
-.dbtn{flex:1;font-size:11px;padding:3px 6px;border:1px solid #d8c9a8;background:#fff;border-radius:4px;cursor:pointer}
-.dbtn.on{border-color:#2f7d4f;color:#2f7d4f;background:#eefaf1}
+.dbtn{flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--cream);background:var(--paper);border-radius:4px;cursor:pointer}
+.dbtn.on{border-color:var(--green);color:var(--green);background:var(--paper)}
 
 /* ── M2 街面小地图：16×16 的像素格子，一格一个色块 ── */
 .minimap {
@@ -1696,8 +1729,8 @@ button.pill[disabled] {
   gap: 1px;
   padding: 6px;
   margin: 0 2px 10px;
-  background: #efe3c8;
-  border: 2px solid #d8c9a8;
+  background: var(--cream);
+  border: 2px solid var(--cream);
   border-radius: 3px;
   width: max-content;
   image-rendering: pixelated;
@@ -1706,14 +1739,14 @@ button.pill[disabled] {
   display: block;
   width: 7px;
   height: 7px;
-  background: #fffdf6;
+  background: var(--paper);
 }
-.minimap .mc-r { background: #c9b28f; }
-.minimap .mc-s { background: #b5493a; }
-.minimap .mc-v { background: #8a6f52; }
-.minimap .mc-k { background: #2f7d4f; }
-.minimap .mc-t { background: #4a6f8a; }
-.minimap .mc-m { background: #b8912f; }
+.minimap .mc-r { background: var(--sand); }
+.minimap .mc-s { background: var(--red); }
+.minimap .mc-v { background: var(--wood); }
+.minimap .mc-k { background: var(--green); }
+.minimap .mc-t { background: var(--blue); }
+.minimap .mc-m { background: var(--gold); }
 
 /* 店里 · 家当布景（M3b）：12×8 格俯视小图，一格 18px，像素描边 */
 .shopmap {
@@ -1722,31 +1755,31 @@ button.pill[disabled] {
   gap: 2px;
   margin: 8px 0 6px;
   padding: 6px;
-  background: #2f2118;
-  border: 2px solid #5a4632;
-  box-shadow: inset 0 0 0 2px #8a6f52, 4px 4px 0 rgba(47, 33, 24, 0.35);
+  background: var(--ink);
+  border: 2px solid var(--ink2);
+  box-shadow: inset 0 0 0 2px var(--wood), 4px 4px 0 rgba(47, 33, 24, 0.35);
   width: max-content;
 }
 .shopmap .sm {
   width: 18px;
   height: 18px;
   display: block;
-  background: #f3ead6;
+  background: var(--cream);
   box-shadow: inset -2px -2px 0 rgba(90, 70, 50, 0.18);
 }
-.shopmap .sm-e { background: #f3ead6; }
-.shopmap .sm-seat { background: #b8912f; }
-.shopmap .sm-kitchen { background: #b5493a; }
-.shopmap .sm-wall { background: #4a6f8a; }
-.shopmap .sm-counter { background: #2f7d4f; }
-.shopmap .sm-decor { background: #8a6f52; }
+.shopmap .sm-e { background: var(--cream); }
+.shopmap .sm-seat { background: var(--gold); }
+.shopmap .sm-kitchen { background: var(--red); }
+.shopmap .sm-wall { background: var(--blue); }
+.shopmap .sm-counter { background: var(--green); }
+.shopmap .sm-decor { background: var(--wood); }
 .smlegend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 10px;
   font-size: 12px;
-  color: #7a6a55;
+  color: var(--wood);
   margin-bottom: 8px;
 }
 .smlegend .smk {
@@ -1756,18 +1789,51 @@ button.pill[disabled] {
   margin-left: 6px;
   box-shadow: inset -2px -2px 0 rgba(90, 70, 50, 0.18);
 }
-.smlegend .smk.sm-seat { background: #b8912f; }
-.smlegend .smk.sm-kitchen { background: #b5493a; }
-.smlegend .smk.sm-wall { background: #4a6f8a; }
-.smlegend .smk.sm-counter { background: #2f7d4f; }
-.smlegend .smk.sm-decor { background: #8a6f52; }
+.smlegend .smk.sm-seat { background: var(--gold); }
+.smlegend .smk.sm-kitchen { background: var(--red); }
+.smlegend .smk.sm-wall { background: var(--blue); }
+.smlegend .smk.sm-counter { background: var(--green); }
+.smlegend .smk.sm-decor { background: var(--wood); }
+
+/* 店里有人（P57）：客人与店员画成「一个脑袋 + 一个身子」，不是一块色 */
+.shopmap .sm-cust,
+.shopmap .sm-staff {
+  position: relative;
+  background: var(--paper2);
+}
+.shopmap .sm-cust::before,
+.shopmap .sm-staff::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 8px;
+  height: 6px;
+  box-shadow: inset 0 -2px 0 0 var(--ink);
+}
+.shopmap .sm-cust::after,
+.shopmap .sm-staff::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  box-shadow: inset -2px 0 0 0 rgba(47, 33, 24, 0.25);
+}
+.shopmap .sm-cust::before,
+.shopmap .sm-cust::after { background: var(--gold); }
+.shopmap .sm-staff::before,
+.shopmap .sm-staff::after { background: var(--green); }
+.smlegend .smk.sm-cust { background: var(--gold); }
+.smlegend .smk.sm-staff { background: var(--green); }
 
 /* 同行传闻（落点②）：一行小字，本地有兜底，配了代理会换成在线版 */
 .lmeta.rumour {
-  color: #7a6a55;
+  color: var(--wood);
   font-size: 12px;
   opacity: .9;
-  border-left: 2px solid #d8c9a8;
+  border-left: 2px solid var(--cream);
   padding-left: 6px;
   margin-top: 2px;
 }
