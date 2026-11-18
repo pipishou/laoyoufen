@@ -150,7 +150,7 @@ describe("人情：存档", () => {
     addFavorFree(s, 33, "转手");
     s.treatDay = s.month * 100 + s.day;
     const back = deserialize(serialize(s))!;
-    expect(SAVE_VERSION).toBe(22);
+    expect(SAVE_VERSION).toBe(23);
     expect(favorOf(back)).toBe(33);
     expect(back.favorTotal).toBe(33);
     expect(back.treatDay).toBe(s.treatDay);

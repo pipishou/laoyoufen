@@ -96,6 +96,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 22 &&
     v.saveVersion !== 18 &&
     v.saveVersion !== 19 &&
     v.saveVersion !== 21 &&
@@ -251,6 +252,8 @@ export function deserialize(raw: string): GameState | null {
       sideRevenue: 0,
       comboHits: 0,
       branchBowls: 0,
+      arenaRuns: 0,
+      arenaWins: 0,
     };
   } else {
     if (typeof parsed.tally.bowls !== "number") parsed.tally.bowls = 0;
@@ -417,6 +420,19 @@ export function deserialize(raw: string): GameState | null {
     if (typeof parsed.flow.lastFavor !== "string") parsed.flow.lastFavor = null;
     const fy = (parsed.flow as { favorToday?: unknown }).favorToday;
     parsed.flow.favorToday = typeof fy === "number" && Number.isFinite(fy) && fy > 0 ? Math.round(fy) : 0;
+  }
+  // v22 → v23（M4 落场）：进行中的局不落盘 —— 存档里永远不带局面；
+  // arenaDay/arenaRuns 只记「今天落了几场」，坏值当没落过。
+  (parsed as { arena?: unknown }).arena = null;
+  const ad = (parsed as { arenaDay?: unknown }).arenaDay;
+  parsed.arenaDay = typeof ad === "number" && Number.isFinite(ad) && ad > 0 ? Math.round(ad) : -1;
+  const ar = (parsed as { arenaRuns?: unknown }).arenaRuns;
+  parsed.arenaRuns = typeof ar === "number" && Number.isFinite(ar) && ar > 0 ? Math.round(ar) : 0;
+  if (parsed.tally) {
+    const t1 = (parsed.tally as { arenaRuns?: unknown }).arenaRuns;
+    parsed.tally.arenaRuns = typeof t1 === "number" && Number.isFinite(t1) && t1 > 0 ? Math.round(t1) : 0;
+    const t2 = (parsed.tally as { arenaWins?: unknown }).arenaWins;
+    parsed.tally.arenaWins = typeof t2 === "number" && Number.isFinite(t2) && t2 > 0 ? Math.round(t2) : 0;
   }
   // v16 → v17（P46 主料与份量）：老档没有 main/portion。
   // 主料认不出就回碎肉（老友粉的本分），份量只认 2/3，其余回二两。

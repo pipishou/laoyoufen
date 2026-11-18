@@ -15,8 +15,9 @@ import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
+import type { ArenaRun } from "./arena";
 
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -332,6 +333,9 @@ export interface Tally {
   districts: string[];
   /** 累计加购收入（加料/饮料，不含一碗的基础价） */
   sideRevenue: number;
+  /** 落场（M4）一共打了几场 / 赢了几场 */
+  arenaRuns: number;
+  arenaWins: number;
   /** 累计凑出组合（老友味/酸辣开胃/全套）的次数 */
   comboHits: number;
   /**
@@ -486,6 +490,12 @@ export interface GameState {
   favorTotal: number;
   /** 最近一次「摆一桌请街坊」是哪天（month*100+day），-1 表示没摆过 */
   treatDay: number;
+  /** 落场（M4）：正在打的那一局；进行中的局不落盘，刷新即作废（见 `sim/arena.ts`） */
+  arena: ArenaRun | null;
+  /** 最近一次落场是哪天（month*100+day），-1 表示没落过 */
+  arenaDay: number;
+  /** 那天已经落了几场（含花人情加练的） */
+  arenaRuns: number;
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -572,6 +582,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
       sideRevenue: 0,
       comboHits: 0,
       branchBowls: 0,
+      arenaRuns: 0,
+      arenaWins: 0,
     },
     sides: {
       active: [...START_SIDES],
@@ -689,6 +701,9 @@ export function createInitialState(playerId: string, seed: number): GameState {
     favor: 0,
     favorTotal: 0,
     treatDay: -1,
+    arena: null,
+    arenaDay: -1,
+    arenaRuns: 0,
     equipment: {},
     dayReport: null,
     days: [],
@@ -831,6 +846,8 @@ export function ackDayReport(state: GameState): boolean {
  */
 export function tickMinute(state: GameState): boolean {
   if (state.finished) return false;
+  // 落场（M4）进行中：钟停住。擂台上 60 秒是真实时间，店里不该同时跑营业分钟
+  if (state.arena) return false;
   if (state.dayReport) return false;
   if (state.events.pending) return false;
   if (state.phase !== "open") return false;

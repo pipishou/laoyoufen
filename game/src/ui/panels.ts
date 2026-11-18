@@ -7,6 +7,7 @@ import { HIRE_FEE_RATE, MAX_STAFF, ROLE_LABEL, monthlyWageOf, nextStaffNeed, sta
 import { UPGRADES } from "../data/shop";
 import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
 import { canEnter, contestScore, maxTierOf } from "../sim/contest";
+import { arenaSummary, arenaViews } from "../sim/arena";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
 import { districtOptions } from "../sim/district";
 import { checkGrade } from "../sim/grade";
@@ -112,6 +113,7 @@ export interface PanelActions {
   setDrinkTemp(temp: string): void;
   /** 报名比赛：type = staff / customers / shop（见 data/contest.ts） */
   enterContest(type: string): void;
+  startArena(id: string): void;
   /** 交费评段位 */
   applyGrade(): void;
   /** 换区（付转让费） */
@@ -298,6 +300,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "contest":
         actions.enterContest(id);
+        break;
+      case "startarena":
+        actions.startArena(id);
         break;
       case "grade":
         actions.applyGrade();
@@ -766,6 +771,17 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
            <div class="lmeta">${r.tier} 档 · 竞技分 ${r.score} · 冠军 ${r.champion} · 奖金 ${money(r.prize)}</div></div>`;
       })
       .join("");
+    const arenaCards = arenaViews(s)
+      .map((v) => {
+        const gate = v.open;
+        const reason = gate.ok ? "" : gate.reason ?? "";
+        return `<div class="lrow">
+            <div class="lname">${v.def.name} <span class="lmeta" style="display:inline">· 这碗粉值 ${v.value}</span></div>
+            <div class="lmeta">${v.def.pitch}｜对手：${v.rival.name}（约 ${v.rivalTarget} 分）${reason ? `｜${reason}` : ""}</div>
+            <button type="button" class="widebtn" data-act="startarena" data-id="${v.def.id}" ${gate.ok ? "" : "disabled"}>上场</button>
+          </div>`;
+      })
+      .join("");
     return `<div class="sec">
         <div class="sechd">${open ? "比赛月 · 可以报名" : `不是比赛月 · 还有 ${wait} 个月`}</div>
         <div class="lmeta" style="padding:0 2px 8px">
@@ -774,6 +790,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>
         ${gate.ok ? "" : `<div class="hint">${gate.reason}</div>`}
         ${typeRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">落场 · ${arenaSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">
+          六十秒一场，按 1 / 2 / 3 出招，分数高的赢。一天一场，多打一场要 6 点人情。
+          同一个场地看重的味道不一样：菜市口认份量，江边认香气，擂台上四样都要齐。
+        </div>
+        ${arenaCards}
       </div>
       <div class="sec">
         <div class="sechd">档位与段位门槛</div>

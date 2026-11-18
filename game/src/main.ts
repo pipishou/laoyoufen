@@ -46,6 +46,9 @@ import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
 import { mountSetup, type SetupScreen } from "./ui/setup";
+import { mountArena, type ArenaUi } from "./ui/arena";
+import { COMMAND_BY_ID, COMMAND_KEY_MAP } from "./data/arena";
+import { startArena } from "./sim/arena";
 import { mountHud } from "./ui/hud";
 import { mountPanels, type Panels, type PanelTab } from "./ui/panels";
 import { initViewport } from "./ui/viewport";
@@ -167,6 +170,20 @@ const setupScreen: SetupScreen = mountSetup(document.body, {
     return true;
   },
 });
+
+const arenaUi: ArenaUi = mountArena(document.body, {
+  getState: () => state,
+  onDone: () => {
+    refresh();
+  },
+  onReplay: () => {
+    if (!lastArenaId) return;
+    const r = startArena(state, lastArenaId);
+    if (!r.ok) hud.showToast(r.reason ?? "今天落不了了", "info");
+    refresh();
+  },
+});
+
 
 panels = mountPanels(hudRoot, {
   setParam(group, index, value) {
@@ -367,6 +384,16 @@ panels = mountPanels(hudRoot, {
     }
     refresh();
   },
+  startArena(id) {
+    const r = startArena(state, String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "今天落不了场", "info");
+    } else {
+      lastArenaId = String(id);
+      playSfx("upgrade");
+    }
+    refresh();
+  },
   buyStreet(id) {
     const r = buyStreet(state, String(id));
     if (r.ok) {
@@ -553,9 +580,11 @@ function refresh(): void {
   panels.render(state, score);
   guide.render(state);
   setupScreen.render(state);
+  arenaUi.render();
   scheduleSave();
 }
 
+let lastArenaId = "";
 let saveTimer: number | null = null;
 function scheduleSave(): void {
   if (saveTimer !== null) return;
@@ -599,6 +628,19 @@ document.addEventListener("visibilitychange", () => {
 // 断网时攒着，回网立刻补传（uploadPlaytest 内部有 pending 标记）
 window.addEventListener("online", () => {
   void uploadPlaytest(true);
+});
+// 落场（M4）：擂台上按 1 / 2 / 3 出招，Esc 收摊。擂台不在的时候这几个键什么都不做
+window.addEventListener("keydown", (e) => {
+  if (!arenaUi.isOpen()) return;
+  if (e.key === "Escape") {
+    arenaUi.flee();
+    e.preventDefault();
+    return;
+  }
+  const cmd = COMMAND_BY_ID.get(COMMAND_KEY_MAP[e.key] ?? "");
+  if (!cmd) return;
+  arenaUi.strike(cmd.id);
+  e.preventDefault();
 });
 // 试玩记录一键导出：Shift+E 下载 playtest-YYYYMMDD.json（放到 game/data/playtest/ 我就能读）
 // 在线模式还会自动上传；Shift+U 手动催一次上传
