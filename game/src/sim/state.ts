@@ -132,6 +132,8 @@ export interface CustomerFlow {
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;
   satCountToday: number;
+  /** 这一分钟里「吃得满意」的碗数，热卖槽按它计分，每读完清零（I-07） */
+  goodBowls: number;
   /** 最近一次「热卖开始了」的提示文案，HUD 读完即消费 */
   lastFrenzy: string | null;
   /** 加料凑出组合时的喜报（老友味/酸辣开胃/全套），消费一次置空 */
@@ -601,6 +603,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       sideToastAt: -9999,
       satSumToday: 0,
       satCountToday: 0,
+      goodBowls: 0,
     },
     staff: {
       roster: [],
@@ -676,6 +679,7 @@ function endDay(state: GameState): void {
   state.flow.revenueToday = 0;
   state.flow.satSumToday = 0;
   state.flow.satCountToday = 0;
+  state.flow.goodBowls = 0;
 
   if (state.day > DAYS_PER_MONTH) {
     closeMonth(state);

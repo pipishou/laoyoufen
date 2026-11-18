@@ -37,7 +37,7 @@ export const SITES: readonly SiteDef[] = [
   {
     id: "stall",
     name: "街边摊",
-    pitch: "中山路口，晚上八点后才有人流；两张矮桌，雨天不开张。",
+    pitch: "中山路口摆两张矮桌，清早赶工的和送完孩子的顺路买一碗；雨天不开张。",
     feeYuan: 0,
     seats: 2,
     stoves: 1,

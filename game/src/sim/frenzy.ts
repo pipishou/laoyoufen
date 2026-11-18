@@ -23,6 +23,10 @@ import type { GameState } from "./state";
  */
 export const FRENZY_MAX = 100;
 export const FRENZY_PER_MINUTE = 5;
+/** 每碗满意的粉给多少槽（I-07：按碗计，玩家看得见因果） */
+export const FRENZY_PER_BOWL = 2;
+/** 一分钟最多涨多少，防止一锅端瞬间满槽 */
+export const FRENZY_MAX_GAIN = 8;
 export const FRENZY_DECAY = 2;
 export const FRENZY_MINUTES = 30;
 export const FRENZY_COOLDOWN_MINUTES = 240;
@@ -94,9 +98,9 @@ export interface FrenzyTickResult {
 
 /**
  * 每分钟推一次槽。调用点：`tickCustomers` 末尾（此时队列与今日满意度都已定）。
- * `waiting` 是当前排队人数，`satToday` 是今天满意度均分（还没卖过时为 -1）。
+ * `waiting` 是当前排队人数，`goodBowls` 是这一分钟里「吃得满意」的碗数（>= FRENZY_MIN_SAT）。
  */
-export function frenzyTick(state: GameState, waiting: number, satToday: number): FrenzyTickResult {
+export function frenzyTick(state: GameState, waiting: number, goodBowls: number): FrenzyTickResult {
   const f = state.frenzy;
   if (!f) return { triggered: false, active: false };
 
@@ -107,8 +111,11 @@ export function frenzyTick(state: GameState, waiting: number, satToday: number):
   // 实测不加冷却时替身 36 个月触发 1541 次，热卖变成常态而不是事件。
   if (now < (f.restUntil ?? -1)) return { triggered: false, active: false };
 
-  const satisfying = waiting >= FRENZY_MIN_QUEUE && satToday >= FRENZY_MIN_SAT;
-  f.gauge = Math.max(0, Math.min(FRENZY_MAX, f.gauge + (satisfying ? FRENZY_PER_MINUTE : -FRENZY_DECAY)));
+  // 判据用「这一分钟有没有满意的碗」，不用当日均值：日均在开场只有两三碗时
+  // 忽高忽低（阿兰局能冲到 65%，巷内局又长期压在 58 边缘），玩家看不出规律。
+  const satisfying = waiting >= FRENZY_MIN_QUEUE && goodBowls >= 1;
+  const gain = Math.min(FRENZY_MAX_GAIN, FRENZY_PER_BOWL * Math.max(1, goodBowls));
+  f.gauge = Math.max(0, Math.min(FRENZY_MAX, f.gauge + (satisfying ? gain : -FRENZY_DECAY)));
 
   if (f.gauge < FRENZY_MAX) return { triggered: false, active: false };
 

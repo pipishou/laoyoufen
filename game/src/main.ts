@@ -72,7 +72,8 @@ function loadOrCreate(): GameState {
 const state = loadOrCreate();
 let score = scoreOf(state);
 /** 默认 ×4：一天 30 秒，一月 15 分钟，三年约 9 小时 */
-let speed = 4;
+// 默认 1 倍（I-16）：开局就 ×4，玩家还没看懂一天怎么过，日结单已经弹了两次。
+let speed = 1;
 let panels!: Panels;
 
 // 埋点：先读回历史采样（跨刷新保留），再开始记这一局
@@ -325,6 +326,12 @@ panels = mountPanels(hudRoot, {
       hud.showToast(r.reason, "info");
     }
     refresh();
+  },
+  restart() {
+    if (!window.confirm("新开一局？现在的存档会被清掉，从选铺位重新开始。")) return;
+    localStorage.removeItem(SAVE_STORAGE_KEY);
+    localStorage.removeItem("laoyou.guide.v2");
+    location.reload();
   },
   closeBranch(id) {
     const r = closeBranch(state, String(id));

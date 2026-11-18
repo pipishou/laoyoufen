@@ -3,7 +3,8 @@
   position:absolute;
   left:50%;
   bottom:308px;
-  z-index:40;
+  /* 压在面板（.modal）之上，否则引导被页签面板盖住（I-03） */
+  z-index:72;
   width:min(460px,74%);
   transform:translateX(-50%);
   background:#fff8e6;

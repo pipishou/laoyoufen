@@ -1,4 +1,6 @@
 import type { GameState } from "../sim/state";
+import { DEFAULT_PRICE } from "../sim/score";
+import { scoreOf } from "../sim/dish";
 
 /**
  * 首局引导：5 步，绑在一天三态上（prep 四步 / open 一步）。
@@ -36,25 +38,23 @@ const STEPS: Step[] = [
     id: "taste",
     phase: "prep",
     title: "① 先把味道调起来",
-    body: "现在还没开门，时间不会走。点左下「配方」，把汤和粉的滑杆往右拨——味道分决定来多少人、也决定他们肯出多少钱。",
-    action: "recipe",
+    body: "现在还没开门，时间不会走。点左下「配方」，把汤和粉的滑杆往右拨，把这碗调到 70 分以上——味道分决定来多少人、也决定他们肯出多少钱。",
+    done: (s) => scoreOf(s).total >= 70,
     anchor: '[data-tab="recipe"]',
   },
   {
     id: "topping",
     phase: "prep",
     title: "② 加两样浇头",
-    body: "最下一排点「酸笋」「豆豉」，各加一份进这碗。浇头是味道的一部分，也占成本。",
-    action: "topping",
+    body: "第一排最左那两个：「酸笋」「豆豉」，各点一下加进这碗。浇头是味道的一部分，也占成本。",
     done: (s) => s.recipe.toppings.length >= 2,
   },
   {
     id: "price",
     phase: "prep",
-    title: "③ 定个价：先卖 ¥9",
-    body: "售价在「配方」面板里。¥9 是南宁的常见价；超过街坊钱包，他们会看价牌走人。",
-    action: "price",
-    done: (s) => s.price !== 9,
+    title: "③ 改个价试试",
+    body: "售价也在「配方」面板里。先用 ¥10 试一天：价太低赚不到工钱，太高街坊看价牌就走。价格随时能改，明天再看。",
+    done: (s) => s.price !== DEFAULT_PRICE,
     anchor: '[data-tab="recipe"]',
   },
   {

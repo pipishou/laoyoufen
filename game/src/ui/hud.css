@@ -103,12 +103,29 @@ body {
   color: var(--paper);
   border: 3px solid var(--ink);
   padding: 5px 9px 4px;
-  font-size: 15px;
-  letter-spacing: 3px;
+  font-size: 14px;
+  letter-spacing: 2px;
   box-shadow: 3px 3px 0 var(--shadow);
+  /* 4–8 字店名不许折成两行（I-15）：宁可裁掉末字，招牌折行最出戏 */
+  white-space: nowrap;
+  max-width: 176px;
+  overflow: hidden;
 }
 
 /* 还没起店名时的招牌：淡一点，提示这是占位 */
+.dhint {
+  font-size: 11px;
+  color: #8a7a63;
+  max-width: 190px;
+  line-height: 1.35;
+}
+
+.devnote {
+  color: var(--muted, #8a7a63);
+  font-size: 12px;
+  opacity: 0.85;
+}
+
 .logo.unnamed {
   opacity: 0.6;
   filter: grayscale(0.35);

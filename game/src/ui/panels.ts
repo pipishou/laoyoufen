@@ -23,6 +23,7 @@ import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
+import { devNote } from "./dev";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -112,6 +113,8 @@ export interface PanelActions {
   openBranch(size: string, district: string): void;
   /** 关掉一家分店（退半个月租） */
   closeBranch(id: string): void;
+  /** 新开一局：清存档、回建店界面（I-20） */
+  restart(): void;
   dismissReport(): void;
 }
 
@@ -209,6 +212,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   let current: PanelTab = "recipe";
   let lastReportYear = -1;
   const keys: Partial<Record<PanelTab, string>> = {};
+  /** 最近一次 render 的入参：切页签时要拿它就地重绘（见 show 里的注释） */
+  let lastState: GameState | null = null;
+  let lastScore: RecipeScore | null = null;
   /** 粉型卡片单独缓存（配方页里既有滑块又有卡片，不能共用一个 key） */
   let noodleKey = "";
   let mainKey = "";
@@ -227,6 +233,13 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       b.classList.toggle("on", b.dataset.tab2 === tab);
     });
     title.textContent = TAB_TITLE[tab];
+    // 切页签必须就地重绘。render() 只由外部 refresh()（每分钟 / 动作 / 底栏打开）驱动，
+    // 顶栏切页签不触发 refresh —— 从未渲染过的页签就会是「标题对、正文空」。
+    // 试玩报告 I-05 的四个空页签就是这么来的（底栏进入 18208 字符 / 顶栏切入 0 字符）。
+    if (lastState && lastScore) {
+      delete keys[tab];
+      renderPane(lastState, lastScore);
+    }
   };
 
   const open = (tab: PanelTab): void => {
@@ -319,6 +332,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "closebranch":
         actions.closeBranch(id);
+        break;
+      case "restart":
+        actions.restart();
         break;
       case "dismiss":
         actions.dismissReport();
@@ -426,7 +442,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
                     ? '<span class="tag2">下架</span>'
                     : `<span class="tag2">还差 ${v.short} 人</span>`
               }<span class="tag2">卖 ¥${v.def.priceYuan} / 本 ¥${v.def.costYuan}</span></div>
-              <div class="lmeta">满意 +${v.def.satBonus}｜已卖 ${v.sold} 份｜开罗：${v.def.kairo}</div>
+              <div class="lmeta">满意 +${v.def.satBonus}｜已卖 ${v.sold} 份｜${v.def.line}${devNote("开罗：" + v.def.kairo)}</div>
               <div class="lmeta" style="color:#8a7a63">「${v.def.line}」</div>
               <div class="lbtns"><button type="button" data-act="toggleside" data-id="${v.def.id}" ${v.unlocked ? "" : "disabled"}>${
                 v.on && v.unlocked ? "下架" : v.unlocked ? "上架" : "还没解锁"
@@ -436,7 +452,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           .join("")}
         <div class="lrow">
           <div class="lname">粉 + 饮料套餐<span class="tag2">${s.sides.mealDeal ? "开着" : "关着"}</span><span class="tag2">饮料 −¥1</span></div>
-          <div class="lmeta">打包一起卖，客人觉得划算（满意 +1），但饮料少收一块钱。开罗 avgTicket 的思路：客单价不是把粉卖贵，是多卖一件。</div>
+          <div class="lmeta">打包一起卖，客人觉得划算（满意 +1），但饮料少收一块钱。客单价不是把粉卖贵，是多卖一件。</div>
           <div class="lbtns"><button type="button" data-act="mealdeal">${s.sides.mealDeal ? "关掉套餐" : "开套餐"}</button></div>
         </div>
         <div class="lrow">
@@ -471,12 +487,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     const gotCount = liveViews.filter((v) => v.unlocked).length;
     const craftSec = `<div class="sec">
         <div class="sechd">手艺树 · 第 ${gradeOf(s)} 段 · 已会 ${gotCount}/${liveViews.length}</div>
-        <div class="lmeta" style="padding:0 2px 8px">开罗 rank.txt 十七行奖励就是这张表：扩建、排队位、买更大的店 —— 升一段多一件能做的事，不是多一个数字。灰色的要先去评段位。</div>
+        <div class="lmeta" style="padding:0 2px 8px">扩建、排队位、买更大的店 —— 升一段多一件能做的事，不是多一个数字。灰色的要先去评段位。</div>
         ${views
           .map(
             (v) => `<div class="lrow${v.unlocked ? "" : " locked"}">
               <div class="lname">第 ${v.grade} 段 · ${v.name}<span class="tag2">${v.unlocked ? (v.pending ? "预告" : "已会") : `还差 ${v.short} 段`}</span></div>
-              <div class="lmeta">${v.effect}｜开罗：${v.kairo}</div>
+              <div class="lmeta">${v.effect}｜${v.line}${devNote("开罗：" + v.kairo)}</div>
               <div class="lmeta" style="color:#8a7a63">「${v.line}」</div>
             </div>`,
           )
@@ -487,7 +503,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     const opts = districtOptions(s);
     const districtSec = `<div class="sec">
         <div class="sechd">换区 · 现在 ${opts.find((o) => o.current)?.name ?? s.district}</div>
-        <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%（开罗：your current area will gradually decrease）。转让费一次性，搬完能量从 100%% 重新开始。</div>
+        <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%。转让费一次性，搬完能量从 100%% 重新开始。</div>
         ${opts
           .slice(0, 6)
           .map(
@@ -522,7 +538,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       .join("");
     const branchSec = `<div class="sec">
         <div class="sechd">分店 · 已开 ${bv.length}/${MAX_BRANCHES}${bv.length ? ` · ${branchSummary(s)}` : ""}</div>
-        <div class="lmeta" style="padding:0 2px 8px">主店评到第 8 段就能在别处再开一家（开罗：Buy Small Shop → Buy Amazing Shop；标准店第 9 段、大店第 10 段、旗舰第 11 段）。分店自己养口碑：开张时只有 45%，每天涨 3%，大约 18 天熟。同一个区连开几家要分客流，池子小的区开不了。</div>
+        <div class="lmeta" style="padding:0 2px 8px">主店评到第 8 段就能在别处再开一家（标准店第 9 段、大店第 10 段、旗舰第 11 段）。分店自己养口碑：开张时只有 45%，每天涨 3%，大约 18 天熟。同一个区连开几家要分客流，池子小的区开不了。</div>
         ${openRows || `<div class="empty2">还没开分店。</div>`}
         <div class="sechd" style="margin-top:10px">在哪个区开 · 点一下选中</div>
         <div class="dpicks">${opts
@@ -572,7 +588,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       ${gradeSec}
       ${craftSec}
       ${branchSec}
-      ${districtSec}`;
+      ${districtSec}
+      <div class="sechd">换一局</div>
+      <div class="lrow">
+        <div class="lmeta">存档只保留这一局。想换个铺位、换个区从头再试，点右边（会清掉现在的存档）。</div>
+        <button data-act="restart">新开一局</button>
+      </div>`;
   }
 
   function contestHtml(s: GameState, _score: RecipeScore): string {
@@ -602,7 +623,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
     return `<div class="sec">
         <div class="sechd">${open ? "比赛月 · 可以报名" : `不是比赛月 · 还有 ${wait} 个月`}</div>
         <div class="lmeta" style="padding:0 2px 8px">
-          开罗的老规矩：一年两场，六月和十二月。你现在的段位能报 <b>${maxTier} 档</b>
+          一年两场，六月和十二月。你现在的段位能报 <b>${maxTier} 档</b>
           （冠军 ${money(t.prizeYuan)}，对手基准 ${t.rivalScore} 分）。段位不升，奖金封顶。
         </div>
         ${gate.ok ? "" : `<div class="hint">${gate.reason}</div>`}
@@ -906,6 +927,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   }
 
   const render = (s: GameState, score: RecipeScore): void => {
+    lastState = s;
+    lastScore = score;
     if (s.pendingReport && s.pendingReport.year !== lastReportYear) {
       lastReportYear = s.pendingReport.year;
       open("ledger");

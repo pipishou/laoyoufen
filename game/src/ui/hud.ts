@@ -4,6 +4,7 @@ import { EVENTS_BY_ID } from "../data/events";
 import { TOPPINGS } from "../data/ingredients";
 import { LIKES_TOTAL } from "../sim/collection";
 import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
+import { queueMaxOf } from "../sim/unlocks";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
@@ -138,7 +139,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     <div class="stat" title="顾客的酸 / 辣 / 浓 / 淡偏好，对上几维就记几维；偏好发现得越多，常客回访越勤"><span class="k">常客</span><span class="v" data-regs>0</span><span class="k">喜好</span><span class="v" data-likes>0/${LIKES_TOTAL}</span></div>
     <div class="stat"><span class="k">员工</span><span class="v" data-staffn>0</span></div>
     <div class="spacer"></div>
-    <button type="button" class="audio" data-audio title="开罗风 BGM 与音效开关">音乐</button>
+    <button type="button" class="audio" data-audio title="背景音乐与音效">音乐</button>
     <button type="button" class="pill prep" data-openpill title="营业时间 06:00–14:00，开门后才开始走时间">● 开门营业</button>
   </div>
 
@@ -179,7 +180,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <span class="pct" data-sat>--</span>
     </div>
     <div class="caprow" data-caprow title="产能 = 座位数 × 每碗出餐时间；扩充座位或换灶才提得上去">座位 4 · 出餐 6 分/碗</div>
-    <div class="frenzy" data-frenzy title="开罗 Ramen Frenzy：门口有人排队、客人又吃得满意时，槽会涨；涨满后 30 分钟来客翻倍">
+    <div class="frenzy" data-frenzy title="热卖：门口有人排队、客人又吃得满意，槽会涨；涨满后半小时来客翻倍">
       <div class="fzbar"><i data-frenzybar></i></div>
       <div class="fztxt" data-frenzytxt>热卖槽 0%</div>
     </div>
@@ -253,6 +254,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <div class="daynote" data-day-note></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
+        <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
         <button type="button" class="daybtn" data-day-next>明天继续 ›</button>
       </div>
     </div>`;
@@ -407,7 +409,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       el.openpill.className = "pill prep";
       el.openpill.disabled = false;
     } else if (phase === "open") {
-      el.openpill.textContent = `● 营业中 · 还剩 ${minutesLeft(s.flow.minuteOfDay)} 分`;
+      el.openpill.textContent = `● 营业中 · ${clockOf(s.flow.minuteOfDay)}（还剩 ${minutesLeft(s.flow.minuteOfDay)} 分）`;
       el.openpill.className = "pill live";
       el.openpill.disabled = true;
     } else {
@@ -472,8 +474,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     const waitingList = s.flow.customers.filter((c) => c.status === "waiting");
     const eatingList = s.flow.customers.filter((c) => c.status === "eating");
     const queueLen = waitingList.length;
-    el.queue.textContent = `${queueLen}/8`;
-    el.queuebar.style.width = `${Math.min(100, (queueLen / 8) * 100)}%`;
+    el.queue.textContent = `${queueLen}/${queueMaxOf(s)}`;
+    el.queuebar.style.width = `${Math.min(100, (queueLen / queueMaxOf(s)) * 100)}%`;
 
     const sat = s.flow.lastSatisfaction;
     el.sat.textContent = sat < 0 ? "--" : String(sat);

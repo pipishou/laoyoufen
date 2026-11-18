@@ -34,6 +34,7 @@ import {
 } from "./menu";
 import { priceTolerance } from "./score";
 import {
+  FRENZY_MIN_SAT,
   frenzyAura,
   frenzyBudgetBoost,
   frenzyPoolBoost,
@@ -374,10 +375,14 @@ function settle(state: GameState, c: QueueCustomer): void {
   state.monthSatSum += sat;
   state.monthSatCount += 1;
   state.flow.satSumToday += sat;
+  // 热卖槽按「这一分钟满意的碗」计分（I-07）
+  if (sat >= FRENZY_MIN_SAT) state.flow.goodBowls = (state.flow.goodBowls ?? 0) + 1;
   state.flow.satCountToday += 1;
 
-  state.reputation = clamp(state.reputation + (sat - 55) / 800, 0, 5);
-  if (sat < 35) state.reputation = clamp(state.reputation - 0.05, 0, 5);
+  // 评价逐碗微调。原来还额外「sat < 35 就 −0.05」，逐碗结算时那是一台绞肉机：
+  // 街边摊开局 2 座、客流 160/日，一上午就掉到 0.0，而且再没有回升的斜率（I-17）。
+  // 下限留 0.5：名不见经传，但不是「已经被街坊拉黑」。
+  state.reputation = clamp(state.reputation + (sat - 55) / 800, 0.5, 5);
 
   const likeHits = arch ? likeHitsOf(item.recipe, arch.prefs) : [];
   // 命中喜好 → 记进常客档案（开罗 AddRegularCount）；「问出口味」在顾客还在店里时由 surveyTick 完成
@@ -491,12 +496,12 @@ export function tickCustomers(state: GameState): void {
     return true;
   });
 
-  // 4. 热卖槽（开罗 Ramen Frenzy）：门口还在排队 + 今天吃得满意 → 槽涨。
+  // 4. 热卖槽：门口还在排队 + 这一分钟有人吃得满意 → 槽涨，按满意的碗数算。
   //    这一句必须放在最后：此时的 waiting 与今日满意度才是「这一分钟的真实盘面」。
   const waitingNow = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
-  const satToday =
-    flow.satCountToday > 0 ? flow.satSumToday / flow.satCountToday : -1;
-  const tick = frenzyTick(state, waitingNow, satToday);
+  const goodBowls = flow.goodBowls ?? 0;
+  flow.goodBowls = 0;
+  const tick = frenzyTick(state, waitingNow, goodBowls);
   if (tick.triggered) {
     state.monthRevenue += 0; // 热卖本身不进账，账由卖出的碗产生
     flow.lastFrenzy = `热卖！门口排起长队，今天后面 30 分钟人多一倍（第 ${state.frenzy.count} 次）`;
