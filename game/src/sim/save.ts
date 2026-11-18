@@ -98,7 +98,8 @@ function isGameState(v: unknown): v is GameState {
     v.saveVersion !== SAVE_VERSION &&
     v.saveVersion !== 18 &&
     v.saveVersion !== 19 &&
-    v.saveVersion !== 20 &&
+    v.saveVersion !== 21 &&
+  v.saveVersion !== 20 &&
     v.saveVersion !== 17 &&
     v.saveVersion !== 16 &&
     v.saveVersion !== 15 &&
@@ -402,6 +403,20 @@ export function deserialize(raw: string): GameState | null {
     : [];
   if (typeof parsed.flow?.lastStreet !== "string" && parsed.flow) {
     parsed.flow.lastStreet = null;
+  }
+  // v21 → v22（M3b 人情）：老档没人情。点数为负或非数一律归零；
+  // treatDay 只认「month*100+day」这种形状的正整数，其余当没摆过。
+  const fv = (parsed as { favor?: unknown }).favor;
+  parsed.favor = typeof fv === "number" && Number.isFinite(fv) && fv > 0 ? Math.round(fv) : 0;
+  const ft = (parsed as { favorTotal?: unknown }).favorTotal;
+  parsed.favorTotal =
+    typeof ft === "number" && Number.isFinite(ft) && ft > 0 ? Math.round(ft) : parsed.favor;
+  const td = (parsed as { treatDay?: unknown }).treatDay;
+  parsed.treatDay = typeof td === "number" && Number.isFinite(td) && td > 0 ? Math.round(td) : -1;
+  if (parsed.flow) {
+    if (typeof parsed.flow.lastFavor !== "string") parsed.flow.lastFavor = null;
+    const fy = (parsed.flow as { favorToday?: unknown }).favorToday;
+    parsed.flow.favorToday = typeof fy === "number" && Number.isFinite(fy) && fy > 0 ? Math.round(fy) : 0;
   }
   // v16 → v17（P46 主料与份量）：老档没有 main/portion。
   // 主料认不出就回碎肉（老友粉的本分），份量只认 2/3，其余回二两。

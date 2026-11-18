@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "after_open_shop": {
+        "cells": 96,
+        "seats": 0,
+        "kitchen": 0,
+        "favBtns": 3,
+        "sellBtns": 0,
+        "heads": [
+          "菜单 · 今天卖几款",
+          "汤底 · 8 参",
+          "主料 · 这碗是什么肉",
+          "份量 · 二两还是三两",
+          "粉型 · 卖哪种粉",
+          "米粉 · 5 参",
+          "售价 · 客单价",
+          "实时评分"
+        ]
+      }
+    },
+    {
+      "hint_recipe": {
+        "before": 100,
+        "after": 92
+      }
+    },
+    {
+      "teach_staff": {
+        "favor": 80,
+        "skill": 3
+      }
+    },
+    {
+      "sell_recipe": {
+        "menu_after_add": 2,
+        "menu_after_sell": 1,
+        "favor_before": 80,
+        "favor_after": 101
+      }
+    }
+  ],
+  "console_errors": []
+}

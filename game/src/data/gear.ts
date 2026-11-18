@@ -181,3 +181,61 @@ export const GEAR_TOTAL_YUAN = GEARS.reduce((sum, g) => sum + g.costYuan, 0);
 export function gearById(id: string): GearDef | null {
   return GEAR_BY_ID.get(id) ?? null;
 }
+
+/**
+ * 家当摆在店里的位置（P53）。
+ *
+ * 开罗的设施是真摆在店内的：椅子在座位、灶在厨房、雕像在门口 —— 玩家一进店就看得见
+ * 自己添了什么。我们没有 3D 店面，就在店铺页给一块 12×8 的俯视格：买下一件，
+ * 它就在格子里出现，从此「店变了样」这件事是看得见的。
+ *
+ * 坐标是 (列, 行)，原点在左上；0–3 列是后厨，4–9 列是堂食，10–11 列靠门口。
+ */
+export type GearSpot = "seat" | "kitchen" | "wall" | "counter" | "decor";
+
+/** 图例文字（面板上逐项标明颜色含义） */
+export const GEAR_SPOT_LABEL: Record<GearSpot, string> = {
+  seat: "座位",
+  kitchen: "后厨",
+  wall: "墙面",
+  counter: "柜台",
+  decor: "摆设",
+};
+
+export interface GearSlot {
+  x: number;
+  y: number;
+  spot: GearSpot;
+}
+
+export const SHOP_GRID_W = 12;
+export const SHOP_GRID_H = 8;
+
+/** 每件家当在店里的位置 */
+export const GEAR_SLOTS: Record<GearId, GearSlot> = {
+  wall_fan: { x: 0, y: 0, spot: "wall" },
+  hood: { x: 1, y: 0, spot: "kitchen" },
+  big_board: { x: 2, y: 0, spot: "kitchen" },
+  freezer: { x: 3, y: 0, spot: "kitchen" },
+  banner: { x: 5, y: 0, spot: "wall" },
+  aroma_fan: { x: 9, y: 0, spot: "wall" },
+  serve_manual: { x: 6, y: 2, spot: "counter" },
+  lucky_statue: { x: 7, y: 2, spot: "counter" },
+  sour_plum: { x: 10, y: 2, spot: "counter" },
+  plastic_stool: { x: 4, y: 4, spot: "seat" },
+  bamboo_chair: { x: 6, y: 4, spot: "seat" },
+  wash_sink: { x: 10, y: 6, spot: "decor" },
+};
+
+/** 面板上「店里」那一块的格子里放什么：空地板 / 已买家当的 spot */
+export function shopGrid(state: { gear?: string[] }): (GearSpot | null)[][] {
+  const grid: (GearSpot | null)[][] = Array.from({ length: SHOP_GRID_H }, () =>
+    Array.from({ length: SHOP_GRID_W }, () => null),
+  );
+  for (const id of state.gear ?? []) {
+    const slot = GEAR_SLOTS[id as GearId];
+    if (!slot) continue;
+    grid[slot.y]![slot.x] = slot.spot;
+  }
+  return grid;
+}

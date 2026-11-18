@@ -65,6 +65,7 @@ export interface Quant {
   streetCount: number;
   /** 买了多少件家当（M3） */
   gearCount: number;
+  favorEarned: number;
 }
 
 export interface PlaytestReport {
@@ -147,6 +148,7 @@ export function quantOf(s: GameState): Quant {
     deadDishCount: (s.menu ?? []).filter((d) => d.on && (d.sold ?? 0) === 0).length,
   streetCount: (s.streets ?? []).length,
     gearCount: (s.gear ?? []).length,
+    favorEarned: Math.max(0, Math.round(s.favorTotal ?? 0)),
     rivalShare: rivalShareOf(s),
     pacifiedCount: (s.rivals ?? []).filter((r) => r.pacified).length,
   };
@@ -374,6 +376,19 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `家当买了 ${q.gearCount}/12 件`,
       kairo: "storeequip 后 12 件设施（Faucet / Cutting Board / Fan / Refrigerator）——单件都很小，叠起来才是「店越开越顺手」",
       fix: "从塑料矮凳（¥100）和壁扇（¥500）开始：出碗、料钱、疲劳、满意各有一件便宜的入口，比攒钱等扩建划算",
+    });
+  }
+
+  // ── T15 三年攒了一堆人情却没花：攒着不用的点数等于没有（M3b）──
+  if (q.months >= 12 && q.favorEarned >= 80 && (s.favor ?? 0) >= 60) {
+    out.push({
+      id: "T15",
+      bucket: "design",
+      severity: "medium",
+      title: "人情攒了一堆没花出去",
+      evidence: `累计人情 ${q.favorEarned} 点，账面还剩 ${Math.round(s.favor ?? 0)} 点`,
+      kairo: "Ramen Lab 用 Spirit Points 换配方改良与抽奖；攒着不用，等于把玩家自己挣来的机会锁在抽屉里",
+      fix: "三样花法都很便宜：8 点请老师傅尝一口、12 点让师傅带一手、6 点摆一桌请街坊——先花一次试试",
     });
   }
 

@@ -127,6 +127,45 @@ function manageMenu(s: GameState): void {
   selectDish(s, 0);
 }
 
+/**
+ * 花人情（M3b）：先「让师傅带一手」（手艺能长期产出），再「请老师傅尝一口」（把汤往好里调）。
+ * 攒着不用等于没有 —— 测试员 T15 抓的就是这个。
+ */
+function spendFavor(s: GameState): void {
+  if (s.staff.roster.length > 0 && favorOf(s) >= 12) {
+    if (useFavor(s, "teach_staff").ok) {
+      favorsUsed += 1;
+      return;
+    }
+  }
+  if (favorOf(s) >= 8 && useFavor(s, "hint_recipe").ok) favorsUsed += 1;
+}
+
+/**
+ * 转手滞销款（M3b）：菜单满了、又有一款挂了很久没卖动，就转手换人情。
+ * 不剪枝的话，多挂一款只是把客人分流到一款没人点的粉上。
+ */
+function pruneMenu(s: GameState): void {
+  // 只在「手头紧」的时候转手滞销款换人情；平时不折腾
+  // —— 试过「每月都把一碗没卖的款转手」，结果菜单来回加删、编辑指针被重置，
+  //    主款配方优化不下去，月均从 ¥59k 掉到 ¥39k。新菜需要养成期，玩家也是。
+  if (s.cash >= 5_000) return;
+  if (s.menu.length < 2) return;
+  const worst = s.menu
+    .map((d, i) => ({ d, i }))
+    .filter((x) => x.d.on && x.i > 0)
+    .sort((a, b) => (a.d.sold ?? 0) - (b.d.sold ?? 0))[0];
+  if (!worst) return;
+  if ((worst.d.sold ?? 0) > 0) return;
+  if (lastPruneMonth === s.month) return;
+  lastPruneMonth = s.month;
+  const r = sellRecipe(s, worst.i);
+  if (r.ok) {
+    addFavorFree(s, r.favor ?? 0, "转手滞销款");
+    recipesSold += 1;
+  }
+}
+
 function pickMain(s: GameState): void {
   const views = mainViews(s).filter((v) => v.unlocked);
   let bestId = s.main;
@@ -207,6 +246,8 @@ let gears = 0;
       pickPortion(s);
       // 菜单（P47）：够段位就多挂一款 —— 不然后面的定价/产能判断都只针对一碗
       manageMenu(s);
+pruneMenu(s);
+spendFavor(s);
       // 饮料冰热（P43）：冬天上热的、其余上冰的 —— 量尺不跟着季节换，冬天冰绿豆沙就白扣分。
       const seasonNow = currentSeason(s);
       const wantTemp = seasonNow === "winter" ? "hot" : "ice";
@@ -375,7 +416,7 @@ let gears = 0;
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 ===`,
   );
   for (const line of log) console.log(line);
 
@@ -418,5 +459,11 @@ describe("替身 36 个月", () => {
       );
     }
   }, 900_000);
-});import { addDish, menuCap, selectDish, syncEditing } from "./menu";
+});import { addDish, menuCap, selectDish, sellRecipe, syncEditing } from "./menu";
+import { addFavorFree, favorOf, useFavor } from "./favor";
+
+// 替身的计数器放模块级：花人情/转手的函数在 describe 外面
+export let favorsUsed = 0;
+export let recipesSold = 0;
+let lastPruneMonth = -1;
 

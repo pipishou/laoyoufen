@@ -1,6 +1,7 @@
 import { MAINS, portionOf } from "../data/mains";
 import { menuCapOf } from "../data/menu";
 import { priceTolerance, scoreRecipe, type RecipeScore } from "./score";
+import { recipeSaleFavor } from "../data/favor";
 import type { NoodleId } from "../data/noodles";
 import type { GameState, MenuItem } from "./state";
 
@@ -177,6 +178,26 @@ export function removeDish(state: GameState, index: number): { ok: boolean; reas
   const next = Math.max(0, Math.min(state.editing > index ? state.editing - 1 : state.editing, state.menu.length - 1));
   state.editing = -1; // 强制 selectDish 走一次全量加载
   return selectDish(state, next);
+}
+
+/**
+ * 转手：把这一款卖掉（开罗 `▼Ramen Lab 1`：`You can sell unneeded ramen recipes here. …
+ * Get Spirit Points`）。和「下架」不同 —— 下架只是收进柜子，转手是真的给出去了，
+ * 换来的是人情，而且这一款就从菜单上消失了。
+ */
+export function sellRecipe(
+  state: GameState,
+  index: number,
+): { ok: boolean; reason?: string; favor?: number } {
+  const item = state.menu[index];
+  if (!item) return { ok: false, reason: "没有这一款" };
+  if (state.menu.length <= 1) return { ok: false, reason: "至少要留一款在卖，转不了" };
+  const favor = recipeSaleFavor(scoreDish(item).total, item.sold ?? 0);
+  const removed = removeDish(state, index);
+  if (!removed.ok) return { ok: false, reason: removed.reason };
+  // 人情在这里只算不落账：`sim/menu.ts` 不依赖 `sim/favor.ts`，
+  // 由调用方（main.ts）拿去 `addFavorFree` 并发提示。
+  return { ok: true, favor };
 }
 
 /** 上架 / 下架（至少留一款在卖） */

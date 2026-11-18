@@ -38,9 +38,10 @@ import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
 import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
 import { noodleSummary, setNoodleKind } from "./sim/noodles";
-import { scoreOf } from "./sim/dish";
+import { dishNameOfItem, scoreOf } from "./sim/dish";
+import { addFavorFree, useFavor as useFavorImpl } from "./sim/favor";
 import { mainSummary, portionSummary, setMain, setPortion } from "./sim/mains";
-import { addDish, removeDish, selectDish, syncEditing, toggleDish } from "./sim/menu";
+import { addDish, removeDish, selectDish, sellRecipe, syncEditing, toggleDish } from "./sim/menu";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -269,6 +270,26 @@ panels = mountPanels(hudRoot, {
     playSfx("ui");
     refresh();
   },
+  sellRecipe(index) {
+    const item = state.menu[Number(index)];
+    const name = item ? dishNameOfItem(state, item) : "这一款";
+    const r = sellRecipe(state, Number(index));
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "转不了手", "info");
+    } else {
+      const got = addFavorFree(state, r.favor ?? 0, `「${name}」转手了`);
+      hud.showToast(`把「${name}」转手，换来 ${got} 点人情`, "like");
+      playSfx("upgrade");
+    }
+    refresh();
+  },
+  useFavor(id) {
+    const r = useFavorImpl(state, String(id));
+    if (!r.ok) hud.showToast(r.reason ?? "人情不够", "info");
+    else hud.showToast(r.line ?? "街坊帮了一把", "like");
+    playSfx(r.ok ? "upgrade" : "ui");
+    refresh();
+  },
   toggleMealDeal() {
     toggleMealDeal(state);
     hud.showToast(state.sides.mealDeal ? "套餐开了：饮料少收 ¥1，客人觉得划算" : "套餐关了", "info");
@@ -489,6 +510,12 @@ function tickFeedback(): void {
   if (s.flow.lastSides) {
     hud.showToast(s.flow.lastSides, "like");
     s.flow.lastSides = null;
+  }
+
+  // 人情（M3b）：吃到底 / 回礼 / 转手 / 比赛名次攒到点数时报一句
+  if (s.flow.lastFavor) {
+    hud.showToast(s.flow.lastFavor, "like");
+    s.flow.lastFavor = null;
   }
 
   // 同条街的动静（有人关门 / 有人服气 / 街坊送食材）：一个月一句，不能刷屏

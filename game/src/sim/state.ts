@@ -16,7 +16,7 @@ import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
 
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -137,6 +137,10 @@ export interface CustomerFlow {
   goodBowls: number;
   /** 最近一次「热卖开始了」的提示文案，HUD 读完即消费 */
   lastFrenzy: string | null;
+  /** 最近一次攒到人情（M3b），main.ts 消费成 toast */
+  lastFavor: string | null;
+  /** 今天靠「吃到底」攒了多少点（日上限用，见 data/favor.ts） */
+  favorToday: number;
   /** 月初街坊传闻（同条街），由 main.ts 的 tickFeedback 消费（M1） */
   lastStreet: string | null;
   /** 加料凑出组合时的喜报（老友味/酸辣开胃/全套），消费一次置空 */
@@ -476,6 +480,12 @@ export interface GameState {
   streetSeen: string[];
   /** 家当（M3）：店里那些旧东西的 id（见 `data/gear.ts`） */
   gear: string[];
+  /** 人情（M3b）：街坊给的面子点数（见 `data/favor.ts`） */
+  favor: number;
+  /** 一共攒过多少点人情（只增，面板显示用） */
+  favorTotal: number;
+  /** 最近一次「摆一桌请街坊」是哪天（month*100+day），-1 表示没摆过 */
+  treatDay: number;
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -614,12 +624,14 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastGift: null,
       lastLostReason: null,
       lastFrenzy: null,
-    lastStreet: null,
+      lastStreet: null,
       lastSides: null,
       sideToastAt: -9999,
       satSumToday: 0,
       satCountToday: 0,
       goodBowls: 0,
+      lastFavor: null,
+      favorToday: 0,
     },
     staff: {
       roster: [],
@@ -674,6 +686,9 @@ export function createInitialState(playerId: string, seed: number): GameState {
     streets: [],
     streetSeen: [],
     gear: [],
+    favor: 0,
+    favorTotal: 0,
+    treatDay: -1,
     equipment: {},
     dayReport: null,
     days: [],
@@ -701,6 +716,8 @@ function endDay(state: GameState): void {
   state.flow.satSumToday = 0;
   state.flow.satCountToday = 0;
   state.flow.goodBowls = 0;
+  // 人情日上限只按「吃到底」算，跨天清零（见 data/favor.ts 的 dailyCapByBowls）
+  state.flow.favorToday = 0;
 
   if (state.day > DAYS_PER_MONTH) {
     closeMonth(state);

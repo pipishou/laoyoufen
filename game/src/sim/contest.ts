@@ -21,6 +21,8 @@ import type { ContestResult, GameState } from "./state";
 import { isContestMonth, contestRoundOf, monthsToContest } from "./calendar";
 import { skillTotal } from "./staff";
 import { noteWin, strongestRival } from "./rivals";
+import { FAVOR_GAIN } from "../data/favor";
+import { addFavorFree } from "./favor";
 
 /** FNV-1a：把 (玩家, 月份, 类型, 对手) 折成 0-1 的确定性噪声 */
 function noise(seed: string): number {
@@ -172,6 +174,11 @@ export function enterContest(
     prize,
   };
   state.contest.results.push(result);
+  // 人情（M3b）：比赛名次也是街坊口碑的一种，照开罗 Ramen Arena 的奖品思路给点面子。
+  if (rank <= 3) {
+    const favor = FAVOR_GAIN.contestTop3[rank - 1] ?? 0;
+    if (favor > 0) addFavorFree(state, favor, `比赛第 ${rank} 名`);
+  }
   if (rank <= 3) {
     state.contest.wins += 1;
     // M1 同条街：比赛赢的是这条街的脸面 —— 本区最强的那家开始服气，攒够三次份额砍半

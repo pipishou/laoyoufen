@@ -26,6 +26,8 @@ import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { gearSummary, gearViews } from "../sim/gear";
+import { GEAR_SPOT_LABEL, shopGrid } from "../data/gear";
+import { favorSummary, favorViews } from "../sim/favor";
 import { devNote } from "./dev";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
@@ -99,6 +101,10 @@ export interface PanelActions {
   pickDish(index: number): void;
   addDish(): void;
   removeDish(index: number): void;
+  /** M3b：把一款转手（换人情，开罗 Ramen Lab 的卖配方） */
+  sellRecipe(index: number): void;
+  /** M3b：花人情 */
+  useFavor(id: string): void;
   toggleDish(index: number): void;
   /** 开关「粉 + 饮料」套餐（P42） */
   toggleMealDeal(): void;
@@ -325,6 +331,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "removedish":
         actions.removeDish(Number(id));
+        break;
+      case "sellrecipe":
+        actions.sellRecipe(Number(id));
+        break;
+      case "usefavor":
+        actions.useFavor(String(id));
         break;
       case "toggledish":
         actions.toggleDish(Number(id));
@@ -642,6 +654,27 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           .join("")}
       </div>`;
 
+    // 店里那 12×8 格：买下一件家当，它就在格子里出现（P53）
+    const mapCells = shopGrid(s)
+      .flat()
+      .map((c) =>
+        c
+          ? `<i class="sm sm-${c}" title="${GEAR_SPOT_LABEL[c]}"></i>`
+          : '<i class="sm sm-e"></i>',
+      )
+      .join("");
+    const gearCount = (s.gear ?? []).length;
+    // 人情（M3b）：三样花法，用不了就写还差多少
+    const fv = favorViews(s);
+    const favorRows = fv
+      .map(
+        (v) => `<div class="lrow${v.affordable ? "" : " locked"}">
+          <div class="lname">${v.def.name}<span class="tag2">${v.def.costPoints} 点</span></div>
+          <div class="lbtns"><button type="button" data-act="usefavor" data-id="${v.def.id}" ${v.affordable ? "" : "disabled"}>${v.affordable ? "用掉" : v.reason}</button></div>
+          <div class="lmeta">${v.def.effect}｜${v.def.line}${devNote("开罗：" + v.def.kairo)}</div>
+        </div>`,
+      )
+      .join("");
     const gv = gearViews(s);
     const gearRows = gv
       .map(
@@ -674,6 +707,17 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd">设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
         <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">店里 · 摆了 ${gearCount}/12 件家当</div>
+        <div class="lmeta" style="padding:0 2px 8px">买下一件就摆进店里，空格是还没添的东西。左边四列是后厨，中间是堂食，靠右是门口。</div>
+        <div class="shopmap">${mapCells}</div>
+        <div class="smlegend"><span class="smk sm-seat"></span>座位 <span class="smk sm-kitchen"></span>后厨 <span class="smk sm-wall"></span>墙面 <span class="smk sm-counter"></span>柜台 <span class="smk sm-decor"></span>摆设</div>
+      </div>
+      <div class="sec">
+        <div class="sechd">人情 · ${favorSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">街坊给的面子：一碗吃到底、把不要的配方转手、比赛拿名次、熟客回礼都会攒。钱买不到，只能攒。</div>
+        ${favorRows}
       </div>
       <div class="sec">
         <div class="sechd">家当 · ${gearSummary(s)}</div>
@@ -920,7 +964,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
           <span class="nfit">味道 ${Math.round(v.score.total)} · ${v.score.grade} · ${sold}</span>
           <div class="dacts">
             <button type="button" class="dbtn${v.item.on ? " on" : ""}" data-act="toggledish" data-id="${v.index}" ${v.canToggle ? "" : "disabled"}>${v.item.on ? "在架" : "下架"}</button>
-            <button type="button" class="dbtn" data-act="removedish" data-id="${v.index}" ${v.canRemove ? "" : "disabled"}>删</button>
+            <button type="button" class="dbtn" data-act="sellrecipe" data-id="${v.index}" ${v.canRemove ? "" : "disabled"} title="转手给别人，换人情">转手</button>
           </div>
         </div>`;
       })

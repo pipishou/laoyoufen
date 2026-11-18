@@ -11,6 +11,8 @@ import {
 import { FLOW } from "../data/balance";
 import { unlock } from "./collection";
 import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } from "./regulars";
+import { FAVOR_GAIN } from "../data/favor";
+import { addFavor, addFavorFree, favorAttractMult } from "./favor";
 import { nextFloat } from "./rng";
 import { queueMaxOf } from "./unlocks";
 import type { RecipeScore } from "./score";
@@ -191,6 +193,8 @@ function spawnChance(state: GameState): number {
     streetAttractMult(state) *
     // 家当（M3）：排风扇把香味吹到街上
     gearAttractMult(state) *
+    // 人情（M3b）：今天摆了桌请街坊
+    favorAttractMult(state) *
     popularityMultiplier(state) *
     // 区能量（开罗 Sales Areas 2：本区吃腻、别区长肉）
     districtEnergy(state) *
@@ -392,6 +396,16 @@ function settle(state: GameState, c: QueueCustomer): void {
   state.flow.servedToday += 1;
   state.tally.bowls += 1; // K1 成就计数：累计出碗（只增不减）
   recordDishSale(state, item.id); // 这一款卖出去一碗
+  // 人情（M3b）：一碗吃到底才给。开罗 Customer Fullness 的原话是「吃满给 Spirit Point，
+  // 份量越大越容易吃满」，所以三两必给 2 点、其余满意过线才给 1 点。
+  const finished = item.portion >= 3 || sat >= FAVOR_GAIN.finishSat;
+  if (finished) {
+    addFavor(
+      state,
+      item.portion >= 3 ? FAVOR_GAIN.finishBigBowl : FAVOR_GAIN.finishBowl,
+      `${arch?.name ?? "客人"}把碗吃干净了`,
+    );
+  }
   state.flow.lastSatisfaction = Math.round(sat);
   state.monthSatSum += sat;
   state.monthSatCount += 1;
@@ -414,6 +428,8 @@ function settle(state: GameState, c: QueueCustomer): void {
   if (gift > 0) {
     state.cash += gift;
     state.flow.lastGift = `${arch?.name ?? "熟客"}回礼：+${gift} 元`;
+    // 熟客回礼顺带攒一点人情（开罗 Customers 2：喂对味会有回礼）
+    addFavorFree(state, FAVOR_GAIN.gift);
   }
   unlock(state, "customers", c.archetypeId);
   unlock(state, "grades", sc.grade);

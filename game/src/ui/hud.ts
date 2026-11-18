@@ -5,6 +5,7 @@ import { TOPPINGS } from "../data/ingredients";
 import { LIKES_TOTAL } from "../sim/collection";
 import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
 import { queueMaxOf } from "../sim/unlocks";
+import { favorOf } from "../sim/favor";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
@@ -487,7 +488,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     // 开罗 Sales Areas：本区越做越腻、别区越长肉。这两行就是「什么时候搬家／什么时候报比赛」的提示。
     const pool = demandCapOf(s);
     const contest = isContestMonth(s.month) ? "本月比赛" : `比赛 ${monthsToContest(s.month)} 个月后`;
-    el.caprow.textContent = `座位 ${s.venue.seats} · 每轮 ${batch} 碗 · ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} · 客流 ${pool}/日 · ${contest}`;
+    el.caprow.textContent = `座位 ${s.venue.seats} · 每轮 ${batch} 碗 · ${serveNow.toFixed(1)} 分/碗 · 日上限 ${s.capacity} · 客流 ${pool}/日 · 人情 ${favorOf(s)} 点 · ${contest}`;
     // 热卖槽（开罗 Ramen Frenzy）：排队 + 吃得满意 → 槽涨；满了 30 分钟来客翻倍。
     // 放在 HUD 上是因为它是**可主动经营的**：想攒满就得留一点排队、又不能把满意度压下去。
     const live = frenzyActive(s);
