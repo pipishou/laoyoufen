@@ -7,6 +7,8 @@ import {  } from "./score";
 import { buyExpansion, nextExpansion } from "./expansion";
 import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
+import { takeOverShop } from "./rivals";
+import { RIVAL_BY_ID } from "../data/rivals";
 import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
 import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
@@ -278,6 +280,20 @@ function play(seed: number): GameState {
           .sort((a, b) => b.score - a.score)[0]!;
         const r = enterContest(s, best.t, maxTierOf(s));
         if (r) contestNote = ` · 比赛 ${best.t} 第 ${r.rank} 名 奖 ¥${r.prize}`;
+      }
+
+      // 接手铺面（M1）：同行撑不住关门了，趁便宜盘下来 —— 租金打折、门口多一个入口。
+      // 量尺不接，M1 的「接手」这条线就永远没人验（P40 的老教训）。
+      {
+        const closed = s.rivals.filter((r) => r.closed && !s.takenOver.includes(r.id));
+        const afford = closed
+          .map((r) => ({ r, fee: RIVAL_BY_ID.get(r.id)?.takeoverFeeYuan ?? 0 }))
+          .filter((x) => s.cash >= x.fee + 20_000)
+          .sort((a, b) => a.fee - b.fee)[0];
+        if (afford) {
+          const r = takeOverShop(s, afford.r.id);
+          if (r.ok) log.push(`  ↳ 接手同行铺子：¥${r.feeYuan}（租金打折、池子变大）`);
+        }
       }
 
       // 本区能量掉到 0.85 以下，且有个买得起、有效客流至少高 25% 的区，就搬

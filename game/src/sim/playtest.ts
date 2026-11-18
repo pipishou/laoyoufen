@@ -1,3 +1,4 @@
+import { rivalShareOf } from "./rivals";
 import type { GameState } from "./state";
 
 /**
@@ -56,6 +57,10 @@ export interface Quant {
   menuCount: number;
   /** 在架却一碗没卖出去的款数（挂了没人点 = 白占菜单位） */
   deadDishCount: number;
+  /** 同条街上同行合计抢走这个区多少客（0–0.35，M1） */
+  rivalShare: number;
+  /** 已经服气的同行家数（M1） */
+  pacifiedCount: number;
 }
 
 export interface PlaytestReport {
@@ -136,6 +141,8 @@ export function quantOf(s: GameState): Quant {
     comboHits: s.tally?.comboHits ?? 0,
     menuCount: (s.menu ?? []).filter((d) => d.on).length,
     deadDishCount: (s.menu ?? []).filter((d) => d.on && (d.sold ?? 0) === 0).length,
+    rivalShare: rivalShareOf(s),
+    pacifiedCount: (s.rivals ?? []).filter((r) => r.pacified).length,
   };
 }
 
@@ -322,6 +329,19 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `${q.deadDishCount} 款在架零销量`,
       kairo: "Ramen Lab「You can sell unneeded ramen recipes here」——卖不动的配方该下架",
       fix: "下架或降价；菜单不是越多越好，卖不动的那款只是在占位",
+    });
+  }
+
+  // ── T12 这条街还是别人的：份额被同行吃掉一大块，三年下来一家都没服气（M1）──
+  if (q.months >= 12 && q.rivalShare >= 0.25 && q.pacifiedCount === 0) {
+    out.push({
+      id: "T12",
+      bucket: "design",
+      severity: "medium",
+      title: "这条街还是别人说了算",
+      evidence: `同行抢走 ${(q.rivalShare * 100).toFixed(0)} 个点的客 · 服气 0 家`,
+      kairo: "Sales Areas 2「energy and appetite ... decrease」——门前这条街的客流是有限的，同行吃掉的不会回来",
+      fix: "赢比赛让最强的同行服气（3 次份额砍半），或者直接搬家到同行少的区；硬扛只会一直少卖那么多",
     });
   }
 

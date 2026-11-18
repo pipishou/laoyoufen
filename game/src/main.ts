@@ -11,6 +11,7 @@ import { districtOptions, moveShop } from "./sim/district";
 import { closeBranch, openBranch } from "./sim/branches";
 import { branchSizeById } from "./data/branches";
 import { districtNameOf } from "./data/nanning";
+import { takeOverShop } from "./sim/rivals";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
@@ -333,6 +334,16 @@ panels = mountPanels(hudRoot, {
     localStorage.removeItem("laoyou.guide.v2");
     location.reload();
   },
+  takeOver(id) {
+    const r = takeOverShop(state, String(id));
+    if (r.ok) {
+      playSfx("upgrade");
+      hud.showToast(r.line ?? "铺子盘下来了", "info");
+    } else if (r.reason) {
+      hud.showToast(r.reason, "info");
+    }
+    refresh();
+  },
   closeBranch(id) {
     const r = closeBranch(state, String(id));
     if (r.ok) {
@@ -456,6 +467,12 @@ function tickFeedback(): void {
   if (s.flow.lastSides) {
     hud.showToast(s.flow.lastSides, "like");
     s.flow.lastSides = null;
+  }
+
+  // 同条街的动静（有人关门 / 有人服气 / 街坊送食材）：一个月一句，不能刷屏
+  if (s.flow.lastStreet) {
+    hud.showToast(s.flow.lastStreet, "info");
+    s.flow.lastStreet = null;
   }
 }
 

@@ -13,6 +13,7 @@
 import { siteById, type SiteDef } from "../data/sites";
 import { validShopName } from "../data/shop-names";
 import { rentMonthlyOf } from "../data/balance";
+import { takeoverRentFactor } from "./rivals";
 import type { GameState } from "./state";
 
 export interface SetupResult {
@@ -67,5 +68,6 @@ export function openForBusiness(
  */
 export function monthlyRentOf(state: GameState): number {
   const base = siteById(state.site)?.rentMonthly ?? 4_600;
-  return rentMonthlyOf(base, state.month);
+  // M1 接手铺面：盘下同行倒闭的铺子后，这条街的租金谈得下来（每多一家再低一档）。
+  return Math.round(rentMonthlyOf(base, state.month) * takeoverRentFactor(state));
 }

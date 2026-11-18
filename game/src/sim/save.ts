@@ -3,6 +3,7 @@ import { START_SIDES } from "../data/sides";
 import { NOODLE_BY_ID, START_NOODLE } from "../data/noodles";
 import { DEFAULT_PORTION, MAIN_BY_ID, START_MAIN, type MainId } from "../data/mains";
 import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
+import { initRivals } from "./rivals";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -93,6 +94,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 18 &&
     v.saveVersion !== 17 &&
     v.saveVersion !== 16 &&
     v.saveVersion !== 15 &&
@@ -367,6 +369,21 @@ export function deserialize(raw: string): GameState | null {
   // v14 → v15（分店 S6）：老档没开过分店，补空数组；非数组也补空。
   const br = (parsed as { branches?: unknown }).branches;
   if (!Array.isArray(br)) parsed.branches = [];
+  // v18 → v19（M1 同条街）：老档没有 rivals / takenOver / flow.lastStreet。
+  // 同行按当前数据表的初始名气补上；已经接过手的铺子补空；传闻补 null。
+  const rv = (parsed as { rivals?: unknown }).rivals;
+  if (
+    !Array.isArray(rv) ||
+    rv.length === 0 ||
+    rv.some((x) => !x || typeof (x as { id?: unknown }).id !== "string")
+  ) {
+    parsed.rivals = initRivals();
+  }
+  const to = (parsed as { takenOver?: unknown }).takenOver;
+  if (!Array.isArray(to)) parsed.takenOver = [];
+  if (typeof parsed.flow?.lastStreet !== "string" && parsed.flow) {
+    parsed.flow.lastStreet = null;
+  }
   // v16 → v17（P46 主料与份量）：老档没有 main/portion。
   // 主料认不出就回碎肉（老友粉的本分），份量只认 2/3，其余回二两。
   const mn = (parsed as { main?: unknown }).main;

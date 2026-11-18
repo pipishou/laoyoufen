@@ -14,8 +14,9 @@ import { START_NOODLE, type NoodleId } from "../data/noodles";
 import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
+import { initRivals, type RivalState } from "./rivals";
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -136,6 +137,8 @@ export interface CustomerFlow {
   goodBowls: number;
   /** 最近一次「热卖开始了」的提示文案，HUD 读完即消费 */
   lastFrenzy: string | null;
+  /** 月初街坊传闻（同条街），由 main.ts 的 tickFeedback 消费（M1） */
+  lastStreet: string | null;
   /** 加料凑出组合时的喜报（老友味/酸辣开胃/全套），消费一次置空 */
   lastSides: string | null;
   /** 上次报加料组合的绝对分钟（节流用，免得每碗都弹） */
@@ -217,6 +220,8 @@ export interface MonthRecord {
   rent: number;
   /** 分店的房租 + 店长工资（S6；没有分店时为 0） */
   branchCost?: number;
+  /** M1：服气的邻居这个月送的食材钱（算成本抵扣，所以利润要加回） */
+  rivalGift?: number;
   profit: number;
   target: number;
   grade: "S" | "A" | "B" | "C" | "D";
@@ -461,6 +466,10 @@ export interface GameState {
    * 月租与店长工资在 `closeMonth` 里扣。
    */
   branches: BranchState[];
+  /** 同条街：本局 8 家同行的名气与恩怨（M1，见 `data/rivals.ts`） */
+  rivals: RivalState[];
+  /** 已经接手下来的铺子（同行 id）：租金打折、那个区池子变大 */
+  takenOver: string[];
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -599,6 +608,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastGift: null,
       lastLostReason: null,
       lastFrenzy: null,
+    lastStreet: null,
       lastSides: null,
       sideToastAt: -9999,
       satSumToday: 0,
@@ -653,6 +663,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     district: START_DISTRICT,
     districtSince: 0,
     branches: [],
+    rivals: initRivals(),
+    takenOver: [],
     equipment: {},
     dayReport: null,
     days: [],

@@ -23,6 +23,7 @@ import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
+import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { devNote } from "./dev";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
@@ -113,6 +114,7 @@ export interface PanelActions {
   openBranch(size: string, district: string): void;
   /** 关掉一家分店（退半个月租） */
   closeBranch(id: string): void;
+  takeOver(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -330,7 +332,10 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       case "openbranch":
         actions.openBranch(id, branchPick);
         break;
-      case "closebranch":
+      case "takeover":
+      actions.takeOver(id);
+      break;
+    case "closebranch":
         actions.closeBranch(id);
         break;
       case "restart":
@@ -536,6 +541,44 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>`,
       )
       .join("");
+    // M1 同条街：这条街不止你一家。同行抢同一批客，赢比赛能让他们服气，撑不住的可以接手。
+    const rv = rivalViews(s);
+    const standing = Math.round(standingOf(s) * 100);
+    const streetRows = rv
+      .map((v) => {
+        const sig = v.def.signature;
+        const state2 = v.state;
+        const tags = [
+          `<span class="tag2">${v.tierWord}</span>`,
+          state2.closed ? `<span class="tag2">已关门</span>` : `<span class="tag2">抢走 ${v.sharePct} 个点</span>`,
+          state2.pacified ? `<span class="tag2">服气</span>` : "",
+        ].join("");
+        const mine = (s.takenOver ?? []).includes(v.def.id);
+        const meta = mine
+          ? `这间铺子已经是你的 · 租金打折、门口多一个入口`
+          : state2.closed
+            ? `铺子空着 · 接手要 ${money(v.def.takeoverFeeYuan)}（租金打折、门口多一个入口）`
+            : state2.pacified
+              ? `招牌 ¥${sig.price} · 实力 ${sig.taste} · 服气了，抢的人砍半`
+              : `招牌 ¥${sig.price} · 实力 ${sig.taste} · 再赢 ${v.toPacify} 场就服气`;
+        const btn = v.canTakeOver
+          ? `<div class="lbtns"><button type="button" data-act="takeover" data-id="${v.def.id}">接手 ${money(v.def.takeoverFeeYuan)}</button></div>`
+          : v.takeoverReason
+            ? `<div class="lbtns"><button type="button" disabled>${v.takeoverReason}</button></div>`
+            : "";
+        return `<div class="lrow">
+          <div class="lname">${v.def.name}${tags}</div>
+          <div class="lmeta">${meta}</div>
+          ${btn}
+        </div>`;
+      })
+      .join("");
+    const streetSec = `<div class="sec">
+        <div class="sechd">同条街 · ${streetSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">这条街不止你一家，客人是同一批人：他们抢走多少，你就少卖多少。比赛赢多了他们会服气（每家 3 次），服气后抢的人砍半；撑不下去关门的铺子可以接手，租金打折。</div>
+        <div class="lmeta"><b>你在这条街的口碑 ${standing}</b>（跟这条街最强的同行比：越高越是你说了算）</div>
+        ${streetRows || `<div class="empty2">这条街就你一家。</div>`}
+      </div>`;
     const branchSec = `<div class="sec">
         <div class="sechd">分店 · 已开 ${bv.length}/${MAX_BRANCHES}${bv.length ? ` · ${branchSummary(s)}` : ""}</div>
         <div class="lmeta" style="padding:0 2px 8px">主店评到第 8 段就能在别处再开一家（标准店第 9 段、大店第 10 段、旗舰第 11 段）。分店自己养口碑：开张时只有 45%，每天涨 3%，大约 18 天熟。同一个区连开几家要分客流，池子小的区开不了。</div>
@@ -587,6 +630,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       ${sidesSec}
       ${gradeSec}
       ${craftSec}
+      ${streetSec}
       ${branchSec}
       ${districtSec}
       <div class="sechd">换一局</div>

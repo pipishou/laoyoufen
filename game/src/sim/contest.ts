@@ -20,6 +20,7 @@ import {
 import type { ContestResult, GameState } from "./state";
 import { isContestMonth, contestRoundOf, monthsToContest } from "./calendar";
 import { skillTotal } from "./staff";
+import { noteWin, strongestRival } from "./rivals";
 
 /** FNV-1a：把 (玩家, 月份, 类型, 对手) 折成 0-1 的确定性噪声 */
 function noise(seed: string): number {
@@ -171,6 +172,13 @@ export function enterContest(
     prize,
   };
   state.contest.results.push(result);
-  if (rank <= 3) state.contest.wins += 1;
+  if (rank <= 3) {
+    state.contest.wins += 1;
+    // M1 同条街：比赛赢的是这条街的脸面 —— 本区最强的那家开始服气，攒够三次份额砍半
+    const top = strongestRival(state);
+    if (top && noteWin(state, top.def.id)) {
+      state.flow.lastStreet = `${top.def.name}服气了：门口挂块「输给你」的牌，抢的客砍半`;
+    }
+  }
   return result;
 }

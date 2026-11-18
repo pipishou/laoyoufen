@@ -10,6 +10,7 @@ import {
   homeEnergyOf,
   moveShop,
 } from "./district";
+import { rivalShareOf } from "./rivals";
 import { dailyTrafficOf } from "../data/nanning";
 
 function fresh(cash = 30_000): GameState {
@@ -43,12 +44,26 @@ describe("区能量与换区（S6 的一半）", () => {
     expect(energyOf(s, "xingning")).toBe(ENERGY_MIN);
   });
 
-  it("客流池 = 区潜在客流 × 2.25 × 本区能量", () => {
+  it("客流池 = 区潜在客流 × 2.25 × 本区能量 × (1 − 同行份额)", () => {
     const s = fresh();
     const full = Math.round(dailyTrafficOf("xingning") * DEMAND_TRAFFIC_SCALE);
-    expect(demandCapOf(s)).toBe(full);
+    // M1：兴宁这条街有两家同行（老甘 fame 12、三姐 fame 10），他们合计吃掉约 18 个点
+    const share = rivalShareOf(s);
+    expect(share).toBeGreaterThan(0);
+    // 取整只发生在实现里一次，这里给 ±1 的宽容
+    expect(Math.abs(demandCapOf(s) - full * (1 - share))).toBeLessThanOrEqual(1);
     s.month = 36;
-    expect(demandCapOf(s)).toBe(Math.round(full * ENERGY_MIN));
+    expect(Math.abs(demandCapOf(s) - full * ENERGY_MIN * (1 - share))).toBeLessThanOrEqual(1);
+  });
+
+  it("同行服气份额砍半，池子跟着变大", () => {
+    const s = fresh();
+    const before = demandCapOf(s);
+    for (const rs of s.rivals) {
+      if (rs.id === "laogan" || rs.id === "sanjie") rs.pacified = true;
+    }
+    expect(rivalShareOf(s)).toBeLessThan(0.1834);
+    expect(demandCapOf(s)).toBeGreaterThan(before);
   });
 
   it("换区只在开门前；同区拒绝；钱不够不扣钱", () => {
