@@ -214,3 +214,102 @@ describe("产能优先（P70）", () => {
     expect(hookVoiceContext({ text: "", kind: "none", key: "none", urgency: "normal" })).toEqual({});
   });
 });
+
+describe("次日仍然算得清流失（试玩二轮 F1）", () => {
+  function yesterday(s: GameState, lost: number, served: number): void {
+    s.days.push({
+      month: s.month,
+      day: Math.max(1, s.day - 1),
+      revenue: 0,
+      served,
+      lost,
+      avgSat: -1,
+      price: s.price,
+      taste: 0,
+      cash: s.cash,
+    });
+  }
+
+  it("点过「明天继续」之后（快照清空、计数归零）仍然算得出昨天的流失", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    yesterday(s, 60, 40);
+    s.dayReport = null;
+    s.flow.lostToday = 0;
+    s.flow.servedToday = 0;
+    expect(lostRateOf(s)).toBeCloseTo(0.6, 5);
+    const plan = nextHook(s);
+    expect(plan.kind).toBe("capacity");
+    expect(plan.urgency).toBe("high");
+    expect(plan.text).toContain("昨天走了 60 位");
+  });
+
+  it("打烊当时仍然写「今天」（快照还在）", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    report(s, 60, 40);
+    expect(nextHook(s).text).toContain("今天走了 60 位");
+  });
+
+  it("营业头几分钟样本太少时接着用昨天的比例，不被两三个人带偏", () => {
+    const s = fresh();
+    yesterday(s, 60, 40);
+    s.flow.servedToday = 1;
+    s.flow.lostToday = 0;
+    expect(lostRateOf(s)).toBeCloseTo(0.6, 5);
+  });
+
+  it("今天的样本够多时，用今天的", () => {
+    const s = fresh();
+    yesterday(s, 60, 40);
+    s.flow.servedToday = 90;
+    s.flow.lostToday = 10;
+    expect(lostRateOf(s)).toBeCloseTo(0.1, 5);
+  });
+});
+
+describe("产能件要真能接客（试玩二轮 F2）", () => {
+  it("座位紧时先推能加座的扩建", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    s.venue.seats = 2;
+    report(s, 60, 40);
+    const plan = nextHook(s);
+    expect(plan.kind).toBe("capacity");
+    expect(plan.text).toContain("打通隔墙");
+  });
+
+  it("粉篓（只省钱）永远不参与产能推荐", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    s.venue.seats = 2;
+    report(s, 60, 40);
+    expect(nextHook(s).text).not.toContain("粉篓");
+    s.venue.seats = 8;
+    expect(nextHook(s).text).not.toContain("粉篓");
+  });
+
+  it("扩建被段位锁住时，退回设备里的出碗/上限件", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    s.venue.seats = 8;
+    s.venue.expansion = 1;
+    s.gradeLevel = 0;
+    report(s, 60, 40);
+    expect(nextHook(s).text).toContain("猛火灶");
+  });
+});
+
+describe("时间前缀只在 CSS 里说一次（试玩二轮 F3）", () => {
+  it("正文里不许再出现「明天」——否则会叠成「明天 · 明天先把…」", () => {
+    const s = fresh();
+    s.cash = 0;
+    report(s, 60, 40);
+    expect(nextHook(s).text).not.toContain("明天");
+
+    const g = fresh();
+    g.totalCustomers = 90;
+    g.cash = 0;
+    expect(nextHook(g).text).not.toContain("明天");
+  });
+});

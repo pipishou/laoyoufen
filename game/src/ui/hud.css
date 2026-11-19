@@ -1768,7 +1768,7 @@ button.pill[disabled] {
   border-left-color: var(--red);
 }
 .dayhook.bad::before {
-  content: "明天先处理 · ";
+  content: "明天最要紧 · ";
   color: var(--red);
 }
 .dayhook .hookmain {

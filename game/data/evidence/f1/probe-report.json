@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "hot": 2,
+      "titles": [
+        "店面 · 座位 2 · 灶 1",
+        "设备 · 现在出碗 2.0 分/碗"
+      ],
+      "hasBadge": true,
+      "step": "next_morning_red_mark"
+    },
+    {
+      "main": "先把「打通隔墙，多摆两张桌」加上（¥12,000） —— 今天走了 60 位",
+      "line": "街坊愿意来，就别让人家站在门口干等。",
+      "hidden": false,
+      "bad": true,
+      "kind": "capacity",
+      "step": "closing_hook"
+    }
+  ],
+  "console_errors": [],
+  "checks": {
+    "red_mark_on_next_morning": true,
+    "badge_text": true,
+    "hook_is_capacity": true,
+    "hook_names_expansion": true,
+    "hook_skips_cost_item": true,
+    "no_tomorrow_in_body": true,
+    "hook_visible": true,
+    "hook_marked_bad": true
+  },
+  "saveVersion": 25
+}
