@@ -10,6 +10,7 @@
  *   rivalShieldPct → sim/rivals.ts 的 rivalShareOf（街坊认你家，同行抢不走那么多）
  */
 import { GEARS, GEAR_BY_ID, GEAR_TOTAL_YUAN, gearById, type GearDef } from "../data/gear";
+import { comboTotals } from "./combo";
 import type { GameState } from "./state";
 
 export interface GearBuyResult {
@@ -49,39 +50,39 @@ function sumPct(state: GameState, pick: (g: GearDef) => number | undefined): num
 
 /** 出碗时间倍率（越快越接近 0.7） */
 export function gearServeFactor(state: GameState): number {
-  return Math.max(0.7, 1 - sumPct(state, (g) => g.servePct));
+  return Math.max(0.7, 1 - sumPct(state, (g) => g.servePct) - comboTotals(state).servePct);
 }
 
 /** 料钱倍率 */
 export function gearCostFactor(state: GameState): number {
-  return Math.max(0.7, 1 - sumPct(state, (g) => g.costPct));
+  return Math.max(0.7, 1 - sumPct(state, (g) => g.costPct) - comboTotals(state).costPct);
 }
 
 /** 每碗满意加成（绝对分） */
 export function gearSatBonus(state: GameState): number {
-  return sumPct(state, (g) => g.satBonus);
+  return sumPct(state, (g) => g.satBonus) + comboTotals(state).satBonus;
 }
 
 export function gearPatienceMult(state: GameState): number {
-  return 1 + sumPct(state, (g) => g.patiencePct);
+  return 1 + sumPct(state, (g) => g.patiencePct) + comboTotals(state).patiencePct;
 }
 
 export function gearAttractMult(state: GameState): number {
-  return 1 + sumPct(state, (g) => g.attractPct);
+  return 1 + sumPct(state, (g) => g.attractPct) + comboTotals(state).attractPct;
 }
 
 export function gearDrinkMult(state: GameState): number {
-  return 1 + sumPct(state, (g) => g.drinkPct);
+  return 1 + sumPct(state, (g) => g.drinkPct) + comboTotals(state).drinkPct;
 }
 
 /** 员工疲劳倍率（越低越不累） */
 export function gearFatigueMult(state: GameState): number {
-  return Math.max(0.4, 1 - sumPct(state, (g) => g.fatiguePct));
+  return Math.max(0.4, 1 - sumPct(state, (g) => g.fatiguePct) - comboTotals(state).fatiguePct);
 }
 
 /** 同行抢客的遮蔽倍率（越接近 0.5 抢得越少） */
 export function gearRivalShield(state: GameState): number {
-  return Math.max(0.5, 1 - sumPct(state, (g) => g.rivalShieldPct));
+  return Math.max(0.5, 1 - sumPct(state, (g) => g.rivalShieldPct) - comboTotals(state).rivalShieldPct);
 }
 
 export interface GearView {

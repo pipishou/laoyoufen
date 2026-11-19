@@ -1,0 +1,155 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "header": "搭配 · 0/8 组",
+      "rows": [
+        {
+          "name": "一坛一缸差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "凳子管够差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "灶前清爽差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "洗得干净差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "风对流差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "会做人差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "这条街都认差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "开门见山差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        }
+      ],
+      "step": "no_combo"
+    },
+    {
+      "header": "搭配 · 0/8 组 · 再添一件竹躺椅就能凑「凳子管够」",
+      "rows": [
+        {
+          "name": "一坛一缸差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "凳子管够差 1 件",
+          "tag": "差 1 件",
+          "active": false
+        },
+        {
+          "name": "灶前清爽差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "洗得干净差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "风对流差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "会做人差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "这条街都认差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "开门见山差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        }
+      ],
+      "step": "one_of_pair"
+    },
+    {
+      "header": "搭配 · 1/8 组",
+      "rows": [
+        {
+          "name": "一坛一缸差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "凳子管够凑齐了",
+          "tag": "凑齐了",
+          "active": true
+        },
+        {
+          "name": "灶前清爽差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "洗得干净差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "风对流差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "会做人差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "这条街都认差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        },
+        {
+          "name": "开门见山差 2 件",
+          "tag": "差 2 件",
+          "active": false
+        }
+      ],
+      "step": "pair_done"
+    }
+  ],
+  "console_errors": [],
+  "checks": {
+    "section_present": true,
+    "eight_rows": true,
+    "starts_at_zero": true,
+    "half_marked_one_left": true,
+    "pair_marked_done": true,
+    "pair_row_active": true,
+    "header_after_pair": true,
+    "no_kairo_combo_name": true
+  },
+  "saveVersion": 25
+}

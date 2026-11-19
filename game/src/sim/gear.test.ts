@@ -100,10 +100,10 @@ describe("家当（M3）", () => {
     expect(gearCostFactor(s)).toBeCloseTo(0.9, 5);
   });
 
-  it("满意加成按件累加（笔记 1 + 冰柜 1 + 祖师像 2）", () => {
+  it("满意加成按件累加（笔记 1 + 冰柜 1 + 祖师像 2 + 祖师像与笔记凑出「开门见山」1）", () => {
     const s = fresh();
     for (const id of ["serve_manual", "freezer", "lucky_statue"]) buyGear(s, id);
-    expect(gearSatBonus(s)).toBe(4);
+    expect(gearSatBonus(s)).toBe(5);
   });
 
   it("耐心/进店/饮料各自累加", () => {

@@ -27,7 +27,8 @@ import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { gearSummary, gearViews } from "../sim/gear";
-import { GEAR_SPOT_LABEL } from "../data/gear";
+import { comboSummary, comboViews } from "../sim/combo";
+import { GEAR_BY_ID, GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
 import { CAPACITY_LOST_RATE, lostRateOf } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
@@ -720,6 +721,18 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>`,
       )
       .join("");
+    const comboRows = comboViews(s)
+      .map((v) => {
+        const pairText = v.def.pairs
+          .map(([a, b]) => `${GEAR_BY_ID.get(a)?.name ?? a} + ${GEAR_BY_ID.get(b)?.name ?? b}`)
+          .join(" ／ ");
+        const tag = v.active ? "凑齐了" : v.missing.length === 1 ? "差 1 件" : "差 2 件";
+        return `<div class="lrow${v.active ? "" : " locked"}">
+          <div class="lname">${v.def.name}<span class="tag2">${tag}</span></div>
+          <div class="lmeta">${pairText}｜${v.active ? v.def.line : v.def.note}</div>
+        </div>`;
+      })
+      .join("");
     const ups = UPGRADES.map((u) => {      const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
       const maxed = lv >= u.maxLevel;
@@ -754,6 +767,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd">${icon("crate")}家当 · ${gearSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">店里那些不值钱、但天天用得上的旧东西。一件几十到几千，买一件算一件，效果都是常驻的。</div>
         ${gearRows}
+        <div class="sechd" style="margin-top:8px">${icon("star")}搭配 · ${comboSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">两件东西凑一块才有的那点好处：一样都不贵，凑齐了比单买多一截。</div>
+        ${comboRows}
       </div>
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>

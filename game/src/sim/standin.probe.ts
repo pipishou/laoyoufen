@@ -23,6 +23,7 @@ import { MAX_BRANCHES } from "../data/branches";
 import { branchSizeOptions, branchViews, openBranch } from "./branches";
 import { enterTourney, tourneyViews } from "./tourneys";
 import { setDrinkTemp } from "./sides";
+import { activeCombos } from "./combo";
 
 /**
  * 「替身」＝游戏测试员：一个按规矩办事的假玩家，完整玩 36 个月，跑完还要交体检单。
@@ -432,7 +433,7 @@ spendFavor(s);
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 搭配 ${activeCombos(s).length} 组 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
   );
   for (const line of log) console.log(line);
 
