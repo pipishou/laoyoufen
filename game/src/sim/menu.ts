@@ -195,6 +195,8 @@ export function sellRecipe(
   const favor = recipeSaleFavor(scoreDish(item).total, item.sold ?? 0);
   const removed = removeDish(state, index);
   if (!removed.ok) return { ok: false, reason: removed.reason };
+  // 成就（B 批）要记「转过一次方子」，这个计数只增不减，跟着存档走。
+  state.tally.recipesSold = (state.tally.recipesSold ?? 0) + 1;
   // 人情在这里只算不落账：`sim/menu.ts` 不依赖 `sim/favor.ts`，
   // 由调用方（main.ts）拿去 `addFavorFree` 并发提示。
   return { ok: true, favor };

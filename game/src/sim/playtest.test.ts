@@ -38,6 +38,8 @@ function goodState(): GameState {
   // 人情：既攒过也花过，免得 T15 把 PASS 变 PASS_WITH_NOTES
   s.favorTotal = 140;
   s.favor = 12;
+  // 成就：一年下来总得拿到几枚，否则 T16 会说「目标感没接上」
+  s.trophies = ["first_bowl", "hundred_guests", "first_grade", "first_gear", "first_street"];
   // P47：多款菜单也得真的挂起来，否则 T10 会说「一年下来只有一款」
   s.menu.push({ ...s.menu[0]!, id: 2, main: "beef", price: 12, sold: 420 });
   s.menu[0]!.sold = 900;

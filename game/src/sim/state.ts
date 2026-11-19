@@ -15,9 +15,10 @@ import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
+import { checkTrophies } from "./trophies";
 import type { ArenaRun } from "./arena";
 
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -344,6 +345,8 @@ export interface Tally {
    * 混在一起账就对不上（测试员 T7 会当场抓到）。
    */
   branchBowls: number;
+  /** 转手出去的配方份数（B 批成就用，见 data/trophies.ts） */
+  recipesSold: number;
 }
 
 /**
@@ -496,6 +499,13 @@ export interface GameState {
   arenaDay: number;
   /** 那天已经落了几场（含花人情加练的） */
   arenaRuns: number;
+  /**
+   * 成就（B 批，见 `data/trophies.ts`）：已经拿到的 id。
+   * 判定只读现成字段，发奖给人情为主；不给营收，避免污染成长曲线。
+   */
+  trophies: string[];
+  /** 新拿到还没播报的成就 id：main.ts 一帧弹一条，弹完清空 */
+  pendingTrophies: string[];
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -584,6 +594,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       branchBowls: 0,
       arenaRuns: 0,
       arenaWins: 0,
+      recipesSold: 0,
     },
     sides: {
       active: [...START_SIDES],
@@ -704,6 +715,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     arena: null,
     arenaDay: -1,
     arenaRuns: 0,
+    trophies: [],
+    pendingTrophies: [],
     equipment: {},
     dayReport: null,
     days: [],
@@ -719,6 +732,9 @@ function endDay(state: GameState): void {
   if (state.flow.revenueToday > state.tally.bestDayRevenue) {
     state.tally.bestDayRevenue = state.flow.revenueToday;
   }
+  // 成就（B 批）：日结之后再判。放在换日之前 —— 换日会把今天的峰值与流水清掉；
+  // 放在这里之后的唯一要求是别读 `flow.lostToday` 之类已被清零的字段（那些用 tally）。
+  checkTrophies(state);
 
   state.day += 1;
   state.todayCustomers = 0;

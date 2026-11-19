@@ -66,6 +66,8 @@ export interface Quant {
   /** 买了多少件家当（M3） */
   gearCount: number;
   favorEarned: number;
+  /** 拿到多少枚成就（B 批） */
+  trophyCount: number;
 }
 
 export interface PlaytestReport {
@@ -149,6 +151,7 @@ export function quantOf(s: GameState): Quant {
   streetCount: (s.streets ?? []).length,
     gearCount: (s.gear ?? []).length,
     favorEarned: Math.max(0, Math.round(s.favorTotal ?? 0)),
+    trophyCount: (s.trophies ?? []).length,
     rivalShare: rivalShareOf(s),
     pacifiedCount: (s.rivals ?? []).filter((r) => r.pacified).length,
   };
@@ -389,6 +392,19 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `累计人情 ${q.favorEarned} 点，账面还剩 ${Math.round(s.favor ?? 0)} 点`,
       kairo: "Ramen Lab 用 Spirit Points 换配方改良与抽奖；攒着不用，等于把玩家自己挣来的机会锁在抽屉里",
       fix: "三样花法都很便宜：8 点请老师傅尝一口、12 点让师傅带一手、6 点摆一桌请街坊——先花一次试试",
+    });
+  }
+
+  // ── T16 一年下来没拿到几枚成就：目标感没接上（B 批）──
+  if (q.months >= 12 && q.trophyCount < 5) {
+    out.push({
+      id: "T16",
+      bucket: "design",
+      severity: "medium",
+      title: "一年下来只拿到几枚成就",
+      evidence: `经营 ${q.months} 个月，成就 ${q.trophyCount} 枚`,
+      kairo: "Trophy 是开罗最便宜的目标感：39 条全是「累计到 N」，玩家每几天就有一枚可拿",
+      fix: "头五条门槛要落在首周真实曲线上（第一碗、百位客人、第二块牌子、第一件家当、街上第一件），别学后期大数",
     });
   }
 

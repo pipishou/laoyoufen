@@ -1405,6 +1405,61 @@ button.pill[disabled] {
   box-shadow: 2px 2px 0 var(--shadow);
 }
 
+/* 成就（B 批）：分组卡片。未达成只降透明度，不藏名字 —— 目标是「让人看见还有什么」 */
+.tgroups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px;
+}
+
+.tgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tgname {
+  font-size: 10px;
+  color: var(--sand);
+  letter-spacing: 1px;
+  padding-left: 2px;
+}
+
+.tcard {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 10px;
+  padding: 3px 6px;
+  border: 2px dashed var(--shadow);
+  background: transparent;
+  color: var(--sand);
+  opacity: 0.75;
+}
+
+.tcard.on {
+  border: 2px solid var(--ink);
+  border-style: solid;
+  background: var(--paper2);
+  color: var(--ink);
+  opacity: 1;
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.tcard.on::before {
+  content: "★";
+  color: var(--mustard);
+  font-size: 9px;
+}
+
+.tcard .tprog {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--wood);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 结算单 */
 .report {
   border: 3px solid var(--ink);

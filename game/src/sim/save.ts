@@ -6,6 +6,7 @@ import { TOTAL_MONTHS, SAVE_VERSION, type GameState } from "./state";
 import { initRivals } from "./rivals";
 import { STREET_BY_ID } from "../data/streets";
 import { GEAR_BY_ID } from "../data/gear";
+import { TROPHY_BY_ID } from "../data/trophies";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -97,6 +98,7 @@ function isGameState(v: unknown): v is GameState {
   if (
     v.saveVersion !== SAVE_VERSION &&
     v.saveVersion !== 22 &&
+    v.saveVersion !== 23 &&
     v.saveVersion !== 18 &&
     v.saveVersion !== 19 &&
     v.saveVersion !== 21 &&
@@ -254,6 +256,7 @@ export function deserialize(raw: string): GameState | null {
       branchBowls: 0,
       arenaRuns: 0,
       arenaWins: 0,
+      recipesSold: 0,
     };
   } else {
     if (typeof parsed.tally.bowls !== "number") parsed.tally.bowls = 0;
@@ -488,6 +491,17 @@ export function deserialize(raw: string): GameState | null {
     }
     const ed = mi.editing;
     if (typeof ed !== "number" || !Number.isInteger(ed) || ed < 0 || ed >= menu.length) mi.editing = 0;
+  }
+  // v23 → v24（B 批成就）：只认表里有的 id，坏值丢弃；
+  // 播报队列（pendingTrophies）不落盘 —— 读档时重复弹一遍旧成就是噪音。
+  const tr = (parsed as { trophies?: unknown }).trophies;
+  parsed.trophies = Array.isArray(tr)
+    ? (tr as unknown[]).filter((x): x is string => typeof x === "string" && TROPHY_BY_ID.has(x))
+    : [];
+  parsed.pendingTrophies = [];
+  if (parsed.tally) {
+    const rs = (parsed.tally as { recipesSold?: unknown }).recipesSold;
+    parsed.tally.recipesSold = typeof rs === "number" && Number.isFinite(rs) && rs > 0 ? Math.round(rs) : 0;
   }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;

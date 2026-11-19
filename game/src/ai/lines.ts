@@ -16,7 +16,13 @@
  * 没有配 `VITE_AI_PROXY_URL` 时整条通道是关的，游戏离线可完整通关。
  */
 
-export type LineKind = "street_request" | "rival_rumor" | "recipe_buyer" | "arena_call" | "hook_voice";
+export type LineKind =
+  | "street_request"
+  | "rival_rumor"
+  | "recipe_buyer"
+  | "arena_call"
+  | "hook_voice"
+  | "trophy_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -71,6 +77,19 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "先把手上的活理顺，生意自己会跟上来。",
     "街坊愿意来，就别让人家站在门口干等。",
     "一步一步来，明天还有明天的事。",
+  ],
+  /**
+   * 成就达成时街坊补的那一句（B 批）。
+   * 上面那行「成就 · 名字（奖励）」是本地算的，这句只负责像人说话。
+   * 所以同样不许出现数量与机制词 —— 模型很容易写成「你终于卖出一千碗了」。
+   */
+  trophy_voice: [
+    "这条街的人都看在眼里。",
+    "做买卖做到这份上，不容易。",
+    "以后路过的人，会先想起你这家。",
+    "你忙你的，我们都替你高兴。",
+    "老友粉这东西，讲究的就是个实在。",
+    "慢慢来，日子还长。",
   ],
 };
 

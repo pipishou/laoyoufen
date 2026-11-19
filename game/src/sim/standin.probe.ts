@@ -416,7 +416,7 @@ spendFavor(s);
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
   );
   for (const line of log) console.log(line);
 

@@ -31,6 +31,8 @@ import { GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
 import { CAPACITY_LOST_RATE, lostRateOf } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
+import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
+import { nextTrophy, trophySummary, trophyViews } from "../sim/trophies";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
 import { icon } from "./icons";
@@ -859,11 +861,33 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       .map((d) => `<span class="cchip${d.found > 0 ? " on" : ""}">${LIKE_LABELS[d.dim]} ${d.found}/${d.total}</span>`)
       .join("");
 
+    // 成就（B 批）：按组铺开，未达成的也写名字 —— 这批的目的就是「告诉玩家还有什么」，
+    // 藏成「？？」等于把目标感又收回去了。
+    const tv = trophyViews(s);
+    const trophyGroups = TROPHY_GROUP_ORDER.map((g) => {
+      const list = tv.filter((v) => v.def.group === g);
+      const got = list.filter((v) => v.earned).length;
+      const cards = list
+        .map(
+          (v) =>
+            `<span class="tcard${v.earned ? " on" : ""}" title="${v.def.note}">${v.def.name}${
+              v.earned ? "" : `<b class="tprog">${v.progressText}</b>`
+            }</span>`,
+        )
+        .join("");
+      return `<div class="tgroup"><div class="tgname">${TROPHY_GROUP_LABEL[g]} ${got}/${list.length}</div><div class="cgrid">${cards}</div></div>`;
+    }).join("");
+    const near = nextTrophy(s);
+    const trophySec = `<div class="sec"><div class="sechd">${icon("star")}成就 · ${trophySummary(s)}<span class="sechint">${
+      near ? `下一条最近：「${near.def.name}」 ${near.progressText}` : "全收齐了"
+    }</span></div><div class="tgroups">${trophyGroups}</div></div>`;
+
     return `<div class="sec"><div class="sechd">浇头 ${p.toppings}/${TOPPINGS.length}</div><div class="cgrid">${toppingChips}</div></div>
       <div class="sec"><div class="sechd">顾客 ${p.customers}/${CUSTOMER_ARCHETYPES.length}</div><div class="cgrid">${customerChips}</div></div>
       <div class="sec"><div class="sechd">口味喜好 ${p.likes}/${LIKES_TOTAL}</div><div class="cgrid">${likeDimChips}</div><div class="cgrid">${likeChips}</div></div>
       <div class="sec"><div class="sechd">评级 ${p.grades}/5</div><div class="cgrid">${gradeChips}</div></div>
-      <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>`;
+      <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
+      ${trophySec}`;
   }
 
   function ledgerHtml(s: GameState): string {

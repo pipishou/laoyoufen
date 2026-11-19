@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "step": "collection",
+      "groups": 6,
+      "cards": 30,
+      "on": 0,
+      "header": "成就 · 0 / 30 枚下一条最近：「口碑 4.0」 3 / 4",
+      "progress": [
+        "0 / 1",
+        "0 / 100",
+        "0 / 1"
+      ]
+    },
+    {
+      "step": "earn",
+      "hit": 5,
+      "trophies": 5,
+      "favor": 18,
+      "queued": 4,
+      "toast": [
+        "成就 · 第一碗（人情 +3）：头一碗端出去，手都是抖的。"
+      ]
+    },
+    {
+      "step": "after",
+      "on": 5,
+      "header": "成就 · 5 / 30 枚下一条最近：「口碑 4.0」 3 / 4",
+      "names": [
+        "第一碗",
+        "一百位街坊",
+        "第二块牌子",
+        "添了第一件",
+        "街上第一件"
+      ]
+    }
+  ],
+  "console_errors": [],
+  "saveVersion": 24
+}

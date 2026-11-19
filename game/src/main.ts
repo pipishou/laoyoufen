@@ -16,6 +16,8 @@ import { takeOverShop } from "./sim/rivals";
 import { RIVAL_BY_ID } from "./data/rivals";
 import { buyStreet, nextRequest } from "./sim/streets";
 import { hookVoiceContext, nextHook } from "./sim/hook";
+import { TROPHY_BY_ID } from "./data/trophies";
+import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { buyGear } from "./sim/gear";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
@@ -581,6 +583,34 @@ function tickFeedback(): void {
     hud.showToast(s.flow.lastStreet, "info");
     s.flow.lastStreet = null;
   }
+
+  // 成就（B 批）：日结一次可能同时拿几枚，一帧弹一条，弹完清队列。
+  // 名字、条件、奖励全部本地算；AI 只补一句街坊的话（trophy_voice）。
+  if ((s.pendingTrophies ?? []).length > 0) {
+    const id = s.pendingTrophies[0];
+    const def = id ? TROPHY_BY_ID.get(id) : undefined;
+    s.pendingTrophies.shift();
+    if (def) {
+      const reward = [
+        def.reward.favor ? `人情 +${def.reward.favor}` : "",
+        def.reward.cash ? `¥${def.reward.cash}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      hud.showToast(`成就 · ${def.name}${reward ? `（${reward}）` : ""}：${def.hint}`, "like");
+      playSfx("upgrade");
+      const ask: LineAsk = {
+        kind: "trophy_voice",
+        key: def.id,
+        context: trophyVoiceContext(def),
+        month: s.month,
+        day: s.day,
+      };
+      void fetchLine(ask).then((line) => {
+        if (line) hud.showToast(`街坊说：「${line}」`, "info");
+      });
+    }
+  }
 }
 
 /**
@@ -772,7 +802,11 @@ declare global {
       device: typeof deviceId;
       refresh: () => void;
       prefetch: () => Promise<void>;
-  hook: () => void;
+      hook: () => void;
+      /** 手动跑一次成就判定（验收用；正常时机是 endDay） */
+      trophies: () => number;
+      /** 手动跑一次反馈消费（验收用；正常时机是下一分钟推进） */
+      feedback: () => void;
     };
   }
 }
@@ -791,6 +825,8 @@ window.__laoyou = {
   refresh: () => refresh(),
   prefetch: () => prefetchLines(),
   hook: () => prefetchHookLine(),
+  trophies: () => checkTrophies(state).length,
+  feedback: () => tickFeedback(),
 };
 
 new Phaser.Game(createGameConfig(onMinute, () => speed, () => state));
