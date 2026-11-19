@@ -15,6 +15,7 @@ import { districtNameOf } from "./data/nanning";
 import { takeOverShop } from "./sim/rivals";
 import { RIVAL_BY_ID } from "./data/rivals";
 import { buyStreet, nextRequest } from "./sim/streets";
+import { hookVoiceContext, nextHook } from "./sim/hook";
 import { buyGear } from "./sim/gear";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
@@ -611,6 +612,8 @@ function refresh(): void {
   guide.render(state);
   setupScreen.render(state);
   arenaUi.render();
+  // 打烊单一出就补那句口吻（内部按「钩子键:月:日」节流，一天最多一次）
+  prefetchHookLine();
   scheduleSave();
 }
 
@@ -681,6 +684,31 @@ async function prefetchLines(): Promise<void> {
   if (got) refresh();
 }
 
+/**
+ * 打烊单上「明天 · …」下面那句口吻：打烊之后才算得出来，所以单独预取一次。
+ *
+ * 数字在上面那行（本地算的），这里只要一句「为什么该这么干」，
+ * 拿不到就一直用本地池那句 —— 打烊单不会因为 AI 挂了而空着。
+ */
+let lastHookKey = "";
+function prefetchHookLine(): void {
+  if (!state.dayReport) return;
+  const plan = nextHook(state);
+  if (plan.kind === "none") return;
+  const id = `${plan.key}:${state.month}:${state.day}`;
+  if (id === lastHookKey) return;
+  lastHookKey = id;
+  void fetchLine({
+    kind: "hook_voice",
+    key: plan.key,
+    context: hookVoiceContext(plan),
+    month: state.month,
+    day: state.day,
+  }).then((line) => {
+    if (line) refresh();
+  });
+}
+
 refresh();
 recordSample(state, score.total);
 
@@ -744,6 +772,7 @@ declare global {
       device: typeof deviceId;
       refresh: () => void;
       prefetch: () => Promise<void>;
+  hook: () => void;
     };
   }
 }
@@ -761,6 +790,7 @@ window.__laoyou = {
   device: deviceId,
   refresh: () => refresh(),
   prefetch: () => prefetchLines(),
+  hook: () => prefetchHookLine(),
 };
 
 new Phaser.Game(createGameConfig(onMinute, () => speed, () => state));

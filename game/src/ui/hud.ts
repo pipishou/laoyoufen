@@ -6,7 +6,8 @@ import { LIKES_TOTAL } from "../sim/collection";
 import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
 import { queueMaxOf } from "../sim/unlocks";
 import { favorOf } from "../sim/favor";
-import { nextHookOf } from "../sim/hook";
+import { hookVoiceContext, nextHook } from "../sim/hook";
+import { getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
@@ -243,7 +244,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
         <div class="dcell"><span class="dk">平均满意</span><span class="dv" data-day-sat>--</span></div>
       </div>
       <div class="daynote" data-day-note></div>
-      <div class="dayhook" data-day-hook></div>
+      <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookline" data-hook-line></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -260,6 +261,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const dayCash = dayWrap.querySelector("[data-day-cash]") as HTMLElement;
   const dayNote = dayWrap.querySelector("[data-day-note]") as HTMLElement;
   const dayHook = dayWrap.querySelector("[data-day-hook]") as HTMLElement;
+  const hookMain = dayWrap.querySelector("[data-hook-main]") as HTMLElement;
+  const hookLine = dayWrap.querySelector("[data-hook-line]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
@@ -427,10 +430,21 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
           : visited > 0 && rep.lost / visited > 0.3
             ? `走了 ${rep.lost} 位：多半是嫌贵或者等太久——价牌和产能看一眼。`
             : `今天站住了：一碗毛利约 ¥${score.margin.toFixed(1)}，明天试试多卖几碗。`;
-      // 「明天做点什么」：一笔账不看目标就只是数字（P69）
-      const hook = nextHookOf(s);
-      dayHook.textContent = hook;
-      dayHook.hidden = hook === "";
+      // 「明天做点什么」：一笔账不看目标就只是数字（P69）；产能跟不上时它排第一（P70）
+      const plan = nextHook(s);
+      hookMain.textContent = plan.text;
+      dayHook.hidden = plan.text === "";
+      dayHook.classList.toggle("bad", plan.urgency === "high");
+      dayHook.dataset.hookKind = plan.kind;
+      // 副行只给口吻，数字全在上面那行（本地算的），AI 挂了就留本地句
+      const voiceAsk = {
+        kind: "hook_voice" as const,
+        key: plan.key,
+        context: hookVoiceContext(plan),
+        month: s.month,
+        day: s.day,
+      };
+      hookLine.textContent = plan.kind === "none" ? "" : getLine(voiceAsk, localLine(voiceAsk));
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);

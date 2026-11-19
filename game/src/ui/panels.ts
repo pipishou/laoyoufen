@@ -29,6 +29,7 @@ import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } fr
 import { gearSummary, gearViews } from "../sim/gear";
 import { GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
+import { CAPACITY_LOST_RATE, lostRateOf } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
@@ -448,6 +449,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
     }).join("");
     const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
+    // 流失超过 45%：这一页最该看的不是菜单，是「店面」和「设备」（P70）
+    const hot = lostRateOf(s) >= CAPACITY_LOST_RATE ? " hot" : "";
 
     // 扩建：四档，按顺序买（data/expansion.ts），后两档挂段位门槛（开罗 rank）
     const nextExp = nextExpansion(s);
@@ -719,12 +722,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
     }).join("");
     return `<div class="sec">
-        <div class="sechd">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
+        <div class="sechd${hot}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
         ${expRow}
       </div>
       <div class="sec">
-        <div class="sechd">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
+        <div class="sechd${hot}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
         <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>

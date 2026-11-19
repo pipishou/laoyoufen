@@ -28,6 +28,8 @@ PORT = 4190
 FAKE_PORT = 8791
 LINE_OK = "这条巷子晚上黑，娃娃放学走这儿我不放心。"
 LINE_BAD = "这条街现在有 3 家粉店，我们家最便宜。"
+# 打烊单那句口吻（A 批 P70）：只有 hook_voice 会拿到它
+HOOK_OK = "灶台不趁手，再好的手也伸不开。"
 
 
 class FakeProxy(BaseHTTPRequestHandler):
@@ -58,6 +60,8 @@ class FakeProxy(BaseHTTPRequestHandler):
             text = LINE_BAD
         elif kind == "arena_call":
             text = "锅气起来了，趁势再来一记！"
+        elif kind == "hook_voice":
+            text = HOOK_OK
         else:
             text = LINE_OK
         payload = json.dumps({"body": text, "source": "remote"}, ensure_ascii=False).encode("utf-8")
@@ -164,6 +168,34 @@ def run_stage(name: str, line_url: str, expect: str) -> dict:
             page.wait_for_timeout(800)
             panel2 = read_panel(page)
 
+            # 打烊单那句口吻（A 批 P70）：造一张高流失的日结单，再看副行有没有换字。
+            # 数字全在上面那行（本地算），这里只验证「口气」这一层走的是代理。
+            page.evaluate(
+                """() => {
+                  const s = window.__laoyou.state;
+                  s.dayReport = { month: s.month, day: s.day, revenue: 0, served: 40, lost: 60,
+                                  avgSat: -1, price: s.price, taste: 0, cash: s.cash };
+                  s.flow.lostToday = 60;
+                  s.flow.servedToday = 40;
+                  if (window.__laoyou.hook) window.__laoyou.hook();
+                  window.__laoyou.refresh();
+                }"""
+            )
+            page.wait_for_timeout(900)
+            hook = page.evaluate(
+                """() => {
+                  const line = document.querySelector("[data-hook-line]");
+                  const main = document.querySelector("[data-hook-main]");
+                  const box = document.querySelector("[data-day-hook]");
+                  return {
+                    line: line ? line.textContent.trim() : "",
+                    main: main ? main.textContent.trim() : "",
+                    bad: box ? box.classList.contains("bad") : false,
+                    kind: box ? (box.dataset.hookKind || "") : "",
+                  };
+                }"""
+            )
+
             # 落场：点一场，看场上有没有那句喊话
             page.evaluate('document.querySelector("[data-tab=\\"contest\\"]").click()')
             page.wait_for_timeout(700)
@@ -193,6 +225,7 @@ def run_stage(name: str, line_url: str, expect: str) -> dict:
                     "request": panel2["request"] or panel["request"],
                     "rumour": panel2["rumour"],
                     "call": call,
+                    "hook": hook,
                     "pageerrors": list(errors),
                 }
             )
@@ -201,15 +234,18 @@ def run_stage(name: str, line_url: str, expect: str) -> dict:
                     LINE_OK not in result["request"]
                     and LINE_OK not in " ".join(result["rumour"])
                     and (not result["request"] or "街坊来提" in result["request"])
+                    and HOOK_OK not in hook["line"]
+                    and hook["kind"] == "capacity"
+                    and hook["line"] != ""
                     and not errors
                 )
             elif expect == "remote":
                 result["ok"] = (
                     LINE_OK in result["request"] or any(LINE_OK in r for r in result["rumour"]) or LINE_OK in call
-                ) and not errors
+                ) and HOOK_OK in hook["line"] and not errors
             else:  # digits
-                joined = result["request"] + " ".join(result["rumour"]) + call
-                result["ok"] = "3 家粉店" not in joined and not errors
+                joined = result["request"] + " ".join(result["rumour"]) + call + hook["line"]
+                result["ok"] = "3 家粉店" not in joined and hook["line"] != "" and not errors
 
             page.screenshot(path=os.path.join(OUT, f"{name}.png"))
             browser.close()

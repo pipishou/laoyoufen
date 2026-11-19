@@ -1,7 +1,7 @@
-﻿import { describe, expect, it } from "vitest";
-import { createInitialState, type GameState } from "./state";
+import { describe, expect, it } from "vitest";
+import { createInitialState, type DayRecord, type GameState } from "./state";
 import { openForBusiness } from "./setup";
-import { nextHookOf } from "./hook";
+import { CAPACITY_LOST_RATE, hookVoiceContext, lostRateOf, nextHook, nextHookOf } from "./hook";
 import { spawnScaleByDay } from "./customer";
 import { checkGrade } from "./grade";
 import { buyGear } from "./gear";
@@ -134,5 +134,83 @@ describe("开局客流分档（P67）", () => {
     s.month = 1;
     s.day = 1;
     expect(spawnScaleByDay(s)).toBe(1);
+  });
+});
+
+/** 造一张打烊单快照：endDay 会把 flow 里的计数清零，只有快照留得住 */
+function report(s: GameState, lost: number, served: number): void {
+  const rec: DayRecord = {
+    month: s.month,
+    day: s.day,
+    revenue: 0,
+    served,
+    lost,
+    avgSat: -1,
+    price: s.price,
+    taste: 0,
+    cash: s.cash,
+  };
+  s.dayReport = rec;
+}
+
+describe("产能优先（P70）", () => {
+  it("当天流失过 45%：钩子换成「先把灶台加上」，并标成 high", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    report(s, 60, 40); // 60 / 100 = 60%
+    const plan = nextHook(s);
+    expect(plan.kind).toBe("capacity");
+    expect(plan.urgency).toBe("high");
+    expect(plan.text).toContain("今天走了 60 位");
+    expect(plan.text).toMatch(/¥/);
+  });
+
+  it("流失刚好不到 45%：还是按原来的顺序走，不说产能", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    report(s, 44, 56); // 44%
+    expect(nextHook(s).kind).not.toBe("capacity");
+  });
+
+  it("产能压过段位：能评段位但今天流失六成，先说产能", () => {
+    const s = fresh();
+    s.totalCustomers = 400;
+    s.cash = 200_000;
+    report(s, 70, 30);
+    expect(checkGrade(s).ready).toBe(true);
+    expect(nextHook(s).kind).toBe("capacity");
+  });
+
+  it("钱不够也照说，只是把「先添」换成「卖了钱先添」", () => {
+    const s = fresh();
+    s.cash = 0;
+    report(s, 80, 20);
+    expect(nextHook(s).text).toContain("卖了钱先添");
+  });
+
+  it("lostRateOf 优先读打烊单快照（flow 已清零也不影响）", () => {
+    const s = fresh();
+    s.flow.lostToday = 0;
+    s.flow.servedToday = 0;
+    report(s, 50, 50);
+    expect(lostRateOf(s)).toBeCloseTo(0.5, 5);
+  });
+
+  it("没客人的一天不算流失（0 人不该除出 0/0）", () => {
+    const s = fresh();
+    expect(lostRateOf(s)).toBe(0);
+    expect(CAPACITY_LOST_RATE).toBeGreaterThan(0);
+  });
+
+  it("给 AI 的上下文只有名词、没有数字", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    report(s, 60, 40);
+    const ctx = hookVoiceContext(nextHook(s));
+    const text = JSON.stringify(ctx);
+    expect(text).not.toMatch(/\d/);
+    expect(Object.keys(ctx).length).toBeGreaterThan(0);
+    // kind none 时没有上下文
+    expect(hookVoiceContext({ text: "", kind: "none", key: "none", urgency: "normal" })).toEqual({});
   });
 });

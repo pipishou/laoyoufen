@@ -16,7 +16,7 @@
  * 没有配 `VITE_AI_PROXY_URL` 时整条通道是关的，游戏离线可完整通关。
  */
 
-export type LineKind = "street_request" | "rival_rumor" | "recipe_buyer" | "arena_call";
+export type LineKind = "street_request" | "rival_rumor" | "recipe_buyer" | "arena_call" | "hook_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -58,6 +58,19 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "稳住，火还在，别急。",
     "香气压过去了，趁势再来一记。",
     "手别停，节奏在你这边。",
+  ],
+  /**
+   * 打烊单「明天 · …」那一行下面的口吻（A 批 P70）。
+   * 上面那行由本地算出（含金额与人次），这一句只讲「为什么值得这么干」——
+   * 所以本地池与模型指令都不许出现任何数量。
+   */
+  hook_voice: [
+    "灶台不趁手，再好的手也伸不开。",
+    "人多起来是好事，接不住就成了坏事。",
+    "该花的钱拖着不花，最后都变成走掉的客。",
+    "先把手上的活理顺，生意自己会跟上来。",
+    "街坊愿意来，就别让人家站在门口干等。",
+    "一步一步来，明天还有明天的事。",
   ],
 };
 
@@ -123,6 +136,25 @@ function proxyUrl(): string | undefined {
 }
 
 /**
+ * 红线两条：阿拉伯数字，和「三十五位」「两百块」这类**中文数量词**。
+ *
+ * 中文数字单独出现是正常的（「一口锅」「两口子」），只有后面跟量词才算数。
+ * 宁可偶尔误杀（回落本地句），也不让模型把玩家不该看见的数字带进界面 ——
+ * 数字归本地规则，语声归 AI，这条界线不能松。
+ */
+const CN_QUANTITY =
+  /[一二三四五六七八九十百千万两][十百千万]?(?:几|多|余|来)?\s*(位|碗|元|块|天|人|件|张|个|家|份|次|名|斤)/;
+
+/** 这句能不能上屏：空串、阿拉伯数字、中文数量词一律不行 */
+export function isCleanLine(text: string): boolean {
+  const t = text.trim();
+  if (t.length === 0) return false;
+  if (/\d/.test(t)) return false;
+  if (CN_QUANTITY.test(t)) return false;
+  return true;
+}
+
+/**
  * 取一条在线文案。任何异常、超时（800ms）、含数字、结构不对 → null，
  * 调用方继续用本地句，界面上不留痕迹。
  */
@@ -156,8 +188,8 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
       const data = (await res.json()) as { body?: unknown };
       if (typeof data.body !== "string") return null;
       const body = data.body.trim();
-      // 红线：含任何阿拉伯数字的句子整句作废（服务端也拦，这里双保险）
-      if (body.length === 0 || /\d/.test(body)) return null;
+      // 红线：含数字（阿拉伯或中文数量词）的句子整句作废（服务端也拦，这里双保险）
+      if (!isCleanLine(body)) return null;
       const line = body.slice(0, 160);
       CACHE.set(id, line);
       return line;

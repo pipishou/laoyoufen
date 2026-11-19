@@ -920,6 +920,17 @@ button.pill[disabled] {
   letter-spacing: 1px;
 }
 
+/* 今天走掉的人太多时，这两段才是重点（P70） */
+.sechd.hot {
+  background: var(--paper);
+  border-left-color: var(--red);
+}
+.sechd.hot::after {
+  content: " ← 现在最缺";
+  color: var(--red);
+  font-weight: 700;
+}
+
 .sl {
   display: grid;
   grid-template-columns: 104px 1fr 32px;
@@ -1694,6 +1705,28 @@ button.pill[disabled] {
 .dayhook::before {
   content: "明天 · ";
   color: var(--wood);
+}
+
+/* 流失超过 45%：这条不是「明天顺便做」，是「明天必须先做」（P70） */
+.dayhook.bad {
+  background: var(--paper);
+  border-left-color: var(--red);
+}
+.dayhook.bad::before {
+  content: "明天先处理 · ";
+  color: var(--red);
+}
+.dayhook .hookmain {
+  display: block;
+}
+.dayhook .hookline {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--wood);
+}
+.dayhook .hookline:empty {
+  display: none;
 }
 
 .dayfoot {

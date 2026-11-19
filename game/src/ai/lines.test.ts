@@ -1,7 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchLine, getLine, lineId, localLine, remoteLineCount, resetLines, setProxyUrl, type LineAsk } from "./lines";
+import {
+  fetchLine,
+  getLine,
+  isCleanLine,
+  lineId,
+  localLine,
+  remoteLineCount,
+  resetLines,
+  setProxyUrl,
+  type LineAsk,
+} from "./lines";
 
-const KINDS = ["street_request", "rival_rumor", "recipe_buyer", "arena_call"] as const;
+const KINDS = ["street_request", "rival_rumor", "recipe_buyer", "arena_call", "hook_voice"] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {
   return { kind, key, context: { 街: "明秀路" }, month: 0, day };
@@ -102,5 +112,35 @@ describe("ai/lines 在线通道", () => {
       }),
     );
     await expect(fetchLine(ask())).resolves.toBeNull();
+  });
+});
+
+describe("一句话的数字红线（含中文数量词）", () => {
+  it("阿拉伯数字、中文数量词都拦；「一口锅」「两口子」这种正常话放行", () => {
+    expect(isCleanLine("这条街现在有 3 家粉店。")).toBe(false);
+    expect(isCleanLine("今天走了三十几位客人。")).toBe(false);
+    expect(isCleanLine("再添两件家当就够用了。")).toBe(false);
+    expect(isCleanLine("灶台不趁手，再好的手也伸不开。")).toBe(true);
+    expect(isCleanLine("一口气把汤熬出来。")).toBe(true);
+    expect(isCleanLine("他们两口子守着这个摊十几年了。")).toBe(true);
+    expect(isCleanLine("   ")).toBe(false);
+  });
+
+  it("打烊单那句口吻也有本地池，且每一句都过红线", () => {
+    for (let day = 1; day <= 12; day++) {
+      const line = localLine(ask("hook_voice", "capacity", day));
+      expect(line.length).toBeGreaterThan(6);
+      expect(isCleanLine(line)).toBe(true);
+    }
+  });
+
+  it("在线句带中文数量词时整句作废（不只是阿拉伯数字）", async () => {
+    setProxyUrl("http://127.0.0.1:8767/line");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ body: "今天走了三十几位客人，得加灶了。" }), { status: 200 })),
+    );
+    expect(await fetchLine(ask("hook_voice", "capacity"))).toBeNull();
+    expect(remoteLineCount()).toBe(0);
   });
 });
