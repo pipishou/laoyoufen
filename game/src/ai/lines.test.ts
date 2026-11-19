@@ -144,3 +144,59 @@ describe("一句话的数字红线（含中文数量词）", () => {
     expect(remoteLineCount()).toBe(0);
   });
 });
+
+/**
+ * 试玩二轮 F5：副行原来六个档位共用一个池，
+ * 于是出现「主句说加灶、副行说街上的事」——副行是在解释主句，说的得是同一件事。
+ */
+describe("打烊单副行按用途分池", () => {
+  const HOOK_KINDS = ["capacity", "grade", "gear", "street", "arena", "none"];
+  const withKind = (kind: string, day: number) => ({
+    kind: "hook_voice" as const,
+    key: "k",
+    context: { 类型: kind, 事: "灶台与座位" },
+    month: 0,
+    day,
+  });
+
+  it("六档合起来 26 句，且每句都过数字红线", () => {
+    const all = new Set<string>();
+    for (const k of HOOK_KINDS) {
+      for (let d = 1; d <= 30; d++) {
+        const line = localLine(withKind(k, d));
+        expect(isCleanLine(line)).toBe(true);
+        all.add(line);
+      }
+    }
+    expect(all.size).toBe(26);
+  });
+
+  it("加灶与街面两池没有交集", () => {
+    const a = new Set<string>();
+    const b = new Set<string>();
+    for (let d = 1; d <= 20; d++) {
+      a.add(localLine(withKind("capacity", d)));
+      b.add(localLine(withKind("street", d)));
+    }
+    for (const line of a) expect(b.has(line)).toBe(false);
+  });
+
+  it("没给类型时退回加灶那一档，不会没词", () => {
+    const line = localLine({ kind: "hook_voice", key: "x", context: {}, month: 0, day: 1 });
+    expect(line.length).toBeGreaterThan(6);
+    expect(isCleanLine(line)).toBe(true);
+  });
+
+  it("发请求时剔掉只给本地选池的 `类型`", async () => {
+    setProxyUrl("http://127.0.0.1:8767/line");
+    const spy = vi.fn(
+      async (_url: string, _init?: { body?: string }) =>
+        new Response(JSON.stringify({ body: "灶台不趁手，再好的手也伸不开。" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", spy);
+    await fetchLine(withKind("street", 3));
+    const body = JSON.parse(String(spy.mock.calls[0]?.[1]?.body ?? "{}"));
+    expect(body.context).toEqual({ 事: "灶台与座位" });
+    expect(body.context.类型).toBeUndefined();
+  });
+});

@@ -767,7 +767,12 @@ function prefetchHookLine(): void {
     month: state.month,
     day: state.day,
   }).then((line) => {
-    if (line) refresh();
+    // 试玩二轮 F4：拿到在线句**不要整块 refresh()**。
+    // 重渲染会把打烊单其他行也重画一遍，玩家看到的是「字自己变了」；
+    // 这里只把副行那一格原地换掉，一次、不来回。
+    if (!line) return;
+    const node = document.querySelector<HTMLElement>("[data-hook-line]");
+    if (node) node.textContent = line;
   });
 }
 

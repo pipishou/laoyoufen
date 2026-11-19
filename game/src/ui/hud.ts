@@ -11,7 +11,7 @@ import { getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
-import { nextThree } from "../sim/achievements";
+import { nextTrophies } from "../sim/trophies";
 import { demandCapOf } from "../sim/district";
 import { frenzyActive, frenzyLeftMinutes } from "../sim/frenzy";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
@@ -458,15 +458,16 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     el.rev.textContent = Math.round(s.monthRevenue).toLocaleString("zh-CN");
     el.target.textContent = formatMoney(s.monthTarget);
     el.goalbar.style.width = `${Math.min(100, (s.monthRevenue / Math.max(1, s.monthTarget)) * 100)}%`;
-    // K1 目标换骨：成就条取代「月度目标」成为主推力（见 sim/achievements.ts）
+    // F6 合并两套成就：左栏这一条与图鉴页共用 sim/trophies.ts 的 30 枚，
+    // 老的 sim/achievements.ts（11 条、字段重叠、hint 里还留着别的作品名）已删。
     el.grade.textContent = `${s.gradeLevel}`;
-    const ach = nextThree(s).slice(0, 2); // 左栏只有 176px 宽，两行刚好不压到灶台卡
+    const ach = nextTrophies(s, 2); // 左栏只有 176px 宽，两行刚好不压到灶台卡
     el.achlist.innerHTML = ach
       .map(
-        (v) => `<div class="achrow" title="${v.hint}">
-          <span class="an">${v.name}</span>
-          <span class="av">${fmtProgress(v.progress)}${v.unit} / ${v.next === null ? "满" : fmtProgress(v.next)}${v.unit}</span>
-          <span class="abar"><i style="width:${Math.round(v.ratio * 100)}%"></i></span>
+        (v) => `<div class="achrow" title="${v.def.note}">
+          <span class="an">${v.def.name}</span>
+          <span class="av">${v.earned ? "已达成" : `${fmtProgress(v.cur)} / ${fmtProgress(v.target)}`}</span>
+          <span class="abar"><i style="width:${Math.round(v.pct * 100)}%"></i></span>
         </div>`,
       )
       .join("");

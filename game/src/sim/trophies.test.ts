@@ -9,6 +9,7 @@ import {
   earnedTrophies,
   hasTrophy,
   nextTrophy,
+  nextTrophies,
   trophyCount,
   trophySummary,
   trophyViews,
@@ -186,6 +187,23 @@ describe("成就面板数据", () => {
     expect(trophySummary(s)).toContain("1 /");
     // 刚拿到的不会再被推荐
     expect(nextTrophy(s)?.def.id).not.toBe("first_bowl");
+  });
+
+  it("HUD 左栏取最近的两枚，全收齐时退回最近拿到的两枚", () => {
+    const s = fresh();
+    const two = nextTrophies(s, 2);
+    expect(two).toHaveLength(2);
+    expect(two.every((v) => !v.earned)).toBe(true);
+    // 与 nextTrophy（单条）同源：第一条就是它
+    expect(two[0]!.def.id).toBe(nextTrophy(s)!.def.id);
+    // 差得最少的那枚必须排在前面（左栏两行是给「马上能拿到」的）
+    expect(two[0]!.pct).toBeGreaterThanOrEqual(two[1]!.pct);
+
+    // 全都拿到：不让左栏空掉
+    for (const def of TROPHIES) s.trophies.push(def.id);
+    const done = nextTrophies(s, 2);
+    expect(done).toHaveLength(2);
+    expect(done.every((v) => v.earned)).toBe(true);
   });
 
   it("AI 上下文只递名词，不带数字", () => {

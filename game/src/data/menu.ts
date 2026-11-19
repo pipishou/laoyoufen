@@ -24,4 +24,4 @@ export function menuCapOf(gradeLevel: number): number {
 
 /** 给界面用的一句解释 */
 export const MENU_CAP_HINT =
-  "菜单位跟段位走：第 2 段能挂 2 款、第 4 段 3 款，最多 6 款。开罗的售卖机上也是一排券，客人自己挑。";
+  "菜单位跟段位走：第 2 段能挂 2 款、第 4 段 3 款，最多 6 款。墙上贴一排价目，客人自己挑。";

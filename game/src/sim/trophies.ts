@@ -128,6 +128,21 @@ export function nextTrophy(state: GameState): TrophyView | null {
   return left.sort((a, b) => b.pct - a.pct)[0] ?? null;
 }
 
+/**
+ * HUD 左栏只放得下两行（176px 宽）：取「离得最近、还没拿到」的两枚。
+ *
+ * 试玩二轮 F6：左栏原来跑的是 `sim/achievements.ts` 那套 11 条老成就，
+ * 图鉴页跑的是这一套 30 条 —— 同一局里两套「成就」并存，字段大量重叠，
+ * 玩家在左栏看到的名字和图鉴里对不上。现在只留这一套。
+ * 全收齐（30/30）时退回展示最近拿到的两枚，别让左栏空掉。
+ */
+export function nextTrophies(state: GameState, n = 2): TrophyView[] {
+  const all = trophyViews(state);
+  const left = all.filter((v) => !v.earned);
+  if (left.length === 0) return all.slice(-n);
+  return left.sort((a, b) => b.pct - a.pct).slice(0, n);
+}
+
 /** AI 落点 `trophy_voice` 的上下文：只递名词，递给模型的是「哪一枚」而不是条件 */
 export function trophyVoiceContext(def: TrophyDef): Record<string, string> {
   const groupLabel: Record<TrophyGroup, string> = {

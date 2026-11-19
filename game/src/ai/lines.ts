@@ -35,6 +35,69 @@ export interface LineAsk {
   day: number;
 }
 
+/**
+ * 打烊单副行按「明天该干什么」分池（试玩二轮 F5）。
+ *
+ * 原来六个档位共用一个六句池，于是出现「主句说加灶、副行说街上的事」——
+ * 副行是在给主句解释理由，说的不是同一件事就成了噪音。
+ * 现在每档各说各的，句子本身仍然不许出现任何数量（数字归本地规则）。
+ */
+const HOOK_VOICE: Record<string, readonly string[]> = {
+  /** 0. 加灶、扩座 */
+  capacity: [
+    "灶台不趁手，再好的手也伸不开。",
+    "人多起来是好事，接不住就成了坏事。",
+    "客人站在门口等，等久了就不来了。",
+    "锅烧不热，粉就出得慢；出得慢，人就走了。",
+    "桌椅不够，生意越好越亏心。",
+    "先把能接的接住，再想别的。",
+  ],
+  /** 1. 评段位 */
+  grade: [
+    "门口的牌子亮一点，路过的人才认得出你。",
+    "干了这么久，该让人知道你叫什么。",
+    "评上去不是为了好看，是为了让人敢进门。",
+    "招牌是给别人看的，手艺是给自己留的。",
+  ],
+  /** 2. 家当 */
+  gear: [
+    "工具趁手，收工的时候腰杆子少受点罪。",
+    "旧的用惯了，可该换还得换。",
+    "小店的家当，样样都得趁手。",
+    "别人看不出你换了什么，你自己知道顺手了。",
+    "花钱添东西，图的是每天少费点劲。",
+  ],
+  /** 3. 街面 */
+  street: [
+    "这条街好起来，你的生意才会好。",
+    "街坊天天走这条路，路顺了他们才愿意停。",
+    "修的是街，收的是人心。",
+    "别人都在添置，你不添就显得旧了。",
+    "巷口亮堂了，晚上回来的人也多了。",
+    "街面上的事，做成一桩就算一桩。",
+  ],
+  /** 4. 落场 */
+  arena: [
+    "上场就别想输，手上有东西才有底气。",
+    "赢一场，街坊记你一整年。",
+    "落场讲的是当下那口气。",
+  ],
+  /** 5. 什么也不缺 */
+  none: ["日子还长，慢慢做。", "明天再说也不迟。"],
+};
+
+/** 选池：`类型` 由 sim/hook.ts 的 hookVoiceContext 放进 context */
+function hookPool(ask: LineAsk): readonly string[] {
+  const kind = ask.context["类型"];
+  return (kind ? HOOK_VOICE[kind] : undefined) ?? HOOK_VOICE.capacity!;
+}
+
+/** 发请求前剔掉只供本地选池的字段 */
+function stripKind(ctx: Record<string, string>): Record<string, string> {
+  const { 类型: _omit, ...rest } = ctx;
+  return rest;
+}
+
 const LOCAL: Record<LineKind, readonly string[]> = {
   street_request: [
     "这条巷子一到晚上就黑，娃娃放学走这儿我不放心。",
@@ -67,18 +130,10 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "手别停，节奏在你这边。",
   ],
   /**
-   * 打烊单「明天 · …」那一行下面的口吻（A 批 P70）。
-   * 上面那行由本地算出（含金额与人次），这一句只讲「为什么值得这么干」——
-   * 所以本地池与模型指令都不许出现任何数量。
+   * 打烊单副行的兜底池（默认取「加灶扩座」那一档）。
+   * 真正的选池在 `hookPool()`：按 `context.类型` 走 HOOK_VOICE 里对应那档。
    */
-  hook_voice: [
-    "灶台不趁手，再好的手也伸不开。",
-    "人多起来是好事，接不住就成了坏事。",
-    "该花的钱拖着不花，最后都变成走掉的客。",
-    "先把手上的活理顺，生意自己会跟上来。",
-    "街坊愿意来，就别让人家站在门口干等。",
-    "一步一步来，明天还有明天的事。",
-  ],
+  hook_voice: HOOK_VOICE.capacity!,
   /**
    * 成就达成时街坊补的那一句（B 批）。
    * 上面那行「成就 · 名字（奖励）」是本地算的，这句只负责像人说话。
@@ -125,7 +180,7 @@ export function lineId(ask: LineAsk): string {
 
 /** 本地兜底句：确定性，不消耗 state.rng，所以「同种子同文案」 */
 export function localLine(ask: LineAsk): string {
-  const pool = LOCAL[ask.kind];
+  const pool = ask.kind === "hook_voice" ? hookPool(ask) : LOCAL[ask.kind];
   return pool[hash(lineId(ask)) % pool.length] ?? pool[0]!;
 }
 
@@ -212,7 +267,8 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
         body: JSON.stringify({
           kind: ask.kind,
           key: ask.key,
-          context: ask.context,
+          // `类型` 只给本地选池用，别递给模型（见下方 HOOK_VOICE）
+          context: ask.kind === "hook_voice" ? stripKind(ask.context) : ask.context,
           month: ask.month,
           day: ask.day,
           forbidNumbers: true,

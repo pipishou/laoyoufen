@@ -398,7 +398,7 @@ export interface GameState {
    * 这里保留这个数只为了让 HUD 有个「本月做了多少」的量尺。
    */
   monthTarget: number;
-  /** 累计成就计数（只增不减，见 sim/achievements.ts） */
+  /** 累计成就计数（只增不减，见 sim/trophies.ts） */
   tally: Tally;
   /** 已通过的段位 0-11（0 = 还没评过，见 sim/grade.ts） */
   gradeLevel: number;

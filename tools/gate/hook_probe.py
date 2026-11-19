@@ -24,6 +24,18 @@ URL = "http://127.0.0.1:4194/"
 OUT = pathlib.Path("game/data/evidence/f1")
 OUT.mkdir(parents=True, exist_ok=True)
 
+# 「加灶扩座」那一档的本地池（见 game/src/ai/lines.ts 的 HOOK_VOICE.capacity）。
+# 探针要能分辨「副行说的是不是主句那件事」，只能把这六句抄一份当标尺 ——
+# 改文案时记得同步这里，否则 voice_matches_kind 会红。
+CAPACITY_VOICE = {
+    "灶台不趁手，再好的手也伸不开。",
+    "人多起来是好事，接不住就成了坏事。",
+    "客人站在门口等，等久了就不来了。",
+    "锅烧不热，粉就出得慢；出得慢，人就走了。",
+    "桌椅不够，生意越好越亏心。",
+    "先把能接的接住，再想别的。",
+}
+
 
 def dom_click(page, selector: str, wait: int = 320) -> None:
     page.evaluate(
@@ -166,6 +178,9 @@ def main() -> int:
             "no_tomorrow_in_body": no_tomorrow_in_body,
             "hook_visible": step2.get("hidden") is False,
             "hook_marked_bad": step2.get("bad") is True,
+            # 试玩二轮 F5：副行必须来自「加灶扩座」那一档的池，
+            # 不能再说街面/家当的事（否则是在解释另一件事）。
+            "voice_matches_kind": (step2.get("line") or "") in CAPACITY_VOICE,
         }
         report["checks"] = checks
         report["ok"] = all(checks.values()) and not report["console_errors"]

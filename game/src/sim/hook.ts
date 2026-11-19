@@ -266,5 +266,7 @@ const VOICE_HINT: Record<HookKind, string> = {
 
 export function hookVoiceContext(plan: HookPlan): Record<string, string> {
   const hint = VOICE_HINT[plan.kind];
-  return hint ? { 事: hint } : {};
+  // `类型` 只给本地选句用（见 ai/lines.ts 的 HOOK_VOICE），发请求前会被剔掉：
+  // 试玩二轮 F5 —— 副行原来六个档位共用一个池，常常「主句说加灶、副行说街上的事」。
+  return hint ? { 类型: plan.kind, 事: hint } : {};
 }

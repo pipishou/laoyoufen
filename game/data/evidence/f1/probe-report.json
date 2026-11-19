@@ -12,7 +12,7 @@
     },
     {
       "main": "先把「打通隔墙，多摆两张桌」加上（¥12,000） —— 今天走了 60 位",
-      "line": "街坊愿意来，就别让人家站在门口干等。",
+      "line": "桌椅不够，生意越好越亏心。",
       "hidden": false,
       "bad": true,
       "kind": "capacity",
@@ -28,7 +28,8 @@
     "hook_skips_cost_item": true,
     "no_tomorrow_in_body": true,
     "hook_visible": true,
-    "hook_marked_bad": true
+    "hook_marked_bad": true,
+    "voice_matches_kind": true
   },
   "saveVersion": 25
 }
