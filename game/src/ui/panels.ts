@@ -1,4 +1,4 @@
-import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, tierOf } from "../data/contest";
+import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, CONTEST_TYPE_BY_ID, tierOf } from "../data/contest";
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
@@ -33,6 +33,7 @@ import { CAPACITY_LOST_RATE, lostRateOf } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
 import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
 import { nextTrophy, trophySummary, trophyViews } from "../sim/trophies";
+import { levelProgressOf, tourneySummary, tourneyViews } from "../sim/tourneys";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
 import { icon } from "./icons";
@@ -120,6 +121,8 @@ export interface PanelActions {
   /** 报名比赛：type = staff / customers / shop（见 data/contest.ts） */
   enterContest(type: string): void;
   startArena(id: string): void;
+  /** 报一场具名赛事（C 批，见 data/tourneys.ts） */
+  enterTourney(id: string): void;
   /** 交费评段位 */
   applyGrade(): void;
   /** 换区（付转让费） */
@@ -309,6 +312,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         break;
       case "startarena":
         actions.startArena(id);
+        break;
+      case "tourney":
+        actions.enterTourney(id);
         break;
       case "grade":
         actions.applyGrade();
@@ -791,6 +797,35 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
            <div class="lmeta">${r.tier} 档 · 竞技分 ${r.score} · 冠军 ${r.champion} · 奖金 ${money(r.prize)}</div></div>`;
       })
       .join("");
+    const tViews = tourneyViews(s);
+    const tLevels = levelProgressOf(s);
+    const tourneySec = `<div class="sec">
+        <div class="sechd">${icon("cup")}赛事阶梯 · ${tourneySummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">
+          五级：街道办 → 城区 → 南宁市 → 广西 → 全国。街道办级随时能报（一天一场），
+          其余跟一年两届走（六月 / 十二月，一届一场）。想报上一级，得先在下一级进过前三。
+        </div>
+        ${tLevels
+          .map((p) => {
+            const rows = tViews
+              .filter((v) => v.def.level === p.level)
+              .map((v) => {
+                const best = v.best === 0 ? "还没进过名次" : `最好第 ${v.best} 名`;
+                const times = v.played === 0 ? "" : ` · 打过 ${v.played} 次`;
+                const basis = CONTEST_TYPE_BY_ID.get(v.def.type)?.basis ?? "";
+                const why = v.gate.ok ? "" : `｜${v.gate.reason}`;
+                return `<div class="lrow">
+            <div class="lbtns"><button type="button" data-act="tourney" data-id="${v.def.id}" ${v.gate.ok ? "" : "disabled"}>${v.played > 0 ? "再打一次" : "报名"}</button></div>
+            <div class="lname">${v.def.name} <span class="lmeta" style="display:inline">· ${best}${times}</span></div>
+            <div class="lmeta">${v.def.host}｜比${basis}｜报名 ${v.feeYuan === 0 ? "免费" : money(v.feeYuan)} · 冠军 ${money(v.prizeYuan)} · 需第 ${v.minGrade} 段${why}</div>
+          </div>`;
+              })
+              .join("");
+            const head = p.best === 0 ? `${p.name} · ${p.played}/${p.total}` : `${p.name} · ${p.played}/${p.total} · 最好第 ${p.best} 名`;
+            return `<div class="tgroup"><div class="tgname">${head}</div>${rows}</div>`;
+          })
+          .join("")}
+      </div>`;
     const arenaCards = arenaViews(s)
       .map((v) => {
         const gate = v.open;
@@ -811,6 +846,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ${gate.ok ? "" : `<div class="hint">${gate.reason}</div>`}
         ${typeRows}
       </div>
+      ${tourneySec}
       <div class="sec">
         <div class="sechd">${icon("flag")}落场 · ${arenaSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">

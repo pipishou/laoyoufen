@@ -68,6 +68,8 @@ export interface Quant {
   favorEarned: number;
   /** 拿到多少枚成就（B 批） */
   trophyCount: number;
+  /** 打过几场具名赛事（C 批） */
+  tourneyCount: number;
 }
 
 export interface PlaytestReport {
@@ -152,6 +154,7 @@ export function quantOf(s: GameState): Quant {
     gearCount: (s.gear ?? []).length,
     favorEarned: Math.max(0, Math.round(s.favorTotal ?? 0)),
     trophyCount: (s.trophies ?? []).length,
+    tourneyCount: Object.values(s.tourneys ?? {}).filter((r) => r.played > 0).length,
     rivalShare: rivalShareOf(s),
     pacifiedCount: (s.rivals ?? []).filter((r) => r.pacified).length,
   };
@@ -405,6 +408,19 @@ export function auditPlaytest(s: GameState): PlaytestReport {
       evidence: `经营 ${q.months} 个月，成就 ${q.trophyCount} 枚`,
       kairo: "Trophy 是开罗最便宜的目标感：39 条全是「累计到 N」，玩家每几天就有一枚可拿",
       fix: "头五条门槛要落在首周真实曲线上（第一碗、百位客人、第二块牌子、第一件家当、街上第一件），别学后期大数",
+    });
+  }
+
+  // ── T17 一年下来一场具名赛事都没打过（C 批）──
+  if (q.months >= 12 && q.tourneyCount === 0) {
+    out.push({
+      id: "T17",
+      bucket: "design",
+      severity: "medium",
+      title: "一年下来一场具名赛事都没打过",
+      evidence: `经营 ${q.months} 个月，赛事 ${q.tourneyCount} 场`,
+      kairo: "Rally 有 54 个具名场子（First Arena → Royal Bowl），玩家每赢一场就换一个更大的场子",
+      fix: "街道办级要「随时可报、一天一场」，且第 0 段就能报；跨级前置只查「上一级进过前三」，别要求打完",
     });
   }
 

@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import { fetchEventNarrative, localNarrative, localReaction } from "./ai/director";
-import { fetchLine, type LineAsk } from "./ai/lines";
+import { fetchLine, getLine, localLine, type LineAsk } from "./ai/lines";
+import { TOURNEY_BY_ID } from "./data/tourneys";
+import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
 import { playSfx } from "./audio/sfx";
@@ -351,6 +353,36 @@ panels = mountPanels(hudRoot, {
         `${type === "staff" ? "后厨擂台" : type === "customers" ? "街坊口碑赛" : "招牌评比"} 第 ${r.rank} 名 · 奖金 ¥${r.prize.toLocaleString("zh-CN")}`,
         r.rank <= 3 ? "like" : "info",
       );
+    }
+    playSfx("contest");
+    refresh();
+  },
+  enterTourney(id) {
+    const def = TOURNEY_BY_ID.get(String(id));
+    if (!def) {
+      refresh();
+      return;
+    }
+    const gate = tourneyGate(state, def);
+    const r = gate.ok ? enterTourneyImpl(state, def.id) : null;
+    if (!r) {
+      hud.showToast(gate.reason || "现在报不上", "info");
+    } else {
+      const tone = r.rank <= 3 ? "like" : "info";
+      hud.showToast(`${def.name} 第 ${r.rank} 名 · 奖金 ¥${r.prize.toLocaleString("zh-CN")}`, tone);
+      // AI 第 7 落点：主办方在开场时说的那句话（本地先给，远端异步换）
+      const ask = {
+        kind: "tourney_open" as const,
+        key: def.id,
+        context: { 场: def.name, 主办: def.host },
+        month: state.month,
+        day: state.day,
+      };
+      const first = getLine(ask, localLine(ask));
+      if (first) hud.showToast(`主持：「${first}」`, "info");
+      void fetchLine(ask).then((line) => {
+        if (line) hud.showToast(`主持：「${line}」`, "info");
+      });
     }
     playSfx("contest");
     refresh();

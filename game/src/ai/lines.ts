@@ -22,7 +22,8 @@ export type LineKind =
   | "recipe_buyer"
   | "arena_call"
   | "hook_voice"
-  | "trophy_voice";
+  | "trophy_voice"
+  | "tourney_open";
 
 export interface LineAsk {
   kind: LineKind;
@@ -90,6 +91,21 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "你忙你的，我们都替你高兴。",
     "老友粉这东西，讲究的就是个实在。",
     "慢慢来，日子还长。",
+  ],
+  /**
+   * 5. tourney_open    具名赛事开场，主持人在话筒里说的那句话（C 批，见 data/tourneys.ts）
+   *
+   * 开罗 `rally.txt` 的每场赛事只换名字与门槛，开场白是空的；我们把它交给 AI：
+   * 主办方是街道办还是非遗中心，说话的口气完全不同 —— 这正是本土化最容易立住的地方。
+   * 同样只出文字：不许报门槛、奖金、名次（规则在本地算，见 data/contest.ts 的 CONTEST_TIERS）。
+   */
+  tourney_open: [
+    "各组准备，先看汤，再看粉。",
+    "今天来的人多，灶别慌，手别抖。",
+    "评委都在后面站着，按平时的来就行。",
+    "街坊都看着呢，把这碗粉做好。",
+    "别紧张，你就是来露一手的。",
+    "时间到就收，做慢了也算输。",
   ],
 };
 

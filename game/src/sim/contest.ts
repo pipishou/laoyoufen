@@ -123,6 +123,66 @@ export function canEnter(state: GameState, tier?: number): ContestGate {
   return { ok: true, reason: "" };
 }
 
+export interface BoardOutcome {
+  score: number;
+  rank: number;
+  prize: number;
+  champion: string;
+}
+
+/**
+ * 只跑「评分 + 名次 + 名次带来的副作用」（口碑 / 人情 / 同条街服气 / wins）。
+ *
+ * 月赛（一年两届）与具名赛事（`sim/tourneys.ts` 的十四场）共用这一段 ——
+ * 两边唯一的不同是「能不能报名」的规则，出成绩的口径必须一模一样，
+ * 否则同一家店在两个入口打出来的名次会不一样，玩家一眼就能看出来。
+ */
+export function runBoardCore(
+  state: GameState,
+  type: ContestTypeId,
+  tier: number,
+  roundKey: string,
+): BoardOutcome {
+  const t = tierOf(tier);
+  const mine = contestScore(state, type);
+
+  const board = RIVALS.map((r) => {
+    const n = noise(`${state.playerId}|${roundKey}|${type}|${r.id}`);
+    return {
+      id: r.id,
+      name: r.name,
+      style: r.style,
+      score: Math.round(t.rivalScore * (0.88 + n * 0.24)),
+    };
+  });
+  const me = { id: "player", name: "你的店", style: "老友粉", score: mine };
+  const all = [...board, me].sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+  const rank = all.findIndex((e) => e.id === "player") + 1;
+
+  const prize = prizeOf(tier, rank);
+
+  // 名次 → 口碑（开罗：参赛得名次本身就让店更出名）
+  if (rank === 1) state.reputation = Math.min(5, state.reputation + 0.35);
+  else if (rank <= 3) state.reputation = Math.min(5, state.reputation + 0.2);
+  else if (rank <= 10) state.reputation = Math.min(5, state.reputation + 0.06);
+
+  // 人情（M3b）：比赛名次也是街坊口碑的一种，照开罗 Ramen Arena 的奖品思路给点面子。
+  if (rank <= 3) {
+    const favor = FAVOR_GAIN.contestTop3[rank - 1] ?? 0;
+    if (favor > 0) addFavorFree(state, favor, `比赛第 ${rank} 名`);
+  }
+  if (rank <= 3) {
+    state.contest.wins += 1;
+    // M1 同条街：比赛赢的是这条街的脸面 —— 本区最强的那家开始服气，攒够三次份额砍半
+    const top = strongestRival(state);
+    if (top && noteWin(state, top.def.id)) {
+      state.flow.lastStreet = `${top.def.name}服气了：门口挂块「输给你」的牌，抢的客砍半`;
+    }
+  }
+
+  return { score: mine, rank, prize, champion: all[0]?.name ?? "—" };
+}
+
 /**
  * 报名并当场出成绩。
  * 返回 null = 报名不合规（月份不对/已报过/钱不够/段位不够），调用方负责提示。
@@ -137,55 +197,23 @@ export function enterContest(
 
   const t = tierOf(wantTier);
   const round = contestRoundOf(state.month);
-  const mine = contestScore(state, type);
 
   state.cash -= t.feeYuan;
   state.contest.lastRound = round;
 
-  const board = RIVALS.map((r) => {
-    const n = noise(`${state.playerId}|${round}|${type}|${r.id}`);
-    return {
-      id: r.id,
-      name: r.name,
-      style: r.style,
-      score: Math.round(t.rivalScore * (0.88 + n * 0.24)),
-    };
-  });
-  const me = { id: "player", name: "你的店", style: "老友粉", score: mine };
-  const all = [...board, me].sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
-  const rank = all.findIndex((e) => e.id === "player") + 1;
-
-  const prize = prizeOf(wantTier, rank);
-  state.cash += prize;
-
-  // 名次 → 口碑（开罗：参赛得名次本身就让店更出名）
-  if (rank === 1) state.reputation = Math.min(5, state.reputation + 0.35);
-  else if (rank <= 3) state.reputation = Math.min(5, state.reputation + 0.2);
-  else if (rank <= 10) state.reputation = Math.min(5, state.reputation + 0.06);
+  const out = runBoardCore(state, type, wantTier, String(round));
+  state.cash += out.prize;
 
   const result: ContestResult = {
     month: state.month,
     round,
     type,
     tier: wantTier,
-    score: mine,
-    rank,
-    champion: all[0]?.name ?? "—",
-    prize,
+    score: out.score,
+    rank: out.rank,
+    champion: out.champion,
+    prize: out.prize,
   };
   state.contest.results.push(result);
-  // 人情（M3b）：比赛名次也是街坊口碑的一种，照开罗 Ramen Arena 的奖品思路给点面子。
-  if (rank <= 3) {
-    const favor = FAVOR_GAIN.contestTop3[rank - 1] ?? 0;
-    if (favor > 0) addFavorFree(state, favor, `比赛第 ${rank} 名`);
-  }
-  if (rank <= 3) {
-    state.contest.wins += 1;
-    // M1 同条街：比赛赢的是这条街的脸面 —— 本区最强的那家开始服气，攒够三次份额砍半
-    const top = strongestRival(state);
-    if (top && noteWin(state, top.def.id)) {
-      state.flow.lastStreet = `${top.def.name}服气了：门口挂块「输给你」的牌，抢的客砍半`;
-    }
-  }
   return result;
 }

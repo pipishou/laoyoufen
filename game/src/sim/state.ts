@@ -17,8 +17,9 @@ import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
 import { checkTrophies } from "./trophies";
 import type { ArenaRun } from "./arena";
+import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 24;
+export const SAVE_VERSION = 25;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -506,6 +507,15 @@ export interface GameState {
   trophies: string[];
   /** 新拿到还没播报的成就 id：main.ts 一帧弹一条，弹完清空 */
   pendingTrophies: string[];
+  /**
+   * 具名赛事（C 批，见 `data/tourneys.ts`）：每场打过几次、最好名次。
+   * key 是赛事 id，`best` 为 0 表示还没进过名次。
+   */
+  tourneys: Record<string, TourneyRecord>;
+  /** 最近一次「随时可报」的街道办赛是哪天（month*100+day），-1 表示没打过 */
+  tourneyDay: number;
+  /** 最近一次报过「跟届次走」的赛事是哪一届（见 `sim/calendar.ts` 的 contestRoundOf） */
+  tourneyRound: number;
   /** 设备等级（六阶 S4）：灶/粉篓/案台各 0–4，见 `data/equipment.ts` */
   equipment: Record<string, number>;
   /** 今日日结单，非空时时间停住、HUD 弹日结（对齐开罗打烊报数） */
@@ -717,6 +727,9 @@ export function createInitialState(playerId: string, seed: number): GameState {
     arenaRuns: 0,
     trophies: [],
     pendingTrophies: [],
+    tourneys: {},
+    tourneyDay: -1,
+    tourneyRound: -1,
     equipment: {},
     dayReport: null,
     days: [],

@@ -7,6 +7,7 @@ import { initRivals } from "./rivals";
 import { STREET_BY_ID } from "../data/streets";
 import { GEAR_BY_ID } from "../data/gear";
 import { TROPHY_BY_ID } from "../data/trophies";
+import { TOURNEY_BY_ID } from "../data/tourneys";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -97,6 +98,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 24 &&
     v.saveVersion !== 22 &&
     v.saveVersion !== 23 &&
     v.saveVersion !== 18 &&
@@ -503,6 +505,24 @@ export function deserialize(raw: string): GameState | null {
     const rs = (parsed.tally as { recipesSold?: unknown }).recipesSold;
     parsed.tally.recipesSold = typeof rs === "number" && Number.isFinite(rs) && rs > 0 ? Math.round(rs) : 0;
   }
+  // v24 → v25（C 批具名赛事）：tourneys 只认「id 在表里、played/best 是正整数」的项；
+  // 两个冷却位（tourneyDay / tourneyRound）只认非负整数，坏值当「今天没打过」。
+  const tj = (parsed as { tourneys?: unknown }).tourneys;
+  const clean: Record<string, { played: number; best: number }> = {};
+  if (tj && typeof tj === "object" && !Array.isArray(tj)) {
+    for (const [id, rec] of Object.entries(tj as Record<string, unknown>)) {
+      if (!TOURNEY_BY_ID.has(id)) continue;
+      const r = rec as { played?: unknown; best?: unknown };
+      const played = typeof r?.played === "number" && Number.isFinite(r.played) && r.played > 0 ? Math.round(r.played) : 0;
+      const best = typeof r?.best === "number" && Number.isFinite(r.best) && r.best > 0 ? Math.round(r.best) : 0;
+      if (played > 0 || best > 0) clean[id] = { played, best };
+    }
+  }
+  parsed.tourneys = clean;
+  const tdy = (parsed as { tourneyDay?: unknown }).tourneyDay;
+  parsed.tourneyDay = typeof tdy === "number" && Number.isInteger(tdy) && tdy >= 0 ? tdy : -1;
+  const trnd = (parsed as { tourneyRound?: unknown }).tourneyRound;
+  parsed.tourneyRound = typeof trnd === "number" && Number.isInteger(trnd) && trnd >= 0 ? trnd : -1;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

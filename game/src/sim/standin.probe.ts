@@ -21,6 +21,7 @@ import { scoreOf } from "./dish";
 import { mainViews, setMain, setPortion } from "./mains";
 import { MAX_BRANCHES } from "../data/branches";
 import { branchSizeOptions, branchViews, openBranch } from "./branches";
+import { enterTourney, tourneyViews } from "./tourneys";
 import { setDrinkTemp } from "./sides";
 
 /**
@@ -333,6 +334,21 @@ spendFavor(s);
         if (r) contestNote = ` · 比赛 ${best.t} 第 ${r.rank} 名 奖 ¥${r.prize}`;
       }
 
+      // 具名赛事（C 批）：能报就报，先报层级高的（一届只有一场），但得留 ¥30,000 周转。
+      // 量尺不报，14 场赛事就永远没人验（P44 起的老规矩：新动词必须进替身）。
+      {
+        const openT = tourneyViews(s)
+          .filter((v) => v.gate.ok && s.cash >= v.feeYuan + 30_000)
+          .sort((a, b) => b.def.level - a.def.level || a.feeYuan - b.feeYuan)[0];
+        if (openT) {
+          const r = enterTourney(s, openT.def.id);
+          if (r) {
+            tourneysPlayed += 1;
+            contestNote += ` · ${r.def.name} 第 ${r.rank} 名 奖 ¥${r.prize}`;
+          }
+        }
+      }
+
       // 接手铺面（M1）：同行撑不住关门了，趁便宜盘下来 —— 租金打折、门口多一个入口。
       // 量尺不接，M1 的「接手」这条线就永远没人验（P40 的老教训）。
       {
@@ -416,7 +432,7 @@ spendFavor(s);
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
   );
   for (const line of log) console.log(line);
 
@@ -465,5 +481,6 @@ import { addFavorFree, favorOf, useFavor } from "./favor";
 // 替身的计数器放模块级：花人情/转手的函数在 describe 外面
 export let favorsUsed = 0;
 export let recipesSold = 0;
+export let tourneysPlayed = 0;
 let lastPruneMonth = -1;
 
