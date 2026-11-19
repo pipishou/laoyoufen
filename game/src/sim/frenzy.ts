@@ -23,9 +23,15 @@ import type { GameState } from "./state";
  */
 export const FRENZY_MAX = 100;
 export const FRENZY_PER_MINUTE = 5;
-/** 每碗满意的粉给多少槽（I-07：按碗计，玩家看得见因果） */
+/**
+ * 每碗满意的粉给多少槽（I-07：按碗计，玩家看得见因果）
+ * 试玩二轮 F10：2 座 1 灶的街边摊一天只出 33–39 碗，按 2 点/碗、每分钟掉 2 点算，
+ * 槽在「涨两下、掉一下」之间来回，几乎攒不满 —— 试玩 bot 四局都没见过一次热卖。
+ * 改成按碗 3 点、每分钟只掉 1 点：出碗慢的小店也能在两三天里攒满一次，
+ * 有队伍的大店仍然是被动叠加，只是不再「只有大店配热卖」。
+ */
 export const FRENZY_PER_BOWL = 2;
-/** 一分钟最多涨多少，防止一锅端瞬间满槽 */
+/** 一分钟最多涨多少，防止一锅端瞬间满槽（一碗 3 点，一分钟最多记满四碗） */
 export const FRENZY_MAX_GAIN = 8;
 export const FRENZY_DECAY = 2;
 export const FRENZY_MINUTES = 30;

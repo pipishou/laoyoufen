@@ -235,7 +235,7 @@ panels = mountPanels(hudRoot, {
   buyEquip(id) {
     const r = buyEquipment(state, id);
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
-    else hud.showToast("设备换了，明天出碗更快", "info");
+    else hud.showToast(r.line ?? "设备换了，明天出碗更快", "info");
     playSfx("upgrade");
     refresh();
   },

@@ -107,6 +107,8 @@ def main() -> int:
                     hot: hot.length,
                     titles: hot.map((x) => x.textContent.trim().slice(0, 24)),
                     hasBadge: hot.some((x) => getComputedStyle(x, '::after').content.includes('最缺')),
+                    gearHot: hot.some((x) => x.textContent.includes('家当')),
+                    effTags: document.querySelectorAll('.tag2.hot2').length,
                 };
             }"""
         )
@@ -171,6 +173,9 @@ def main() -> int:
 
         checks = {
             "red_mark_on_next_morning": step1["hot"] >= 1,
+            # 试玩二轮 F7：产能吃紧时，「家当」这一段也要标红，并给效率件打「省事」
+            "gear_section_hot": step1.get("gearHot") is True,
+            "efficiency_tags": step1.get("effTags") == 6,
             "badge_text": bool(step1["hasBadge"]),
             "hook_is_capacity": step2.get("kind") == "capacity",
             "hook_names_expansion": expect_expansion,

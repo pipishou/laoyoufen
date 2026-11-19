@@ -137,14 +137,34 @@ export function trendAffinity(c: CustomerArchetype, t: TrendView): number {
   return 0.75 + (v / 100) * 0.5;
 }
 
+/**
+ * 试玩二轮 F9：谁来吃，得跟时段对得上。
+ * 原来 `part` 只用来定「几分钟来一个人」——早市与宵夜来的是同一批随机原型，
+ * 于是天没亮的街边摊也能等到网红主播，晚上十点还会来早班环卫。
+ *
+ * 这张表只调权重，不改 `weight` 的本义（谁本来就是常客），也不碰任何人物的预算与耐心：
+ * 0 早市 / 1 上午 / 2 午后 / 3 晚市。表里没写的人 = 1.0（不分时段）。
+ */
+/** 开关：见上面那段实测说明，等分时段定价落地再打开 */
+const DAYPART_BIAS_ENABLED = false;
+
+const DAYPART_BIAS: Record<number, Record<string, number>> = {
+  0: { office: 1.3, worker: 1.3, taxi: 1.2, rider: 1.1, sanitation: 1.1, student: 0.8, nightowl: 0.5, ktv: 0.5 },
+  1: { office: 1.25, auntie: 1.25, parent: 1.2, teacher: 1.15, boss: 1.1, nightowl: 0.6, ktv: 0.6 },
+  2: { student: 1.4, college: 1.35, grandma: 1.2, fitness: 1.1, office: 0.9, ktv: 0.7 },
+  3: { nightowl: 1.5, ktv: 1.4, couple: 1.2, streamer: 1.15, worker: 1.1, vendor: 1.1, sanitation: 0.7, parent: 0.8 },
+};
+
 /** 按权重挑一个原型。只用传入的 rng，保证确定性。 */
-function pickArchetype(roll: number, trend: TrendView): CustomerArchetype {
+function pickArchetype(roll: number, trend: TrendView, part: number): CustomerArchetype {
+  const bias = DAYPART_BIAS_ENABLED ? (DAYPART_BIAS[part] ?? {}) : {};
+  const wOf = (c: CustomerArchetype): number => c.weight * trendAffinity(c, trend) * (bias[c.id] ?? 1);
   let total = 0;
-  for (const c of CUSTOMER_ARCHETYPES) total += c.weight * trendAffinity(c, trend);
+  for (const c of CUSTOMER_ARCHETYPES) total += wOf(c);
   let acc = 0;
   const target = roll * total;
   for (const c of CUSTOMER_ARCHETYPES) {
-    acc += c.weight * trendAffinity(c, trend);
+    acc += wOf(c);
     if (target <= acc) return c;
   }
   return CUSTOMER_ARCHETYPES[CUSTOMER_ARCHETYPES.length - 1] as CustomerArchetype;
@@ -254,7 +274,11 @@ function arriveOne(state: GameState): void {
   const regularId = maybePickRegular(state);
   const arch = regularId
     ? ARCHETYPE_BY_ID.get(regularId)
-    : pickArchetype(nextFloat(state.rng), state.trend);
+    : pickArchetype(
+        nextFloat(state.rng),
+        state.trend,
+        Math.min(3, Math.floor(state.flow.minuteOfDay / (DAY_MINUTES / 4))),
+      );
   if (!arch) return;
   /**
    * 到售卖机前挑券（开罗 `Staff 3`：After a customer buys a ticket…）。

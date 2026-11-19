@@ -1342,6 +1342,12 @@ button.pill[disabled] {
   background: var(--paper2);
 }
 
+/* 试玩二轮 F7：能直接提产能的家当，标一个红边「省事」 */
+.tag2.hot2 {
+  border-color: var(--red);
+  color: var(--red);
+}
+
 .fat {
   flex: 1 0 100%;
   height: 8px;

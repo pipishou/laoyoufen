@@ -128,4 +128,28 @@ describe("设备 S4：三件主线设备", () => {
     expect(migrated!.equipment).toEqual({});
     expect(migrated!.saveVersion).toBe(SAVE_VERSION);
   });
-});
+
+  it("买成之后要交代这一档到底换了什么（试玩二轮 F8）", () => {
+    const s = createInitialState("p1", 1);
+    openForBusiness(s, "alley", "测试店");
+    s.cash = 200_000;
+
+    const stove = buyEquipment(s, "stove");
+    expect(stove.ok).toBe(true);
+    expect(stove.line).toContain("出碗时间");
+    expect(stove.line).toContain("第 1 档");
+
+    const bench = buyEquipment(s, "bench");
+    expect(bench.line).toContain("每天多备");
+    expect(bench.line).toContain(String(BENCH_CAPACITY_STEP));
+
+    const strainer = buyEquipment(s, "strainer");
+    expect(strainer.line).toContain("料钱");
+
+    // 失败时不给 line，免得 toast 说「换了」其实没换
+    s.cash = 0;
+    const poor = buyEquipment(s, "stove");
+    expect(poor.ok).toBe(false);
+    expect(poor.line).toBeUndefined();
+  });
+})

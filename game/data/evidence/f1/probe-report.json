@@ -2,12 +2,15 @@
   "ok": true,
   "steps": [
     {
-      "hot": 2,
+      "hot": 3,
       "titles": [
         "店面 · 座位 2 · 灶 1",
-        "设备 · 现在出碗 2.0 分/碗"
+        "设备 · 现在出碗 2.0 分/碗",
+        "家当 · 店里还都是最基础的家当"
       ],
       "hasBadge": true,
+      "gearHot": true,
+      "effTags": 6,
       "step": "next_morning_red_mark"
     },
     {
@@ -22,6 +25,8 @@
   "console_errors": [],
   "checks": {
     "red_mark_on_next_morning": true,
+    "gear_section_hot": true,
+    "efficiency_tags": true,
     "badge_text": true,
     "hook_is_capacity": true,
     "hook_names_expansion": true,

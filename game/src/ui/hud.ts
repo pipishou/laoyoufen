@@ -172,7 +172,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <span class="pct" data-sat>--</span>
     </div>
     <div class="caprow chips" data-caprow title="产能 = 座位数 × 每碗出餐时间；扩充座位或换灶才提得上去">座位 4 · 出餐 6 分/碗</div>
-    <div class="frenzy" data-frenzy title="热卖：门口有人排队、客人又吃得满意，槽会涨；涨满后半小时来客翻倍">
+    <div class="frenzy" data-frenzy title="热卖：门口有人排队、客人又吃得满意，槽就往上走；出碗越慢的店攒得越吃力。涨满后来客翻倍半小时">
       <div class="fzbar"><i data-frenzybar></i></div>
       <div class="fztxt" data-frenzytxt>热卖槽 0%</div>
     </div>

@@ -12,6 +12,21 @@ import type { GameState } from "./state";
 export interface BuyResult {
   ok: boolean;
   reason?: string;
+  /** 买成之后这一档到底换来了什么（试玩二轮 F8：原来统一说「明天出碗更快」，买案台也这么说） */
+  line?: string;
+}
+
+/** 每件设备买下一档时，向玩家交代的那一句话 —— 必须是这一档真的改了的东西 */
+function upgradeLine(id: EquipId, level: number): string {
+  if (id === "stove") {
+    const pct = Math.round((1 - STOVE_SERVE_FACTOR) * 100);
+    return `猛火灶第 ${level} 档：出碗时间每档 −${pct}%`;
+  }
+  if (id === "strainer") {
+    const pct = Math.round((1 - STRAINER_COST_FACTOR) * 100);
+    return `粉篓第 ${level} 档：料钱每档 −${pct}%`;
+  }
+  return `案台第 ${level} 档：每天多备 ${BENCH_CAPACITY_STEP} 碗的料`;
 }
 
 export function equipLevel(state: GameState, id: string): number {
@@ -39,7 +54,7 @@ export function buyEquipment(state: GameState, id: string): BuyResult {
   state.cash -= cost;
   state.equipment[id] = lv + 1;
   if (id === ("bench" satisfies EquipId)) state.capacity += BENCH_CAPACITY_STEP;
-  return { ok: true };
+  return { ok: true, line: upgradeLine(def.id, lv + 1) };
 }
 
 /** 出碗时间系数（猛火灶） */

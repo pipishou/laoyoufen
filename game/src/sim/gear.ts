@@ -9,7 +9,7 @@
  *   patiencePct / attractPct / drinkPct / fatiguePct → 各自既有乘数处
  *   rivalShieldPct → sim/rivals.ts 的 rivalShareOf（街坊认你家，同行抢不走那么多）
  */
-import { GEARS, GEAR_BY_ID, GEAR_TOTAL_YUAN, gearById, type GearDef } from "../data/gear";
+import { GEARS, GEAR_BY_ID, GEAR_TOTAL_YUAN, gearById, type GearDef, type GearId } from "../data/gear";
 import { comboTotals } from "./combo";
 import type { GameState } from "./state";
 
@@ -104,6 +104,28 @@ export function gearSummary(state: GameState): string {
   if (owned === 0) return "店里还都是最基础的家当";
   const spent = (state.gear ?? []).reduce((sum, id) => sum + (gearById(id)?.costYuan ?? 0), 0);
   return `${owned}/${GEARS.length} 件 · 花了 ¥${spent.toLocaleString("zh-CN")}`;
+}
+
+/**
+ * 试玩二轮 F7：能直接提产能的家当（出碗更快 / 料钱更省 / 少累一点）。
+ * 面板靠这份清单判断「家当这一段该不该标红」，也是替身「先补效率再买好看的」的依据。
+ * 摆件类（锦旗、祖师像、待客笔记）与产能不直接相关，不进这个集合。
+ */
+export const GEAR_EFFICIENCY_IDS: ReadonlySet<string> = new Set<GearId>([
+  "wash_sink",
+  "big_board",
+  "freezer",
+  "wall_fan",
+  "hood",
+  "aroma_fan",
+]);
+
+/** 还没买的效率件，按价格升序（便宜的先上） */
+export function gearEfficiencyLeft(state: GameState): GearDef[] {
+  const owned = new Set(state.gear ?? []);
+  return GEARS.filter((g) => GEAR_EFFICIENCY_IDS.has(g.id) && !owned.has(g.id)).sort(
+    (a, b) => a.costYuan - b.costYuan,
+  );
 }
 
 /** 还没买、且买得起的最便宜那件（面板提示 + 替身决策共用） */

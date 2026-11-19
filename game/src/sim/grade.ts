@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 段位评定（K1 目标换骨的第二根轴，六阶里「钱有去处」的主 sink）。
  *
  * 开罗原文 `grade_review.txt` 11 级：判定费 5,000 → 2,000,000 KCU，
@@ -101,7 +101,21 @@ export function applyGrade(s: GameState): GradeResult {
   }
   if (!check.ready) {
     const parts: string[] = [];
-    if (check.shortCustomers > 0) parts.push(`还差 ${check.shortCustomers} 位客人`);
+    if (check.shortCustomers > 0) {
+      /**
+       * 试玩二轮 F11：光说「还差 320 位客人」，玩家没法判断这是三天还是三周。
+       * 用最近一天的出碗数折算成天数 —— 铺位不同（街边摊 35 碗/日 vs 临街 100 碗/日），
+       * 同一个门槛对应的等待时间差三倍，这句话必须自己跟着铺位变。
+       */
+      const lastDay = s.days[s.days.length - 1];
+      const perDay = lastDay && lastDay.served > 0 ? lastDay.served : 0;
+      const etd = perDay > 0 ? Math.ceil(check.shortCustomers / perDay) : 0;
+      parts.push(
+        etd > 0
+          ? `还差 ${check.shortCustomers} 位客人（按昨天卖了 ${perDay} 碗算，约 ${etd} 天）`
+          : `还差 ${check.shortCustomers} 位客人`,
+      );
+    }
     if (check.shortCash > 0) parts.push(`还差 ¥${check.shortCash}`);
     return {
       ok: false,

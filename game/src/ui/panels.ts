@@ -26,7 +26,7 @@ import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
-import { gearSummary, gearViews } from "../sim/gear";
+import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from "../sim/gear";
 import { comboSummary, comboViews } from "../sim/combo";
 import { GEAR_BY_ID, GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
@@ -708,10 +708,14 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       )
       .join("");
     const gv = gearViews(s);
+    /** 试玩二轮 F7：产能吃紧、而能提产能的家当还没买齐 → 家当这一段也标红 */
+    const gearHot = lostRateOf(s) >= CAPACITY_LOST_RATE && gearEfficiencyLeft(s).length > 0;
     const gearRows = gv
       .map(
         (v) => `<div class="lrow${v.owned ? " locked" : ""}">
-          <div class="lname">${v.def.name}<span class="tag2">${v.owned ? "已买" : money(v.def.costYuan)}</span></div>
+          <div class="lname">${v.def.name}<span class="tag2">${v.owned ? "已买" : money(v.def.costYuan)}</span>${
+            !v.owned && GEAR_EFFICIENCY_IDS.has(v.def.id) ? '<span class="tag2 hot2">省事</span>' : ""
+          }</div>
           <div class="lbtns">${
             v.owned
               ? ""
@@ -764,8 +768,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ${favorRows}
       </div>
       <div class="sec">
-        <div class="sechd">${icon("crate")}家当 · ${gearSummary(s)}</div>
-        <div class="lmeta" style="padding:0 2px 8px">店里那些不值钱、但天天用得上的旧东西。一件几十到几千，买一件算一件，效果都是常驻的。</div>
+        <div class="sechd${gearHot ? " hot" : ""}">${icon("crate")}家当 · ${gearSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">店里那些不值钱、但天天用得上的旧东西。一件几十到几千，买一件算一件，效果都是常驻的。标「省事」的几件直接帮你把出碗、料钱、累不累往好里带。</div>
         ${gearRows}
         <div class="sechd" style="margin-top:8px">${icon("star")}搭配 · ${comboSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">两件东西凑一块才有的那点好处：一样都不贵，凑齐了比单买多一截。</div>

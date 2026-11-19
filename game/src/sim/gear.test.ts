@@ -4,8 +4,10 @@ import { SAVE_VERSION, createInitialState, type GameState } from "./state";
 import { openForBusiness } from "./setup";
 import { deserialize, serialize } from "./save";
 import {
+  GEAR_EFFICIENCY_IDS,
   buyGear,
   gearAttractMult,
+  gearEfficiencyLeft,
   gearCostFactor,
   gearDrinkMult,
   gearFatigueMult,
@@ -182,4 +184,21 @@ describe("家当（M3）", () => {
       expect(GEAR_BY_ID.get(g.id)!.name).toBe(g.name);
     }
   });
-});
+
+  it("效率件清单按价格升序、买齐就空（试玩二轮 F7）", () => {
+    const s = createInitialState("p1", 1);
+    openForBusiness(s, "alley", "测试店");
+    const left = gearEfficiencyLeft(s);
+    expect(left.length).toBe(6);
+    const costs = left.map((g) => g.costYuan);
+    expect(costs).toEqual([...costs].sort((a, b) => a - b));
+    expect(left.every((g) => GEAR_EFFICIENCY_IDS.has(g.id))).toBe(true);
+    // 摆件与做人那几件不算产能件
+    expect(GEAR_EFFICIENCY_IDS.has("banner")).toBe(false);
+    expect(GEAR_EFFICIENCY_IDS.has("lucky_statue")).toBe(false);
+
+    s.cash = 200_000;
+    for (const g of left) buyGear(s, g.id);
+    expect(gearEfficiencyLeft(s)).toEqual([]);
+  });
+})

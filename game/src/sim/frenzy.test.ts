@@ -34,7 +34,7 @@ describe("热卖槽（开罗 Ramen Frenzy）", () => {
   it("有人排队且今天吃得满意才涨槽；没人排或不好吃就回落", () => {
     const s = fresh();
     frenzyTick(s, 2, 2);
-    expect(s.frenzy.gauge).toBe(FRENZY_PER_BOWL * 2); // 两碗满意的，每碗 2 点
+    expect(s.frenzy.gauge).toBe(FRENZY_PER_BOWL * 2); // 两碗满意的，每碗按 PER_BOWL 计
 
     frenzyTick(s, 0, 2); // 没排队
     expect(s.frenzy.gauge).toBe(FRENZY_PER_BOWL * 2 - FRENZY_DECAY);
@@ -42,8 +42,7 @@ describe("热卖槽（开罗 Ramen Frenzy）", () => {
     frenzyTick(s, 2, 0); // 有人在排但不好吃
     expect(s.frenzy.gauge).toBeLessThan(FRENZY_PER_BOWL * 2);
 
-    frenzyTick(s, 0, 0);
-    frenzyTick(s, 0, 0);
+    for (let i = 0; i < 10; i += 1) frenzyTick(s, 0, 0);
     expect(s.frenzy.gauge).toBe(0); // 不会掉成负数
   });
 
