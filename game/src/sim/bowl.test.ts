@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { BOWLS, BOWL_TOTAL, DEFAULT_BOWL_ID, bowlById } from "../data/bowl";
 import { SAVE_VERSION, createInitialState, type GameState } from "./state";
 import { openForBusiness } from "./setup";
@@ -71,7 +71,7 @@ describe("碗（A4）", () => {
     const r = buyBowl(s, "enamel");
     expect(r.ok).toBe(true);
     expect(r.line).toContain("搪瓷碗");
-    expect(s.cash).toBe(200_000 - 600);
+    expect(s.cash).toBe(200_000 - 160);
     expect(s.bowl).toBe("enamel");
     expect(s.bowls).toContain("enamel");
     expect(bowlSatBonus(s)).toBe(1);
@@ -84,7 +84,7 @@ describe("碗（A4）", () => {
     const r = buyBowl(s, "claypot");
     expect(r.ok).toBe(false);
     expect(r.reason).toContain("钱不够");
-    expect(r.reason).toContain("2,600");
+    expect(r.reason).toContain("280");
     expect(s.bowl).toBe(DEFAULT_BOWL_ID);
   });
 
@@ -138,11 +138,11 @@ describe("碗（A4）", () => {
     const s = fresh();
     expect(bowlSummary(s)).toContain("消毒不锈钢碗");
     expect(bowlSummary(s)).toContain("1/5");
-    expect(nextBowl(s)?.id).toBe("enamel");
-    buyBowl(s, "enamel");
-    expect(bowlSummary(s)).toContain("搪瓷碗");
+    expect(nextBowl(s)?.id).toBe("bigpan");
+    buyBowl(s, "bigpan");
+    expect(bowlSummary(s)).toContain("大盆");
     expect(bowlSummary(s)).toContain("2/5");
-    expect(nextBowl(s)?.id).toBe("takeaway");
+    expect(nextBowl(s)?.id).toBe("enamel");
   });
 
   it("五只都买齐后没有「下一只」", () => {

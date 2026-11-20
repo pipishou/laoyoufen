@@ -14,6 +14,10 @@
  *   2. 同一时间只有一只碗在用，所以不做总量封顶：单只的数值就是上限；
  *   3. 每只碗都得有出处：南宁的粉碗本身是有制度的（统一消毒），不是美术选择。
  *
+ * 定价（第 9 批货币校准）：这几只碗按「一撂 / 一箱」采购，价格是零售价 × 采购量，
+ * 见每只的 `pieces` —— 搪瓷碗 20 只 ¥160、大盆 6 只 ¥80、瓦煲 8 个 ¥280、打包碗 500 只 ¥180。
+ * 「一只碗六百块」是照开罗 KCU 量级抄出来的，不是南宁零售价；口径见 `data/money.ts`。
+ *
  * 出处都是可点开的原文，`quote` 是原句，不许改写。
  */
 export type BowlId = "steel" | "enamel" | "bigpan" | "claypot" | "takeaway";
@@ -43,6 +47,14 @@ export interface BowlDef {
   /** 现实里在哪儿见得到 */
   where: string;
   costYuan: number;
+  /**
+   * 这一件买的是多少只。第 9 批货币校准：碗按「一撂 / 一箱」采购，
+   * 所以价格是零售价 × 采购量（搪瓷碗 ¥8 一只 × 20 只 = ¥160），
+   * 不是「一只碗 ¥600」。消毒钢碗由消毒中心配送，不填。
+   */
+  pieces?: number;
+  /** 采购单位的人话（「一撂 20 只，¥8 一只」），面板直接贴着价格显示 */
+  packWord?: string;
   /** 免费的默认碗 */
   free?: boolean;
   effect: BowlEffect;
@@ -85,7 +97,9 @@ export const BOWLS: readonly BowlDef[] = [
     name: "搪瓷碗",
     look: "白底带一圈蓝边的搪瓷碗，磕掉瓷的地方露出黑铁",
     where: "九十年代那批粉店的碗，老店还留着几只",
-    costYuan: 600,
+    costYuan: 160,
+    pieces: 20,
+    packWord: "一撂 20 只，¥8 一只",
     effect: { sat: 1, patiencePct: 0.03 },
     effectText: "满意 +1 · 耐心 +3%（老碗有老碗的味道）",
     line: "这个碗我认得，我妈那时候就是用这种。",
@@ -103,7 +117,9 @@ export const BOWLS: readonly BowlDef[] = [
     name: "大盆（pang）",
     look: "比脸还大的不锈钢盆，汤能多舀两勺",
     where: "广西人家里与粉摊都这么叫，「pang」就是盆",
-    costYuan: 1_200,
+    costYuan: 80,
+    pieces: 6,
+    packWord: "一撂 6 只，¥13 一只",
     effect: { sat: 2, costPct: 0.03 },
     effectText: "满意 +2 · 料钱 +3%（装得多，也给得多）",
     line: "这么一大盆，吃得饱。",
@@ -122,7 +138,9 @@ export const BOWLS: readonly BowlDef[] = [
     name: "瓦煲",
     look: "黑砂瓦煲，端上桌还在冒泡，耳朵上垫一块布",
     where: "人民路、北二里那些只卖早市午市的瓦煲粉店",
-    costYuan: 2_600,
+    costYuan: 280,
+    pieces: 8,
+    packWord: "一批 8 个，¥35 一个",
     effect: { patiencePct: 0.12, sat: 1, servePct: -0.06 },
     effectText: "耐心 +12% · 满意 +1 · 出碗慢 6%（现煮，等得久但值得）",
     line: "烫的，慢慢来，这个要趁热吃。",
@@ -146,7 +164,9 @@ export const BOWLS: readonly BowlDef[] = [
     name: "打包碗",
     look: "一次性碗，外面再套一层塑料袋，盖子扣得严实",
     where: "赶时间的上班族、外卖、夜市收摊前的最后一单",
-    costYuan: 900,
+    costYuan: 180,
+    pieces: 500,
+    packWord: "一箱 500 只，¥0.36 一只",
     effect: { servePct: 0.05, costPct: 0.02, sat: -1 },
     effectText: "出碗快 5% · 料钱 +2%（盒子钱）· 满意 −1（汤容易洒）",
     line: "打包，带走，路上吃。",

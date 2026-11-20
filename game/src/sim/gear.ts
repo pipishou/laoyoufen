@@ -128,11 +128,20 @@ export function gearEfficiencyLeft(state: GameState): GearDef[] {
   );
 }
 
-/** 还没买、且买得起的最便宜那件（面板提示 + 替身决策共用） */
+/**
+ * 下一件该买什么（面板提示 + 替身决策共用）。
+ *
+ * 第 9 批改过一次：原来是「按数组顺序找第一件买得起的」，而数组又按价格升序排，
+ * 于是替身（以及跟着提示走的玩家）会先花 ¥60 买待客笔记，把座位与出碗往后拖 ——
+ * 种子 2 的月均营收因此从 ¥79,539 掉到 ¥55,709、流失从 69% 顶到 77%。
+ * 现在先看能提产能的（座位 / 出碗 / 料钱），同档再按价格。
+ */
 export function nextGear(state: GameState): GearDef | null {
   const left = GEARS.filter((g) => !hasGear(state, g.id));
   if (left.length === 0) return null;
-  return left.find((g) => state.cash >= g.costYuan) ?? left[0]!;
+  const cap = left.filter((g) => g.seats || g.servePct || g.costPct);
+  const pool = (cap.length > 0 ? cap : left).slice().sort((a, b) => a.costYuan - b.costYuan);
+  return pool.find((g) => state.cash >= g.costYuan) ?? pool[0]!;
 }
 
 export { GEAR_TOTAL_YUAN };

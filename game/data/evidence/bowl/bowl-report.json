@@ -8,25 +8,25 @@
           "act": "buybowl",
           "id": "enamel",
           "disabled": false,
-          "text": "¥600"
+          "text": "¥160"
         },
         {
           "act": "buybowl",
           "id": "bigpan",
           "disabled": false,
-          "text": "¥1,200"
+          "text": "¥80"
         },
         {
           "act": "buybowl",
           "id": "claypot",
           "disabled": false,
-          "text": "¥2,600"
+          "text": "¥280"
         },
         {
           "act": "buybowl",
           "id": "takeaway",
           "disabled": false,
-          "text": "¥900"
+          "text": "¥180"
         }
       ],
       "rowCount": 5,
@@ -51,19 +51,19 @@
           "act": "buybowl",
           "id": "bigpan",
           "disabled": false,
-          "text": "¥1,200"
+          "text": "¥80"
         },
         {
           "act": "buybowl",
           "id": "claypot",
           "disabled": false,
-          "text": "¥2,600"
+          "text": "¥280"
         },
         {
           "act": "buybowl",
           "id": "takeaway",
           "disabled": false,
-          "text": "¥900"
+          "text": "¥180"
         }
       ],
       "rowCount": 5,
@@ -74,7 +74,7 @@
       "bowls": [
         "enamel"
       ],
-      "cash": 199400,
+      "cash": 199840,
       "step": "buy_enamel"
     },
     {
@@ -96,13 +96,13 @@
           "act": "buybowl",
           "id": "bigpan",
           "disabled": false,
-          "text": "¥1,200"
+          "text": "¥80"
         },
         {
           "act": "buybowl",
           "id": "takeaway",
           "disabled": false,
-          "text": "¥900"
+          "text": "¥180"
         }
       ],
       "rowCount": 5,
@@ -114,7 +114,7 @@
         "enamel",
         "claypot"
       ],
-      "cash": 196800,
+      "cash": 199560,
       "step": "buy_claypot"
     },
     {
@@ -130,7 +130,7 @@
           "act": "buybowl",
           "id": "bigpan",
           "disabled": false,
-          "text": "¥1,200"
+          "text": "¥80"
         },
         {
           "act": "setbowl",
@@ -142,7 +142,7 @@
           "act": "buybowl",
           "id": "takeaway",
           "disabled": false,
-          "text": "¥900"
+          "text": "¥180"
         }
       ],
       "rowCount": 5,
@@ -154,9 +154,9 @@
         "enamel",
         "claypot"
       ],
-      "cash": 196800,
+      "cash": 199560,
       "step": "switch_enamel",
-      "cashBefore": 196800
+      "cashBefore": 199560
     },
     {
       "text": "这一碗的搭配 · 凑成 1 / 24 搭还有 20 搭要换别的配料酸笋酸辣椒味道 +1肉末酸辣椒只差肉末空心菜配酸笋只差空心菜豆豉酸辣椒只差豆豉",

@@ -3,7 +3,7 @@
 验六件事：
   1. 店铺页有「碗」一段，五只碗全列出来（没买的显示价格，买不起的 disabled）；
   2. 新铺用消毒不锈钢碗，抬头「现在用「消毒不锈钢碗」· 买了 1/5 只」；
-  3. 买搪瓷碗 → 扣 600、自动换上、抬头变 2/5、那一行变「正在用」；
+  3. 买搪瓷碗 → 扣 160、自动换上、抬头变 2/5、那一行变「正在用」；
   4. 再买瓦煲 → 3/5；点搪瓷那行的「换上」→ 回到搪瓷，且**不花钱**；
   5. 配方页有「这一碗的搭配」段：点酸笋 + 酸辣椒 → 「凑成 1 / 24 搭」；
   6. 图鉴页底部有「碗 · N/5」；console 干净（本地预览没有 /laoyou-api 反代，AI 预取 404 属设计内）。
@@ -168,7 +168,7 @@ def main() -> int:
             "bowl_section": "碗 ·" in step1["head"],
             "five_rows": step1["rowCount"] == 5,
             "starts_steel": "消毒不锈钢碗" in step1["head"] and "1/5" in step1["head"],
-            "buy_works": step2["bowl"] == "enamel" and abs((step1["cash"] - step2["cash"]) - 600) < 0.001,
+            "buy_works": step2["bowl"] == "enamel" and abs((step1["cash"] - step2["cash"]) - 160) < 0.001,
             "buy_head": "2/5" in step2["head"] and "搪瓷碗" in step2["head"],
             "buy_marks_active": "正在用" in step2["onTag"],
             "second_buy": step3["bowl"] == "claypot" and "3/5" in step3["head"],

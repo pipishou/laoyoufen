@@ -797,7 +797,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         return `<div class="lrow${v.owned ? "" : " locked"}">
           <div class="lbtns">${btn}</div>
           <div class="lname">${v.def.name}<span class="tag2">${v.def.effectText}</span></div>
-          <div class="lmeta">${v.def.look}｜${v.def.where}</div>
+          <div class="lmeta">${v.def.packWord ? `${v.def.packWord}｜` : ""}${v.def.look}｜${v.def.where}</div>
         </div>`;
       })
       .join("");

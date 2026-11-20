@@ -33,9 +33,9 @@ describe("家当（M3）", () => {
     expect(GEARS).toHaveLength(12);
     expect(new Set(GEARS.map((g) => g.id)).size).toBe(12);
     expect(GEARS.map((g) => g.costYuan)).toEqual([...GEARS.map((g) => g.costYuan)].sort((a, b) => a - b));
-    expect(GEARS[0]!.costYuan).toBe(100);
-    expect(GEARS[GEARS.length - 1]!.costYuan).toBe(10_000);
-    expect(GEAR_TOTAL_YUAN).toBe(28_800);
+    expect(GEARS[0]!.costYuan).toBe(60);
+    expect(GEARS[GEARS.length - 1]!.costYuan).toBe(3_200);
+    expect(GEAR_TOTAL_YUAN).toBe(9_780);
     for (const g of GEARS) {
       const has = Boolean(
         g.seats || g.servePct || g.costPct || g.satBonus || g.patiencePct || g.attractPct || g.drinkPct || g.fatiguePct || g.rivalShieldPct,
@@ -66,12 +66,12 @@ describe("家当（M3）", () => {
     expect(gearRivalShield(s)).toBe(1);
   });
 
-  it("买塑料矮凳扣 ¥100 并当场多一个座位", () => {
+  it("买塑料矮凳扣 ¥150 并当场多一个座位", () => {
     const s = fresh();
     const seats = s.venue.seats;
     const r = buyGear(s, "plastic_stool");
     expect(r.ok).toBe(true);
-    expect(s.cash).toBe(199_900);
+    expect(s.cash).toBe(199_850);
     expect(s.venue.seats).toBe(seats + 1);
     expect(hasGear(s, "plastic_stool")).toBe(true);
   });
@@ -144,7 +144,7 @@ describe("家当（M3）", () => {
     expect(gearViews(s).every((v) => v.owned)).toBe(true);
   });
 
-  it("views 反映买没买、买不买得起；nextGear 给最便宜的那件", () => {
+  it("views 反映买没买、买不买得起；nextGear 先给能提产能的那件", () => {
     const s = fresh();
     s.cash = 600;
     const views = gearViews(s);
