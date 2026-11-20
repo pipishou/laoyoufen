@@ -9,6 +9,7 @@ import { GEAR_BY_ID } from "../data/gear";
 import { TROPHY_BY_ID } from "../data/trophies";
 import { TOURNEY_BY_ID } from "../data/tourneys";
 import { FLAVOR_BY_ID } from "../data/flavor";
+import { STYLE_BY_ID } from "../data/style";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -99,6 +100,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 26 &&
     v.saveVersion !== 25 &&
     v.saveVersion !== 24 &&
     v.saveVersion !== 22 &&
@@ -533,6 +535,15 @@ export function deserialize(raw: string): GameState | null {
       ? (fl as unknown[]).filter((x): x is string => typeof x === "string" && FLAVOR_BY_ID.has(x))
       : [];
   }
+  // v26 → v27（A1 店的样子）：装过哪几套门面、现在摆的是哪一套。
+  // styles 只认表里有的 id；style 必须是「装过的那一套」，否则回空铺 ——
+  // 不然读档会摆出一套从没买过的门面。
+  const sts = (parsed as { styles?: unknown }).styles;
+  parsed.styles = Array.isArray(sts)
+    ? [...new Set((sts as unknown[]).filter((x): x is string => typeof x === "string" && STYLE_BY_ID.has(x)))]
+    : [];
+  const stl = (parsed as { style?: unknown }).style;
+  parsed.style = typeof stl === "string" && parsed.styles.includes(stl) ? stl : null;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

@@ -223,7 +223,7 @@ describe("落场：面板与存档", () => {
     expect(back.arena).toBeNull();
     expect(back.arenaDay).toBe(s.arenaDay);
     expect(back.arenaRuns).toBe(1);
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
   });
 
   it("老档没有这些字段也能读，坏值归零", () => {

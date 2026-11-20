@@ -24,7 +24,8 @@ export type LineKind =
   | "hook_voice"
   | "trophy_voice"
   | "tourney_open"
-  | "flavor_voice";
+  | "flavor_voice"
+  | "style_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -159,6 +160,21 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "你忙你的，我们都替你高兴。",
     "老友粉这东西，讲究的就是个实在。",
     "慢慢来，日子还长。",
+  ],
+  /**
+   * 8. style_voice    换上新门面时，街坊顺口一句（A1 店的样子）
+   *
+   * 换店面在别处是纯数值与贴图，我们让它带一句人声：骑楼、排档、糖水铺、
+   * 夜市摊、老铺、新城小店，街坊的口气各自不同。只出文字，不提价钱
+   * （花钱的事本地 toast 已经说了）。
+   */
+  style_voice: [
+    "喔，你这个门面换得不错，一眼就认得出。",
+    "讲过几多次，收拾干净自然有人来。",
+    "坐喺你呢度，比企喺街边食舒服多了。",
+    "有点旧时候嗰种味道，我中意。",
+    "门口一通风，整条巷子都凉快。",
+    "新是新，就唔好贵到街坊食唔起。",
   ],
   /**
    * 5. tourney_open    具名赛事开场，主持人在话筒里说的那句话（C 批，见 data/tourneys.ts）

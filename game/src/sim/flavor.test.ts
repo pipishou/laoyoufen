@@ -31,11 +31,11 @@ function only(ids: readonly string[]): string[] {
 }
 
 describe("表结构", () => {
-  it("6 条，id 与名字都不重复", () => {
-    expect(FLAVORS.length).toBe(6);
-    expect(FLAVOR_TOTAL).toBe(6);
-    expect(new Set(FLAVORS.map((f) => f.id)).size).toBe(6);
-    expect(new Set(FLAVORS.map((f) => f.name)).size).toBe(6);
+  it("7 条，id 与名字都不重复", () => {
+    expect(FLAVORS.length).toBe(7);
+    expect(FLAVOR_TOTAL).toBe(7);
+    expect(new Set(FLAVORS.map((f) => f.id)).size).toBe(7);
+    expect(new Set(FLAVORS.map((f) => f.name)).size).toBe(7);
   });
 
   it("每条都只吃已经存在的浇头与粉型 —— 不许借组合偷偷加可买件", () => {
@@ -101,7 +101,7 @@ describe("判定", () => {
     expect(flavorHits(topps, "flat").map((f) => f.id)).toEqual([]);
   });
 
-  it("一条都没凑成时，六项加成都是 0、乘数都是 1", () => {
+  it("一条都没凑成时，七项加成都是 0、乘数都是 1", () => {
     const b = flavorBonus([], "flat");
     expect(b).toEqual({ soup: 0, charm: 0, sat: 0, patiencePct: 0, costPct: 0, servePct: 0 });
     expect(flavorCostFactor([], "flat")).toBe(1);
@@ -127,20 +127,20 @@ describe("判定", () => {
 });
 
 describe("视图与摘要", () => {
-  it("views 六条全列出，未成立的写缺哪几味（中文名）", () => {
+  it("views 七条全列出，未成立的写缺哪几味（中文名）", () => {
     const views = flavorViews({
       toppings: ["top.sourbamboo"],
       noodle: "flat",
       nameOf: (id) => TOPPINGS.find((t) => t.id === id)?.name ?? id,
     });
-    expect(views.length).toBe(6);
+    expect(views.length).toBe(7);
     const classic = views.find((v) => v.def.id === "classic")!;
     expect(classic.active).toBe(false);
     expect(classic.missing).toEqual(["豆豉", "酸辣椒"]);
   });
 
   it("summary 凑成几条写几条", () => {
-    expect(flavorSummary([], "flat")).toContain("0/6");
+    expect(flavorSummary([], "flat")).toContain("0/7");
     expect(flavorSummary(["top.sourbamboo", "top.douchi", "top.chili"], "flat")).toContain("老友三味");
   });
 
@@ -178,7 +178,7 @@ describe("存档", () => {
   it("v26：凑成过的味道记进图鉴，读档还在", () => {
     const s = fresh();
     s.collection.flavors.push("classic");
-    expect(SAVE_VERSION).toBe(26);
+    expect(SAVE_VERSION).toBe(27);
     const back = deserialize(serialize(s))!;
     expect(back.collection.flavors).toEqual(["classic"]);
   });

@@ -37,6 +37,8 @@ import { FLAVORS, FLAVOR_TOTAL, type FlavorEffect } from "../data/flavor";
 import { noodleById } from "../data/noodles";
 import { flavorSummary, flavorViews, nearlyFlavor } from "../sim/flavor";
 import { nextTrophy, trophySummary, trophyViews } from "../sim/trophies";
+import { STYLES, STYLE_PART_LABEL } from "../data/style";
+import { nextStyle, styleSummary, styleViews } from "../sim/style";
 import { levelProgressOf, tourneySummary, tourneyViews } from "../sim/tourneys";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
@@ -140,6 +142,10 @@ export interface PanelActions {
   takeOver(id: string): void;
   buyStreet(id: string): void;
   buyGear(id: string): void;
+  /** 装修一套门面（A1） */
+  buyStyle(id: string): void;
+  /** 换上已经装过的门面（免费） */
+  setStyle(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -378,6 +384,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       break;
     case "buygear":
       actions.buyGear(id);
+      break;
+    case "buystyle":
+      actions.buyStyle(id);
+      break;
+    case "setstyle":
+      actions.setStyle(id);
       break;
     case "takeover":
       actions.takeOver(id);
@@ -744,6 +756,23 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>`;
       })
       .join("");
+    const styleRows = styleViews(s)
+      .map((v) => {
+        const parts = (Object.keys(v.def.parts) as (keyof typeof v.def.parts)[])
+          .map((k) => `${STYLE_PART_LABEL[k]}${v.def.parts[k]}`)
+          .join(" · ");
+        const btn = v.active
+          ? `<span class="tag2 on">正在用</span>`
+          : v.owned
+            ? `<button type="button" data-act="setstyle" data-id="${v.def.id}">换上</button>`
+            : `<button type="button" data-act="buystyle" data-id="${v.def.id}" ${v.affordable ? "" : "disabled"}>${money(v.def.costYuan)}</button>`;
+        return `<div class="lrow${v.owned ? "" : " locked"}">
+          <div class="lbtns">${btn}</div>
+          <div class="lname">${v.def.name}<span class="tag2">${v.def.effectText}</span></div>
+          <div class="lmeta">${v.def.look}｜${parts}｜${v.def.where}</div>
+        </div>`;
+      })
+      .join("");
     const ups = UPGRADES.map((u) => {      const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
       const maxed = lv >= u.maxLevel;
@@ -766,7 +795,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       <div class="sec">
         <div class="sechd">${icon("crate")}店里 · 摆了 ${gearCount}/12 件家当<span class="sechint" data-shopmap-sum> ${shopMapSummary(s)}</span></div>
         <div class="lmeta" style="padding:0 2px 8px">买下一件就摆进店里，空格是还没添的东西。左边四列是后厨，中间是堂食，靠右是门口 —— 排队的人从门口往里站，绿点是在店里帮忙的人。</div>
-        <div class="shopmap">${mapCells}</div>
+        <div class="shopmap" data-style="${s.style ?? "none"}">${mapCells}</div>
         <div class="smlegend"><span class="smk sm-seat"></span>座位 <span class="smk sm-kitchen"></span>后厨 <span class="smk sm-wall"></span>墙面 <span class="smk sm-counter"></span>柜台 <span class="smk sm-decor"></span>摆设 <span class="smk sm-cust"></span>客人 <span class="smk sm-staff"></span>店员</div>
       </div>
       <div class="sec">
@@ -781,6 +810,11 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd" style="margin-top:8px">${icon("star")}搭配 · ${comboSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">两件东西凑一块才有的那点好处：一样都不贵，凑齐了比单买多一截。</div>
         ${comboRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">${icon("shop")}店的样子 · ${styleSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">门面、地面、桌子凳子整套换。店里同一时间只摆一套，装过的可以随时换回来，换不花钱。左边那张店图会跟着换颜色。${nextStyle(s) ? `最便宜还差「${nextStyle(s)!.def.name}」（${money(STYLES.find((d) => d.id === nextStyle(s)!.def.id)?.costYuan ?? 0)}）。` : "六套都装过了。"}</div>
+        ${styleRows}
       </div>
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>
@@ -1241,7 +1275,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

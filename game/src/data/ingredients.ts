@@ -91,6 +91,10 @@ export const TOPPINGS: readonly Ingredient[] = [
   // ---- 猪杂线 ----
   { id: "top.offal", name: "猪杂", reaRef: "Stewed Pork", kind: "offal", tier: 3, cost: 3.5, price: 7, charm: 22, tags: ["肉", "杂", "鲜"] },
   { id: "top.pigchitterling", name: "猪粉肠", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 3.8, price: 8, charm: 21, tags: ["肉", "杂"] },
+  // 老友「三大脆」的另两件：花肠、猪肚（见 data/flavor.ts 的 three_crisp）。
+  // 出处：兴宁区解放路桂邕天福香老友粉店的招牌「三大脆」= 花肠、粉肠、猪肚。
+  { id: "top.pigflower", name: "猪花肠", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 3.6, price: 8, charm: 20, tags: ["肉", "杂"] },
+  { id: "top.pigstomach", name: "猪肚", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 3.4, price: 7, charm: 19, tags: ["肉", "杂"] },
   { id: "top.pigliver", name: "猪肝", reaRef: "Pork Liver", kind: "offal", tier: 2, cost: 3.0, price: 7, charm: 17, tags: ["肉", "杂", "鲜"] },
   { id: "top.pigblood", name: "猪红", reaRef: "Pig Blood", kind: "offal", tier: 1, cost: 1.2, price: 3, charm: 9, tags: ["肉", "杂"] },
   { id: "top.porkknuckle", name: "猪手", reaRef: "Pork Knuckle", kind: "meat", tier: 3, cost: 4.2, price: 9, charm: 23, tags: ["肉"] },

@@ -19,7 +19,7 @@ import { checkTrophies } from "./trophies";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -492,6 +492,13 @@ export interface GameState {
   streetSeen: string[];
   /** 家当（M3）：店里那些旧东西的 id（见 `data/gear.ts`） */
   gear: string[];
+  /**
+   * 店的样子（A1，见 `data/style.ts`）：装过的门面 id。
+   * 与家当的区别是**同一时间只有一套生效** —— `style` 才是现在摆着的那套。
+   */
+  styles: string[];
+  /** 现在店里摆的门面 id；null 表示还是那间空铺 */
+  style: string | null;
   /** 人情（M3b）：街坊给的面子点数（见 `data/favor.ts`） */
   favor: number;
   /** 一共攒过多少点人情（只增，面板显示用） */
@@ -725,6 +732,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     streets: [],
     streetSeen: [],
     gear: [],
+    styles: [],
+    style: null,
     favor: 0,
     favorTotal: 0,
     treatDay: -1,

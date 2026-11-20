@@ -22,6 +22,8 @@ import { hookVoiceContext, nextHook } from "./sim/hook";
 import { TROPHY_BY_ID } from "./data/trophies";
 import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { buyGear } from "./sim/gear";
+import { buyStyle, setStyle } from "./sim/style";
+import { styleById } from "./data/style";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
@@ -439,6 +441,29 @@ panels = mountPanels(hudRoot, {
     }
     refresh();
   },
+  buyStyle(id) {
+    const r = buyStyle(state, String(id));
+    if (!r.ok) {
+      if (r.reason) hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    playSfx("upgrade");
+    hud.showToast(r.line ?? "装修好了", "like");
+    speakStyle(String(id));
+    refresh();
+  },
+  setStyle(id) {
+    const r = setStyle(state, String(id));
+    if (!r.ok) {
+      if (r.reason) hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    playSfx("upgrade");
+    hud.showToast(r.line ?? "换好了", "like");
+    refresh();
+  },
   startArena(id) {
     const r = startArena(state, String(id));
     if (!r.ok) {
@@ -796,9 +821,28 @@ function prefetchHookLine(): void {
   });
 }
 
+/**
+ * A1 店的样子的 AI 落点（第 9 个 `style_voice`）：换上新门面时街坊顺口一句。
+ * 只用在线句替换 toast，本地句已经在 `buyStyle` 的 `line` 里说过了，
+ * 所以拿不到就什么都不做 —— 不重复说同一件事。
+ */
+function speakStyle(id: string): void {
+  const def = styleById(id);
+  if (!def) return;
+  const ask: LineAsk = {
+    kind: "style_voice",
+    key: id,
+    context: { 店: def.name, 门头: def.parts.entrance },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((line) => {
+    if (line) hud.showToast(`街坊说：「${line}」`, "info");
+  });
+}
+
 refresh();
 recordSample(state, score.total);
-
 // 埋点兜底落盘：关页/切后台/每分钟都可能来不及走月结
 window.addEventListener("pagehide", () => {
   flushTelemetry();

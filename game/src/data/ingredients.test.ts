@@ -3,9 +3,9 @@ import { GUANGXI } from "./balance";
 import { BASE_COST, NOODLE_MATERIALS, SOUP_MATERIALS, TOPPINGS } from "./ingredients";
 
 describe("配料/原料表", () => {
-  it("35 种浇头，id 唯一，成本为正，荤素都有", () => {
-    expect(TOPPINGS).toHaveLength(35);
-    expect(new Set(TOPPINGS.map((t) => t.id)).size).toBe(35);
+  it("37 种浇头，id 唯一，成本为正，荤素都有", () => {
+    expect(TOPPINGS).toHaveLength(37);
+    expect(new Set(TOPPINGS.map((t) => t.id)).size).toBe(37);
     for (const t of TOPPINGS) {
       expect(t.cost).toBeGreaterThan(0);
       expect(t.price).toBeGreaterThanOrEqual(0);

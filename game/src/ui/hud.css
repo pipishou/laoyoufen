@@ -1348,6 +1348,13 @@ button.pill[disabled] {
   color: var(--red);
 }
 
+/* A1 店的样子：正在用的那一套（绿边实心，和「省事」区分开） */
+.tag2.on {
+  border-color: var(--green);
+  color: var(--paper);
+  background: var(--green);
+}
+
 .fat {
   flex: 1 0 100%;
   height: 8px;
@@ -1882,6 +1889,22 @@ button.pill[disabled] {
 .shopmap .sm-wall { background: var(--blue); }
 .shopmap .sm-counter { background: var(--green); }
 .shopmap .sm-decor { background: var(--wood); }
+
+/* A1 店的样子：同一张店图，按现在摆的那套门面换地面与墙角颜色。
+   只动这两种底色 —— 家当块、客人、店员的颜色是图例，不能跟着变，
+   否则玩家分不清「这块红是灶还是墙」。 */
+.shopmap[data-style="qilou"] { background: var(--wood); }
+.shopmap[data-style="qilou"] .sm-e { background: var(--sand); }
+.shopmap[data-style="dapaidang"] { background: var(--ink2); }
+.shopmap[data-style="dapaidang"] .sm-e { background: var(--paper2); }
+.shopmap[data-style="tangshui"] { background: var(--green); }
+.shopmap[data-style="tangshui"] .sm-e { background: var(--paper); }
+.shopmap[data-style="yeshi"] { background: var(--red); }
+.shopmap[data-style="yeshi"] .sm-e { background: var(--sand); }
+.shopmap[data-style="shijia"] { background: var(--ink); }
+.shopmap[data-style="shijia"] .sm-e { background: var(--gold); }
+.shopmap[data-style="xincheng"] { background: var(--blue); }
+.shopmap[data-style="xincheng"] .sm-e { background: var(--cream); }
 .smlegend {
   display: flex;
   flex-wrap: wrap;

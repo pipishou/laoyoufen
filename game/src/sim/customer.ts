@@ -23,6 +23,7 @@ import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from ".
 import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
+import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
@@ -214,6 +215,8 @@ function spawnChance(state: GameState): number {
     streetAttractMult(state) *
     // 家当（M3）：排风扇把香味吹到街上
     gearAttractMult(state) *
+    // 店的样子（A1）：门头好不好看，路过的人愿不愿意进来
+    styleAttractMult(state) *
     // 人情（M3b）：今天摆了桌请街坊
     favorAttractMult(state) *
     popularityMultiplier(state) *
@@ -305,6 +308,8 @@ function arriveOne(state: GameState): void {
     shopPatienceMultiplier(state) *
     streetPatienceMult(state) *
     gearPatienceMult(state) *
+    // 店的样子（A1）：有地方坐、有风扇吹，等一会儿不算事
+    stylePatienceMult(state) *
     // 味道层（B1）：砂锅那类「烫着吃」的组合让客人愿意多等一会儿
     flavorPatienceMult(dish.recipe.toppings, dish.noodle) *
     (regular ? 1.6 : 1) *
@@ -403,6 +408,8 @@ function settle(state: GameState, c: QueueCustomer): void {
       seasonBonusOfKind(state, item.noodle) +
       menuBonus +
       gearSatBonus(state) +
+      // 店的样子（A1）：坐得舒不舒服，直接算进这一碗的满意
+      styleSatBonus(state) +
       // 味道层（B1）：这一款凑成了哪几条成型吃法，当场加分
       flavorSatBonus(item.recipe.toppings, item.noodle),
       )

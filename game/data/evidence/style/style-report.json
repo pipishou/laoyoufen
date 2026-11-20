@@ -1,0 +1,189 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "head": "店的样子 · 已装 0/6 · 店里还是空铺",
+      "rows": [
+        {
+          "act": "buystyle",
+          "id": "qilou",
+          "disabled": false,
+          "text": "¥400"
+        },
+        {
+          "act": "buystyle",
+          "id": "dapaidang",
+          "disabled": false,
+          "text": "¥900"
+        },
+        {
+          "act": "buystyle",
+          "id": "tangshui",
+          "disabled": false,
+          "text": "¥1,600"
+        },
+        {
+          "act": "buystyle",
+          "id": "yeshi",
+          "disabled": false,
+          "text": "¥2,400"
+        },
+        {
+          "act": "buystyle",
+          "id": "shijia",
+          "disabled": false,
+          "text": "¥4,000"
+        },
+        {
+          "act": "buystyle",
+          "id": "xincheng",
+          "disabled": false,
+          "text": "¥6,500"
+        }
+      ],
+      "style": "none",
+      "onTag": [],
+      "cash": 200000,
+      "step": "fresh"
+    },
+    {
+      "head": "店的样子 · 已装 1/6 · 现在「骑楼老铺」",
+      "rows": [
+        {
+          "act": "buystyle",
+          "id": "dapaidang",
+          "disabled": false,
+          "text": "¥900"
+        },
+        {
+          "act": "buystyle",
+          "id": "tangshui",
+          "disabled": false,
+          "text": "¥1,600"
+        },
+        {
+          "act": "buystyle",
+          "id": "yeshi",
+          "disabled": false,
+          "text": "¥2,400"
+        },
+        {
+          "act": "buystyle",
+          "id": "shijia",
+          "disabled": false,
+          "text": "¥4,000"
+        },
+        {
+          "act": "buystyle",
+          "id": "xincheng",
+          "disabled": false,
+          "text": "¥6,500"
+        }
+      ],
+      "style": "qilou",
+      "onTag": [
+        "正在用"
+      ],
+      "cash": 199600,
+      "step": "buy_qilou"
+    },
+    {
+      "head": "店的样子 · 已装 2/6 · 现在「夜市摊」",
+      "rows": [
+        {
+          "act": "setstyle",
+          "id": "qilou",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "buystyle",
+          "id": "dapaidang",
+          "disabled": false,
+          "text": "¥900"
+        },
+        {
+          "act": "buystyle",
+          "id": "tangshui",
+          "disabled": false,
+          "text": "¥1,600"
+        },
+        {
+          "act": "buystyle",
+          "id": "shijia",
+          "disabled": false,
+          "text": "¥4,000"
+        },
+        {
+          "act": "buystyle",
+          "id": "xincheng",
+          "disabled": false,
+          "text": "¥6,500"
+        }
+      ],
+      "style": "yeshi",
+      "onTag": [
+        "正在用"
+      ],
+      "cash": 197200,
+      "step": "buy_yeshi"
+    },
+    {
+      "head": "店的样子 · 已装 2/6 · 现在「骑楼老铺」",
+      "rows": [
+        {
+          "act": "buystyle",
+          "id": "dapaidang",
+          "disabled": false,
+          "text": "¥900"
+        },
+        {
+          "act": "buystyle",
+          "id": "tangshui",
+          "disabled": false,
+          "text": "¥1,600"
+        },
+        {
+          "act": "setstyle",
+          "id": "yeshi",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "buystyle",
+          "id": "shijia",
+          "disabled": false,
+          "text": "¥4,000"
+        },
+        {
+          "act": "buystyle",
+          "id": "xincheng",
+          "disabled": false,
+          "text": "¥6,500"
+        }
+      ],
+      "style": "qilou",
+      "onTag": [
+        "正在用"
+      ],
+      "cash": 197200,
+      "step": "switch_back",
+      "cashBefore": 197200
+    }
+  ],
+  "checks": {
+    "section_present": true,
+    "starts_empty": true,
+    "six_rows": true,
+    "rows_are_buy": true,
+    "buy_works": true,
+    "buy_head": true,
+    "buy_cash": true,
+    "buy_marks_active": true,
+    "switch_works": true,
+    "switch_free": true,
+    "switch_shows_setstyle": true,
+    "console_clean": true
+  },
+  "console_errors": []
+}
