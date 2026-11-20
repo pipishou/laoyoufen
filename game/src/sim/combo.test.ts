@@ -127,10 +127,10 @@ describe("家当搭配 · 加成落到既有乘数", () => {
 });
 
 describe("家当搭配 · 存档", () => {
-  it("搭配完全由已买家当推导，不占新字段（版本仍是 25）", () => {
+  it("搭配完全由已买家当推导，不占新字段（版本仍是 26）", () => {
     const s = fresh();
     own(s, "plastic_stool", "bamboo_chair");
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
     expect(activeCombos(s).length).toBe(1);
   });
 });

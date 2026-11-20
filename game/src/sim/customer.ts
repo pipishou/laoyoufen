@@ -23,6 +23,7 @@ import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from ".
 import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
+import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
@@ -304,6 +305,8 @@ function arriveOne(state: GameState): void {
     shopPatienceMultiplier(state) *
     streetPatienceMult(state) *
     gearPatienceMult(state) *
+    // 味道层（B1）：砂锅那类「烫着吃」的组合让客人愿意多等一会儿
+    flavorPatienceMult(dish.recipe.toppings, dish.noodle) *
     (regular ? 1.6 : 1) *
     FLOW.patienceScale;
   flow.customers.push({
@@ -399,7 +402,9 @@ function settle(state: GameState, c: QueueCustomer): void {
       frenzyAura(state) +
       seasonBonusOfKind(state, item.noodle) +
       menuBonus +
-      gearSatBonus(state),
+      gearSatBonus(state) +
+      // 味道层（B1）：这一款凑成了哪几条成型吃法，当场加分
+      flavorSatBonus(item.recipe.toppings, item.noodle),
       )
     : 50;
 
@@ -436,7 +441,8 @@ function settle(state: GameState, c: QueueCustomer): void {
       costMultiplier(state) *
       equipCostMultiplier(state) *
       costFactorOfKind(item.noodle) *
-      gearCostFactor(state) +
+      gearCostFactor(state) *
+      flavorCostFactor(item.recipe.toppings, item.noodle) +
     sidePick.cost;
   state.cash += paid - cost;
   state.monthRevenue += paid;
@@ -447,6 +453,13 @@ function settle(state: GameState, c: QueueCustomer): void {
   state.flow.servedToday += 1;
   state.tally.bowls += 1; // K1 成就计数：累计出碗（只增不减）
   recordDishSale(state, item.id); // 这一款卖出去一碗
+  /**
+   * 味道层（B1）：第一次凑成某条成型吃法 —— 记进图鉴，并留一句播报。
+   * 数值全在本地算（sim/flavor.ts），AI 只负责补那一句话，拿不到就退回本地句。
+   */
+  for (const def of flavorHits(item.recipe.toppings, item.noodle)) {
+    if (unlock(state, "flavors", def.id)) state.flow.lastFlavor = def.id;
+  }
   // 人情（M3b）：一碗吃到底才给。开罗 Customer Fullness 的原话是「吃满给 Spirit Point，
   // 份量越大越容易吃满」，所以三两必给 2 点、其余满意过线才给 1 点。
   const finished = item.portion >= 3 || sat >= FAVOR_GAIN.finishSat;
@@ -562,6 +575,8 @@ export function tickCustomers(state: GameState): void {
     // 空转（没人排队）就不进冷却，否则下一分钟来的客人要多等一轮
     if (servedAny) {
       const noodleFactor = serveFactorCount > 0 ? serveFactorSum / serveFactorCount : 1;
+      // 出碗是全店一锅，味道层按「当前在编辑的这一款」算（与 portionOf 同口径）
+      const curDish = currentDish(state);
       flow.serveCooldown =
         FLOW.serveMinutes *
         serveMultiplier(state) *
@@ -570,7 +585,8 @@ export function tickCustomers(state: GameState): void {
         // 三两的锅更满，一锅少下几碗（P46）
         portionOf(state.portion).serveFactor *
         // 家当（M3）巷口洗碗池：碗当场冲，不用堆到收摊
-        gearServeFactor(state);
+        gearServeFactor(state) *
+        flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
     }
   }
 

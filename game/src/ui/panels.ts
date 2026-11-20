@@ -33,6 +33,9 @@ import { shopMap, shopMapSummary } from "../sim/shopmap";
 import { CAPACITY_LOST_RATE, lostRateOf } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
 import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
+import { FLAVORS, FLAVOR_TOTAL, type FlavorEffect } from "../data/flavor";
+import { noodleById } from "../data/noodles";
+import { flavorSummary, flavorViews, nearlyFlavor } from "../sim/flavor";
 import { nextTrophy, trophySummary, trophyViews } from "../sim/trophies";
 import { levelProgressOf, tourneySummary, tourneyViews } from "../sim/tourneys";
 import { devNote } from "./dev";
@@ -201,6 +204,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
               <div class="scorebig"><b data-scorebig>--</b><span data-grade>B</span></div>
               <div class="subs" data-sub-list></div>
               <div class="econ2" data-econ2></div>
+              <div class="flavorbox" data-flavors></div>
             </div>
           </div>
         </section>
@@ -220,6 +224,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const gradeEl = wrap.querySelector("[data-grade]") as HTMLElement;
   const subList = wrap.querySelector("[data-sub-list]") as HTMLElement;
   const econ2 = wrap.querySelector("[data-econ2]") as HTMLElement;
+  const flavorsEl = wrap.querySelector("[data-flavors]") as HTMLElement;
   const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
   const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
   const mainsEl = wrap.querySelector("[data-mains]") as HTMLElement;
@@ -232,6 +237,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const dishNoteEl = wrap.querySelector("[data-dishnote]") as HTMLElement;
   /** 品名 + 评语的缓存，避免每帧重写 DOM */
   let lastDishKey = "";
+  /** 味道区（B1）的重绘缓存：只有浇头 / 粉型变了才重写 */
+  let lastFlavorKey = "";
 
   let current: PanelTab = "recipe";
   let lastReportYear = -1;
@@ -890,7 +897,45 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       </div>`;
   }
 
-  function collectionHtml(s: GameState): string {
+  /** 一条组合的效果写成一行中文，面板与图鉴共用 */
+function effectWords(e: FlavorEffect): string {
+  const out: string[] = [];
+  if (e.soup) out.push(`味道 +${e.soup}`);
+  if (e.charm) out.push(`魅力 +${e.charm}`);
+  if (e.sat) out.push(`满意 +${e.sat}`);
+  if (e.patiencePct) out.push(`耐心 +${Math.round(e.patiencePct * 100)}%`);
+  if (e.costPct) out.push(`料钱 −${Math.round(e.costPct * 100)}%`);
+  if (e.servePct) out.push(`出碗 −${Math.round(e.servePct * 100)}%`);
+  return out.join(" · ");
+}
+
+/**
+ * 味道区（B1）：六条成型吃法。
+ *
+ * 成立的写效果，没成立的写「还差哪几味」—— 与成就同一条纪律：
+ * 未达成的也写名字，让玩家看见还能试什么。
+ * title 里带「什么时候最有用 + 为什么 + 出处」，想核对的人 hover 就能看到。
+ */
+function flavorBoxHtml(s: GameState): string {
+  const nameOf = (id: string) => TOPPINGS.find((t) => t.id === id)?.name ?? id;
+  const views = flavorViews({ toppings: s.recipe.toppings, noodle: s.noodle, nameOf });
+  const nearDef = nearlyFlavor(s.recipe.toppings, s.noodle);
+  const nearView = nearDef ? views.find((v) => v.def.id === nearDef.id) : null;
+  const head = `<div class="flavhd">${icon("pan")}这锅的味道 · ${flavorSummary(s.recipe.toppings, s.noodle)}${
+    nearView ? `<span class="sechint">再添「${nearView.missing.join("、")}」就凑成「${nearView.def.name}」</span>` : ""
+  }</div>`;
+  const chips = views
+    .map((v) => {
+      const title = `${v.def.when}｜${v.def.why}｜出处：${v.def.source.map((x) => x.label).join("；")}`;
+      return `<span class="flav${v.active ? " on" : ""}" title="${title}">${v.def.name}${
+        v.active ? `<b>${effectWords(v.def.effect)}</b>` : `<i>还差${v.missing.join("、")}</i>`
+      }</span>`;
+    })
+    .join("");
+  return `${head}<div class="flavlist">${chips}</div>`;
+}
+
+function collectionHtml(s: GameState): string {
     const p = collectionProgress(s);
     const chip = (name: string, unlocked: boolean): string =>
       `<span class="cchip${unlocked ? " on" : ""}">${unlocked ? name : "？？"}</span>`;
@@ -933,6 +978,19 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         .join("");
       return `<div class="tgroup"><div class="tgname">${TROPHY_GROUP_LABEL[g]} ${got}/${list.length}</div><div class="cgrid">${cards}</div></div>`;
     }).join("");
+    // 味道（B1）：六条成型吃法，凑成一次就记下。每张卡都写清楚要哪几味、什么时候吃。
+    const gotFlavors = s.collection.flavors ?? [];
+    const flavorCards = FLAVORS.map((def) => {
+      const got = gotFlavors.includes(def.id);
+      const parts = def.toppings.map((id) => TOPPINGS.find((t) => t.id === id)?.name ?? id);
+      if (def.noodle) parts.push(noodleById(def.noodle)?.short ?? def.noodle);
+      const src = def.source.map((x) => x.label).join("；");
+      return `<span class="tcard${got ? " on" : ""}" title="${def.why}｜出处：${src}">${def.name}<b class="tprog">${
+        got ? def.when : parts.join(" + ")
+      }</b></span>`;
+    }).join("");
+    const flavorSec = `<div class="sec"><div class="sechd">${icon("pan")}味道 · ${gotFlavors.length}/${FLAVOR_TOTAL}<span class="sechint">每条都是南宁真有人这么吃的，凑成一次就记下</span></div><div class="tgroups"><div class="tgroup"><div class="tgname">成型吃法</div><div class="cgrid">${flavorCards}</div></div></div></div>`;
+
     const near = nextTrophy(s);
     const trophySec = `<div class="sec"><div class="sechd">${icon("star")}成就 · ${trophySummary(s)}<span class="sechint">${
       near ? `下一条最近：「${near.def.name}」 ${near.progressText}` : "全收齐了"
@@ -943,7 +1001,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       <div class="sec"><div class="sechd">口味喜好 ${p.likes}/${LIKES_TOTAL}</div><div class="cgrid">${likeDimChips}</div><div class="cgrid">${likeChips}</div></div>
       <div class="sec"><div class="sechd">评级 ${p.grades}/5</div><div class="cgrid">${gradeChips}</div></div>
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
-      ${trophySec}`;
+      ${trophySec}
+      ${flavorSec}`;
   }
 
   function ledgerHtml(s: GameState): string {
@@ -1154,6 +1213,11 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       const suggested = suggestPriceWithMain(s.main, s.portion);
       // 毛利按「实收价」算：三两加 ¥2 是收进来的钱，不能只拿菜单价减成本
       const realMargin = bowlPriceOf(s) - score.cost;
+      const fKey = `${s.noodle}|${s.recipe.toppings.join(",")}`;
+      if (fKey !== lastFlavorKey) {
+        lastFlavorKey = fKey;
+        flavorsEl.innerHTML = flavorBoxHtml(s);
+      }
       econ2.innerHTML = `魅力 <b>${score.charm}</b> · 性价比 <b>${score.valueScore}</b><br>成本 ¥${score.cost.toFixed(1)} · 实收 ¥${bowlPriceOf(s).toFixed(0)} · 毛利 ¥${realMargin.toFixed(1)}<br>建议卖 ¥${suggested}<br>门店吸引力 <b>${score.storeScore}</b>`;
       const subKey = score.subs.map((x) => Math.round(x.value)).join(",");
       if (keys.recipe !== subKey) {

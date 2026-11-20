@@ -1,7 +1,7 @@
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, type LikeDim } from "../data/customers";
 import type { GameState } from "./state";
 
-export type CollectionKind = "toppings" | "customers" | "grades" | "provinces" | "likes";
+export type CollectionKind = "toppings" | "customers" | "grades" | "provinces" | "likes" | "flavors";
 
 /**
  * 图鉴解锁：只增不减，数组上限很小（34 浇头 / 24 顾客 / 5 评级 / 34 省）。
@@ -28,6 +28,8 @@ export const LIKES_TOTAL = CUSTOMER_ARCHETYPES.length * LIKE_DIMS;
 
 export interface CollectionProgress {
   toppings: number;
+  /** 味道组合（B1），6 条 */
+  flavors: number;
   customers: number;
   grades: number;
   provinces: number;
@@ -37,6 +39,7 @@ export interface CollectionProgress {
 export function collectionProgress(state: GameState): CollectionProgress {
   return {
     toppings: state.collection.toppings.length,
+    flavors: (state.collection.flavors ?? []).length,
     customers: state.collection.customers.length,
     grades: state.collection.grades.length,
     provinces: state.collection.provinces.length,

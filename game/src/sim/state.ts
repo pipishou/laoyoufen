@@ -19,7 +19,7 @@ import { checkTrophies } from "./trophies";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 25;
+export const SAVE_VERSION = 26;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -148,6 +148,8 @@ export interface CustomerFlow {
   lastStreet: string | null;
   /** 加料凑出组合时的喜报（老友味/酸辣开胃/全套），消费一次置空 */
   lastSides: string | null;
+  /** 第一次凑成某条味道组合（B1）的 id，main.ts 消费成 toast + AI 一句话 */
+  lastFlavor: string | null;
   /** 上次报加料组合的绝对分钟（节流用，免得每碗都弹） */
   sideToastAt: number;
 }
@@ -215,6 +217,8 @@ export interface CollectionState {
   provinces: string[];
   /** 已发现的顾客喜好，元素形如 "grandma:sour"。对应开罗的 LikeFound。 */
   likes: string[];
+  /** 已经凑成过的味道组合（B1），元素是 data/flavor.ts 的 FlavorId */
+  flavors: string[];
 }
 
 export interface MonthRecord {
@@ -659,6 +663,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastFrenzy: null,
       lastStreet: null,
       lastSides: null,
+      lastFlavor: null,
       sideToastAt: -9999,
       satSumToday: 0,
       satCountToday: 0,
@@ -685,6 +690,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       grades: [],
       provinces: [],
       likes: [],
+      flavors: [],
     },
     months: [],
     years: [],

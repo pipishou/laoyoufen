@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { fetchEventNarrative, localNarrative, localReaction } from "./ai/director";
 import { fetchLine, getLine, localLine, type LineAsk } from "./ai/lines";
 import { TOURNEY_BY_ID } from "./data/tourneys";
+import { FLAVOR_BY_ID } from "./data/flavor";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
@@ -605,6 +606,25 @@ function tickFeedback(): void {
   }
 
   // 人情（M3b）：吃到底 / 回礼 / 转手 / 比赛名次攒到点数时报一句
+  // 味道层（B1）：第一次凑成某条成型吃法 —— 本地先说清是哪条，AI 只补一句街坊的话
+  if (s.flow.lastFlavor) {
+    const def = FLAVOR_BY_ID.get(s.flow.lastFlavor);
+    s.flow.lastFlavor = null;
+    if (def) {
+      hud.showToast(`味道 · ${def.name}：${def.line}`, "like");
+      playSfx("upgrade");
+      void fetchLine({
+        kind: "flavor_voice",
+        key: def.id,
+        context: { 名: def.name, 时: def.when },
+        month: s.month,
+        day: s.day,
+      }).then((line) => {
+        if (line) hud.showToast(`街坊说：「${line}」`, "info");
+      });
+    }
+  }
+
   if (s.flow.lastFavor) {
     hud.showToast(s.flow.lastFavor, "like");
     s.flow.lastFavor = null;

@@ -130,7 +130,7 @@ describe("主料与份量（P46）", () => {
     const back = deserialize(serialize(s))!;
     expect(back.main).toBe("beef");
     expect(back.portion).toBe(3);
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
 
     const raw = JSON.parse(serialize(s)) as Record<string, unknown>;
     raw.saveVersion = 16;

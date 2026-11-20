@@ -23,7 +23,8 @@ export type LineKind =
   | "arena_call"
   | "hook_voice"
   | "trophy_voice"
-  | "tourney_open";
+  | "tourney_open"
+  | "flavor_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -139,6 +140,18 @@ const LOCAL: Record<LineKind, readonly string[]> = {
    * 上面那行「成就 · 名字（奖励）」是本地算的，这句只负责像人说话。
    * 所以同样不许出现数量与机制词 —— 模型很容易写成「你终于卖出一千碗了」。
    */
+  /**
+   * 第一次凑成某条成型吃法（B1 味道层）。说的是「这一口对了」，
+   * 不是数值 —— 几味、加多少分全由本地面板说，这里只给人声。
+   */
+  flavor_voice: [
+    "这个味道对了，就是这个味道。",
+    "我阿婆以前也是这么煮的。",
+    "闻着就晓得你今天下了功夫。",
+    "以后我就认这一口了。",
+    "街上那么多家，就你家有这个味。",
+    "天冷的时候来这一口，整个人都活过来。",
+  ],
   trophy_voice: [
     "这条街的人都看在眼里。",
     "做买卖做到这份上，不容易。",

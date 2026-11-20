@@ -8,6 +8,7 @@ import { STREET_BY_ID } from "../data/streets";
 import { GEAR_BY_ID } from "../data/gear";
 import { TROPHY_BY_ID } from "../data/trophies";
 import { TOURNEY_BY_ID } from "../data/tourneys";
+import { FLAVOR_BY_ID } from "../data/flavor";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -98,6 +99,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 25 &&
     v.saveVersion !== 24 &&
     v.saveVersion !== 22 &&
     v.saveVersion !== 23 &&
@@ -523,6 +525,14 @@ export function deserialize(raw: string): GameState | null {
   parsed.tourneyDay = typeof tdy === "number" && Number.isInteger(tdy) && tdy >= 0 ? tdy : -1;
   const trnd = (parsed as { tourneyRound?: unknown }).tourneyRound;
   parsed.tourneyRound = typeof trnd === "number" && Number.isInteger(trnd) && trnd >= 0 ? trnd : -1;
+  // v25 → v26（B1 味道层）：图鉴多一格 flavors，只认表里有的 id；
+  // 老档没有这一格就补空数组 —— 读档不崩比补历史更重要。
+  const fl = (parsed.collection as { flavors?: unknown } | undefined)?.flavors;
+  if (parsed.collection) {
+    parsed.collection.flavors = Array.isArray(fl)
+      ? (fl as unknown[]).filter((x): x is string => typeof x === "string" && FLAVOR_BY_ID.has(x))
+      : [];
+  }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

@@ -3,6 +3,7 @@ import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
 import type { NoodleId } from "../data/noodles";
 import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
 import { noodleFit } from "./noodles";
+import { flavorBonus } from "./flavor";
 import { evalRpn } from "./rpn";
 import type { Recipe } from "./state";
 
@@ -167,7 +168,12 @@ export function scoreRecipe(
     value: clamp100(evalRpn(p.expr, vars)),
   }));
 
-  const soup = groupScore(subs, "soup");
+  /**
+   * 味道层（B1）：六条成型吃法只在**成立**时加一点味道分，封顶 +5。
+   * 加成放在 soup 而不是 total —— total 是回归锁，动它等于把历史分数全作废。
+   */
+  const flavor = flavorBonus(recipe.toppings, kind);
+  const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup);
   // 粉型 × 汤 的契合度（REA soupaffinity）：切粉恒 100，所以默认粉型下分数不变。
   // 选错粉最多把「粉」这半分砍掉四成，选对最多加四成 —— 不碰 total 的权重公式。
   const fit = noodleFit(kind, recipe.soup);
@@ -175,7 +181,7 @@ export function scoreRecipe(
   const total = soup * 0.55 + noodle * 0.45;
 
   const safePrice = Math.max(0, price);
-  const charm = charmOf(recipe.toppings);
+  const charm = Math.min(100, charmOf(recipe.toppings) + flavor.charm);
   const valueScore = valueScoreOf(safePrice);
   const cost =
     Math.round((bowlCost(recipe.toppings) + mainCostYuan(mainId) + portionCostYuan(portion)) * 100) / 100;
