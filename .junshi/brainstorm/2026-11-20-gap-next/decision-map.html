@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>决策地图 · 下一批补哪一块</title>
+<style>
+  :root{
+    --ink:#2f2118; --ink2:#5a4632; --wood:#8a6f52; --sand:#c9b28f; --cream:#e8dcc4;
+    --paper2:#fff8e6; --paper:#fffdf6; --red:#b5493a; --orange:#d97b52;
+    --green:#2f7d4f; --gold:#b8912f; --blue:#4a6f8a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    width:1200px; padding:26px 28px 22px; background:var(--cream); color:var(--ink);
+    font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif;
+  }
+  h1{font-size:20px;letter-spacing:1px;margin-bottom:4px}
+  .sub{font-size:12px;color:var(--ink2);margin-bottom:16px}
+  .sub b{color:var(--red)}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .card{
+    background:var(--paper); border:3px solid var(--ink); box-shadow:4px 4px 0 rgba(47,33,24,.18);
+    padding:12px 14px 13px; position:relative;
+  }
+  .card.rec{border-color:var(--green); box-shadow:4px 4px 0 rgba(47,125,79,.28)}
+  .tag{
+    position:absolute; top:-11px; right:10px; background:var(--ink); color:var(--paper);
+    font-size:11px; padding:2px 8px; letter-spacing:1px;
+  }
+  .card.rec .tag{background:var(--green)}
+  .card.hard .tag{background:var(--red)}
+  .name{font-size:16px;font-weight:700;margin-bottom:2px}
+  .name small{font-size:11px;font-weight:400;color:var(--wood);margin-left:6px}
+  .one{font-size:12.5px;color:var(--ink2);min-height:44px;margin-bottom:8px}
+  dl{display:grid;grid-template-columns:52px 1fr;gap:3px 8px;font-size:12px;border-top:1px dashed var(--sand);padding-top:8px}
+  dt{color:var(--wood)}
+  dd{color:var(--ink)}
+  .num{font-weight:700}
+  .gate{display:inline-block;font-size:10.5px;padding:1px 6px;border:1.5px solid;letter-spacing:.5px}
+  .gate.two{color:var(--green);border-color:var(--green)}
+  .gate.one{color:var(--red);border-color:var(--red)}
+  .bar{margin-top:7px;font-size:11px;color:var(--ink2)}
+  .bar i{display:block;height:8px;background:var(--sand);border:1.5px solid var(--ink);margin-top:3px}
+  .bar i b{display:block;height:100%;background:var(--gold)}
+  .card.rec .bar i b{background:var(--green)}
+  .axis{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;
+    font-size:11px;color:var(--wood);text-align:center;letter-spacing:1px;
+  }
+  .lane{
+    margin-top:16px;border:3px solid var(--ink);background:var(--paper2);padding:12px 14px;
+  }
+  .lane h2{font-size:13px;letter-spacing:1px;margin-bottom:9px;color:var(--ink)}
+  .flow{display:flex;align-items:center;gap:10px;font-size:13px}
+  .step{
+    border:2.5px solid var(--ink);background:var(--paper);padding:5px 12px;font-weight:700;
+  }
+  .step.first{border-color:var(--green);background:#f3fbf4}
+  .step.last{border-color:var(--blue)}
+  .arrow{color:var(--wood);font-size:16px}
+  .why{margin-left:auto;font-size:11.5px;color:var(--ink2);text-align:right;max-width:520px}
+  .foot{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;font-size:11.5px;
+  }
+  .box{border-left:4px solid var(--gold);background:var(--paper);padding:7px 10px}
+  .box.red{border-left-color:var(--red)}
+  .box b{color:var(--ink)}
+  .box span{color:var(--ink2)}
+</style>
+</head>
+<body>
+  <h1>决策地图 · 下一批补哪一块</h1>
+  <div class="sub">开罗 46 张表 vs 本作：骨架已齐，缺的是「可被发现的味道」「看得见的店」「离店的钱」。<b>三支互斥，按 MECE 过；第四支「人」列为已知缺口</b>。</div>
+
+  <div class="row">
+    <div class="card rec">
+      <div class="tag">先做</div>
+      <div class="name">B1 味道层<small>可被发现的配方</small></div>
+      <div class="one">6 条汤底场景 + 24 条配料组合 + 5 只碗，把 8 个孤立滑块变成有名字的组合。</div>
+      <dl>
+        <dt>对应</dt><dd>soupaffinity 28 行 · topping_combo 38 行 · bowl 5</dd>
+        <dt>证据</dt><dd>粉型同一思路已验证：月均 +8.1%</dd>
+        <dt>成本</dt><dd class="num">0.5–1 天</dd>
+        <dt>风险</dt><dd>组合沦为唯一正解（替身只用 1 条即证伪）</dd>
+        <dt>可逆</dt><dd><span class="gate two">双向门</span></dd>
+      </dl>
+      <div class="bar">性价比<i><b style="width:92%"></b></i></div>
+    </div>
+
+    <div class="card">
+      <div class="tag">第二</div>
+      <div class="name">B3 渠道层<small>卖到店外</small></div>
+      <div class="one">袋装 / 自热 / 伴手礼盒三档，按「你最好那款」换算品质，不占座位不出碗。</div>
+      <dl>
+        <dt>对应</dt><dd>instant_noodles 20 + instant_soup 22</dd>
+        <dt>证据</dt><dd>P70 流失曲线：产能是死瓶颈，只有店外能加量</dd>
+        <dt>成本</dt><dd class="num">1–1.5 天</dd>
+        <dt>风险</dt><dd>&gt;30% 收入时主玩法被稀释</dd>
+        <dt>可逆</dt><dd><span class="gate two">双向门</span></dd>
+      </dl>
+      <div class="bar">性价比<i><b style="width:74%"></b></i></div>
+    </div>
+
+    <div class="card hard">
+      <div class="tag">最后</div>
+      <div class="name">B2 空间层<small>看得见的店</small></div>
+      <div class="one">18 件构件 + 6 种南宁店面风格，成套给加成；地板墙面能挪能换。</div>
+      <dl>
+        <dt>对应</dt><dd>storeparts 34 + storepattern 6 + casket 227 列</dd>
+        <dt>证据</dt><dd>开罗「店有形状」靠的全是这一层</dd>
+        <dt>成本</dt><dd class="num">2–3 天</dd>
+        <dt>风险</dt><dd>要新 UI 范式，做坏了比不做更糟</dd>
+        <dt>可逆</dt><dd><span class="gate two">双向门</span>（但删一整块面板）</dd>
+      </dl>
+      <div class="bar">性价比<i><b style="width:41%"></b></i></div>
+    </div>
+  </div>
+
+  <div class="axis">
+    <div>治「调参没反馈」　·　最小改动</div>
+    <div>治「产能天花板」　·　加量不加灶</div>
+    <div>治「店不像我的」　·　最大改动</div>
+  </div>
+
+  <div class="lane">
+    <h2>收敛顺序</h2>
+    <div class="flow">
+      <span class="step first">B1 味道层</span>
+      <span class="arrow">→</span>
+      <span class="step">B2 空间层</span>
+      <span class="arrow">→</span>
+      <span class="step last">B3 渠道层</span>
+      <span class="why">B1 是 B3 的前置：袋装按「菜单最好那款」换算品质，配方有了层次，袋装才有东西可卖；B2 谁都不等，所以放最后。</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="box"><b>不做</b><span>：顾客 24→90、店员 12→114、事件 32→500 这类纯数量堆叠 —— 玩到第 30 天的人才看得见，现在缺的是前 30 天。</span></div>
+    <div class="box red"><b>承重风险</b><span>：B1 若做成 28 条矩阵，玩家会算最优解；做成 6 条各有场景才像「广西人这么吃」。这个度要在实现时定。</span></div>
+  </div>
+</body>
+</html>

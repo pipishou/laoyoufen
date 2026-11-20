@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>思考树对比 · —</title>
+<style>
+body{font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;margin:24px;color:#1f2328}
+h1{font-size:18px;margin:0 0 4px} .muted{color:#6b7280;font-size:12px}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+th,td{border:1px solid #d0d7de;padding:8px;vertical-align:top;text-align:left}
+th{background:#f6f8fa} tr:nth-child(even) td{background:#fbfcfd}
+.k{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0} .k div{min-width:220px}
+</style></head><body>
+<h1>思考树对比 · —</h1>
+<div class="muted">成功判据：替身 36 月里能看出「多了一条玩家主动做的决定」，且不劣化现有营收（种子 1 ≥ ¥74,600、种子 2 ≥ ¥79,500） ｜ 早停条件：任一支做完五门不绿，或替身两季营收掉 &gt;10% 就回退</div>
+<table>
+<tr><th>分支</th><th>技法</th><th>一句话</th><th>反证信号</th><th>成本</th><th>可逆性</th><th>结论</th></tr>
+<tr><td><b>B1</b><div class='muted'>B1.md</div></td><td>约束反转（把&quot;自由调参&quot;反转成&quot;有限组合可发现&quot;）</td><td>补「可被发现的配方」—— 6 条汤底场景组合 + 24 条配料组合 + 5 只碗，把 8 个孤立滑块变成有目标的组合</td><td>替身 36 月里 6 条组合只有 1 条被用到（说明等于只有一个正解）；或评委分上升但月均掉 &gt;10%</td><td>0.5–1 天（纯数据 + `scoreRecipe` 加一路判断 + 面板一行 chips）</td><td>双向门（数据与判断，删掉即回退）</td><td>**推荐先做**。成本最低、治病最准，且是 B3 的前置（袋装按「你菜单最好那款」换算品质，配方有层次袋装才有东西可卖）</td></tr><tr><td><b>B2</b><div class='muted'>B2.md</div></td><td>类比迁移（开罗 `storeparts` 34 件 → 南宁骑楼老铺/单位食堂/夜市档/连锁快餐/自家老屋/网红店）</td><td>补「看得见的店」—— 18 件店内构件（地板/墙/设施）+ 6 种南宁店面风格，凑齐三件成套给加成</td><td>格子编辑器做出来玩家摆不明白（看探针里点击次数）；或布景只改视觉不改数字，替身 36 月营收零变化</td><td>2–3 天（新 UI 范式：点选摆放 + 成套判定 + 六套乘数）</td><td>双向门（但涉及新 UI，回退要删一整块面板）</td><td>**最后做**。最贵、最需要新 UI 范式，做坏了比不做更糟；且它不是任何其他支的前置</td></tr><tr><td><b>B3</b><div class='muted'>B3.md</div></td><td>极端假设（假设这家店只能卖袋装，看哪套系统还成立 —— 最后留下来的就是「配方品质」这一件事）</td><td>补「离店销售」—— 袋装老友粉 / 自热粉 / 伴手礼盒三档，按你最好那款配方换算品质，不占座位不出碗</td><td>袋装收入占比 &gt;30%（把玩家从「做粉」拉去「管厂」，主玩法被稀释）；或电商退货率把账面收入吃掉一半</td><td>1–1.5 天（三条产品 × 三渠道的月度报量 + 一段面板 + AI 买家评价）</td><td>双向门（新增一段收入，可关闭）</td><td>**第二个做**。唯一能加营收而不加产能负担的；且它是 B1 的下游 —— B1 让配方有层次，B3 才有东西可卖</td></tr>
+</table>
+<div class="k">
+<div><b>MECE·互斥</b><br>分支之间是否互相覆盖/重复？重复→合并同类项。</div>
+<div><b>MECE·穷尽</b><br>是否还有明显方向未列？缺→补一支或写明已知缺口。</div>
+<div><b>推荐位</b><br>哪支进选项地图、哪支进「不做什么」（相位 3 回填）。</div>
+</div>
+<p class="muted">生成于 render_tree.py · 军师 v0.8 ｜ 只渲染，不产生结论</p>
+</body></html>
