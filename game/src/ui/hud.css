@@ -1998,10 +1998,15 @@ button.pill[disabled] {
 }
 
 /* ── 味道区（B1）：六条成型吃法，成立的亮、没成立的写还差什么 ── */
-.flavorbox {
+/* ── 搭配区（A2）与味道区同一套骨架，只在上面多留一点距离 ── */
+.flavorbox,
+.pairbox {
   margin-top: 6px;
   padding-top: 5px;
   border-top: 1px dashed var(--sand);
+}
+.pairbox {
+  margin-top: 8px;
 }
 .flavhd {
   display: flex;

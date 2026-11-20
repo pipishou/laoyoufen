@@ -164,7 +164,7 @@ describe("家当（M3）", () => {
     const back = deserialize(serialize(s));
     expect(back).not.toBeNull();
     expect(back!.gear).toEqual(["wash_sink", "banner"]);
-    expect(SAVE_VERSION).toBe(27);
+    expect(SAVE_VERSION).toBe(28);
 
     const old = JSON.parse(serialize(s)) as Record<string, unknown>;
     delete old.gear;

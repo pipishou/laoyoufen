@@ -24,6 +24,8 @@ import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
+import { buyBowl as buyBowlImpl, setBowl as setBowlImpl } from "./sim/bowl";
+import { bowlById } from "./data/bowl";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
@@ -464,6 +466,29 @@ panels = mountPanels(hudRoot, {
     hud.showToast(r.line ?? "换好了", "like");
     refresh();
   },
+  buyBowl(id) {
+    const r = buyBowlImpl(state, String(id));
+    if (!r.ok) {
+      if (r.reason) hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    playSfx("upgrade");
+    hud.showToast(r.line ?? "碗换好了", "like");
+    speakBowl(String(id));
+    refresh();
+  },
+  setBowl(id) {
+    const r = setBowlImpl(state, String(id));
+    if (!r.ok) {
+      if (r.reason) hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    playSfx("upgrade");
+    hud.showToast(r.line ?? "换好了", "like");
+    refresh();
+  },
   startArena(id) {
     const r = startArena(state, String(id));
     if (!r.ok) {
@@ -838,6 +863,26 @@ function speakStyle(id: string): void {
   };
   void fetchLine(ask).then((line) => {
     if (line) hud.showToast(`街坊说：「${line}」`, "info");
+  });
+}
+
+/**
+ * A4 碗的 AI 落点（第 10 个 `bowl_voice`）：换上新碗时客人端着说一句。
+ * 与 `style_voice` 同一个规矩：本地句已经由 `buyBowl` 的 `line` 说过，
+ * 在线句只用来补一句「端着这只碗的人怎么说」，拿不到就不说。
+ */
+function speakBowl(id: string): void {
+  const def = bowlById(id);
+  if (!def) return;
+  const ask: LineAsk = {
+    kind: "bowl_voice",
+    key: id,
+    context: { 碗: def.name, 样子: def.look.slice(0, 24) },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((line) => {
+    if (line) hud.showToast(`客人说：「${line}」`, "info");
   });
 }
 

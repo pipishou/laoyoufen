@@ -25,7 +25,8 @@ export type LineKind =
   | "trophy_voice"
   | "tourney_open"
   | "flavor_voice"
-  | "style_voice";
+  | "style_voice"
+  | "bowl_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -175,6 +176,21 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "有点旧时候嗰种味道，我中意。",
     "门口一通风，整条巷子都凉快。",
     "新是新，就唔好贵到街坊食唔起。",
+  ],
+  /**
+   * 9. bowl_voice     换上新碗时，端着这只碗的客人说一句（A4 碗）
+   *
+   * 碗在别处是纯加成道具，我们让它带一句人声 —— 不锈钢碗、搪瓷碗、大盆、
+   * 瓦煲、打包碗，客人真正说出口的话也不一样。只出文字：不提加成的百分数，
+   * 也不提价钱（那些本地面板已经写清楚了）。
+   */
+  bowl_voice: [
+    "这种碗看着就干净，食得放心。",
+    "碗够大，汤才装得下，嗦得过瘾。",
+    "搪瓷碗啊，我细个嗰阵都系用呢种。",
+    "瓦煲好，端到手上还滚着，慢慢食都唔怕凉。",
+    "打包走，赶时间也能食一口热的。",
+    "碗边冇缺口，看着就舒服。",
   ],
   /**
    * 5. tourney_open    具名赛事开场，主持人在话筒里说的那句话（C 批，见 data/tourneys.ts）

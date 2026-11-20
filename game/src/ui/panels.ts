@@ -36,9 +36,13 @@ import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
 import { FLAVORS, FLAVOR_TOTAL, type FlavorEffect } from "../data/flavor";
 import { noodleById } from "../data/noodles";
 import { flavorSummary, flavorViews, nearlyFlavor } from "../sim/flavor";
+import { PAIRING_TOTAL, type PairingEffect } from "../data/pairing";
+import { pairingSummary, pairingViews } from "../sim/pairing";
 import { nextTrophy, trophySummary, trophyViews } from "../sim/trophies";
 import { STYLES, STYLE_PART_LABEL } from "../data/style";
 import { nextStyle, styleSummary, styleViews } from "../sim/style";
+import { BOWLS, BOWL_BY_ID, BOWL_TOTAL } from "../data/bowl";
+import { bowlSummary, bowlViews, currentBowl, nextBowl } from "../sim/bowl";
 import { levelProgressOf, tourneySummary, tourneyViews } from "../sim/tourneys";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
@@ -146,6 +150,8 @@ export interface PanelActions {
   buyStyle(id: string): void;
   /** 换上已经装过的门面（免费） */
   setStyle(id: string): void;
+  buyBowl(id: string): void;
+  setBowl(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -211,6 +217,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
               <div class="subs" data-sub-list></div>
               <div class="econ2" data-econ2></div>
               <div class="flavorbox" data-flavors></div>
+              <div class="pairbox" data-pairs></div>
             </div>
           </div>
         </section>
@@ -231,6 +238,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const subList = wrap.querySelector("[data-sub-list]") as HTMLElement;
   const econ2 = wrap.querySelector("[data-econ2]") as HTMLElement;
   const flavorsEl = wrap.querySelector("[data-flavors]") as HTMLElement;
+  const pairsEl = wrap.querySelector("[data-pairs]") as HTMLElement;
   const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
   const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
   const mainsEl = wrap.querySelector("[data-mains]") as HTMLElement;
@@ -390,6 +398,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       break;
     case "setstyle":
       actions.setStyle(id);
+      break;
+    case "buybowl":
+      actions.buyBowl(id);
+      break;
+    case "setbowl":
+      actions.setBowl(id);
       break;
     case "takeover":
       actions.takeOver(id);
@@ -773,6 +787,20 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </div>`;
       })
       .join("");
+    const bowlRows = bowlViews(s)
+      .map((v) => {
+        const btn = v.active
+          ? `<span class="tag2 on">正在用</span>`
+          : v.owned
+            ? `<button type="button" data-act="setbowl" data-id="${v.def.id}">换上</button>`
+            : `<button type="button" data-act="buybowl" data-id="${v.def.id}" ${v.affordable ? "" : "disabled"}>${money(v.def.costYuan)}</button>`;
+        return `<div class="lrow${v.owned ? "" : " locked"}">
+          <div class="lbtns">${btn}</div>
+          <div class="lname">${v.def.name}<span class="tag2">${v.def.effectText}</span></div>
+          <div class="lmeta">${v.def.look}｜${v.def.where}</div>
+        </div>`;
+      })
+      .join("");
     const ups = UPGRADES.map((u) => {      const lv = upgradeLevel(s, u.id);
       const cost = upgradeCost(s, u.id);
       const maxed = lv >= u.maxLevel;
@@ -815,6 +843,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="sechd">${icon("shop")}店的样子 · ${styleSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">门面、地面、桌子凳子整套换。店里同一时间只摆一套，装过的可以随时换回来，换不花钱。左边那张店图会跟着换颜色。${nextStyle(s) ? `最便宜还差「${nextStyle(s)!.def.name}」（${money(STYLES.find((d) => d.id === nextStyle(s)!.def.id)?.costYuan ?? 0)}）。` : "六套都装过了。"}</div>
         ${styleRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">${icon("bowl")}碗 · ${bowlSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">端出去的那只碗。同一时间只用一只，买过的随时换回来，换不花钱。钢碗不用自己洗所以出碗快，瓦煲要现煮所以慢一些 —— 但客人愿意等。${nextBowl(s) ? `最便宜还差「${nextBowl(s)!.name}」（${money(nextBowl(s)!.costYuan)}）。` : `五只都齐了。`}</div>
+        ${bowlRows}
+        <div class="lmeta" style="padding:4px 2px 0">现在这只：${currentBowl(s).line}</div>
       </div>
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>
@@ -932,7 +966,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   }
 
   /** 一条组合的效果写成一行中文，面板与图鉴共用 */
-function effectWords(e: FlavorEffect): string {
+function effectWords(e: FlavorEffect | PairingEffect): string {
   const out: string[] = [];
   if (e.soup) out.push(`味道 +${e.soup}`);
   if (e.charm) out.push(`魅力 +${e.charm}`);
@@ -967,6 +1001,36 @@ function flavorBoxHtml(s: GameState): string {
     })
     .join("");
   return `${head}<div class="flavlist">${chips}</div>`;
+}
+
+/**
+ * 搭配区（A2）：24 条两件套。与味道区同一个写法，但**只列成立的与差一件的** ——
+ * 24 条全铺出来会把配方页撑成一屏，玩家反而记不住哪条跟自己有关。
+ * 其余那些收成一句「还有 N 搭要换别的配料」，想看全的去图鉴。
+ */
+function pairBoxHtml(s: GameState): string {
+  const nameOf = (id: string) => TOPPINGS.find((t) => t.id === id)?.name ?? id;
+  const views = pairingViews({ toppings: s.recipe.toppings, nameOf });
+  const on = views.filter((v) => v.active);
+  const near = views.filter((v) => !v.active && v.missing.length === 1);
+  const restCount = PAIRING_TOTAL - on.length - near.length;
+  const head = `<div class="flavhd">${icon("bowl")}这一碗的搭配 · ${pairingSummary(s.recipe.toppings)}${
+    on.length === 0 && near.length > 0
+      ? `<span class="sechint">再添「${near[0]!.missing.join("、")}」就是一搭「${near[0]!.def.name}」</span>`
+      : restCount > 0
+        ? `<span class="sechint">还有 ${restCount} 搭要换别的配料</span>`
+        : ""
+  }</div>`;
+  const rows = [...on, ...near]
+    .slice(0, 8)
+    .map((v) => {
+      const title = `${v.def.why}｜出处：${v.def.source.map((x) => x.label).join("；")}`;
+      return `<span class="flav${v.active ? " on" : ""}" title="${title}">${v.def.name}${
+        v.active ? `<b>${effectWords(v.def.effect)}</b>` : `<i>只差${v.missing.join("、")}</i>`
+      }</span>`;
+    })
+    .join("");
+  return `${head}<div class="flavlist">${rows || `<span class="flav"><i>这一碗还没凑成任何一搭</i></span>`}</div>`;
 }
 
 function collectionHtml(s: GameState): string {
@@ -1030,13 +1094,23 @@ function collectionHtml(s: GameState): string {
       near ? `下一条最近：「${near.def.name}」 ${near.progressText}` : "全收齐了"
     }</span></div><div class="tgroups">${trophyGroups}</div></div>`;
 
+    const gotBowls = BOWLS.filter((b) => b.free || (s.bowls ?? []).includes(b.id) || (BOWL_BY_ID.has(b.id) && s.bowl === b.id));
+    const bowlCards = BOWLS.map((b) => {
+      const on = gotBowls.includes(b);
+      return `<div class="tcard${on ? " on" : ""}"><b class="tname">${b.name}</b><span class="tprog">${
+        on ? b.effectText : "？？"
+      }</span></div>`;
+    }).join("");
+    const bowlSec = `<div class="sec"><div class="sechd">${icon("bowl")}碗 · ${gotBowls.length}/${BOWL_TOTAL}<span class="sechint">端出去的那只 —— 消毒钢碗、搪瓷碗、大盆、瓦煲、打包碗</span></div><div class="tgroups"><div class="tgroup"><div class="tgname">用过的手感</div><div class="cgrid">${bowlCards}</div></div></div></div>`;
+
     return `<div class="sec"><div class="sechd">浇头 ${p.toppings}/${TOPPINGS.length}</div><div class="cgrid">${toppingChips}</div></div>
       <div class="sec"><div class="sechd">顾客 ${p.customers}/${CUSTOMER_ARCHETYPES.length}</div><div class="cgrid">${customerChips}</div></div>
       <div class="sec"><div class="sechd">口味喜好 ${p.likes}/${LIKES_TOTAL}</div><div class="cgrid">${likeDimChips}</div><div class="cgrid">${likeChips}</div></div>
       <div class="sec"><div class="sechd">评级 ${p.grades}/5</div><div class="cgrid">${gradeChips}</div></div>
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
       ${trophySec}
-      ${flavorSec}`;
+      ${flavorSec}
+      ${bowlSec}`;
   }
 
   function ledgerHtml(s: GameState): string {
@@ -1251,6 +1325,7 @@ function collectionHtml(s: GameState): string {
       if (fKey !== lastFlavorKey) {
         lastFlavorKey = fKey;
         flavorsEl.innerHTML = flavorBoxHtml(s);
+        pairsEl.innerHTML = pairBoxHtml(s);
       }
       econ2.innerHTML = `魅力 <b>${score.charm}</b> · 性价比 <b>${score.valueScore}</b><br>成本 ¥${score.cost.toFixed(1)} · 实收 ¥${bowlPriceOf(s).toFixed(0)} · 毛利 ¥${realMargin.toFixed(1)}<br>建议卖 ¥${suggested}<br>门店吸引力 <b>${score.storeScore}</b>`;
       const subKey = score.subs.map((x) => Math.round(x.value)).join(",");
@@ -1275,7 +1350,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

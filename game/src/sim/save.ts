@@ -10,6 +10,7 @@ import { TROPHY_BY_ID } from "../data/trophies";
 import { TOURNEY_BY_ID } from "../data/tourneys";
 import { FLAVOR_BY_ID } from "../data/flavor";
 import { STYLE_BY_ID } from "../data/style";
+import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -100,6 +101,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 27 &&
     v.saveVersion !== 26 &&
     v.saveVersion !== 25 &&
     v.saveVersion !== 24 &&
@@ -544,6 +546,18 @@ export function deserialize(raw: string): GameState | null {
     : [];
   const stl = (parsed as { style?: unknown }).style;
   parsed.style = typeof stl === "string" && parsed.styles.includes(stl) ? stl : null;
+  // v27 → v28（A4 碗）：买过哪几只碗、现在用的是哪一只。
+  // 规矩与门面一致：只认表里有的 id；现在那只必须买过，否则退回默认钢碗 ——
+  // 不然读档会端出一只从没买过的碗，数值对不上。
+  const bws = (parsed as { bowls?: unknown }).bowls;
+  parsed.bowls = Array.isArray(bws)
+    ? [...new Set((bws as unknown[]).filter((x): x is string => typeof x === "string" && BOWL_BY_ID.has(x)))]
+    : [];
+  const bwl = (parsed as { bowl?: unknown }).bowl;
+  parsed.bowl =
+    typeof bwl === "string" && BOWL_BY_ID.has(bwl) && (BOWL_BY_ID.get(bwl)?.free || parsed.bowls.includes(bwl))
+      ? bwl
+      : DEFAULT_BOWL_ID;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

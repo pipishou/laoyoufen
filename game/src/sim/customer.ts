@@ -25,6 +25,8 @@ import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
+import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
+import { bowlCostFactor, bowlPatienceMult, bowlSatBonus, bowlServeFactor } from "./bowl";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
@@ -312,6 +314,9 @@ function arriveOne(state: GameState): void {
     stylePatienceMult(state) *
     // 味道层（B1）：砂锅那类「烫着吃」的组合让客人愿意多等一会儿
     flavorPatienceMult(dish.recipe.toppings, dish.noodle) *
+    // 配料组合（A2）与碗（A4）：瓦煲端上来还在冒泡，多等一会儿不恼
+    pairPatienceMult(dish.recipe.toppings) *
+    bowlPatienceMult(state) *
     (regular ? 1.6 : 1) *
     FLOW.patienceScale;
   flow.customers.push({
@@ -411,7 +416,11 @@ function settle(state: GameState, c: QueueCustomer): void {
       // 店的样子（A1）：坐得舒不舒服，直接算进这一碗的满意
       styleSatBonus(state) +
       // 味道层（B1）：这一款凑成了哪几条成型吃法，当场加分
-      flavorSatBonus(item.recipe.toppings, item.noodle),
+      flavorSatBonus(item.recipe.toppings, item.noodle) +
+      // 配料组合（A2）：两件套的顺手加成，与上面两层各算各的
+      pairSatBonus(item.recipe.toppings) +
+      // 碗（A4）：端出来的是钢碗还是瓦煲，客人心里有数
+      bowlSatBonus(state),
       )
     : 50;
 
@@ -449,6 +458,10 @@ function settle(state: GameState, c: QueueCustomer): void {
       equipCostMultiplier(state) *
       costFactorOfKind(item.noodle) *
       gearCostFactor(state) *
+      // 配料组合（A2）：标配那几样反而省钱
+      pairCostFactor(item.recipe.toppings) *
+      // 碗（A4）：大盆装得多也费料，打包碗有盒子钱
+      bowlCostFactor(state) *
       flavorCostFactor(item.recipe.toppings, item.noodle) +
     sidePick.cost;
   state.cash += paid - cost;
@@ -593,6 +606,10 @@ export function tickCustomers(state: GameState): void {
         portionOf(state.portion).serveFactor *
         // 家当（M3）巷口洗碗池：碗当场冲，不用堆到收摊
         gearServeFactor(state) *
+        // 配料组合（A2）：好熟的那几样起锅快
+        pairServeFactor(curDish.recipe.toppings) *
+        // 碗（A4）：钢碗不用洗，瓦煲要现煮
+        bowlServeFactor(state) *
         flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
     }
   }

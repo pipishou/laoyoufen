@@ -19,7 +19,7 @@ import { checkTrophies } from "./trophies";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -499,6 +499,13 @@ export interface GameState {
   styles: string[];
   /** 现在店里摆的门面 id；null 表示还是那间空铺 */
   style: string | null;
+  /**
+   * 碗（A4，见 `data/bowl.ts`）：买过的碗 id。
+   * 与门面同一个规矩 —— 同一时间只有一只碗在用，`bowl` 才是现在那只。
+   */
+  bowls: string[];
+  /** 现在用的碗 id；开局就是那只消毒不锈钢碗 */
+  bowl: string;
   /** 人情（M3b）：街坊给的面子点数（见 `data/favor.ts`） */
   favor: number;
   /** 一共攒过多少点人情（只增，面板显示用） */
@@ -734,6 +741,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     gear: [],
     styles: [],
     style: null,
+    bowls: [],
+    bowl: "steel",
     favor: 0,
     favorTotal: 0,
     treatDay: -1,

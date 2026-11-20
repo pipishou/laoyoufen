@@ -11,7 +11,18 @@ import {
   type LineAsk,
 } from "./lines";
 
-const KINDS = ["street_request", "rival_rumor", "recipe_buyer", "arena_call", "hook_voice"] as const;
+const KINDS = [
+  "street_request",
+  "rival_rumor",
+  "recipe_buyer",
+  "arena_call",
+  "hook_voice",
+  "tourney_open",
+  "trophy_voice",
+  "flavor_voice",
+  "style_voice",
+  "bowl_voice",
+] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {
   return { kind, key, context: { 街: "明秀路" }, month: 0, day };
@@ -24,7 +35,7 @@ afterEach(() => {
 });
 
 describe("ai/lines 本地兜底", () => {
-  it("四个落点都有本地句，且都不含阿拉伯数字", () => {
+  it("每个落点都有本地句，且都不含阿拉伯数字", () => {
     for (const kind of KINDS) {
       const line = localLine(ask(kind));
       expect(line.length).toBeGreaterThan(4);

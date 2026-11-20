@@ -4,6 +4,7 @@ import type { NoodleId } from "../data/noodles";
 import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
 import { noodleFit } from "./noodles";
 import { flavorBonus } from "./flavor";
+import { pairingBonus } from "./pairing";
 import { evalRpn } from "./rpn";
 import type { Recipe } from "./state";
 
@@ -173,7 +174,13 @@ export function scoreRecipe(
    * 加成放在 soup 而不是 total —— total 是回归锁，动它等于把历史分数全作废。
    */
   const flavor = flavorBonus(recipe.toppings, kind);
-  const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup);
+  /**
+   * 配料组合（A2）：24 条两件套的顺手加成，封顶 +3。
+   * 与味道层分开算、分开封顶，再一起并入 soup / charm ——
+   * 这样两层都能单独调，也不会因为叠乘把某一维顶到 100。
+   */
+  const pairing = pairingBonus(recipe.toppings);
+  const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup + pairing.soup);
   // 粉型 × 汤 的契合度（REA soupaffinity）：切粉恒 100，所以默认粉型下分数不变。
   // 选错粉最多把「粉」这半分砍掉四成，选对最多加四成 —— 不碰 total 的权重公式。
   const fit = noodleFit(kind, recipe.soup);
@@ -181,7 +188,7 @@ export function scoreRecipe(
   const total = soup * 0.55 + noodle * 0.45;
 
   const safePrice = Math.max(0, price);
-  const charm = Math.min(100, charmOf(recipe.toppings) + flavor.charm);
+  const charm = Math.min(100, charmOf(recipe.toppings) + flavor.charm + pairing.charm);
   const valueScore = valueScoreOf(safePrice);
   const cost =
     Math.round((bowlCost(recipe.toppings) + mainCostYuan(mainId) + portionCostYuan(portion)) * 100) / 100;

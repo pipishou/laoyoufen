@@ -1,0 +1,193 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "head": "碗 · 现在用「消毒不锈钢碗」 · 买了 1/5 只",
+      "rows": [
+        {
+          "act": "buybowl",
+          "id": "enamel",
+          "disabled": false,
+          "text": "¥600"
+        },
+        {
+          "act": "buybowl",
+          "id": "bigpan",
+          "disabled": false,
+          "text": "¥1,200"
+        },
+        {
+          "act": "buybowl",
+          "id": "claypot",
+          "disabled": false,
+          "text": "¥2,600"
+        },
+        {
+          "act": "buybowl",
+          "id": "takeaway",
+          "disabled": false,
+          "text": "¥900"
+        }
+      ],
+      "rowCount": 5,
+      "onTag": [
+        "正在用"
+      ],
+      "bowl": "steel",
+      "bowls": [],
+      "cash": 200000,
+      "step": "fresh"
+    },
+    {
+      "head": "碗 · 现在用「搪瓷碗」 · 买了 2/5 只",
+      "rows": [
+        {
+          "act": "setbowl",
+          "id": "steel",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "buybowl",
+          "id": "bigpan",
+          "disabled": false,
+          "text": "¥1,200"
+        },
+        {
+          "act": "buybowl",
+          "id": "claypot",
+          "disabled": false,
+          "text": "¥2,600"
+        },
+        {
+          "act": "buybowl",
+          "id": "takeaway",
+          "disabled": false,
+          "text": "¥900"
+        }
+      ],
+      "rowCount": 5,
+      "onTag": [
+        "正在用"
+      ],
+      "bowl": "enamel",
+      "bowls": [
+        "enamel"
+      ],
+      "cash": 199400,
+      "step": "buy_enamel"
+    },
+    {
+      "head": "碗 · 现在用「瓦煲」 · 买了 3/5 只",
+      "rows": [
+        {
+          "act": "setbowl",
+          "id": "steel",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "setbowl",
+          "id": "enamel",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "buybowl",
+          "id": "bigpan",
+          "disabled": false,
+          "text": "¥1,200"
+        },
+        {
+          "act": "buybowl",
+          "id": "takeaway",
+          "disabled": false,
+          "text": "¥900"
+        }
+      ],
+      "rowCount": 5,
+      "onTag": [
+        "正在用"
+      ],
+      "bowl": "claypot",
+      "bowls": [
+        "enamel",
+        "claypot"
+      ],
+      "cash": 196800,
+      "step": "buy_claypot"
+    },
+    {
+      "head": "碗 · 现在用「搪瓷碗」 · 买了 3/5 只",
+      "rows": [
+        {
+          "act": "setbowl",
+          "id": "steel",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "buybowl",
+          "id": "bigpan",
+          "disabled": false,
+          "text": "¥1,200"
+        },
+        {
+          "act": "setbowl",
+          "id": "claypot",
+          "disabled": false,
+          "text": "换上"
+        },
+        {
+          "act": "buybowl",
+          "id": "takeaway",
+          "disabled": false,
+          "text": "¥900"
+        }
+      ],
+      "rowCount": 5,
+      "onTag": [
+        "正在用"
+      ],
+      "bowl": "enamel",
+      "bowls": [
+        "enamel",
+        "claypot"
+      ],
+      "cash": 196800,
+      "step": "switch_enamel",
+      "cashBefore": 196800
+    },
+    {
+      "text": "这一碗的搭配 · 凑成 1 / 24 搭还有 20 搭要换别的配料酸笋酸辣椒味道 +1肉末酸辣椒只差肉末空心菜配酸笋只差空心菜豆豉酸辣椒只差豆豉",
+      "chips": [
+        "酸笋酸辣椒味道 +1",
+        "肉末酸辣椒只差肉末",
+        "空心菜配酸笋只差空心菜",
+        "豆豉酸辣椒只差豆豉"
+      ],
+      "on": 1,
+      "step": "pairing"
+    },
+    {
+      "bowlHead": "碗 · 3/5端出去的那只 —— 消毒钢碗、搪瓷碗、大盆、瓦煲、打包碗",
+      "heads": 8,
+      "step": "collection"
+    }
+  ],
+  "checks": {
+    "bowl_section": true,
+    "five_rows": true,
+    "starts_steel": true,
+    "buy_works": true,
+    "buy_head": true,
+    "buy_marks_active": true,
+    "second_buy": true,
+    "switch_free": true,
+    "pairing_section": true,
+    "pairing_one": true,
+    "collection_bowl": true,
+    "console_clean": true
+  },
+  "console_errors": []
+}
