@@ -21,6 +21,8 @@ import type { NoodleId } from "./noodles";
 export type RivalTier = 1 | 2 | 3;
 
 export interface RivalSignature {
+  /** 这一款的名字（街坊怎么叫它：猪杂粉 / 老友粉 / 砂锅猪脚粉） */
+  name: string;
   /** 主料（data/mains.ts 的 id） */
   main: string;
   /** 粉型（data/noodles.ts 的 id） */
@@ -33,12 +35,32 @@ export interface RivalSignature {
   price: number;
 }
 
+/** 同行菜单上的一碗（开罗 `enemy_store` 每家也有不止一个招牌） */
+export interface RivalDish {
+  name: string;
+  main: string;
+  noodle: NoodleId;
+  taste: number;
+  charm: number;
+  price: number;
+}
+
 export interface RivalDef {
   id: string;
   district: DistrictId;
   name: string;
   tier: RivalTier;
+  /** 主打（街坊提起这家先想到的那一碗） */
   signature: RivalSignature;
+  /**
+   * 菜单上的第二款。
+   *
+   * 为什么每家有第二款：只有一款的时候，玩家的价牌只在和「那一个数」比，
+   * 比价变成一条直线（比他便宜就赢），于是唯一的策略是往下压价（缺口 P153）。
+   * 有第二款，同行就有了「便宜的引流款 + 贵的主力款」这副真实的牌，
+   * 玩家压价压到他的引流款以下才有用，而压到成本线以下自己先亏。
+   */
+  second: RivalDish;
   /** 初始名气，决定他抢多少客 */
   fame: number;
   /** 撑不下去的门槛：名气跌到 0 就贴转让 */
@@ -56,7 +78,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "xingning",
     name: "老甘饮食店",
     tier: 1,
-    signature: { main: "offal", noodle: "flat", taste: 62, charm: 45, price: 9 },
+    signature: { name: "猪杂粉", main: "offal", noodle: "flat", taste: 62, charm: 45, price: 9 },
+    second: { name: "牛腩粉", main: "brisket", noodle: "round", taste: 66, charm: 48, price: 12 },
     fame: 12,
     takeoverFeeYuan: 9_000,
     exitGoal: 6,
@@ -71,7 +94,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "xingning",
     name: "三姐粉摊",
     tier: 1,
-    signature: { main: "pork", noodle: "flat", taste: 58, charm: 52, price: 8 },
+    signature: { name: "瘦肉粉", main: "pork", noodle: "flat", taste: 58, charm: 52, price: 8 },
+    second: { name: "素粉", main: "threeFresh", noodle: "flat", taste: 52, charm: 50, price: 6 },
     fame: 10,
     takeoverFeeYuan: 6_000,
     exitGoal: 5,
@@ -86,7 +110,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "qingxiu",
     name: "南湖粉城",
     tier: 3,
-    signature: { main: "brisket", noodle: "round", taste: 78, charm: 72, price: 14 },
+    signature: { name: "牛腩粉", main: "brisket", noodle: "round", taste: 78, charm: 72, price: 14 },
+    second: { name: "老友粉", main: "pork", noodle: "flat", taste: 74, charm: 70, price: 12 },
     fame: 30,
     takeoverFeeYuan: 42_000,
     exitGoal: 12,
@@ -101,7 +126,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "qingxiu",
     name: "凤岭夜宵档",
     tier: 2,
-    signature: { main: "duck", noodle: "wetchow", taste: 70, charm: 66, price: 13 },
+    signature: { name: "烧鸭粉", main: "duck", noodle: "wetchow", taste: 70, charm: 66, price: 13 },
+    second: { name: "砂锅猪脚粉", main: "trotter", noodle: "claypot", taste: 72, charm: 68, price: 15 },
     fame: 20,
     takeoverFeeYuan: 24_000,
     exitGoal: 9,
@@ -116,7 +142,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "jiangnan",
     name: "亭洪老牌粉店",
     tier: 2,
-    signature: { main: "beefOffal", noodle: "flat", taste: 72, charm: 60, price: 12 },
+    signature: { name: "牛杂粉", main: "beefOffal", noodle: "flat", taste: 72, charm: 60, price: 12 },
+    second: { name: "牛腩粉", main: "brisket", noodle: "round", taste: 70, charm: 58, price: 14 },
     fame: 20,
     takeoverFeeYuan: 22_000,
     exitGoal: 9,
@@ -131,7 +158,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "xixiangtang",
     name: "民大后门那家",
     tier: 1,
-    signature: { main: "threeFresh", noodle: "flat", taste: 60, charm: 58, price: 8 },
+    signature: { name: "三鲜粉", main: "threeFresh", noodle: "flat", taste: 60, charm: 58, price: 8 },
+    second: { name: "猪杂粉", main: "offal", noodle: "flat", taste: 62, charm: 56, price: 10 },
     fame: 12,
     takeoverFeeYuan: 8_000,
     exitGoal: 6,
@@ -146,7 +174,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "xixiangtang",
     name: "相思湖食堂",
     tier: 2,
-    signature: { main: "trotter", noodle: "claypot", taste: 68, charm: 62, price: 11 },
+    signature: { name: "猪脚粉", main: "trotter", noodle: "claypot", taste: 68, charm: 62, price: 11 },
+    second: { name: "酸辣粉", main: "threeFresh", noodle: "round", taste: 64, charm: 60, price: 8 },
     fame: 18,
     takeoverFeeYuan: 18_000,
     exitGoal: 8,
@@ -161,7 +190,8 @@ export const RIVALS: readonly RivalDef[] = [
     district: "liangqing",
     name: "五象路口粉店",
     tier: 2,
-    signature: { main: "beef", noodle: "yifu", taste: 66, charm: 64, price: 12 },
+    signature: { name: "牛肉粉", main: "beef", noodle: "yifu", taste: 66, charm: 64, price: 12 },
+    second: { name: "牛杂粉", main: "beefOffal", noodle: "flat", taste: 64, charm: 62, price: 11 },
     fame: 16,
     takeoverFeeYuan: 20_000,
     exitGoal: 8,

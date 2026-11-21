@@ -25,6 +25,7 @@ import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets
 import { tierRemark } from "./tier";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
+import { priceWarMult } from "./price-war";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
 import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
@@ -234,6 +235,8 @@ function spawnChance(state: GameState): number {
     frenzySpawnBoost(state) *
     // 南宁行情（批次三）：下雨、赶圩、开学，都在这一天
     marketAttractMult(state) *
+    // 比价（批次 4.5）：同行的便宜粉摆在那里，你的价牌贵一点人就少一点
+    priceWarMult(state) *
     FLOW.spawnScale *
     // 开局分流（P67）：前七天别把产能压垮
     spawnScaleByDay(state)

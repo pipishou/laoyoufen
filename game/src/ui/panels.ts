@@ -30,6 +30,7 @@ import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
+import { priceWarWords } from "../sim/price-war";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from "../sim/gear";
 import { comboSummary, comboViews } from "../sim/combo";
@@ -730,8 +731,10 @@ let lastGradeKey = "";
           : state2.closed
             ? `铺子空着 · 接手要 ${money(v.def.takeoverFeeYuan)}（租金打折、门口多一个入口）`
             : state2.pacified
-              ? `招牌 ¥${sig.price} · 实力 ${sig.taste} · 服气了，抢的人砍半`
-              : `招牌 ¥${sig.price} · 实力 ${sig.taste} · 再赢 ${v.toPacify} 场就服气`;
+              ? `招牌 ${sig.name} ¥${sig.price} · 实力 ${sig.taste} · 服气了，抢的人砍半`
+              : `招牌 ${sig.name} ¥${sig.price} · 实力 ${sig.taste} · 再赢 ${v.toPacify} 场就服气`;
+        // 菜单上的第二款：同行不是只有一个价，比价才是真有对手的决策（批次 4.5）
+        const menuLine = `<div class="lmeta">菜单：${sig.name} ¥${sig.price} ／ ${v.def.second.name} ¥${v.def.second.price}</div>`;
         const btn = v.canTakeOver
           ? `<div class="lbtns"><button type="button" data-act="takeover" data-id="${v.def.id}">接手 ${money(v.def.takeoverFeeYuan)}</button></div>`
           : v.takeoverReason
@@ -744,6 +747,7 @@ let lastGradeKey = "";
         return `<div class="lrow">
           <div class="lname">${v.def.name}${tags}</div>
           <div class="lmeta">${meta}</div>
+          ${menuLine}
           ${rumour ? `<div class="lmeta rumour">街坊说：${rumour}</div>` : ""}
           ${btn}
         </div>`;
@@ -753,6 +757,7 @@ let lastGradeKey = "";
         <div class="sechd">${icon("people")}同条街 · ${streetSummary(s)}</div>
         <div class="lmeta" style="padding:0 2px 8px">这条街不止你一家，客人是同一批人：他们抢走多少，你就少卖多少。比赛赢多了他们会服气（每家 3 次），服气后抢的人砍半；撑不下去关门的铺子可以接手，租金打折。</div>
         <div class="lmeta"><b>你在这条街的口碑 ${standing}</b>（跟这条街最强的同行比：越高越是你说了算）</div>
+        <div class="lmeta" data-pricewar>${priceWarWords(s)}</div>
         ${streetRows || `<div class="empty2">这条街就你一家。</div>`}
       </div>`;
     // 街面（M2）：这条街上属于大家的东西，你出钱修，客人顺着这些路走进来
@@ -1577,7 +1582,7 @@ const newsSec = `<div class="sec">
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;
