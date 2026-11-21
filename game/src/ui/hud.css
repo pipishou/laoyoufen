@@ -251,7 +251,7 @@ button.pill[disabled] {
     box-shadow: 3px 3px 0 var(--shadow);
   }
   50% {
-    box-shadow: 3px 3px 0 var(--shadow), 0 0 0 3px #b8452c55;
+    box-shadow: 3px 3px 0 var(--shadow), 0 0 0 3px color-mix(in srgb, var(--red) 33%, transparent);
   }
 }
 
