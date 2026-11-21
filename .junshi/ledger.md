@@ -293,3 +293,18 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 | P130 | 三档不影响他点什么 | `sim/customer.ts` | 识食的应该更爱点贵料（牛肉、猪杂），现在只是钱包更大 |
 | P131 | 场上只有色条与小字，没有「他常来」的脸 | `ui/hud.ts` | 与 P122（方子没画面）同形，等 A12 长对白一起做 |
 | P132 | 没有探针断言队列行的 `t-*` 类 | `tools/gate/` | 逻辑有 10 例测试，DOM 只有 eye_gate 的色数兜底 |
+## 行 72 · A9 店员专精 · 2026-11-21（D8 / HIGH）
+
+开罗 `clerk_skill.txt` 21 行是①一个店员能练什么」。本作不做数值阶梯，改成**每岗位一门看家本事**：`wok` 锅气（煮粉，出碗快 8%，人情 10 / ¥300）、`knife` 刀工（备料，料钱省 6%，10 / ¥300）、`memory` 记性（跑堂，耐心 +8%、满意 +1，12 / ¥400）。学成钉死一个人，**同一门多人学只算一份**。
+
+接线：`data/specialty.ts`（表 + 岗位绑定 + 开罗出处）、`sim/specialty.ts`（学艺与四个乘数）、`sim/state.ts` 的 `StaffMember.specialty?`、`sim/staff.ts` 三个乘数各乘一份、`sim/customer.ts` 满意度链、`ui/panels.ts` 员工行「学X」按钮与段标题 `N / M 位学出手艺`、`main.ts` 的 `learnSpecialty` action。
+
+验收：tsc 0；vitest **52 文件 595 用例**（新增 `specialty.test.ts` 9 例）；copy_gate 0；eye_gate `--slug a9` 五视口 724·765·585·1223·1377 色 stamp 128；ai_gate `ok: true`；build `index-jH59vDSP.js` 1,528,107 B / `index-jUp5ibZs.css` 43,132 B。
+
+## 缺口（A9 新增）
+
+| 编号 | 问题 | 位置 | 说明 |
+| --- | --- | --- | --- |
+| P133 | 专精只动一个出口 | `sim/specialty.ts` | 开罗 8 级技能连带涨效率，我们一刀切一刀 |
+| P134 | 没有「送出去学」的时间成本 | `sim/specialty.ts` | 点了就成，像一个开关而不是一段日子 |
+| P135 | 员工行小屏会挤 | `ui/panels.ts` | 三个岗位说明文字偏长，按钮挤到第二行 |

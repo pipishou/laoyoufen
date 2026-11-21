@@ -53,6 +53,8 @@ import { levelProgressOf, tourneySummary, tourneyViews } from "../sim/tourneys";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
 import { icon } from "./icons";
+import { specialtiesOfRole } from "../data/specialty";
+import { specialtySummary } from "../sim/specialty";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -111,6 +113,7 @@ export interface PanelActions {
   setPrice(value: number): void;
   hire(uid: string): void;
   fire(uid: string): void;
+  learnSpecialty(uid: string, id: string): void;
   toggleRest(uid: string): void;
   buy(id: string): void;
   buyEquip(id: string): void;
@@ -332,6 +335,11 @@ let lastGradeKey = "";
       case "hire":
         actions.hire(id);
         break;
+      case "learn": {
+        const [uid, sid] = String(id).split("|");
+        actions.learnSpecialty(uid ?? "", sid ?? "");
+        break;
+      }
       case "fire":
         actions.fire(id);
         break;
@@ -471,10 +479,25 @@ let lastGradeKey = "";
       .map((m) => {
         const fatigueClass = m.fatigue >= 70 ? "hot" : m.fatigue >= 40 ? "warm" : "";
         return `<div class="lrow${m.resting ? " resting" : ""}">
-          <div class="lname">${m.name}<span class="tag2">${ROLE_LABEL[m.role]}</span><span class="tag2">技能 ${m.skill}</span></div>
-          <div class="lmeta">日薪 ¥${m.wage}${m.resting ? " · 今天休息（半薪）" : ""}</div>
+          <div class="lname">${m.name}<span class="tag2">${ROLE_LABEL[m.role]}</span><span class="tag2">技能 ${m.skill}</span>${
+            m.specialty ? `<span class="tag2 on">${specialtiesOfRole(m.role).find((d) => d.id === m.specialty)?.name ?? "专精"}</span>` : ""
+          }</div>
+          <div class="lmeta">日薪 ¥${m.wage}${m.resting ? " · 今天休息（半薪）" : ""}${
+            m.specialty ? "" : ` · 能学：${specialtiesOfRole(m.role).map((d) => `${d.name}（${d.what}）`).join(" / ")}`
+          }</div>
           <div class="fat"><i class="${fatigueClass}" style="width:${Math.min(100, m.fatigue)}%"></i></div>
-          <div class="lbtns">
+          <div class="lbtns">${
+            m.specialty
+              ? ""
+              : specialtiesOfRole(m.role)
+                  .map(
+                    (d) =>
+                      `<button type="button" data-act="learn" data-id="${m.uid}|${d.id}" ${
+                        s.favor < d.favorCost || s.cash < d.costYuan ? "disabled" : ""
+                      } title="${d.line}">学${d.name}</button>`,
+                  )
+                  .join("")
+          }
             <button type="button" data-act="rest" data-id="${m.uid}">${m.resting ? "复工" : "休息"}</button>
             <button type="button" class="danger" data-act="fire" data-id="${m.uid}">辞退</button>
           </div>
@@ -496,9 +519,9 @@ let lastGradeKey = "";
       .join("");
 
     return `<div class="sec">
-        <div class="sechd">${icon("staff")}在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))}</div>
+        <div class="sechd">${icon("staff")}在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))} · ${specialtySummary(s)}</div>
         ${roster || `<div class="empty2">还没雇人。你自己一个人炒锅，出碗 6 分钟。</div>`}
-        <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"}</div>
+        <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"} 一个人只学一门手艺，学成了钉死，不用再管。</div>
       </div>
       <div class="sec">
         <div class="sechd">${icon("staff")}今日候选 · 每天换一批</div>

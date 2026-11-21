@@ -11,6 +11,7 @@ import { dayIndex } from "./calendar";
 import { equipLevel } from "./equipment";
 import { gearFatigueMult } from "./gear";
 import { shuffled } from "./rng";
+import { specialtyCostFactor, specialtyPatienceMult, specialtyServeFactor } from "./specialty";
 import type { GameState, StaffMember } from "./state";
 
 /**
@@ -143,12 +144,14 @@ export function bowlMinutes(state: GameState, baseMinutes: number, equipFactor: 
 export function serveMultiplier(state: GameState): number {
   const boil = 1 - Math.min(COOK_CUT_MAX, sumSkill(state, "cook") * COOK_CUT_PER_SKILL);
   const setout = 1 - Math.min(SETOUT_CUT_MAX, sumSkill(state, "server") * SETOUT_CUT_PER_SKILL);
-  return boil * setout;
+  // 专精（A9）：掌勺有人学过「锅气」，这口灶再快一档
+  return boil * setout * specialtyServeFactor(state);
 }
 
 /** 跑堂让顾客更愿意等 */
 export function patienceMultiplier(state: GameState): number {
-  return 1 + sumSkill(state, "server") * 0.08;
+  // 专精（A9）：跑堂学过「记性」，等的人更有底
+  return (1 + sumSkill(state, "server") * 0.08) * specialtyPatienceMult(state);
 }
 
 /**
@@ -167,7 +170,8 @@ export function surveyRate(state: GameState): number {
 
 /** 备料工压低食材成本，最低七折 */
 export function costMultiplier(state: GameState): number {
-  return Math.max(0.7, 1 - sumSkill(state, "prep") * 0.05);
+  // 专精（A9）：备料学过「刀工」，边角料少
+  return Math.max(0.7, 1 - sumSkill(state, "prep") * 0.05) * specialtyCostFactor(state);
 }
 
 export interface HireResult {

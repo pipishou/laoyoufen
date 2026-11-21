@@ -28,6 +28,7 @@ import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavo
 import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
 import { bowlCostFactor, bowlPatienceMult, bowlSatBonus, bowlServeFactor } from "./bowl";
 import { masterServeFactor } from "./master";
+import { specialtySatBonus } from "./specialty";
 import { rollTier, tierBudgetPct, tierPatiencePct, tierRepWeight, tierSatPenalty } from "./guest-tier";
 import { tierById } from "../data/guest-tier";
 import { pickSides, recordSides } from "./sides";
@@ -425,6 +426,8 @@ function settle(state: GameState, c: QueueCustomer): void {
       gearSatBonus(state) +
       // 店的样子（A1）：坐得舒不舒服，直接算进这一碗的满意
       styleSatBonus(state) +
+      // 专精（A9）：跑堂学过「记性」，这一碗少一点磕碰
+      specialtySatBonus(state) +
       // 味道层（B1）：这一款凑成了哪几条成型吃法，当场加分
       flavorSatBonus(item.recipe.toppings, item.noodle) +
       // 配料组合（A2）：两件套的顺手加成，与上面两层各算各的

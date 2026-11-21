@@ -5,6 +5,7 @@ import { TOURNEY_BY_ID } from "./data/tourneys";
 import { FLAVOR_BY_ID } from "./data/flavor";
 import { tierById } from "./data/guest-tier";
 import { tierVoiceContext } from "./sim/guest-tier";
+import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
@@ -226,6 +227,16 @@ panels = mountPanels(hudRoot, {
   hire(uid) {
     hire(state, uid);
     playSfx("ui");
+    refresh();
+  },
+  learnSpecialty(uid, id) {
+    const r = learnSpecialtyImpl(state, uid, id);
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "学不成", "info");
+      return;
+    }
+    hud.showToast(`${r.def?.name ?? "手艺"}学成了：${r.line ?? ""}`, "like");
+    playSfx("upgrade");
     refresh();
   },
   fire(uid) {

@@ -184,6 +184,11 @@ export interface StaffMember {
   fatigue: number;
   /** 今天休息：不干活、半薪、恢复体力 */
   resting: boolean;
+  /**
+   * 店员专精（A9）：学成的手艺 id，见 `data/specialty.ts`。
+   * 可选字段 —— 老档里的员工没有这一格，读回来当没学。
+   */
+  specialty?: string;
 }
 
 export interface StaffState {
