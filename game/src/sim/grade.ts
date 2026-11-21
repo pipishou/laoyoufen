@@ -33,22 +33,24 @@ export interface GradeDef {
   minCustomers: number;
   /** 通过奖励（元） */
   rewardYuan: number;
+  /** 评委在牌子上写的一句话（开罗 grade_review 的评语列） */
+  remark: string;
   /** 一句话要求，给 UI 显示 */
   note: string;
 }
 
 export const GRADES: readonly GradeDef[] = [
-  { level: 1, title: "摆摊仔", feeYuan: CAPITAL.gradeFeeYuan[0], minCustomers: 110, rewardYuan: 500, note: "街边支一口锅，先让人知道有你这家" },
-  { level: 2, title: "街边小店", feeYuan: CAPITAL.gradeFeeYuan[1], minCustomers: 350, rewardYuan: 800, note: "有两张桌子，坐得下四个人" },
-  { level: 3, title: "巷口老铺", feeYuan: CAPITAL.gradeFeeYuan[2], minCustomers: 1_000, rewardYuan: 1_200, note: "街坊开始记得你的招牌" },
-  { level: 4, title: "街知巷闻", feeYuan: CAPITAL.gradeFeeYuan[3], minCustomers: 1_500, rewardYuan: 2_000, note: "隔壁街的人也过来吃" },
-  { level: 5, title: "区级名店", feeYuan: CAPITAL.gradeFeeYuan[4], minCustomers: 2_000, rewardYuan: 3_000, note: "本区的老友粉，数得上你一家" },
-  { level: 6, title: "市级名店", feeYuan: CAPITAL.gradeFeeYuan[5], minCustomers: 2_400, rewardYuan: 5_000, note: "市里的美食号开始写你" },
-  { level: 7, title: "老友粉传人", feeYuan: CAPITAL.gradeFeeYuan[6], minCustomers: 3_000, rewardYuan: 8_000, note: "有人专程来问你的酸笋怎么发" },
-  { level: 8, title: "八桂名厨", feeYuan: CAPITAL.gradeFeeYuan[7], minCustomers: 3_400, rewardYuan: 12_000, note: "广西台来拍过一次" },
-  { level: 9, title: "桂系食神", feeYuan: CAPITAL.gradeFeeYuan[8], minCustomers: 4_000, rewardYuan: 18_000, note: "同行拿你的汤底当参照" },
-  { level: 10, title: "老友粉大王", feeYuan: CAPITAL.gradeFeeYuan[9], minCustomers: 5_000, rewardYuan: 30_000, note: "全区开分店，名字就是招牌" },
-  { level: 11, title: "广西老友粉非遗传承人", feeYuan: CAPITAL.gradeFeeYuan[10], minCustomers: 6_000, rewardYuan: 0, note: "37 个月跑完，账本翻到最后一页" },
+  { level: 1, title: "摆摊仔", feeYuan: CAPITAL.gradeFeeYuan[0], minCustomers: 110, rewardYuan: 500, note: "街边支一口锅，先让人知道有你这家", remark: "锅气有点意思，就是还没个正经落脚的地方。" },
+  { level: 2, title: "街边小店", feeYuan: CAPITAL.gradeFeeYuan[1], minCustomers: 350, rewardYuan: 800, note: "有两张桌子，坐得下四个人", remark: "桌子摆开了，看得出你打算做久。" },
+  { level: 3, title: "巷口老铺", feeYuan: CAPITAL.gradeFeeYuan[2], minCustomers: 1_000, rewardYuan: 1_200, note: "街坊开始记得你的招牌", remark: "巷子里的人都认你的门牌，这比什么招牌都硬。" },
+  { level: 4, title: "街知巷闻", feeYuan: CAPITAL.gradeFeeYuan[3], minCustomers: 1_500, rewardYuan: 2_000, note: "隔壁街的人也过来吃", remark: "隔壁街的人愿意走过来，味道已经替你走了半条街。" },
+  { level: 5, title: "区级名店", feeYuan: CAPITAL.gradeFeeYuan[4], minCustomers: 2_000, rewardYuan: 3_000, note: "本区的老友粉，数得上你一家", remark: "本区提起老友粉，绕不过你这家。" },
+  { level: 6, title: "市级名店", feeYuan: CAPITAL.gradeFeeYuan[5], minCustomers: 2_400, rewardYuan: 5_000, note: "市里的美食号开始写你", remark: "市里的美食号写你，笔头比我们评委管用。" },
+  { level: 7, title: "老友粉传人", feeYuan: CAPITAL.gradeFeeYuan[6], minCustomers: 3_000, rewardYuan: 8_000, note: "有人专程来问你的酸笋怎么发", remark: "酸笋发得干净，汤底有底子，这手艺该往下传。" },
+  { level: 8, title: "八桂名厨", feeYuan: CAPITAL.gradeFeeYuan[7], minCustomers: 3_400, rewardYuan: 12_000, note: "广西台来拍过一次", remark: "台里来拍过一次不算什么，你那口汤才是真东西。" },
+  { level: 9, title: "桂系食神", feeYuan: CAPITAL.gradeFeeYuan[8], minCustomers: 4_000, rewardYuan: 18_000, note: "同行拿你的汤底当参照", remark: "同行拿你的汤底当参照，这就不是生意了，是手艺。" },
+  { level: 10, title: "老友粉大王", feeYuan: CAPITAL.gradeFeeYuan[9], minCustomers: 5_000, rewardYuan: 30_000, note: "全区开分店，名字就是招牌", remark: "名字成了招牌，往后要守的是这个名字。" },
+  { level: 11, title: "广西老友粉非遗传承人", feeYuan: CAPITAL.gradeFeeYuan[10], minCustomers: 6_000, rewardYuan: 0, note: "37 个月跑完，账本翻到最后一页", remark: "这一锅，从巷口煮到了纸上。" },
 ];
 
 export const MAX_GRADE = GRADES.length;

@@ -119,18 +119,22 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     expect(CAPITAL.equipmentYuan[0]).toBeLessThan(top / 10); // 档间级差 ≥ 10 倍
   });
 
-  it("段位费合计 ≈ 三年营收的 1/3（钱必须真有去处）", () => {
+  it("段位费合计 ≈ 开罗的 8,330 碗量级（钱必须真有去处，但不能比客单高一个数量级）", () => {
     const fee = totalGradeFee();
-    expect(fee).toBe(333_000);
+    // 批次四：原来 ¥333,000 ≈ 33,300 碗，是开罗的 4 倍；改成 ¥82,600 ≈ 8,260 碗。
+    expect(fee).toBe(82_600);
+    expect(bowls(fee)).toBeGreaterThan(7_500);
+    expect(bowls(fee)).toBeLessThan(9_500);
+    // 三年营收 ¥756,000：段位费占一成上下 —— 是长线去处，不是第二份房租
     const threeYears = monthTargetFor(1) * 36;
-    expect(fee / threeYears).toBeGreaterThan(0.3);
-    expect(fee / threeYears).toBeLessThan(0.55);
+    expect(fee / threeYears).toBeGreaterThan(0.06);
+    expect(fee / threeYears).toBeLessThan(0.18);
   });
 
-  it("资本品总量与三年现金同阶（不是零头）", () => {
+  it("资本品总量比段位费贵，但不压死人（同一数量级）", () => {
     const cap = totalCapital();
-    expect(cap).toBeGreaterThan(totalGradeFee() / 2);
-    expect(cap).toBeLessThan(totalGradeFee() * 2);
+    expect(cap).toBeGreaterThan(totalGradeFee() * 1.5);
+    expect(cap).toBeLessThan(totalGradeFee() * 4);
   });
 
   it("月租是铺位固定值（2025 实测）：摊位 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600，每年 +3%", () => {

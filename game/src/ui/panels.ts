@@ -650,6 +650,7 @@ let lastGradeKey = "";
             ? `<div class="lrow">
                  <div class="lname">评「${gc.next.title}」<span class="tag2">评定费 ${money(gc.next.feeYuan)}</span></div>
                  <div class="lmeta">${gc.next.note}｜门槛 ${gc.next.minCustomers.toLocaleString("zh-CN")} 位客人（已接待 ${s.totalCustomers.toLocaleString("zh-CN")}）｜通过奖励 ${money(gc.next.rewardYuan)}</div>
+                 <div class="lmeta">评委：「${gc.next.remark}」</div>
                  <div class="lbtns"><button type="button" data-act="grade" ${gc.ready ? "" : "disabled"}>${gc.ready ? "交费评定" : gc.shortCustomers > 0 ? `还差 ${gc.shortCustomers.toLocaleString("zh-CN")} 位` : `还差 ¥${Math.ceil(gc.shortCash).toLocaleString("zh-CN")}`}</button></div>
                </div>`
             : `<div class="lrow"><div class="lname">已经是最高段位</div><div class="lmeta">非遗传承人 —— 账本翻到最后一页。</div></div>`

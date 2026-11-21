@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "checks": {
+    "panel_found": true,
+    "head_is_grade": true,
+    "fee_shown": true,
+    "remark_present": true,
+    "remark_is_text": true,
+    "level_starts_zero": true,
+    "btn_enabled": true,
+    "level_up": true,
+    "toast_has_remark": true,
+    "save_version": true,
+    "console_clean": true
+  },
+  "before": {
+    "found": true,
+    "head": "段位评定 · 现在第 0 段",
+    "metas": [
+      "街边支一口锅，先让人知道有你这家｜门槛 110 位客人（已接待 260）｜通过奖励 ¥500",
+      "评委：「锅气有点意思，就是还没个正经落脚的地方。」"
+    ],
+    "names": [
+      "评「摆摊仔」评定费 ¥500"
+    ],
+    "hasBtn": true,
+    "enabled": true,
+    "btnText": "交费评定",
+    "level": 0,
+    "cash": 60000
+  },
+  "after": {
+    "found": true,
+    "head": "段位评定 · 现在第 1 段",
+    "metas": [
+      "有两张桌子，坐得下四个人｜门槛 350 位客人（已接待 260）｜通过奖励 ¥800",
+      "评委：「桌子摆开了，看得出你打算做久。」"
+    ],
+    "names": [
+      "评「街边小店」评定费 ¥1,000"
+    ],
+    "hasBtn": true,
+    "enabled": false,
+    "btnText": "还差 90 位",
+    "level": 1,
+    "cash": 60000
+  },
+  "toasts": [
+    "评定通过：摆摊仔",
+    "评委：「锅气有点意思，就是还没个正经落脚的地方。」"
+  ],
+  "errors": []
+}

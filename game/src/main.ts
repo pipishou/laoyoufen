@@ -15,7 +15,7 @@ import { playSfx } from "./audio/sfx";
 import { EVENTS_BY_ID } from "./data/events";
 import { createGameConfig } from "./render/world";
 import { canEnter, enterContest } from "./sim/contest";
-import { applyGrade } from "./sim/grade";
+import { applyGrade, gradeOf } from "./sim/grade";
 import { districtOptions, moveShop } from "./sim/district";
 import { closeBranch, openBranch } from "./sim/branches";
 import { branchSizeById } from "./data/branches";
@@ -439,7 +439,23 @@ panels = mountPanels(hudRoot, {
   applyGrade() {
     const r = applyGrade(state);
     hud.showToast(r.reason, r.ok ? "like" : "info");
-    if (r.ok) playSfx("upgrade");
+    if (r.ok) {
+      playSfx("upgrade");
+      // 批次四：评委收笔时抬头说一句（牌子上那句是死的，人是活的）
+      const g = gradeOf(state.gradeLevel);
+      if (g) {
+        hud.showToast(`评委：「${g.remark}」`, "info");
+        void fetchLine({
+          kind: "grade_voice",
+          key: String(g.level),
+          context: { 段: g.title, 评: g.remark },
+          month: state.month,
+          day: state.day,
+        }).then((line) => {
+          if (line) hud.showToast(`评委说：「${line}」`, "info");
+        });
+      }
+    }
     refresh();
   },
   moveDistrict(id) {

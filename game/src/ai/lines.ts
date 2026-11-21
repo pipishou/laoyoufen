@@ -30,7 +30,8 @@ export type LineKind =
   | "guest_voice"
   | "guest_talk"
   | "tier_voice"
-  | "market_voice";
+  | "market_voice"
+  | "grade_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -321,6 +322,18 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "今天街上没什么人，倒是清静。",
     "这种天，还是你这里坐得住。",
     "街上人挤人，我绕了两条巷才过来。",
+  ],
+  /**
+   * 15. grade_voice   评委收笔时抬头说的那句（批次四 · 段位评定）
+   *
+   * 开罗 `grade_review` 十一级只有费用与门槛，评语只在牌子上写一行死字。
+   * 我们让评委当场开口：说的是这一碗做到什么份上，**不许提费用、段位数字与比赛**。
+   */
+  grade_voice: [
+    "这口汤有底子，不是靠调料堆出来的。",
+    "你这个火候，再练两年就更稳了。",
+    "牌子上我写的是实话，你自己心里也清楚。",
+    "手艺到了这一步，剩下的是守不守得住。",
   ],
 };
 
