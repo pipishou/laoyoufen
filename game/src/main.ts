@@ -3,6 +3,8 @@ import { fetchEventNarrative, localNarrative, localReaction } from "./ai/directo
 import { fetchLine, getLine, localLine, type LineAsk } from "./ai/lines";
 import { TOURNEY_BY_ID } from "./data/tourneys";
 import { FLAVOR_BY_ID } from "./data/flavor";
+import { tierById } from "./data/guest-tier";
+import { tierVoiceContext } from "./sim/guest-tier";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
@@ -704,6 +706,26 @@ function tickFeedback(): void {
   if (s.flow.lastSides) {
     hud.showToast(s.flow.lastSides, "like");
     s.flow.lastSides = null;
+  }
+
+  // 顾客等级（A8）：识食的挑了一次刺。本地先说「谁、为什么」，
+  // 在线句只补他嘴里那一句 —— 数字与判定都在本地。
+  if (s.flow.lastTier) {
+    const def = tierById(s.flow.lastTier);
+    s.flow.lastTier = null;
+    if (def && def.id === "picky") {
+      const ask = {
+        kind: "guest_voice" as const,
+        key: def.id,
+        context: tierVoiceContext(def),
+        month: s.month,
+        day: s.day,
+      };
+      hud.showToast(`识食的：「${localLine(ask)}」`, "info");
+      void fetchLine(ask).then((line) => {
+        if (line) hud.showToast(`识食的：「${line}」`, "info");
+      });
+    }
   }
 
   // 人情（M3b）：吃到底 / 回礼 / 转手 / 比赛名次攒到点数时报一句

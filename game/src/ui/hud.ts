@@ -7,6 +7,8 @@ import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/
 import { queueMaxOf } from "../sim/unlocks";
 import { favorOf } from "../sim/favor";
 import { hookVoiceContext, nextHook } from "../sim/hook";
+import { tierBudgetPct } from "../sim/guest-tier";
+import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
 import { getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
@@ -524,7 +526,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       : `热卖槽 ${Math.round(s.frenzy.gauge)}%（有人排队且满意才涨）`;
     el.frenzybar.style.width = live ? "100%" : `${Math.round(s.frenzy.gauge)}%`;
     el.frenzy.className = `frenzy${live ? " live" : ""}`;
-    const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}`).join("|");
+    const custKey = s.flow.customers.map((c) => `${c.id}${c.status[0]}${c.elapsed}${c.regular ? "R" : ""}${c.tier ?? ""}`).join("|");
     if (custKey !== lastCustKey) {
       lastCustKey = custKey;
       // 顾客行带「钱包」：定价是否偏高必须让玩家看得见，否则涨价像白捡钱
@@ -534,14 +536,17 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
         const name = arch?.name ?? "顾客";
         const tag = c.status === "eating" ? "吃" : "等";
         const note = arch?.note ?? "";
-        const wallet = arch ? Math.round(arch.budget * tol) : 0;
+        // 顾客等级（A8）：钱包这一行必须是**这一档**的钱包，不然「识食的」看着跟路过的
+        const tierDef = tierById(c.tier);
+        const wallet = arch ? Math.round(arch.budget * tol * tierBudgetPct(tierDef)) : 0;
         const short = arch ? wallet < s.price : false;
         return (
-          `<div class="cust${short ? " short" : ""}">` +
+          `<div class="cust t-${tierDef.id}${short ? " short" : ""}" title="${tierDef.note}">` +
           `<span class="tag ${c.status}${c.regular ? " reg" : ""}">${c.regular ? "常" : tag}</span>` +
           `<span class="cn">${name}</span>` +
           `<span class="cw" title="这一位愿意出到多少钱（含味道带来的溢价）">¥${wallet}</span>` +
           `<span class="cd">${short ? "嫌贵" : note}</span>` +
+          `<span class="ct">${tierDef.word}</span>` +
           `</div>`
         );
       });

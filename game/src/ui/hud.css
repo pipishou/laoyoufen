@@ -2167,3 +2167,18 @@ button.pill[disabled] {
 .nrow:last-child{border-bottom:0}
 .nrow .ndate{flex:0 0 auto;color:var(--wood);font-variant-numeric:tabular-nums}
 .nrow .ntext{flex:1 1 auto;color:var(--ink2)}
+
+/* 顾客等级（A8）：路过的 / 街坊 / 识食的，一条左色条 + 一枚小字。
+   色只用 12 色板里已有的三个：sand（灰扑扑）、ink2（街坊）、gold（识食的）。 */
+.cust .ct {
+  flex: 0 0 auto;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 12px;
+  color: var(--wood);
+  border: 1px solid var(--sand);
+}
+.cust.t-passer .ct { color: var(--wood); border-color: var(--sand); opacity: .8; }
+.cust.t-picky .ct { color: var(--ink); border-color: var(--gold); background: var(--paper2); }
+.cust.t-picky { box-shadow: inset 2px 0 0 0 var(--gold); }
+.cust.t-passer { box-shadow: inset 2px 0 0 0 var(--sand); }

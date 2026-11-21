@@ -277,3 +277,19 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 | P127 | 报纸没有 AI 口吻，同一天同一档永远是同一句 | `sim/news.ts` | AI 落点 `news_headline` 留到下一批，先别半成品 |
 | P128 | 报纸只写街上的事，不写客人 | `data/news.ts` | 开罗会用客人视角写一句，我们 24 类顾客没有名字 |
 | P129 | 打烊单与报纸不联动 | `ui/hud.ts` / `sim/news.ts` | 打烊单说「明天加灶」，报纸可能在写「同行关门」，两句话不呼应 |
+
+## 行 71 · A8 顾客等级 · 2026-11-21（D8 / HIGH）
+
+开罗 `customer.txt` 90 类带 level。我们没有加 66 张脸，改成**同一批人分三种关系**：`passer` 路过的（钱包×0.85、耐心×0.85、口碑权重×0.7）、`neighbor` 街坊（全 1.0）、`picky` 识食的（钱包×1.35、耐心×1.2、口碑权重×1.5，分 < 68 时扣 0.28×差距、上限 18）。常客一律街坊。抽档概率随口碑与段位走：口碑 4.2 / 段 4 时识食约 30%、街坊 55%、路过 15% —— 名声越好，专门来吃的人越多，也越挑。
+
+接线：`data/guest-tier.ts`（表）、`sim/guest-tier.ts`（抽档与四个乘数）、`sim/state.ts`（`QueueCustomer.tier?` / `flow.lastTier`）、`sim/customer.ts`（arriveOne 乘钱包耐心、settle 挑刺与口碑权重）、`ui/hud.ts`（队列行 `t-*` 与小字、钱包按这一档算）、`ui/hud.css`（沙/墨/金左色条）、`ai/lines.ts` 第 11 落点 `guest_voice` 六句、`server/app.py` 场景、`main.ts` 消费 `lastTier`。
+
+验收：tsc 0；vitest **51 文件 586 用例**（新增 `guest-tier.test.ts` 10 例）；copy_gate 0；eye_gate `--slug a8` 五视口 726·765·582·1228·1379 色 stamp 126；ai_gate `ok: true` 三阶段；build `index-Cb8w6-NU.js` 1,524,894 B / `index-jUp5ibZs.css` 43,132 B。
+
+## 缺口（A8 新增）
+
+| 编号 | 问题 | 位置 | 说明 |
+| --- | --- | --- | --- |
+| P130 | 三档不影响他点什么 | `sim/customer.ts` | 识食的应该更爱点贵料（牛肉、猪杂），现在只是钱包更大 |
+| P131 | 场上只有色条与小字，没有「他常来」的脸 | `ui/hud.ts` | 与 P122（方子没画面）同形，等 A12 长对白一起做 |
+| P132 | 没有探针断言队列行的 `t-*` 类 | `tools/gate/` | 逻辑有 10 例测试，DOM 只有 eye_gate 的色数兜底 |

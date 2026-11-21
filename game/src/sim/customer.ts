@@ -28,6 +28,8 @@ import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavo
 import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
 import { bowlCostFactor, bowlPatienceMult, bowlSatBonus, bowlServeFactor } from "./bowl";
 import { masterServeFactor } from "./master";
+import { rollTier, tierBudgetPct, tierPatiencePct, tierRepWeight, tierSatPenalty } from "./guest-tier";
+import { tierById } from "../data/guest-tier";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
@@ -288,6 +290,11 @@ function arriveOne(state: GameState): void {
       );
   if (!arch) return;
   /**
+   * 顾客等级（A8）：钱包、耐心、口碑权重、挑剔扣分四个出口。
+   * 常客直接给「街坊」—— 老客不是抽中的，是他自己回来的。
+   */
+  const tier = rollTier(state, nextFloat(state.rng), regularId !== null);
+  /**
    * 到售卖机前挑券（开罗 `Staff 3`：After a customer buys a ticket…）。
    *
    * 多款同时上菜单（P47）之后，「吃不吃得起」不再是一句话，而是**按款判**：
@@ -296,7 +303,7 @@ function arriveOne(state: GameState): void {
    *
    * 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
    */
-  const wallet = arch.budget * frenzyBudgetBoost(state);
+  const wallet = arch.budget * frenzyBudgetBoost(state) * tierBudgetPct(tier);
   const dish = pickDish(state, wallet, nextFloat(state.rng));
   if (!dish) {
     flow.lostToday += 1;
@@ -319,6 +326,7 @@ function arriveOne(state: GameState): void {
     pairPatienceMult(dish.recipe.toppings) *
     bowlPatienceMult(state) *
     (regular ? 1.6 : 1) *
+    tierPatiencePct(tier) *
     FLOW.patienceScale;
   flow.customers.push({
     id: flow.nextId++,
@@ -331,6 +339,7 @@ function arriveOne(state: GameState): void {
     satisfaction: -1,
     regular,
     survey: 0,
+    tier: tier.id,
   });
 }
 
@@ -502,7 +511,15 @@ function settle(state: GameState, c: QueueCustomer): void {
   // 评价逐碗微调。原来还额外「sat < 35 就 −0.05」，逐碗结算时那是一台绞肉机：
   // 街边摊开局 2 座、客流 160/日，一上午就掉到 0.0，而且再没有回升的斜率（I-17）。
   // 下限留 0.5：名不见经传，但不是「已经被街坊拉黑」。
-  state.reputation = clamp(state.reputation + (sat - 55) / 800, 0.5, 5);
+  // 顾客等级（A8）：识食的吃到不满意的会当场减分（只减满意度，口碑那一层由权重管）
+  const tierDef = tierById(c.tier);
+  const tierPenalty = tierSatPenalty(tierDef, sc.total);
+  if (tierPenalty > 0) {
+    sat = Math.max(0, sat - tierPenalty);
+    state.flow.lastTier = tierDef.id;
+  }
+  // 口碑权重：识食的一句抵一句半，路过的只算七成
+  state.reputation = clamp(state.reputation + ((sat - 55) / 800) * tierRepWeight(tierDef), 0.5, 5);
 
   const likeHits = arch ? likeHitsOf(item.recipe, arch.prefs) : [];
   // 命中喜好 → 记进常客档案（开罗 AddRegularCount）；「问出口味」在顾客还在店里时由 surveyTick 完成

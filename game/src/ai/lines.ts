@@ -26,7 +26,8 @@ export type LineKind =
   | "tourney_open"
   | "flavor_voice"
   | "style_voice"
-  | "bowl_voice";
+  | "bowl_voice"
+  | "guest_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -204,6 +205,18 @@ const LOCAL: Record<LineKind, readonly string[]> = {
    * 瓦煲、打包碗，客人真正说出口的话也不一样。只出文字：不提加成的百分数，
    * 也不提价钱（那些本地面板已经写清楚了）。
    */
+  /**
+   * 顾客等级（A8）：识食的那位当场挑刺，说的就是这一句。
+   * 三句各对应一种毛病，都不带数量 —— 数字归本地规则。
+   */
+  guest_voice: [
+    "汤头薄了点，今天是不是赶时间了？",
+    "酸笋下少了，老友味出唔来。",
+    "粉煮过气了，一夹就断。",
+    "火候差一口气，闻着香，吃着寡。",
+    "唔系话你，不过这碗同上次差远了。",
+    "街坊生意我撑你，但你要自己食一碗试试。",
+  ],
   bowl_voice: [
     "这种碗看着就干净，食得放心。",
     "碗够大，汤才装得下，嗦得过瘾。",

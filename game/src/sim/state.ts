@@ -117,6 +117,11 @@ export interface QueueCustomer {
   /** 常客标记：老客回访，耐心更高、满意度加成 */
   regular: boolean;
   /**
+   * 顾客等级（A8）：passer 路过的 / neighbor 街坊 / picky 识食的。
+   * 可选字段 —— 老档里的顾客没有这一格，读回来当街坊处理。
+   */
+  tier?: string;
+  /**
    * 口味问询进度 0-100，满一格揭示该原型下一维未知偏好。
    * 对应开罗 data.Customer.likeFound_ / AddLikeFound / GetLikeFoundRatio：
    * 偏好是店员问出来的，不是顾客吃完自己告诉你的。
@@ -160,6 +165,8 @@ export interface CustomerFlow {
   lastSides: string | null;
   /** 第一次凑成某条味道组合（B1）的 id，main.ts 消费成 toast + AI 一句话 */
   lastFlavor: string | null;
+  /** 最近一位「识食的」当场挑刺（A8）：settle 写、main 消费弹一句 */
+  lastTier: string | null;
   /** 上次报加料组合的绝对分钟（节流用，免得每碗都弹） */
   sideToastAt: number;
 }
@@ -708,6 +715,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastStreet: null,
       lastSides: null,
       lastFlavor: null,
+      lastTier: null,
       sideToastAt: -9999,
       satSumToday: 0,
       satCountToday: 0,
