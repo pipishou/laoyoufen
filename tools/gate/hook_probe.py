@@ -24,16 +24,15 @@ URL = "http://127.0.0.1:4194/"
 OUT = pathlib.Path("game/data/evidence/f1")
 OUT.mkdir(parents=True, exist_ok=True)
 
-# 「加灶扩座」那一档的本地池（见 game/src/ai/lines.ts 的 HOOK_VOICE.capacity）。
-# 探针要能分辨「副行说的是不是主句那件事」，只能把这六句抄一份当标尺 ——
+# 「卡在灶上」那一档的本地池（见 game/src/ai/lines.ts 的 HOOK_VOICE["capacity:stove"]）。
+# 探针要能分辨「副行说的是不是主句那件事」，只能把这几句抄一份当标尺 ——
 # 改文案时记得同步这里，否则 voice_matches_kind 会红。
+# 三轮试玩 ②：主句点灶、副行说「桌椅不够」是上一版最大的毛病，所以这里只认灶那四句。
 CAPACITY_VOICE = {
-    "灶台不趁手，再好的手也伸不开。",
-    "人多起来是好事，接不住就成了坏事。",
-    "客人站在门口等，等久了就不来了。",
-    "锅烧不热，粉就出得慢；出得慢，人就走了。",
-    "桌椅不够，生意越好越亏心。",
-    "先把能接的接住，再想别的。",
+    "火不旺，手再快也是白站。",
+    "火眼通利了，粉才出得快。",
+    "锅底那点火，最耽误人。",
+    "灶是店的心口，心口不畅，什么都慢。",
 }
 
 
@@ -142,10 +141,12 @@ def main() -> int:
         step2 = page.evaluate(
             """() => {
                 const main = document.querySelector('[data-hook-main]');
+                const why = document.querySelector('[data-hook-why]');
                 const line = document.querySelector('[data-hook-line]');
                 const hook = document.querySelector('[data-day-hook]');
                 return {
                     main: main ? main.textContent : null,
+                    why: why ? why.textContent : null,
                     line: line ? line.textContent : null,
                     hidden: hook ? hook.hidden : null,
                     bad: hook ? hook.classList.contains('bad') : null,
@@ -157,9 +158,13 @@ def main() -> int:
         report["steps"].append(step2)
 
         text = (step2.get("main") or "") + (step2.get("line") or "")
-        expect_expansion = "打通隔墙" in text
+        # 试玩 11-20 第 ②③ 条：两口座 + 一口灶时，最划算的是灶（¥1,500，一天多十碗），
+        # 不是一万二的隔墙 —— 扩座在灶还慢的时候一点用都没有（见 sim/bottleneck.ts）。
+        expect_stove = "猛火灶" in text
+        no_wall = "打通隔墙" not in text
         no_cost_item = "粉篓" not in text
         no_tomorrow_in_body = "明天" not in (step2.get("main") or "")
+        why_says_lost = "走了 60 位" in (step2.get("why") or "")
 
         page.evaluate(
             """() => {
@@ -178,7 +183,9 @@ def main() -> int:
             "efficiency_tags": step1.get("effTags") == 6,
             "badge_text": bool(step1["hasBadge"]),
             "hook_is_capacity": step2.get("kind") == "capacity",
-            "hook_names_expansion": expect_expansion,
+            "hook_names_stove": expect_stove,
+            "hook_skips_wall": no_wall,
+            "hook_why_shows_lost": why_says_lost,
             "hook_skips_cost_item": no_cost_item,
             "no_tomorrow_in_body": no_tomorrow_in_body,
             "hook_visible": step2.get("hidden") is False,

@@ -161,7 +161,7 @@ describe("产能优先（P70）", () => {
     const plan = nextHook(s);
     expect(plan.kind).toBe("capacity");
     expect(plan.urgency).toBe("high");
-    expect(plan.text).toContain("今天走了 60 位");
+    expect(plan.why ?? "").toContain("今天走了 60 位");
     expect(plan.text).toMatch(/¥/);
   });
 
@@ -241,14 +241,14 @@ describe("次日仍然算得清流失（试玩二轮 F1）", () => {
     const plan = nextHook(s);
     expect(plan.kind).toBe("capacity");
     expect(plan.urgency).toBe("high");
-    expect(plan.text).toContain("昨天走了 60 位");
+    expect(plan.why ?? "").toContain("昨天走了 60 位");
   });
 
   it("打烊当时仍然写「今天」（快照还在）", () => {
     const s = fresh();
     s.cash = 200_000;
     report(s, 60, 40);
-    expect(nextHook(s).text).toContain("今天走了 60 位");
+    expect(nextHook(s).why ?? "").toContain("今天走了 60 位");
   });
 
   it("营业头几分钟样本太少时接着用昨天的比例，不被两三个人带偏", () => {
@@ -268,15 +268,27 @@ describe("次日仍然算得清流失（试玩二轮 F1）", () => {
   });
 });
 
-describe("产能件要真能接客（试玩二轮 F2）", () => {
-  it("座位紧时先推能加座的扩建", () => {
+describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () => {
+  it("座位紧但灶更慢时，先推便宜一倍效能的灶而不是一万二的隔墙", () => {
     const s = fresh();
     s.cash = 200_000;
     s.venue.seats = 2;
     report(s, 60, 40);
     const plan = nextHook(s);
     expect(plan.kind).toBe("capacity");
-    expect(plan.text).toContain("打通隔墙");
+    // 2 座 + 一口灶（2.0 分/碗）= 一天 60 碗，扩到 4 座也还是 60 碗 → 扩座这时候没用
+    expect(plan.text).toContain("猛火灶");
+    expect(plan.text).not.toContain("打通隔墙");
+  });
+
+  it("灶已经到顶、只剩扩建能提上限时，推能加座的扩建", () => {
+    const s = fresh();
+    s.cash = 200_000;
+    s.venue.seats = 2;
+    s.equipment.stove = 4; // 灶满档，设备侧没有可买的了
+    s.equipment.bench = 4;
+    report(s, 60, 40);
+    expect(nextHook(s).text).toContain("打通隔墙");
   });
 
   it("粉篓（只省钱）永远不参与产能推荐", () => {

@@ -32,7 +32,7 @@ export const EQUIPMENT: readonly EquipDef[] = [
     name: "猛火灶",
     desc: "双环猛火，一锅水翻得起来，出碗快",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["出碗 5.1 分/碗", "出碗 4.3 分/碗", "出碗 3.6 分/碗", "出碗 3.1 分/碗"],
+    effects: ["出碗快 15%", "出碗快 28%", "出碗快 39%", "出碗快 48%"],
   },
   {
     id: "strainer",

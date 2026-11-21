@@ -810,7 +810,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         <div class="lbtns"><button type="button" data-act="buy" data-id="${u.id}" ${maxed ? "disabled" : ""}>${maxed ? "已满级" : money(cost)}</button></div>
       </div>`;
     }).join("");
-    return `<div class="sec">
+    return `${gc.ready ? gradeSec : ""}<div class="sec">
         <div class="sechd${hot}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
         ${expRow}
@@ -855,7 +855,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         ${ups}
       </div>
       ${sidesSec}
-      ${gradeSec}
+      ${gc.ready ? "" : gradeSec}
       ${craftSec}
       ${streetSec}
       ${blockSec}

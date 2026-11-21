@@ -12,6 +12,7 @@
  * 2. **只挑一件**，按「离达成最近」排序 —— 一天给五个目标等于没有目标。
  * 3. **产能优先于段位**：当天流失超过 45% 时，段位评了也接不住客，
  *    先把「灶台 / 座位 / 案台」摆到第一位（P70 的病灶就在这里）。
+ *    挑哪一件不看「哪个最紧」，看**每一块钱能把当天上限抬高多少**（见 `sim/bottleneck.ts`）。
  * 4. **产能件要真能接客**：粉篓与汤勺降的是单碗成本（一碗省 ¥0.14），对「一天最多出多少碗」
  *    没有任何帮助，所以不参与产能推荐（二轮试玩 F2：四个玩家都被指去买了粉篓，流失一点没降）。
  * 5. **时间前缀只在一处说**：「明天」由 CSS 的 `::before` 加，正文本里不许再出现一次
@@ -26,6 +27,7 @@ import { streetViews } from "./streets";
 import { EQUIPMENT, MAX_EQUIP_LEVEL, type EquipId } from "../data/equipment";
 import { equipLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
+import { capacityGain } from "./bottleneck";
 
 /** 元 → 「¥4,000」（sim 层不 import UI 的格式化函数，避免依赖方向倒过来） */
 const yuan = (n: number): string => `¥${n.toLocaleString("zh-CN")}`;
@@ -48,14 +50,16 @@ export const CAPACITY_LOST_RATE = 0.45;
  */
 const MIN_SAMPLE = 5;
 
-/** 座位少于这个数，就认为「坐不下」是第一瓶颈，优先推荐能加座的扩建 */
-const SEAT_TIGHT = 4;
-
 export type HookKind = "capacity" | "grade" | "gear" | "street" | "arena" | "none";
 
 export interface HookPlan {
   /** 打烊单上那一行字（含本地算出的数字） */
   text: string;
+  /**
+   * 「为什么是这件事」—— 单独一行的小字（如「今天走了 60 位」）。
+   * 不并进 `text` 是因为一句里塞两件事会被挤到换行，玩家读到的是半句。
+   */
+  why?: string;
   kind: HookKind;
   /** 给 AI 那条口吻用的稳定键：只用名词 + 种类，不含数字 */
   key: string;
@@ -134,7 +138,8 @@ const EQUIP_KIND: Record<EquipId, CapKind> = {
 
 /** 一件「真能把人接住」的东西：能加座的扩建，或设备里的出碗/上限件 */
 function capacityPick(state: GameState): CapPick | null {
-  const picks: CapPick[] = [];
+  const gain = capacityGain(state);
+  const picks: (CapPick & { gain: number })[] = [];
 
   for (const eq of EQUIPMENT) {
     const lv = equipLevel(state, eq.id);
@@ -143,27 +148,33 @@ function capacityPick(state: GameState): CapPick | null {
         what: `${eq.name}（第 ${lv + 1} 档）`,
         cost: equipNextCost(state, eq.id),
         kind: EQUIP_KIND[eq.id],
+        gain: eq.id === "stove" ? gain.stove : eq.id === "bench" ? gain.bench : 0,
       });
     }
   }
 
   const ex = nextExpansion(state);
   if (ex && !expansionLockReason(state)) {
-    picks.push({ what: ex.name, cost: expansionNextCost(state), kind: ex.seats > 0 ? "seat" : "speed" });
+    picks.push({
+      what: ex.name,
+      cost: expansionNextCost(state),
+      kind: ex.seats > 0 ? "seat" : "speed",
+      gain: ex.seats > 0 ? gain.seat(ex.seats) : gain.stove,
+    });
   }
 
-  // 先排掉「只省钱」的那类 —— 省钱救不了排队
-  const helpful = picks.filter((p) => p.kind !== "cost");
-  const pool = helpful.length > 0 ? helpful : picks;
-  if (pool.length === 0) return null;
+  if (picks.length === 0) return null;
 
-  // 座位紧张时，能加座的那一项优先于任何设备档位
-  if (state.venue.seats <= SEAT_TIGHT) {
-    const seat = pool.filter((p) => p.kind === "seat").sort((a, b) => a.cost - b.cost)[0];
-    if (seat) return seat;
-  }
+  // 省钱件救不了排队；但只要有一件真能接客，就不提它
+  const helpful = picks.filter((p) => p.kind !== "cost" && p.gain > 0.05);
+  const pool = helpful.length > 0 ? helpful : picks.filter((p) => p.kind !== "cost");
+  if (pool.length === 0) return picks.sort((a, b) => a.cost - b.cost)[0] ?? null;
 
-  return pool.sort((a, b) => a.cost - b.cost)[0] ?? null;
+  // 按「每一块钱能把当天上限抬高多少碗」排序（见 sim/bottleneck.ts 的文件头）：
+  // 同样的钱，灶比扩座划算一倍 —— 试玩 11-20 的 D1–D2 就是主句点了扩座那个坑。
+  const perYuan = (p: CapPick & { gain: number }): number => p.gain / Math.max(1, p.cost);
+  const sorted = pool.slice().sort((a, b) => perYuan(b) - perYuan(a));
+  return sorted.find((p) => state.cash >= p.cost) ?? sorted[0]!;
 }
 
 /** 明天的期待：文字 + 种类 + 口吻键；没有就给 kind "none" */
@@ -175,11 +186,15 @@ export function nextHook(state: GameState): HookPlan {
     if (pick) {
       const head = state.cash >= pick.cost ? `先把「${pick.what}」加上` : `卖了钱先添「${pick.what}」`;
       const dayWord = sample.live ? "今天" : "昨天";
-      const tail = sample.lost > 0 ? ` —— ${dayWord}走了 ${sample.lost} 位` : "";
+      // 「今天走了 N 位」单独一行：主句只留该做的事，
+      // 一句里塞两个信息会被挤到换行（试玩 11-20 第 ① 条）
       return {
-        text: `${head}（${yuan(pick.cost)}）${tail}`,
+        text: `${head}（${yuan(pick.cost)}）`,
+        why: sample.lost > 0 ? `${dayWord}走了 ${sample.lost} 位` : "",
         kind: "capacity",
-        key: "capacity",
+        // 细分到「卡在哪一环」：给副行选池用（试玩 11-20 第 ②：主句说灶、副行说桌椅，
+        // 玩家不知道跟哪句）。`kind` 仍是 capacity，只影响口吻，不影响机制。
+        key: pick.kind === "seat" ? "capacity:seat" : pick.kind === "cap" ? "capacity:cap" : "capacity:stove",
         urgency: "high",
       };
     }
@@ -255,8 +270,11 @@ export function hookVoiceKey(plan: HookPlan): string {
  * 用「灶台与座位」这类店里能看见的东西，避免把「段位」「口碑」这类机制词递过去
  * （服务端 `MECH_WORD` 会拦，但拦在源头更省一次请求）。
  */
-const VOICE_HINT: Record<HookKind, string> = {
+const VOICE_HINT: Record<string, string> = {
   capacity: "灶台与座位",
+  "capacity:stove": "那口灶",
+  "capacity:seat": "店里的桌子",
+  "capacity:cap": "案台上的备料",
   grade: "门口的招牌",
   gear: "店里的旧家当",
   street: "街上的事",
@@ -265,8 +283,10 @@ const VOICE_HINT: Record<HookKind, string> = {
 };
 
 export function hookVoiceContext(plan: HookPlan): Record<string, string> {
-  const hint = VOICE_HINT[plan.kind];
+  // 先按细分键找（capacity:stove / capacity:seat / capacity:cap），找不到再退回大类
+  const hint = VOICE_HINT[plan.key] ?? VOICE_HINT[plan.kind];
   // `类型` 只给本地选句用（见 ai/lines.ts 的 HOOK_VOICE），发请求前会被剔掉：
-  // 试玩二轮 F5 —— 副行原来六个档位共用一个池，常常「主句说加灶、副行说街上的事」。
-  return hint ? { 类型: plan.kind, 事: hint } : {};
+  // 试玩二轮 F5 —— 副行原来六个档位共用一个池，常常「主句说加灶、副行说街上的事」；
+  // 试玩三轮 ② —— 主句点了灶，副行还说「桌椅不够」，就是因为 capacity 这一档没再细分。
+  return hint ? { 类型: plan.kind === "capacity" ? plan.key : plan.kind, 事: hint } : {};
 }

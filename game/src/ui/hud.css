@@ -706,6 +706,13 @@ button.pill[disabled] {
 .caprow.chips .chip.flow { color: var(--blue); }
 .caprow.chips .chip.favor { color: var(--green); }
 .caprow.chips .chip.grade { color: var(--ink2); }
+/* 够格评段位：这一枚直接变成入口提示（试玩 11-20：三个人都被指着去评却找不到按钮） */
+.caprow.chips .chip.grade.hot {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--paper);
+  font-weight: 700;
+}
 
 /* ---------- 底栏 ---------- */
 #bottombar {
@@ -1771,7 +1778,9 @@ button.pill[disabled] {
   border-left: 3px solid var(--gold);
 }
 .dayhook::before {
-  content: "明天 · ";
+  /* 不再写「明天」：下面的金色大按钮已经写了「明天继续 ›」，
+     两个明天叠在一起会抢点击（试玩 11-20 第 ① 条） */
+  content: "下一步 · ";
   color: var(--wood);
 }
 
@@ -1781,11 +1790,21 @@ button.pill[disabled] {
   border-left-color: var(--red);
 }
 .dayhook.bad::before {
-  content: "明天最要紧 · ";
+  content: "最要紧 · ";
   color: var(--red);
 }
 .dayhook .hookmain {
   display: block;
+}
+/* 「为什么是这件事」：单独一行小字，跟着主句读也顺，不把主句挤断（试玩 11-20 第 ① 条） */
+.dayhook .hookwhy {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--red);
+}
+.dayhook .hookwhy:empty {
+  display: none;
 }
 .dayhook .hookline {
   display: block;

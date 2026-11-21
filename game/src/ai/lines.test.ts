@@ -161,7 +161,17 @@ describe("一句话的数字红线（含中文数量词）", () => {
  * 于是出现「主句说加灶、副行说街上的事」——副行是在解释主句，说的得是同一件事。
  */
 describe("打烊单副行按用途分池", () => {
-  const HOOK_KINDS = ["capacity", "grade", "gear", "street", "arena", "none"];
+  const HOOK_KINDS = [
+    "capacity",
+    "capacity:stove",
+    "capacity:seat",
+    "capacity:cap",
+    "grade",
+    "gear",
+    "street",
+    "arena",
+    "none",
+  ];
   const withKind = (kind: string, day: number) => ({
     kind: "hook_voice" as const,
     key: "k",
@@ -170,7 +180,7 @@ describe("打烊单副行按用途分池", () => {
     day,
   });
 
-  it("六档合起来 26 句，且每句都过数字红线", () => {
+  it("九档合起来 34 句，且每句都过数字红线", () => {
     const all = new Set<string>();
     for (const k of HOOK_KINDS) {
       for (let d = 1; d <= 30; d++) {
@@ -179,7 +189,7 @@ describe("打烊单副行按用途分池", () => {
         all.add(line);
       }
     }
-    expect(all.size).toBe(26);
+    expect(all.size).toBe(34);
   });
 
   it("加灶与街面两池没有交集", () => {

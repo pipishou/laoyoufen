@@ -14,8 +14,9 @@
       "step": "next_morning_red_mark"
     },
     {
-      "main": "先把「打通隔墙，多摆两张桌」加上（¥12,000） —— 今天走了 60 位",
-      "line": "桌椅不够，生意越好越亏心。",
+      "main": "先把「猛火灶（第 1 档）」加上（¥1,500）",
+      "why": "今天走了 60 位",
+      "line": "灶是店的心口，心口不畅，什么都慢。",
       "hidden": false,
       "bad": true,
       "kind": "capacity",
@@ -29,12 +30,14 @@
     "efficiency_tags": true,
     "badge_text": true,
     "hook_is_capacity": true,
-    "hook_names_expansion": true,
+    "hook_names_stove": true,
+    "hook_skips_wall": true,
+    "hook_why_shows_lost": true,
     "hook_skips_cost_item": true,
     "no_tomorrow_in_body": true,
     "hook_visible": true,
     "hook_marked_bad": true,
     "voice_matches_kind": true
   },
-  "saveVersion": 25
+  "saveVersion": 28
 }

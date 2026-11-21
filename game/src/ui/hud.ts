@@ -7,6 +7,7 @@ import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/
 import { queueMaxOf } from "../sim/unlocks";
 import { favorOf } from "../sim/favor";
 import { hookVoiceContext, nextHook } from "../sim/hook";
+import { checkGrade } from "../sim/grade";
 import { getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
@@ -244,7 +245,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
         <div class="dcell"><span class="dk">平均满意</span><span class="dv" data-day-sat>--</span></div>
       </div>
       <div class="daynote" data-day-note></div>
-      <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookline" data-hook-line></span></div>
+      <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -262,6 +263,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const dayNote = dayWrap.querySelector("[data-day-note]") as HTMLElement;
   const dayHook = dayWrap.querySelector("[data-day-hook]") as HTMLElement;
   const hookMain = dayWrap.querySelector("[data-hook-main]") as HTMLElement;
+  const hookWhy = dayWrap.querySelector("[data-hook-why]") as HTMLElement;
   const hookLine = dayWrap.querySelector("[data-hook-line]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
@@ -433,6 +435,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       // 「明天做点什么」：一笔账不看目标就只是数字（P69）；产能跟不上时它排第一（P70）
       const plan = nextHook(s);
       hookMain.textContent = plan.text;
+      hookWhy.textContent = plan.why ?? "";
       dayHook.hidden = plan.text === "";
       dayHook.classList.toggle("bad", plan.urgency === "high");
       dayHook.dataset.hookKind = plan.kind;
@@ -497,13 +500,20 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     // 开罗 Sales Areas：本区越做越腻、别区越长肉。这几枚小牌就是「什么时候搬家／什么时候报比赛」的提示。
     const pool = demandCapOf(s);
     const contest = isContestMonth(s.month) ? "本月比赛" : `比赛 ${monthsToContest(s.month)} 个月后`;
+    // 够格评段位时，这一枚直接写成「可评定」：评段位的按钮在店铺页最上面，
+    // 但玩家不会为了找一个按钮把整页滚一遍（试玩 11-20：三个人都被钩子指着去评，
+    // 都说找不到入口 —— 那个按钮其实在加购段下面，滚两屏才到）。
+    const gc = checkGrade(s);
+    const gradeChip = gc.ready
+      ? `<span class="chip grade hot" title="够格了：去「店铺」页最上面交费评定">${icon("flag")}可评定「${gc.next?.title ?? ""}」</span>`
+      : `<span class="chip grade">${icon("flag")}${contest}</span>`;
     // 五枚胶囊，各带一枚像素图标：数字靠 tabular-nums 对齐，扫一眼就能读出今天的产能与压力
     el.caprow.innerHTML = [
       `<span class="chip people">${icon("people")}座位 ${s.venue.seats} · ${serveNow.toFixed(1)} 分/碗</span>`,
       `<span class="chip bowl">${icon("bowl")}日上限 ${s.capacity} 碗</span>`,
       `<span class="chip flow">${icon("street")}客流 ${pool}/日</span>`,
       `<span class="chip favor">${icon("heart")}人情 ${favorOf(s)}</span>`,
-      `<span class="chip grade">${icon("flag")}${contest}</span>`,
+      gradeChip,
     ].join("");
     // 热卖槽（开罗 Ramen Frenzy）：排队 + 吃得满意 → 槽涨；满了 30 分钟来客翻倍。
     // 放在 HUD 上是因为它是**可主动经营的**：想攒满就得留一点排队、又不能把满意度压下去。
