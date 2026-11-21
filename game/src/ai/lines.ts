@@ -27,7 +27,8 @@ export type LineKind =
   | "flavor_voice"
   | "style_voice"
   | "bowl_voice"
-  | "guest_voice";
+  | "guest_voice"
+  | "guest_talk";
 
 export interface LineAsk {
   kind: LineKind;
@@ -209,6 +210,15 @@ const LOCAL: Record<LineKind, readonly string[]> = {
    * 顾客等级（A8）：识食的那位当场挑刺，说的就是这一句。
    * 三句各对应一种毛病，都不带数量 —— 数字归本地规则。
    */
+  /**
+   * 客人长对白（A12）：点开他听到的那一句。比 guest_voice 长，像街坊聊天。
+   */
+  guest_talk: [
+    "我唔系赶时间，就是行过闻到味，脚就停低咗。",
+    "呢条街变化好大，就你家锅气仲系老样子。",
+    "做粉辛苦啊，天未光就要起身备料。",
+    "我细个嗰阵，阿爸带我来食粉，就系呢个味。",
+  ],
   guest_voice: [
     "汤头薄了点，今天是不是赶时间了？",
     "酸笋下少了，老友味出唔来。",

@@ -2229,3 +2229,11 @@ button.pill[disabled] {
 .mcell.br { background: var(--cream); color: var(--ink2); }
 .mcell.br .mbr { color: var(--green); }
 .mcell.hot { box-shadow: inset 0 0 0 1px var(--red); }
+
+/* A12：排队里的客人可以点，点一下他说一句。
+   #hud 整体 pointer-events:none（只有顶栏/托盘/底栏接事件），
+   所以这一块必须自己把事件接回来，否则鼠标点下去被画布吃掉。 */
+.custlist { pointer-events: auto; }
+.custlist .cust[data-uid] { cursor: pointer; }
+.custlist .cust[data-uid]:hover { background: var(--paper2); }
+.custlist .cust[data-uid]:active { transform: translateY(1px); }

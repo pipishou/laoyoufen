@@ -10,7 +10,8 @@ import { hookVoiceContext, nextHook } from "../sim/hook";
 import { tierBudgetPct } from "../sim/guest-tier";
 import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
-import { getLine, localLine } from "../ai/lines";
+import { talkFor, talkVoiceContext } from "../sim/talk";
+import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
 import type { GameState } from "../sim/state";
@@ -320,6 +321,9 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     achlist: q("[data-achlist]"),
     waiting: q("[data-waiting]"),
     custlist: q("[data-custlist]"),
+
+    // 点客人听一句（A12）：本地句立刻上屏，在线句异步替换
+    
     queue: q("[data-queue]"),
     queuebar: q("[data-queuebar]"),
     sat: q("[data-sat]"),
@@ -381,7 +385,33 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     opts.onOpenShop?.();
   });
 
+  let lastState: GameState | null = null;
+
+  // 点一下排队里的人，他说一句（A12）：本地句立刻上屏，在线句随后替换
+  el.custlist.addEventListener("click", (ev) => {
+    const row = (ev.target as HTMLElement | null)?.closest?.("[data-uid]") as HTMLElement | null;
+    const st = lastState;
+    if (!row || !st) return;
+    const uid = row.dataset.uid;
+    const c = st.flow.customers.find((x) => String(x.id) === uid);
+    if (!c) return;
+    const got = talkFor(st, c);
+    const who = ARCHETYPE_BY_ID.get(c.archetypeId)?.name ?? "顾客";
+    showToast(`\u3010${who}\u3011${got.text}`, "info");
+    const ask = {
+      kind: "guest_talk" as const,
+      key: `${c.archetypeId}:${got.def.id}`,
+      context: talkVoiceContext(st, c, who),
+      month: st.month,
+      day: st.day,
+    };
+    void fetchLine(ask).then((line) => {
+      if (line) showToast(`\u3010${who}\u3011${line}`, "info");
+    });
+  });
+
   const render = (s: GameState, score: RecipeScore): void => {
+    lastState = s;
     // 打烊后 endDay 已经换过日，顶栏要显示「刚过完的那天」，
     // 否则会出现顶栏 1 月 2 日、日结单写 1 月 1 日的自相矛盾
     const shown = s.dayReport ?? null;
@@ -541,7 +571,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
         const wallet = arch ? Math.round(arch.budget * tol * tierBudgetPct(tierDef)) : 0;
         const short = arch ? wallet < s.price : false;
         return (
-          `<div class="cust t-${tierDef.id}${short ? " short" : ""}" title="${tierDef.note}">` +
+          `<div class="cust t-${tierDef.id}${short ? " short" : ""}" data-uid="${c.id}" title="${tierDef.note}｜点一下听他说句话">` +
           `<span class="tag ${c.status}${c.regular ? " reg" : ""}">${c.regular ? "常" : tag}</span>` +
           `<span class="cn">${name}</span>` +
           `<span class="cw" title="这一位愿意出到多少钱（含味道带来的溢价）">¥${wallet}</span>` +

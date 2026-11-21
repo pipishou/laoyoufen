@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "name": "rows",
+      "ok": true,
+      "rows": [
+        "9002",
+        "9001"
+      ]
+    },
+    {
+      "name": "custlist_clickable",
+      "ok": true,
+      "value": "auto"
+    },
+    {
+      "name": "queue_talk",
+      "ok": true,
+      "toast": "【学生仔】我从巷口行过来就闻到味了，前面仲有三四个人。你加把劲，我企喺度等，反正落班唔赶时间。"
+    },
+    {
+      "name": "regular_talk",
+      "ok": true,
+      "toast": "【骑楼阿姨】又系我。你唔使问，照旧：二两，少辣，酸笋多啲。我日日行过都闻到味，忍唔住。"
+    },
+    {
+      "name": "save_version",
+      "ok": true,
+      "value": 31
+    }
+  ],
+  "console_errors": []
+}
