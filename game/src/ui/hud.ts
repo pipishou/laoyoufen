@@ -11,6 +11,7 @@ import { tierBudgetPct } from "../sim/guest-tier";
 import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
 import { talkFor, talkVoiceContext } from "../sim/talk";
+import { tierBoard, tierCells } from "../sim/tier";
 import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
@@ -191,6 +192,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <div class="t1">老友粉 · 口味 <b data-total>--</b></div>
       <div class="t2" data-subs>汤 -- · 粉 -- · 魅 --</div>
       <div class="t2" data-econ>售价 ¥-- · 成本 ¥--</div>
+      <div class="tierrow" data-tiers></div>
     </div>
   </div>
 
@@ -333,6 +335,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     frenzybar: q("[data-frenzybar]"),
     frenzytxt: q("[data-frenzytxt]"),
     econ: q("[data-econ]"),
+    tiers: q("[data-tiers]"),
     code: q("[data-code]"),
     total: q("[data-total]"),
     subs: q("[data-subs]"),
@@ -349,6 +352,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
 
   let lastToday = -1;
   let lastCustKey = "";
+/** 四维九档的渲染缓存键：只在档位变了才重建（悬停提示否则会一直闪） */
+let lastTierKey = "";
 
   const chipEls = Array.from(root.querySelectorAll<HTMLButtonElement>(".chip"));
   const topCount = q("[data-topcount]");
@@ -608,6 +613,27 @@ const render = (s: GameState, score: RecipeScore): void => {
     el.total.textContent = String(score.total);
     el.subs.textContent = `汤 ${score.soup} · 粉 ${score.noodle} · 魅 ${score.charm} · 门店 ${score.storeScore}`;
     el.econ.textContent = `售价 ¥${score.price} · 成本 ¥${score.cost.toFixed(1)} · 毛利 ¥${score.margin.toFixed(1)}`;
+    /**
+     * 四维九档（B1 批次一）：把「味 62 / 粉 55」换成客人会说的话。
+     * 只在档位或评语变化时重建 DOM —— 每帧重写 innerHTML 会让悬停提示一直闪。
+     */
+    const board = tierBoard({ main: s.main ?? "pork", portion: s.portion ?? 2, recipe: s.recipe }, score);
+    const boardKey = board.map((r) => `${r.id}${r.tier}`).join("|");
+    if (boardKey !== lastTierKey) {
+      lastTierKey = boardKey;
+      el.tiers.innerHTML = board
+        .map(
+          (r) =>
+            `<div class="trow" title="${r.name}：${r.words}">` +
+            `<span class="tdim">${r.name}</span>` +
+            `<span class="tcells">${tierCells(r.tier)
+              .map((on, i) => `<i class="${on ? "on" : ""}${i === r.tier - 1 ? " top" : ""}"></i>`)
+              .join("")}</span>` +
+            `<span class="tword">${r.word}</span>` +
+            `</div>`,
+        )
+        .join("");
+    }
 
     const selected = new Set(s.recipe.toppings);
     chipEls.forEach((btn) => btn.classList.toggle("on", selected.has(btn.dataset.top ?? "")));

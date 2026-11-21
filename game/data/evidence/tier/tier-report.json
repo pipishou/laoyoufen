@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "checks": {
+    "four_rows": true,
+    "nine_cells": true,
+    "words_present": true,
+    "title_has_dim": true,
+    "soup_low_drops_taste": true,
+    "soup_low_keeps_others": true,
+    "soup_high_raises_taste": true,
+    "card_shows_line": true,
+    "legend_four_rows": true,
+    "legend_36_cells": true,
+    "legend_whats": true,
+    "legend_titles": true,
+    "save_version": true,
+    "console_clean": true
+  },
+  "errors": [],
+  "base": {
+    "rows": [
+      {
+        "dim": "味",
+        "on": 5,
+        "cells": 9,
+        "word": "第五档",
+        "title": "味：味道正，街坊天天吃那种。"
+      },
+      {
+        "dim": "镬",
+        "on": 7,
+        "cells": 9,
+        "word": "第七档",
+        "title": "镬：一开锅那股香就冲上来了。"
+      },
+      {
+        "dim": "饱",
+        "on": 4,
+        "cells": 9,
+        "word": "第四档",
+        "title": "饱：二两的分量，垫垫肚子。"
+      },
+      {
+        "dim": "相",
+        "on": 3,
+        "cells": 9,
+        "word": "第三档",
+        "title": "相：摆得潦草，看得出生手。"
+      }
+    ],
+    "card": "",
+    "version": 31
+  }
+}

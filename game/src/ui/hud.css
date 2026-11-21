@@ -2237,3 +2237,88 @@ button.pill[disabled] {
 .custlist .cust[data-uid] { cursor: pointer; }
 .custlist .cust[data-uid]:hover { background: var(--paper2); }
 .custlist .cust[data-uid]:active { transform: translateY(1px); }
+
+/* ---------- 四维九档（批次一）----------
+   九格条：一格一档，填满即是「这一维走到底了」。
+   top 那一格加木色描边，让玩家一眼看出现在停在第几档，
+   而不是数格子。 */
+#float .tierrow {
+  margin-top: 3px;
+  display: grid;
+  gap: 1px;
+}
+#float .trow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  line-height: 1;
+}
+#float .tdim {
+  color: var(--ink2);
+  width: 10px;
+  flex: 0 0 auto;
+}
+#float .tcells {
+  display: flex;
+  gap: 1px;
+  flex: 0 0 auto;
+}
+#float .tcells i {
+  width: 4px;
+  height: 8px;
+  background: var(--cream);
+  border: 1px solid var(--sand);
+  box-sizing: border-box;
+}
+#float .tcells i.on {
+  background: var(--gold);
+  border-color: var(--wood);
+}
+#float .tcells i.top {
+  background: var(--red);
+  border-color: var(--ink);
+}
+#float .tword {
+  color: var(--wood);
+  font-size: 9px;
+  flex: 0 0 auto;
+}
+
+/* 菜单卡片上的四维一行（批次一）：比「味道 62」好读，也短 */
+.ntier {
+  display: block;
+  font-size: 10px;
+  color: var(--wood);
+  letter-spacing: .5px;
+  margin-top: 1px;
+}
+/* 图鉴里的四维图例：九格刻度 + 这一维看什么 */
+.tlegend { display: grid; gap: 3px; }
+.trow2 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+.tdim2 {
+  flex: 0 0 auto;
+  width: 14px;
+  color: var(--ink2);
+  font-weight: 700;
+}
+.tcells2 { display: flex; gap: 2px; flex: 0 0 auto; }
+.tcells2 i {
+  width: 10px;
+  height: 10px;
+  background: var(--cream);
+  border: 1px solid var(--sand);
+  box-sizing: border-box;
+}
+.twhat {
+  color: var(--wood);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

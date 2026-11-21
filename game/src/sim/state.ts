@@ -175,6 +175,14 @@ export interface CustomerFlow {
   lastFlavor: string | null;
   /** 最近一位「识食的」当场挑刺（A8）：settle 写、main 消费弹一句 */
   lastTier: string | null;
+  /**
+   * 最近一碗极端档位的评价（批次一 `tier_voice`）：写成 `维度:档位`，settle 写、main 消费。
+   * 可选字段：老档没有这一格，读进来是 undefined，不必为它升存档版本。
+   */
+  lastTierVoice?: string | null;
+  /** 上次开口的日子 + 当天已经说了几次，用来限一天只开口一两次 */
+  tierVoiceDay?: number;
+  tierVoiceCount?: number;
   /** 上次报加料组合的绝对分钟（节流用，免得每碗都弹） */
   sideToastAt: number;
 }

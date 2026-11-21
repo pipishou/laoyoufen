@@ -21,6 +21,7 @@ import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
 import { dishNameOf, dishNameOfItem } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
+import { tierLine } from "../sim/tier";
 import { PACK_SETUP } from "../data/pack";
 import { packOwned, packRateWords, packSummary } from "../sim/pack";
 import { newsDate, newsList, newsSummary } from "../sim/news";
@@ -37,6 +38,7 @@ import { shopMap, shopMapSummary } from "../sim/shopmap";
 import { CAPACITY_LOST_RATE, lostRateOf, nextHook } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
 import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
+import { DIMS, TIER_WORDS, tierWord } from "../data/tier";
 import { FLAVORS, FLAVOR_TOTAL, type FlavorEffect } from "../data/flavor";
 import { noodleById } from "../data/noodles";
 import { flavorSummary, flavorViews, nearlyFlavor } from "../sim/flavor";
@@ -1257,12 +1259,21 @@ const newsSec = `<div class="sec">
     const flavorSec = `<div class="sec"><div class="sechd">${icon("pan")}味道 · ${gotFlavors.length}/${FLAVOR_TOTAL}<span class="sechint">每条都是南宁真有人这么吃的，凑成一次就记下</span></div><div class="tgroups"><div class="tgroup"><div class="tgname">成型吃法</div><div class="cgrid">${flavorCards}</div></div></div></div>`;
 
     const near = nextTrophy(s);
+    /**
+     * 四维图例（批次一）：九档是「读法」，所以图鉴里要说清每一维看什么、
+     * 九档各是什么话——玩家学的是客人的判断，不是看分数表。
+     */
+    const tierSec = `<div class="sec"><div class="sechd">${icon("star")}四维 · 九档<span class="sechint">客人评价一碗粉，只说这四句：够不够味、镬气有没有、够不够饱、好不好看</span></div><div class="tlegend">${DIMS.map(
+      (d) =>
+        `<div class="trow2" title="${d.what}"><span class="tdim2">${d.name}</span><span class="tcells2">${TIER_WORDS[d.id]
+          .map((w, i) => `<i title="${tierWord(i + 1)}：${w}"></i>`)
+          .join("")}</span><span class="twhat">${d.what}</span></div>`,
+    ).join("")}</div></div>`;
     const trophySec = `<div class="sec"><div class="sechd">${icon("star")}成就 · ${trophySummary(s)}<span class="sechint">${
       near ? `下一条最近：「${near.def.name}」 ${near.progressText}` : "全收齐了"
     }</span></div><div class="tgroups">${trophyGroups}</div></div>`;
 
-    const gotBowls = BOWLS.filter((b) => b.free || (s.bowls ?? []).includes(b.id) || (BOWL_BY_ID.has(b.id) && s.bowl === b.id));
-    const bowlCards = BOWLS.map((b) => {
+    const gotBowls = BOWLS.filter((b) => b.free || (s.bowls ?? []).includes(b.id) || (BOWL_BY_ID.has(b.id) && s.bowl === b.id));    const bowlCards = BOWLS.map((b) => {
       const on = gotBowls.includes(b);
       return `<div class="tcard${on ? " on" : ""}"><b class="tname">${b.name}</b><span class="tprog">${
         on ? b.effectText : "？？"
@@ -1275,6 +1286,7 @@ const newsSec = `<div class="sec">
       <div class="sec"><div class="sechd">口味喜好 ${p.likes}/${LIKES_TOTAL}</div><div class="cgrid">${likeDimChips}</div><div class="cgrid">${likeChips}</div></div>
       <div class="sec"><div class="sechd">评级 ${p.grades}/5</div><div class="cgrid">${gradeChips}</div></div>
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
+      ${tierSec}
       ${trophySec}
       ${flavorSec}${mapSec}${newsSec}
       ${bowlSec}`;
@@ -1427,7 +1439,7 @@ const newsSec = `<div class="sec">
 
   function renderMenu(s: GameState): void {
     const views = menuViews(s);
-    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}`;
+    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.portion}:${v.item.recipe.toppings.join("-")}`).join(",")}`;
     menuSumEl.textContent = ` ${menuSummary(s)}`;
     if (key === menuKey) return;
     menuKey = key;
@@ -1443,6 +1455,7 @@ const newsSec = `<div class="sec">
             <b class="dprice">¥${v.price}</b>
           </button>
           <span class="nfit">味道 ${Math.round(v.score.total)} · ${v.score.grade} · ${sold}</span>
+          <span class="ntier" title="四维九档：客人怎么评价这一碗">${tierLine(v.item, v.score)}</span>
           <div class="dacts">
             <button type="button" class="dbtn${v.item.on ? " on" : ""}" data-act="toggledish" data-id="${v.index}" ${v.canToggle ? "" : "disabled"}>${v.item.on ? "在架" : "下架"}</button>
             <button type="button" class="dbtn" data-act="sellrecipe" data-id="${v.index}" ${v.canRemove ? "" : "disabled"} title="转手给别人，换人情">转手</button>

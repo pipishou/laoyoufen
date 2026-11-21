@@ -22,6 +22,7 @@ import { costFactorOfKind, seasonBonusOfKind, serveFactorOfKind } from "./noodle
 import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from "./shop";
 import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
+import { tierRemark } from "./tier";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
@@ -525,6 +526,23 @@ function settle(state: GameState, c: QueueCustomer): void {
   }
   // 口碑权重：识食的一句抵一句半，路过的只算七成
   state.reputation = clamp(state.reputation + ((sat - 55) / 800) * tierRepWeight(tierDef), 0.5, 5);
+
+  /**
+   * 四维评价（批次一）：只有极端档位客人才会特意开口。
+   * 限一天两次 —— 一家粉店一天里能记住的「有人夸/有人嫌」就那么几回，
+   * 每碗都说会变成弹幕，玩家反而听不见。
+   */
+  const remark = tierRemark(item, sc);
+  if (remark) {
+    if (state.flow.tierVoiceDay !== state.day) {
+      state.flow.tierVoiceDay = state.day;
+      state.flow.tierVoiceCount = 0;
+    }
+    if ((state.flow.tierVoiceCount ?? 0) < 2) {
+      state.flow.tierVoiceCount = (state.flow.tierVoiceCount ?? 0) + 1;
+      state.flow.lastTierVoice = `${remark.dim}:${remark.tier}`;
+    }
+  }
 
   const likeHits = arch ? likeHitsOf(item.recipe, arch.prefs) : [];
   // 命中喜好 → 记进常客档案（开罗 AddRegularCount）；「问出口味」在顾客还在店里时由 surveyTick 完成

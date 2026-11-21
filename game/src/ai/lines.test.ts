@@ -22,6 +22,9 @@ const KINDS = [
   "flavor_voice",
   "style_voice",
   "bowl_voice",
+  "guest_voice",
+  "guest_talk",
+  "tier_voice",
 ] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {

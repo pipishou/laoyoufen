@@ -3,6 +3,7 @@ import { fetchEventNarrative, localNarrative, localReaction } from "./ai/directo
 import { fetchLine, getLine, localLine, type LineAsk } from "./ai/lines";
 import { TOURNEY_BY_ID } from "./data/tourneys";
 import { FLAVOR_BY_ID } from "./data/flavor";
+import { dimById, tierWord, tierWords } from "./data/tier";
 import { tierById } from "./data/guest-tier";
 import { tierVoiceContext } from "./sim/guest-tier";
 import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
@@ -755,6 +756,31 @@ function tickFeedback(): void {
         day: s.day,
       }).then((line) => {
         if (line) hud.showToast(`街坊说：「${line}」`, "info");
+      });
+    }
+  }
+
+  /**
+   * 四维九档（批次一）：客人对极端的某一维说一句。
+   * 本地句先说（`tierWords` 是这一维这一档的定评），AI 只把它换成更有口气的说法；
+   * 拿不到线上句就留着本地那句 —— 评语这一层永远有话说。
+   */
+  if (s.flow.lastTierVoice) {
+    const [dimId, tierText] = s.flow.lastTierVoice.split(":");
+    s.flow.lastTierVoice = null;
+    const dim = dimId ? dimById(dimId) : null;
+    const tier = Number(tierText);
+    if (dim && Number.isFinite(tier)) {
+      const words = tierWords(dim.id, tier);
+      hud.showToast(`${dim.name} ${tierWord(tier)}：${words}`, "info");
+      void fetchLine({
+        kind: "tier_voice",
+        key: `${dim.id}:${tier}`,
+        context: { 维: dim.name, 档: tierWord(tier), 看法: dim.what },
+        month: s.month,
+        day: s.day,
+      }).then((line) => {
+        if (line) hud.showToast(`客人说：「${line}」`, "info");
       });
     }
   }

@@ -28,7 +28,8 @@ export type LineKind =
   | "style_voice"
   | "bowl_voice"
   | "guest_voice"
-  | "guest_talk";
+  | "guest_talk"
+  | "tier_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -128,11 +129,48 @@ function hookPool(ask: LineAsk): readonly string[] {
   return (kind ? HOOK_VOICE[kind] : undefined) ?? HOOK_VOICE.capacity!;
 }
 
+/** 选池：`key` 写成 `维度:档位`，只用维度那一段（taste / wok / fill / look） */
+function tierPool(ask: LineAsk): readonly string[] {
+  const dim = ask.key.split(":")[0] ?? "";
+  return TIER_VOICE_POOL[dim] ?? TIER_VOICE_POOL.taste!;
+}
+
 /** 发请求前剔掉只供本地选池的字段 */
 function stripKind(ctx: Record<string, string>): Record<string, string> {
   const { 类型: _omit, ...rest } = ctx;
   return rest;
 }
+
+/**
+ * 四维各自的本地句（批次一）。维度 id 与 data/tier.ts 的 `DimId` 对齐：
+ * 味 taste / 镬 wok / 饱 fill / 相 look。key 写成 `维度:档位`，这里只取维度那一段。
+ */
+const TIER_VOICE_POOL: Record<string, readonly string[]> = {
+  taste: [
+    "汤头这个事情做不得假，喝一口就晓得。",
+    "这个味有心思，不是随便下盐的。",
+    "味道稳当，跟上次来一个样。",
+    "酸辣是够的，就是汤底还差一点厚。",
+  ],
+  wok: [
+    "有镬气，一闻就晓得是猛火里翻出来的。",
+    "火候过得去，粉条没糊，也没有生味。",
+    "这碗粉是热的，热气从底下往上冒。",
+    "炒得急了点，酸笋的香还没出来。",
+  ],
+  fill: [
+    "量给得实在，这碗下去顶得到晚饭。",
+    "吃完这碗，肚子是踏实的。",
+    "料铺得满，一眼看下去不像偷工减料。",
+    "汤水多了些，捞两筷子就剩粉了。",
+  ],
+  look: [
+    "端上来就好看，隔壁桌都探头过来看。",
+    "碗里配色干净，青菜绿得精神。",
+    "这一碗摆在桌上，拍照都好看。",
+    "卖相上还差点，料都堆一边去了。",
+  ],
+};
 
 const LOCAL: Record<LineKind, readonly string[]> = {
   street_request: [
@@ -261,6 +299,15 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "别紧张，你就是来露一手的。",
     "时间到就收，做慢了也算输。",
   ],
+  /**
+   * 13. tier_voice    客人对「这一碗」的一句评价（批次一 · 四维九档）
+   *
+   * 开罗 `eat_comment.txt` 是 4 维 × 9 档的固定评语表，玩家读到的是同一套句子。
+   * 我们把它交给 AI 说一遍，但**只在高档或低档才开口**（见 sim/tier.ts 的 tierRemark）——
+   * 中间几档是家常，客人不会特意评价。这里的池子按维度分，让本地兜底也贴合维度。
+   * 照例不许出现数字：档位是本地算的，句子只说感受。
+   */
+  tier_voice: TIER_VOICE_POOL.taste!,
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */
@@ -279,7 +326,12 @@ export function lineId(ask: LineAsk): string {
 
 /** 本地兜底句：确定性，不消耗 state.rng，所以「同种子同文案」 */
 export function localLine(ask: LineAsk): string {
-  const pool = ask.kind === "hook_voice" ? hookPool(ask) : LOCAL[ask.kind];
+  const pool =
+    ask.kind === "hook_voice"
+      ? hookPool(ask)
+      : ask.kind === "tier_voice"
+        ? tierPool(ask)
+        : LOCAL[ask.kind];
   return pool[hash(lineId(ask)) % pool.length] ?? pool[0]!;
 }
 
