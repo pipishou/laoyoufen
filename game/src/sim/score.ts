@@ -146,6 +146,13 @@ export interface ScoreExtra {
   /** 进货档（A5）：米三档、骨三档。默认档零偏移，见 `data/grades.ts` */
   rice?: string;
   bone?: string;
+  /**
+   * 火候定死（A6）：这一款定过方子，味道就按定的时候那个分算。
+   *
+   * 传 null/undefined 表示没定过 —— 绝大多数款都是这个情况，
+   * 所以历史回归锁一个数都不会动。
+   */
+  lockedTotal?: number | null;
 }
 
 /**
@@ -199,6 +206,12 @@ export function scoreRecipe(
   const fit = noodleFit(kind, recipe.soup);
   const noodle = Math.min(100, groupScore(subs, "noodle") * (0.6 + 0.4 * (fit / 100)) + riceNoodle);
   const total = soup * 0.55 + noodle * 0.45;
+  /**
+   * 火候定死（A6）：定过方子的款，味道就是定的时候那个数。
+   * 滑条再怎么动，这一碗出锅都是同一个味道 —— 这是「方子」的意思，
+   * 不是又一层加成，所以它换掉 total 而不是加 total。
+   */
+  const totalOut = typeof extra.lockedTotal === "number" ? extra.lockedTotal : total;
 
   const safePrice = Math.max(0, price);
   const charm = Math.min(100, charmOf(recipe.toppings) + flavor.charm + pairing.charm);
@@ -212,13 +225,13 @@ export function scoreRecipe(
   // 毛利率 55% 视为优秀；低于 0 直接 0 分
   const costScore = clamp100(marginRate * 160);
 
-  const storeScore = total * 0.45 + charm * 0.25 + valueScore * 0.2 + costScore * 0.1;
+  const storeScore = totalOut * 0.45 + charm * 0.25 + valueScore * 0.2 + costScore * 0.1;
 
   const result: RecipeScore = {
     soup: Math.round(soup),
     noodle: Math.round(noodle),
-    total: Math.round(total),
-    grade: gradeOf(total),
+    total: Math.round(totalOut),
+    grade: gradeOf(totalOut),
     charm: Math.round(charm),
     price: safePrice,
     valueScore: Math.round(valueScore),

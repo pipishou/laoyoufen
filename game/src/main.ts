@@ -21,6 +21,7 @@ import { buyStreet, nextRequest } from "./sim/streets";
 import { hookVoiceContext, nextHook } from "./sim/hook";
 import { TROPHY_BY_ID } from "./data/trophies";
 import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
+import { applyMaster as applyMasterImpl } from "./sim/master";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
@@ -306,6 +307,20 @@ panels = mountPanels(hudRoot, {
     const r = toggleDish(state, Number(index));
     if (!r.ok) hud.showToast(r.reason ?? "改不了上下架", "info");
     playSfx("ui");
+    refresh();
+  },
+  /**
+   * 老师傅的方子（A6）：定了就说一句师傅的原话。
+   * 话说在 toast 里、不停营业 —— 这是「请人」，不是「装修」。
+   */
+  applyMaster(index, id) {
+    const r = applyMasterImpl(state, Number(index), String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "这条方子定不下来", "info");
+      return;
+    }
+    hud.showToast(`${r.def?.name ?? "方子"}：${r.line ?? ""}`, "like");
+    playSfx("upgrade");
     refresh();
   },
   sellRecipe(index) {

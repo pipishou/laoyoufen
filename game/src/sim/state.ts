@@ -87,6 +87,13 @@ export interface MenuItem {
   on: boolean;
   /** 这款累计卖出的碗数 */
   sold: number;
+  /**
+   * 老师傅定的方子（A6），见 `data/master.ts`。undefined = 没定过。
+   * 可选字段：老档没有这一格，读进来天然是 undefined，不必升存档版本。
+   */
+  master?: string | null;
+  /** 定了「火候定死」时记下的味道分；没定就是 undefined */
+  lockedTaste?: number;
 }
 
 /** 一个顾客在店里的状态。字段形状对应 REA `customer` 的 defParam 三元组。 */

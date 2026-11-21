@@ -1,0 +1,81 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "found": true,
+      "lead": "请师傅定",
+      "done": false,
+      "seals": [
+        "火",
+        "料",
+        "碗",
+        "价"
+      ],
+      "names": [],
+      "btnCount": 4,
+      "btnIds": [
+        "0|taste_set",
+        "0|cost_set",
+        "0|serve_set",
+        "0|price_set"
+      ],
+      "disabled": 0,
+      "master": null,
+      "lockedTaste": null,
+      "favor": 60,
+      "cash": 200000,
+      "toasts": [
+        "望州粉铺 开张了，先调好一碗粉的味道"
+      ],
+      "step": "fresh"
+    },
+    {
+      "found": true,
+      "lead": "",
+      "done": true,
+      "seals": [
+        "料"
+      ],
+      "names": [
+        "料钱定死"
+      ],
+      "btnCount": 0,
+      "btnIds": [],
+      "disabled": 0,
+      "master": "cost_set",
+      "lockedTaste": null,
+      "favor": 48,
+      "cash": 199800,
+      "toasts": [
+        "料钱定死：一两粉配多少肉，拿秤称，别拿手抓。抓多抓少都是钱。"
+      ],
+      "step": "set_cost"
+    },
+    {
+      "cards": 2,
+      "btnCount": 4,
+      "disabled": 4,
+      "favor": 0,
+      "masters": [
+        "cost_set",
+        null
+      ],
+      "step": "low_favor"
+    }
+  ],
+  "checks": {
+    "row_present": true,
+    "four_seals": true,
+    "seals_are_cn": true,
+    "set_works": true,
+    "favor_spent": true,
+    "cash_spent": true,
+    "card_shows_seal": true,
+    "toast_is_master_line": true,
+    "low_favor_greys_all": true,
+    "one_per_dish": true,
+    "locked_other_dish": true,
+    "console_clean": true
+  },
+  "console_errors": []
+}

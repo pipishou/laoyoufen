@@ -1,6 +1,7 @@
 import { MAINS, portionOf } from "../data/mains";
 import { menuCapOf } from "../data/menu";
 import { priceTolerance, scoreRecipe, type RecipeScore } from "./score";
+import { injectScoreReader, masterCostFactor, masterPriceBonus } from "./master";
 import { recipeSaleFavor } from "../data/favor";
 import type { NoodleId } from "../data/noodles";
 import type { GameState, MenuItem } from "./state";
@@ -57,12 +58,22 @@ export function dishPrice(item: MenuItem): number {
  * `state` 只用来读进货档（A5 的米与骨）：缺省时走默认档，历史断言全部不变。
  */
 export function scoreDish(item: MenuItem, state?: GameState): RecipeScore {
-  return scoreRecipe(item.recipe, item.price, item.noodle as NoodleId, {
+  const base = scoreRecipe(item.recipe, item.price, item.noodle as NoodleId, {
     main: item.main,
     portion: item.portion,
     rice: state?.rice,
     bone: state?.bone,
+    lockedTotal: item.lockedTaste ?? null,
   });
+  /**
+   * 料钱定死（A6）：师傅教你拿秤称，这款每碗料钱 −8%。
+   * 只改成本这一侧 —— 味道、售价、魅力一样都不动，否则「省了钱」会变成「变好吃了」。
+   */
+  const costFactor = masterCostFactor(item);
+  if (costFactor === 1) return base;
+  const cost = Math.round(base.cost * costFactor * 100) / 100;
+  const margin = Math.round((base.price - cost) * 100) / 100;
+  return { ...base, cost, margin, marginRate: base.price > 0 ? margin / base.price : 0 };
 }
 
 /** 把编辑缓冲写回当前款（改完滑块/换粉/换主料/改价都要落一次笔） */
@@ -243,7 +254,8 @@ export function pickDish(state: GameState, wallet: number, roll: number): MenuIt
   for (const item of dishes) {
     const sc = scoreDish(item, state);
     const price = dishPrice(item);
-    if (price > wallet * shopTolerance) continue;
+    // 售价顶住（A6）：定了方子的款，贵两块钱也不更容易被嫌贵
+    if (price - masterPriceBonus(item) > wallet * shopTolerance) continue;
     // 味道 0–100 → 权重 0.1–1.0；价格相对钱包越贵，权重越低
     const tasteW = Math.max(0.1, sc.total / 100);
     const priceW = Math.max(0.25, Math.min(1, (wallet * 1.6 - price) / (wallet * 1.6)));
@@ -304,3 +316,14 @@ export function recordDishSale(state: GameState, dishId: number): void {
   const item = state.menu.find((d) => d.id === dishId);
   if (item) item.sold += 1;
 }
+
+/**
+ * 把「这一刻这碗值多少」的读数交给 A6 的方子层。
+ *
+ * `sim/master.ts` 不能 import 本文件（本文件要用它的成本系数，会成环），
+ * 所以反过来由这里注入。`applyMaster` 定「火候定死」时用它记下当时的分数。
+ */
+injectScoreReader((state, index) => {
+  const item = state.menu[index];
+  return item ? scoreDish(item, state).total : 0;
+});

@@ -20,6 +20,7 @@ import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/main
 import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
 import { dishNameOf, dishNameOfItem } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
+import { masterOf, masterViews } from "../sim/master";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
@@ -54,7 +55,7 @@ import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
 import { SERVE_MINUTES } from "../sim/customer";
 import { equipServeMultiplier } from "../sim/equipment";
-import type { GameState } from "../sim/state";
+import type { GameState, MenuItem } from "../sim/state";
 
 export type PanelTab = "recipe" | "staff" | "shop" | "contest" | "collection" | "ledger";
 
@@ -123,6 +124,8 @@ export interface PanelActions {
   removeDish(index: number): void;
   /** M3b：把一款转手（换人情，开罗 Ramen Lab 的卖配方） */
   sellRecipe(index: number): void;
+  /** 老师傅的方子（A6）：给第 index 款定一条方子 */
+  applyMaster(index: number, id: string): void;
   /** M3b：花人情 */
   useFavor(id: string): void;
   toggleDish(index: number): void;
@@ -384,6 +387,12 @@ let lastGradeKey = "";
       case "sellrecipe":
         actions.sellRecipe(Number(id));
         break;
+      case "master": {
+        // data-id 形如「0|cost_set」：款号 + 方子 id
+        const [idx, mid] = String(id).split("|");
+        actions.applyMaster(Number(idx), String(mid ?? ""));
+        break;
+      }
       case "usefavor":
         actions.useFavor(String(id));
         break;
@@ -1281,9 +1290,33 @@ function collectionHtml(s: GameState): string {
    * 店铺人气按菜单里所有款聚合（`Shop Stats`）。这里的卡片就是那排券：
    * 点一张切过去编辑它，上架/下架决定客人今天买不买得到。
    */
+  /**
+   * 一款的「方子」那一行（A6）。
+   *
+   * 没定过：四个小印章按钮，人情/钱不够就灰掉并在 title 里写原因；
+   * 定过：只显示那个印章和方子名 —— 一锅只定一条，定了就不再给别的选项。
+   */
+  function masterRow(s: GameState, item: MenuItem, index: number): string {
+    const cur = masterOf(item);
+    if (cur) {
+      return `<div class="macts done" title="${cur.line}｜${cur.what}"><span class="mseal">${cur.seal}</span><span class="mname">${cur.name}</span></div>`;
+    }
+    const views = masterViews(s, item);
+    const chips = views
+      .map((v) => {
+        const cost = [v.def.favorCost > 0 ? `人情 ${v.def.favorCost}` : "", v.def.costYuan > 0 ? `¥${v.def.costYuan}` : ""]
+          .filter(Boolean)
+          .join(" · ");
+        const tip = `${v.def.name}：${v.def.what}（要 ${cost || "不花钱"}）`;
+        return `<button type="button" class="mact" data-act="master" data-id="${index}|${v.def.id}" ${v.affordable ? "" : "disabled"} title="${tip}"><span class="mseal">${v.def.seal}</span></button>`;
+      })
+      .join("");
+    return `<div class="macts"><span class="mlead" title="师傅定的方子一锅只能定一条，定了不能改">请师傅定</span>${chips}</div>`;
+  }
+
   function renderMenu(s: GameState): void {
     const views = menuViews(s);
-    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${s.gradeLevel}`;
+    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}`;
     menuSumEl.textContent = ` ${menuSummary(s)}`;
     if (key === menuKey) return;
     menuKey = key;
@@ -1303,6 +1336,7 @@ function collectionHtml(s: GameState): string {
             <button type="button" class="dbtn${v.item.on ? " on" : ""}" data-act="toggledish" data-id="${v.index}" ${v.canToggle ? "" : "disabled"}>${v.item.on ? "在架" : "下架"}</button>
             <button type="button" class="dbtn" data-act="sellrecipe" data-id="${v.index}" ${v.canRemove ? "" : "disabled"} title="转手给别人，换人情">转手</button>
           </div>
+          ${masterRow(s, v.item, v.index)}
         </div>`;
       })
       .join("");

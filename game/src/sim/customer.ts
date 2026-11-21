@@ -27,6 +27,7 @@ import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
 import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
 import { bowlCostFactor, bowlPatienceMult, bowlSatBonus, bowlServeFactor } from "./bowl";
+import { masterServeFactor } from "./master";
 import { pickSides, recordSides } from "./sides";
 import { absMinuteOf } from "./frenzy";
 import { mainById, portionOf } from "../data/mains";
@@ -610,6 +611,8 @@ export function tickCustomers(state: GameState): void {
         pairServeFactor(curDish.recipe.toppings) *
         // 碗（A4）：钢碗不用洗，瓦煲要现煮
         bowlServeFactor(state) *
+        // 出碗定死（A6）：师傅教过「数三十下就起」的那一款最快
+        masterServeFactor(curDish) *
         flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
     }
   }

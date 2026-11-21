@@ -2151,3 +2151,13 @@ button.pill[disabled] {
   color: var(--wood);
   line-height: 1.5;
 }
+
+/* 老师傅的方子（A6）：卡片底下一行小印章 */
+.macts{display:flex;align-items:center;gap:3px;margin-top:4px}
+.macts .mlead{font-size:10px;color:var(--wood);opacity:.85}
+.macts .mact{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;padding:0;background:var(--paper2);border:2px solid var(--ink2);box-shadow:0 1px 0 var(--wood);cursor:pointer}
+.macts .mact:hover{border-color:var(--red)}
+.macts .mact:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.macts .mseal{font-size:11px;line-height:1;color:var(--red);font-weight:700}
+.macts.done{gap:4px;padding:2px 5px;background:var(--paper2);border-left:3px solid var(--red)}
+.macts.done .mname{font-size:10px;color:var(--ink2)}
