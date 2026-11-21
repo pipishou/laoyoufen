@@ -241,7 +241,7 @@ describe("存档", () => {
   it("v25：成绩表与当届标记存得住", () => {
     const s = fresh();
     enterTourney(s, "chaoyang_street");
-    expect(SAVE_VERSION).toBe(30);
+    expect(SAVE_VERSION).toBe(31);
 
     const back = deserialize(serialize(s))!;
     expect(back).not.toBeNull();

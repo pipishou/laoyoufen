@@ -23,6 +23,7 @@ import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
 import { PACK_SETUP } from "../data/pack";
 import { packOwned, packRateWords, packSummary } from "../sim/pack";
+import { newsDate, newsList, newsSummary } from "../sim/news";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
@@ -1170,6 +1171,18 @@ function collectionHtml(s: GameState): string {
         got ? def.when : parts.join(" + ")
       }</b></span>`;
     }).join("");
+    /**
+     * 街坊报（A11）：最近几天的头版，一天一条。
+     * 只读不点 —— 报纸是拿来看的，做成任务就变味了。
+     */
+    const newsRows = newsList(s)
+      .map((n) => `<div class="nrow"><span class="ndate">${newsDate(n)}</span><span class="ntext">${n.text}</span></div>`)
+      .join("");
+    const newsSec = `<div class="sec">
+      <div class="sechd">${icon("book")}街坊报 · ${newsSummary(s)}</div>
+      <div class="lmeta" style="padding:0 2px 8px">每天打烊出一条，写这条街上真发生过的事 —— 开了店、评了段、赢了赛、同行关门、街上修好了什么。报上不评价你，只把事记下来。</div>
+      ${newsRows || `<div class="lmeta">今天还没出报，明天打烊就有了。</div>`}
+    </div>`;
     const flavorSec = `<div class="sec"><div class="sechd">${icon("pan")}味道 · ${gotFlavors.length}/${FLAVOR_TOTAL}<span class="sechint">每条都是南宁真有人这么吃的，凑成一次就记下</span></div><div class="tgroups"><div class="tgroup"><div class="tgname">成型吃法</div><div class="cgrid">${flavorCards}</div></div></div></div>`;
 
     const near = nextTrophy(s);
@@ -1192,7 +1205,7 @@ function collectionHtml(s: GameState): string {
       <div class="sec"><div class="sechd">评级 ${p.grades}/5</div><div class="cgrid">${gradeChips}</div></div>
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
       ${trophySec}
-      ${flavorSec}
+      ${flavorSec}${newsSec}
       ${bowlSec}`;
   }
 

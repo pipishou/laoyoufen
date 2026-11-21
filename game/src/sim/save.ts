@@ -11,6 +11,7 @@ import { TOURNEY_BY_ID } from "../data/tourneys";
 import { FLAVOR_BY_ID } from "../data/flavor";
 import { STYLE_BY_ID } from "../data/style";
 import { BONE_BY_ID, DEFAULT_BONE, DEFAULT_RICE, RICE_BY_ID } from "../data/grades";
+import type { NewsItem } from "./news";
 import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -102,6 +103,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 30 &&
     v.saveVersion !== 29 &&
     v.saveVersion !== 28 &&
     v.saveVersion !== 27 &&
@@ -574,6 +576,17 @@ export function deserialize(raw: string): GameState | null {
     parsed.pack = false;
     if (parsed.tally) parsed.tally.packSold = 0;
   }
+  // v30 → v31（A11 街坊报）：老档没有报纸。只留形状正确的条目，坏值直接丢。
+  const nws = (parsed as { news?: unknown }).news;
+  parsed.news = Array.isArray(nws)
+    ? (nws as unknown[])
+        .filter((x): x is { month: number; day: number; text: string; kind: NewsItem["kind"]; kairo: string } =>
+          !!x &&
+          typeof (x as { text?: unknown }).text === "string" &&
+          typeof (x as { month?: unknown }).month === "number",
+        )
+        .slice(-5)
+    : [];
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

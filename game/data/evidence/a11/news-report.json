@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "checks": {
+    "rows_three": true,
+    "header_present": true,
+    "date_cn": true,
+    "no_placeholder": true,
+    "newest_first": true,
+    "store_version": true,
+    "console_clean": true
+  },
+  "rows": [
+    {
+      "date": "一月三日",
+      "text": "街坊凑钱修的那段路，雨天终于不积水。"
+    },
+    {
+      "date": "一月二日",
+      "text": "明秀路那边最近人少了些，老板站在门口抽烟。"
+    },
+    {
+      "date": "一月一日",
+      "text": "巷口新开一间粉店，老板凌晨四点就起来熬汤。"
+    }
+  ],
+  "console_errors": []
+}

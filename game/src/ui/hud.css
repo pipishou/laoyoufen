@@ -2161,3 +2161,9 @@ button.pill[disabled] {
 .macts .mseal{font-size:11px;line-height:1;color:var(--red);font-weight:700}
 .macts.done{gap:4px;padding:2px 5px;background:var(--paper2);border-left:3px solid var(--red)}
 .macts.done .mname{font-size:10px;color:var(--ink2)}
+
+/* 街坊报（A11）：像撕下来的一角报纸，竖线分隔日期与正文 */
+.nrow{display:flex;gap:8px;padding:6px 2px;border-bottom:1px dashed var(--sand);font-size:12px;line-height:1.55}
+.nrow:last-child{border-bottom:0}
+.nrow .ndate{flex:0 0 auto;color:var(--wood);font-variant-numeric:tabular-nums}
+.nrow .ntext{flex:1 1 auto;color:var(--ink2)}

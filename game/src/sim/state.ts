@@ -15,12 +15,14 @@ import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
+import type { NewsItem } from "./news";
+import { pushNews } from "./news";
 import { checkTrophies } from "./trophies";
 import { settlePack } from "./pack";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 30;
+export const SAVE_VERSION = 31;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -508,6 +510,8 @@ export interface GameState {
   gear: string[];
   /** 袋装老友粉的包装机（A7）：买了才有第二条收入线 */
   pack: boolean;
+  /** 街坊报：最近几天的头版（A11，见 `sim/news.ts`） */
+  news: NewsItem[];
   /**
    * 店的样子（A1，见 `data/style.ts`）：装过的门面 id。
    * 与家当的区别是**同一时间只有一套生效** —— `style` 才是现在摆着的那套。
@@ -766,6 +770,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     streetSeen: [],
     gear: [],
     pack: false,
+    news: [],
     styles: [],
     style: null,
     bowls: [],
@@ -901,6 +906,8 @@ function recordDay(state: GameState, taste: number): void {
     rec.branchNet = day.net;
   }
   state.dayReport = rec;
+  // 街坊报：写完当天的账再写报，报上写的就是今天真发生过的事
+  pushNews(state);
   /**
    * 袋装线（A7）：每天出的货在打烊这一刻卖掉。
    * 必须放在 `dayReport` 赋值之后 —— 还原度读的就是今天这碗粉的味道；
