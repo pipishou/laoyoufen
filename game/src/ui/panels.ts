@@ -21,6 +21,8 @@ import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
 import { dishNameOf, dishNameOfItem } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
+import { PACK_SETUP } from "../data/pack";
+import { packOwned, packRateWords, packSummary } from "../sim/pack";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
@@ -126,6 +128,8 @@ export interface PanelActions {
   sellRecipe(index: number): void;
   /** 老师傅的方子（A6）：给第 index 款定一条方子 */
   applyMaster(index: number, id: string): void;
+  /** 袋装线（A7）：置办包装机 */
+  buyPack(): void;
   /** M3b：花人情 */
   useFavor(id: string): void;
   toggleDish(index: number): void;
@@ -386,6 +390,9 @@ let lastGradeKey = "";
         break;
       case "sellrecipe":
         actions.sellRecipe(Number(id));
+        break;
+      case "buypack":
+        actions.buyPack();
         break;
       case "master": {
         // data-id 形如「0|cost_set」：款号 + 方子 id
@@ -768,6 +775,25 @@ let lastGradeKey = "";
     const gv = gearViews(s);
     /** 试玩二轮 F7：产能吃紧、而能提产能的家当还没买齐 → 家当这一段也标红 */
     const gearHot = lostRateOf(s) >= CAPACITY_LOST_RATE && gearEfficiencyLeft(s).length > 0;
+    /**
+     * 袋装老友粉（A7）：一次买断的包装机 + 每天按口碑出的货。
+     * 没买时只有一行按钮；买了显示「每天出 N 袋 · 约 ¥M/天」和风味还原度 ——
+     * 还原度就是「店里的粉好不好吃」折算过来的，提醒玩家这件事吊在粉上。
+     */
+    const packSec = `
+      <div class="sec">
+      <div class="sechd">${icon("crate")}袋装老友粉 · ${packSummary(s)}</div>
+      <div class="hint2">酱料包、酸笋、干粉分开装，客人拿回家煮两分钟 —— 这是南宁真做成的一条路子。不占餐位、不占人手，出货量看口碑，也看店里的粉到底好不好吃。</div>
+      <div class="lrow${packOwned(s) ? " locked" : ""}">
+        <div class="lbtns">${
+          packOwned(s)
+            ? `<span class="tag2 on">在卖</span>`
+            : `<button type="button" class="pickbtn" data-act="buypack" ${s.cash >= PACK_SETUP.costYuan ? "" : "disabled"}>¥${PACK_SETUP.costYuan.toLocaleString("zh-CN")}</button>`
+        }</div>
+        <span class="lname">封口机与首批包装</span>
+        <div class="lmeta">${packOwned(s) ? `${packRateWords(s)} · 每天出 ${packSummary(s).replace("每天出 ", "").replace(" 袋 · 约 ¥", " 袋，赚 ¥").replace("/天", "")}` : `一次置办，每天出几袋卖到外地；袋子、酱料包、干粉都算在里面`}</div>
+      </div>
+      </div>`;
     const gearRows = gv
       .map(
         (v) => `<div class="lrow${v.owned ? " locked" : ""}">
@@ -875,6 +901,7 @@ let lastGradeKey = "";
         ${bowlRows}
         <div class="lmeta" style="padding:4px 2px 0">现在这只：${currentBowl(s).line}</div>
       </div>
+${packSec}
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>
         ${ups}

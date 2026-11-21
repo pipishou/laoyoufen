@@ -16,10 +16,11 @@ import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
 import { runBranchDay, type BranchState } from "./branches";
 import { initRivals, type RivalState } from "./rivals";
 import { checkTrophies } from "./trophies";
+import { settlePack } from "./pack";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 29;
+export const SAVE_VERSION = 30;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -333,6 +334,10 @@ export interface DayRecord {
   branchBowls?: number;
   /** 分店今天的净进账（已扣料钱与房租店长摊销） */
   branchNet?: number;
+  /** 袋装线（A7）今天卖出的袋数 */
+  packSold?: number;
+  /** 袋装线今天的净收入（已算进 `revenue`） */
+  packNet?: number;
 }
 
 export interface Tally {
@@ -340,6 +345,8 @@ export interface Tally {
   bowls: number;
   /** 单日营收最高值（元） */
   bestDayRevenue: number;
+  /** 袋装线累计卖出的袋数（A7） */
+  packSold: number;
   /** 同时排队人数峰值 */
   maxQueue: number;
   /** 已开店（或已在营）的区，见 data/nanning.ts */
@@ -499,6 +506,8 @@ export interface GameState {
   streetSeen: string[];
   /** 家当（M3）：店里那些旧东西的 id（见 `data/gear.ts`） */
   gear: string[];
+  /** 袋装老友粉的包装机（A7）：买了才有第二条收入线 */
+  pack: boolean;
   /**
    * 店的样子（A1，见 `data/style.ts`）：装过的门面 id。
    * 与家当的区别是**同一时间只有一套生效** —— `style` 才是现在摆着的那套。
@@ -631,6 +640,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     tally: {
       bowls: 0,
       bestDayRevenue: 0,
+      packSold: 0,
       maxQueue: 0,
       districts: [START_DISTRICT],
       sideRevenue: 0,
@@ -755,6 +765,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     streets: [],
     streetSeen: [],
     gear: [],
+    pack: false,
     styles: [],
     style: null,
     bowls: [],
@@ -890,6 +901,17 @@ function recordDay(state: GameState, taste: number): void {
     rec.branchNet = day.net;
   }
   state.dayReport = rec;
+  /**
+   * 袋装线（A7）：每天出的货在打烊这一刻卖掉。
+   * 必须放在 `dayReport` 赋值之后 —— 还原度读的就是今天这碗粉的味道；
+   * 也必须放在 `endDay` 之前 —— 那里的 `revenueToday` 会被清零。
+   */
+  const pk = settlePack(state);
+  if (pk.sold > 0) {
+    rec.packSold = pk.sold;
+    rec.packNet = pk.net;
+    rec.revenue = Math.round(rec.revenue + pk.net);
+  }
   state.days.push(rec);
   if (state.days.length > 120) state.days.shift();
   state.phase = "closing";

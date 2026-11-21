@@ -22,6 +22,7 @@ import { hookVoiceContext, nextHook } from "./sim/hook";
 import { TROPHY_BY_ID } from "./data/trophies";
 import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { applyMaster as applyMasterImpl } from "./sim/master";
+import { buyPack as buyPackImpl } from "./sim/pack";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
@@ -313,6 +314,17 @@ panels = mountPanels(hudRoot, {
    * 老师傅的方子（A6）：定了就说一句师傅的原话。
    * 话说在 toast 里、不停营业 —— 这是「请人」，不是「装修」。
    */
+  /** 袋装线（A7）：一次置办包装机，之后每天按口碑出货 */
+  buyPack() {
+    const r = buyPackImpl(state);
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "包装机置办不下来", "info");
+      return;
+    }
+    hud.showToast("包装机转起来了：每天出的那点货，明天打烊就结", "like");
+    playSfx("upgrade");
+    refresh();
+  },
   applyMaster(index, id) {
     const r = applyMasterImpl(state, Number(index), String(id));
     if (!r.ok) {

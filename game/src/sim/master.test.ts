@@ -123,7 +123,8 @@ describe("四条方子的效果", () => {
     expect(s.menu[0]?.lockedTaste).toBe(Math.round(before));
     // 把汤底全推到 0，再算：分数应该还是定住那个
     const item = s.menu[0]!;
-    item.recipe = { soup: [0, 0, 0, 0, 0, 0, 0, 0], noodle: item.recipe.noodle.slice(), toppings: item.recipe.toppings.slice() };
+    // 把汤底滑块全推到 0（不整体替换 recipe：NoodleParams 是定长元组）
+    for (let i = 0; i < item.recipe.soup.length; i += 1) item.recipe.soup[i] = 0;
     expect(scoreDish(item, s).total).toBe(Math.round(before));
   });
 

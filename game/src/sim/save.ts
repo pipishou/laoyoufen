@@ -102,6 +102,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 29 &&
     v.saveVersion !== 28 &&
     v.saveVersion !== 27 &&
     v.saveVersion !== 26 &&
@@ -267,6 +268,7 @@ export function deserialize(raw: string): GameState | null {
       arenaRuns: 0,
       arenaWins: 0,
       recipesSold: 0,
+      packSold: 0,
     };
   } else {
     if (typeof parsed.tally.bowls !== "number") parsed.tally.bowls = 0;
@@ -567,6 +569,11 @@ export function deserialize(raw: string): GameState | null {
   parsed.rice = typeof rc === "string" && RICE_BY_ID.has(rc) ? rc : DEFAULT_RICE;
   const bn = (parsed as { bone?: unknown }).bone;
   parsed.bone = typeof bn === "string" && BONE_BY_ID.has(bn) ? bn : DEFAULT_BONE;
+  // v29 → v30（A7 袋装线）：老档没有包装机、也没有累计袋数
+  if (parsed.saveVersion === 29) {
+    parsed.pack = false;
+    if (parsed.tally) parsed.tally.packSold = 0;
+  }
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }
