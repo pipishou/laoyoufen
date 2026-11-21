@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""验收用：把线上 /laoyou-api/line 十二个落点各打一次，看谁是真在线、谁是回落。"""
+"""验收用：把线上 /laoyou-api/line 十五个落点各打一次，看谁是真在线、谁是回落。"""
 import json
 import urllib.request
 
@@ -17,6 +17,9 @@ CASES = [
     ("tourney_open", "chaoyang_street", {"场": "朝阳街道·街坊粉王赛", "主办": "朝阳街道办"}),
     ("guest_voice", "picky", {"人": "识食的客人", "场面": "吃完了"}),
     ("guest_talk", "auntie:regular", {"人": "骑楼阿姨", "场面": "常来的街坊"}),
+    ("tier_voice", "taste:7", {"维": "味道", "档": "第七档", "看法": "味道是定住了，谁来都挑不出错。"}),
+    ("market_voice", "huiNanTian", {"天": "回南天", "时": "二三月", "事": "墙在流水，粉条返潮"}),
+    ("grade_voice", "3", {"段": "巷口老铺", "评": "巷子里的人都认你的门牌，这比什么招牌都硬。"}),
 ]
 
 ok = 0
