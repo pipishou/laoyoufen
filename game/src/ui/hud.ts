@@ -14,7 +14,7 @@ import { talkFor, talkVoiceContext } from "../sim/talk";
 import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
-import type { GameState } from "../sim/state";
+import type { DayRecord, GameState } from "../sim/state";
 import { nextTrophies } from "../sim/trophies";
 import { demandCapOf } from "../sim/district";
 import { frenzyActive, frenzyLeftMinutes } from "../sim/frenzy";
@@ -225,7 +225,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <div class="eventtag">今日突发</div>
       <div class="eventtitle" data-evt-title></div>
       <div class="eventbody" data-evt-body></div>
-      <div class="evtsrc" data-evt-src>AI 导演 · 离线模板</div>
+      <div class="evtsrc" data-evt-src>街上听来的</div>
       <div class="eventchoices" data-evt-choices></div>
     </div>`;
   root.appendChild(evtWrap);
@@ -410,7 +410,31 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     });
   });
 
-  const render = (s: GameState, score: RecipeScore): void => {
+  /**
+ * 打烊单底部那行日注。
+ *
+ * 试玩 11-21 第 1 条：四天三家读到的都是同一句「多半是嫌贵或者等太久」——
+ * 一句哪边都不得罪的话，等于没说。现在按 `lostQueue / lostPrice / lostWait`
+ * 里的主因分流，玩家当天就能对上「原来他们是这样走的」。
+ */
+function dayNoteOf(rep: DayRecord, margin: number): string {
+  const visited = rep.served + rep.lost;
+  if (rep.served === 0) {
+    return "一碗都没卖出去：先回去把味道调上去、把价降到街坊掏得出的数，再开门。";
+  }
+  if (visited > 0 && rep.lost / visited > 0.3) {
+    const q = rep.lostQueue ?? 0;
+    const p = rep.lostPrice ?? 0;
+    const w = rep.lostWait ?? 0;
+    const top = p >= q && p >= w ? "price" : q >= w ? "queue" : "wait";
+    if (top === "price") return `走了 ${rep.lost} 位：${p} 位是看价牌掉头的 —— 最便宜那款再低一块试试。`;
+    if (top === "queue") return `走了 ${rep.lost} 位：${q} 位是门口站满了没进来 —— 座位和出碗两头看一眼。`;
+    return `走了 ${rep.lost} 位：${w} 位是等不及 —— 出碗慢的时候，人站着就烦。`;
+  }
+  return `今天站住了：一碗毛利约 ¥${margin.toFixed(1)}，明天试试多卖几碗。`;
+}
+
+const render = (s: GameState, score: RecipeScore): void => {
     lastState = s;
     // 打烊后 endDay 已经换过日，顶栏要显示「刚过完的那天」，
     // 否则会出现顶栏 1 月 2 日、日结单写 1 月 1 日的自相矛盾
@@ -457,13 +481,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       dayLost.textContent = `${rep.lost} 位`;
       daySat.textContent = rep.avgSat < 0 ? "--" : String(rep.avgSat);
       dayCash.textContent = formatMoney(rep.cash);
-      const visited = rep.served + rep.lost;
-      dayNote.textContent =
-        rep.served === 0
-          ? "一碗都没卖出去：先回去把味道调上去、把价降到街坊掏得出的数，再开门。"
-          : visited > 0 && rep.lost / visited > 0.3
-            ? `走了 ${rep.lost} 位：多半是嫌贵或者等太久——价牌和产能看一眼。`
-            : `今天站住了：一碗毛利约 ¥${score.margin.toFixed(1)}，明天试试多卖几碗。`;
+      dayNote.textContent = dayNoteOf(rep, score.margin);
       // 「明天做点什么」：一笔账不看目标就只是数字（P69）；产能跟不上时它排第一（P70）
       const plan = nextHook(s);
       hookMain.textContent = plan.text;
@@ -612,7 +630,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       } else {
         evtTitle.textContent = def.title;
         evtBody.textContent = def.body;
-        evtSrc.textContent = "AI 导演 · 离线模板";
+        evtSrc.textContent = "街上听来的";
         evtSrc.classList.remove("remote");
         evtChoices.innerHTML = def.choices
           .map(
@@ -665,7 +683,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     if (key !== lastEventKey) return;
     evtBody.textContent = narrative.body;
     const remote = narrative.source === "remote";
-    evtSrc.textContent = remote ? "AI 导演 · 在线生成" : "AI 导演 · 离线模板";
+    evtSrc.textContent = remote ? "刚在巷口听人说" : "街上听来的";
     evtSrc.classList.toggle("remote", remote);
   };
 

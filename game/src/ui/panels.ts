@@ -34,7 +34,7 @@ import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from 
 import { comboSummary, comboViews } from "../sim/combo";
 import { GEAR_BY_ID, GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
-import { CAPACITY_LOST_RATE, lostRateOf } from "../sim/hook";
+import { CAPACITY_LOST_RATE, lostRateOf, nextHook } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
 import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
 import { FLAVORS, FLAVOR_TOTAL, type FlavorEffect } from "../data/flavor";
@@ -300,6 +300,15 @@ let lastGradeKey = "";
       b.classList.toggle("on", b.dataset.tab2 === tab);
     });
     title.textContent = TAB_TITLE[tab];
+    // 试玩 11-21：配方页留下的滚动位置会被店铺接着用，栏目标题（和红标）跑到视野外。
+    // 换页签就是「重新看这一页」，滚动位置不该继承。
+    const paneEl = wrap.querySelector<HTMLElement>(`[data-pane="${tab}"]`);
+    if (paneEl) {
+      paneEl.scrollTop = 0;
+      paneEl.querySelectorAll<HTMLElement>("[data-body]").forEach((b) => {
+        b.scrollTop = 0;
+      });
+    }
     // 切页签必须就地重绘。render() 只由外部 refresh()（每分钟 / 动作 / 底栏打开）驱动，
     // 顶栏切页签不触发 refresh —— 从未渲染过的页签就会是「标题对、正文空」。
     // 试玩报告 I-05 的四个空页签就是这么来的（底栏进入 18208 字符 / 顶栏切入 0 字符）。
@@ -549,7 +558,19 @@ let lastGradeKey = "";
     }).join("");
     const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
     // 流失超过 45%：这一页最该看的不是菜单，是「店面」和「设备」（P70）
-    const hot = lostRateOf(s) >= CAPACITY_LOST_RATE ? " hot" : "";
+    /**
+   * 红标只标「钩子点名的那一段」。
+   *
+   * 试玩 11-21 第 5 条：走失高的日子店面和设备两处同时亮红，
+   * 「← 现在最缺」既指着打通隔墙又指着猛火灶，玩家反而不知道该买哪件。
+   * 钩子每天只说一件事，红标也只说这一件。
+   */
+  const hotPlan = lostRateOf(s) >= CAPACITY_LOST_RATE ? nextHook(s) : null;
+  const hotSeat = hotPlan?.kind === "capacity" && hotPlan.key === "capacity:seat" ? " hot" : "";
+  const hotEquip =
+    hotPlan?.kind === "capacity" && (hotPlan.key === "capacity:stove" || hotPlan.key === "capacity:cap")
+      ? " hot"
+      : "";
 
     // 扩建：四档，按顺序买（data/expansion.ts），后两档挂段位门槛（开罗 rank）
     const nextExp = nextExpansion(s);
@@ -799,7 +820,7 @@ let lastGradeKey = "";
       .join("");
     const gv = gearViews(s);
     /** 试玩二轮 F7：产能吃紧、而能提产能的家当还没买齐 → 家当这一段也标红 */
-    const gearHot = lostRateOf(s) >= CAPACITY_LOST_RATE && gearEfficiencyLeft(s).length > 0;
+    const gearHot = hotPlan?.kind === "gear" && gearEfficiencyLeft(s).length > 0;
     /**
      * 袋装老友粉（A7）：一次买断的包装机 + 每天按口碑出的货。
      * 没买时只有一行按钮；买了显示「每天出 N 袋 · 约 ¥M/天」和风味还原度 ——
@@ -887,12 +908,12 @@ let lastGradeKey = "";
       </div>`;
     }).join("");
     return `${gc.ready ? gradeSec : ""}<div class="sec">
-        <div class="sechd${hot}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
+        <div class="sechd${hotSeat}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
         ${expRow}
       </div>
       <div class="sec">
-        <div class="sechd${hot}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
+        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
         <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>

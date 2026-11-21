@@ -278,6 +278,7 @@ function arriveOne(state: GameState): void {
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   if (waiting >= queueMaxOf(state)) {
     flow.lostToday += 1;
+    flow.lostQueue += 1;
     state.monthLost += 1;
     return;
   }
@@ -308,6 +309,7 @@ function arriveOne(state: GameState): void {
   const dish = pickDish(state, wallet, nextFloat(state.rng));
   if (!dish) {
     flow.lostToday += 1;
+    flow.lostPrice += 1;
     state.monthLost += 1;
     const cheap = cheapestPrice(state);
     flow.lastLostReason = `${arch.name}看价牌走了（最便宜 ¥${cheap} 超预算 ¥${Math.round(wallet)}）`;
@@ -644,6 +646,7 @@ export function tickCustomers(state: GameState): void {
     surveyTick(state, c);
     if (c.waited > c.patience) {
       flow.lostToday += 1;
+      flow.lostWait += 1;
       state.monthLost += 1;
       return false;
     }

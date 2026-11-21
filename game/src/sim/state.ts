@@ -139,6 +139,14 @@ export interface CustomerFlow {
   serveCooldown: number;
   servedToday: number;
   lostToday: number;
+  /**
+   * 今天走掉的人各自为什么走（试玩 11-21：三家照钩子连买三档猛火灶，流失一动不动）。
+   * 三档分别对应 arriveOne 的三个出口：队满、看价牌、等不及。
+   * 钩子按这三档点名，才不会再出现「该压价却叫你去加灶」。
+   */
+  lostQueue: number;
+  lostPrice: number;
+  lostWait: number;
   revenueToday: number;
   /** 最近一位顾客的满意度，HUD 用 */
   lastSatisfaction: number;
@@ -339,6 +347,10 @@ export interface DayRecord {
   revenue: number;
   served: number;
   lost: number;
+  /** 走掉的人里，队满 / 看价牌 / 等不及各多少（试玩 11-21 起记录） */
+  lostQueue?: number;
+  lostPrice?: number;
+  lostWait?: number;
   /** 今日平均满意度，0 位顾客时为 -1 */
   avgSat: number;
   price: number;
@@ -716,6 +728,9 @@ export function createInitialState(playerId: string, seed: number): GameState {
       lastLikeFound: null,
       lastGift: null,
       lastLostReason: null,
+  lostQueue: 0,
+  lostPrice: 0,
+  lostWait: 0,
       lastFrenzy: null,
       lastStreet: null,
       lastSides: null,
@@ -827,6 +842,9 @@ function endDay(state: GameState): void {
   state.flow.serveCooldown = 0;
   state.flow.servedToday = 0;
   state.flow.lostToday = 0;
+  state.flow.lostQueue = 0;
+  state.flow.lostPrice = 0;
+  state.flow.lostWait = 0;
   state.flow.revenueToday = 0;
   state.flow.satSumToday = 0;
   state.flow.satCountToday = 0;
@@ -909,6 +927,9 @@ function recordDay(state: GameState, taste: number): void {
     revenue: Math.round(f.revenueToday),
     served: f.servedToday,
     lost: f.lostToday,
+    lostQueue: f.lostQueue,
+    lostPrice: f.lostPrice,
+    lostWait: f.lostWait,
     avgSat: f.satCountToday > 0 ? Math.round(f.satSumToday / f.satCountToday) : -1,
     price: state.price,
     taste: Math.round(taste),

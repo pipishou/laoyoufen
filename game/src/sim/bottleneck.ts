@@ -100,3 +100,50 @@ export function tightWords(state: GameState): string {
   if (c.tight === "seats") return "座位坐不下";
   return "备料不够卖";
 }
+
+/**
+ * 走掉的人各是为什么走的（试玩 11-21）。
+ *
+ * 三家照打烊单连买三档猛火灶（¥1,500 / ¥3,800 / ¥9,000），第 4 天流失还在 54–61%，
+ * 卖出的碗数停在 31–38 —— 因为那家店当天根本没被「出碗慢」卡住：
+ * 日上限 120 碗，实际只卖 37 碗。真正走人的理由写在 `flow.lost*` 里：
+ * 队满（门口挤到 12 个就进不来了）、看价牌（钱包不够）、等不及（耐心耗尽）。
+ *
+ * 钩子必须看得见这三档，否则「产能已经过剩」的时候还在催你升级灶。
+ */
+export interface LossSplit {
+  queue: number;
+  price: number;
+  wait: number;
+  total: number;
+  /** 哪一档最多；一个都没走时是 none */
+  dominant: "queue" | "price" | "wait" | "none";
+  /** 看价牌走的人占比（0–1） */
+  priceShare: number;
+  /** 这份数字是今天的还是昨天的 */
+  live: boolean;
+}
+
+function splitOf(queue: number, price: number, wait: number, live: boolean): LossSplit {
+  const total = queue + price + wait;
+  const dominant =
+    total === 0 ? "none" : price >= queue && price >= wait ? "price" : queue >= wait ? "queue" : "wait";
+  return { queue, price, wait, total, dominant, priceShare: total > 0 ? price / total : 0, live };
+}
+
+/** 最近一份能用的「为什么走」的计数 */
+export function lossSplitOf(state: GameState): LossSplit {
+  const rep = state.dayReport;
+  if (rep && typeof rep.lostQueue === "number") {
+    return splitOf(rep.lostQueue, rep.lostPrice ?? 0, rep.lostWait ?? 0, true);
+  }
+  const f = state.flow;
+  const live = splitOf(f.lostQueue ?? 0, f.lostPrice ?? 0, f.lostWait ?? 0, true);
+  if (live.total >= 5) return live;
+  const days = state.days ?? [];
+  const last = days[days.length - 1];
+  if (last && typeof last.lostQueue === "number") {
+    return splitOf(last.lostQueue, last.lostPrice ?? 0, last.lostWait ?? 0, false);
+  }
+  return live;
+}

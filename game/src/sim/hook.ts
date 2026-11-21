@@ -13,6 +13,9 @@
  * 3. **产能优先于段位**：当天流失超过 45% 时，段位评了也接不住客，
  *    先把「灶台 / 座位 / 案台」摆到第一位（P70 的病灶就在这里）。
  *    挑哪一件不看「哪个最紧」，看**每一块钱能把当天上限抬高多少**（见 `sim/bottleneck.ts`）。
+ *    但「产能」只是三种走人理由之一：试玩 11-21 三家连买三档猛火灶，卖的碗数没涨、
+ *    流失一动不动 —— 那家店当时是**看价牌走的人最多**。所以先看 `lossSplitOf` 的
+ *    主因，价牌主因就先改价，队满/等不及才谈灶台与座位。
  * 4. **产能件要真能接客**：粉篓与汤勺降的是单碗成本（一碗省 ¥0.14），对「一天最多出多少碗」
  *    没有任何帮助，所以不参与产能推荐（二轮试玩 F2：四个玩家都被指去买了粉篓，流失一点没降）。
  * 5. **时间前缀只在一处说**：「明天」由 CSS 的 `::before` 加，正文本里不许再出现一次
@@ -27,7 +30,9 @@ import { streetViews } from "./streets";
 import { EQUIPMENT, MAX_EQUIP_LEVEL, type EquipId } from "../data/equipment";
 import { equipLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
-import { capacityGain } from "./bottleneck";
+import { capacityGain, lossSplitOf } from "./bottleneck";
+import { menuViews } from "./menu";
+import { dishNameOfItem } from "./dish";
 
 /** 元 → 「¥4,000」（sim 层不 import UI 的格式化函数，避免依赖方向倒过来） */
 const yuan = (n: number): string => `¥${n.toLocaleString("zh-CN")}`;
@@ -50,7 +55,7 @@ export const CAPACITY_LOST_RATE = 0.45;
  */
 const MIN_SAMPLE = 5;
 
-export type HookKind = "capacity" | "grade" | "gear" | "street" | "arena" | "none";
+export type HookKind = "capacity" | "price" | "grade" | "gear" | "street" | "arena" | "none";
 
 export interface HookPlan {
   /** 打烊单上那一行字（含本地算出的数字） */
@@ -137,7 +142,7 @@ const EQUIP_KIND: Record<EquipId, CapKind> = {
 };
 
 /** 一件「真能把人接住」的东西：能加座的扩建，或设备里的出碗/上限件 */
-function capacityPick(state: GameState): CapPick | null {
+function capacityPick(state: GameState, preferSeat = false): CapPick | null {
   const gain = capacityGain(state);
   const picks: (CapPick & { gain: number })[] = [];
 
@@ -170,6 +175,15 @@ function capacityPick(state: GameState): CapPick | null {
   const pool = helpful.length > 0 ? helpful : picks.filter((p) => p.kind !== "cost");
   if (pool.length === 0) return picks.sort((a, b) => a.cost - b.cost)[0] ?? null;
 
+  // 门口站满（queue 主因）时先看「能不能多坐几个人」：
+  // 排队的本质是坐下的人太少，灶再快也接不住站着的那一队（试玩 11-21：座位 2、排队 12/12）。
+  if (preferSeat) {
+    const seatPicks = pool.filter((p) => p.kind === "seat");
+    if (seatPicks.length > 0) {
+      return seatPicks.sort((a, b) => a.cost - b.cost).find((p) => state.cash >= p.cost) ?? seatPicks[0]!;
+    }
+  }
+
   // 按「每一块钱能把当天上限抬高多少碗」排序（见 sim/bottleneck.ts 的文件头）：
   // 同样的钱，灶比扩座划算一倍 —— 试玩 11-20 的 D1–D2 就是主句点了扩座那个坑。
   const perYuan = (p: CapPick & { gain: number }): number => p.gain / Math.max(1, p.cost);
@@ -177,12 +191,46 @@ function capacityPick(state: GameState): CapPick | null {
   return sorted.find((p) => state.cash >= p.cost) ?? sorted[0]!;
 }
 
+/**
+ * 压价能压到多少：最便宜那一款再降一点，但**不许低于成本 +¥1**。
+ *
+ * 为什么按「最便宜那款」算：客人看的是价牌上最小的那个数（`lastLostReason` 里写的
+ * 就是「最便宜 ¥9 超预算 ¥7」）。压别的款不解决「买不起」。
+ */
+function pricePick(state: GameState): { name: string; from: number; to: number } | null {
+  const onSale = menuViews(state).filter((v) => v.item.on);
+  if (onSale.length === 0) return null;
+  const cheap = onSale.reduce((a, b) => (b.price < a.price ? b : a));
+  const floor = Math.ceil(cheap.score.cost + 1);
+  const to = Math.max(floor, cheap.price - 2);
+  if (to >= cheap.price) return null; // 已经在成本线上，压不动了
+  return { name: dishNameOfItem(state, cheap.item), from: cheap.price, to };
+}
+
 /** 明天的期待：文字 + 种类 + 口吻键；没有就给 kind "none" */
 export function nextHook(state: GameState): HookPlan {
   // ⓪ 产能：今天走掉太多人时，这是唯一值得提的事（P70）
   const sample = lostSampleOf(state);
   if (sample.rate >= CAPACITY_LOST_RATE) {
-    const pick = capacityPick(state);
+    // 先问「人为什么走」：看价牌走的最多，加灶是白花钱（试玩 11-21 三家都是这样）
+    const split = lossSplitOf(state);
+    if (split.dominant === "price") {
+      const price = pricePick(state);
+      if (price) {
+        const dayWord = split.live ? "今天" : "昨天";
+        return {
+          text: `把「${price.name}」降到 ${yuan(price.to)}`,
+          why:
+            split.price > 0
+              ? `${dayWord}有 ${split.price} 位是看价牌走的（现在 ${yuan(price.from)}）`
+              : "",
+          kind: "price",
+          key: "price",
+          urgency: "high",
+        };
+      }
+    }
+    const pick = capacityPick(state, split.dominant === "queue");
     if (pick) {
       const head = state.cash >= pick.cost ? `先把「${pick.what}」加上` : `卖了钱先添「${pick.what}」`;
       const dayWord = sample.live ? "今天" : "昨天";
@@ -275,6 +323,7 @@ const VOICE_HINT: Record<string, string> = {
   "capacity:stove": "那口灶",
   "capacity:seat": "店里的桌子",
   "capacity:cap": "案台上的备料",
+  price: "价牌上那个数",
   grade: "门口的招牌",
   gear: "店里的旧家当",
   street: "街上的事",
