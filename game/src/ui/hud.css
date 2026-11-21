@@ -2182,3 +2182,50 @@ button.pill[disabled] {
 .cust.t-picky .ct { color: var(--ink); border-color: var(--gold); background: var(--paper2); }
 .cust.t-picky { box-shadow: inset 2px 0 0 0 var(--gold); }
 .cust.t-passer { box-shadow: inset 2px 0 0 0 var(--sand); }
+
+/* 南宁轻地图（A10）：6×4 格子，上北下南。一格一个区，数字是仍在营业的同行。 */
+.mmap {
+  display: grid;
+  grid-template-columns: repeat(var(--mw, 6), 1fr);
+  grid-template-rows: repeat(var(--mh, 4), 34px);
+  gap: 3px;
+  margin: 4px 0 6px;
+}
+.mcell {
+  position: relative;
+  border: 1px solid var(--sand);
+  background: var(--paper2);
+  color: var(--wood);
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mcell b { font-weight: 400; }
+.mcell i {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  font-style: normal;
+  font-size: 9px;
+  color: var(--red);
+}
+.mcell .mhere,
+.mcell .mbr {
+  position: absolute;
+  bottom: 1px;
+  left: 2px;
+  font-size: 8px;
+  letter-spacing: 0;
+}
+.mcell.here {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+}
+.mcell.here .mhere { color: var(--ink); }
+.mcell.br { background: var(--cream); color: var(--ink2); }
+.mcell.br .mbr { color: var(--green); }
+.mcell.hot { box-shadow: inset 0 0 0 1px var(--red); }

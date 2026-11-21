@@ -308,3 +308,20 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 | P133 | 专精只动一个出口 | `sim/specialty.ts` | 开罗 8 级技能连带涨效率，我们一刀切一刀 |
 | P134 | 没有「送出去学」的时间成本 | `sim/specialty.ts` | 点了就成，像一个开关而不是一段日子 |
 | P135 | 员工行小屏会挤 | `ui/panels.ts` | 三个岗位说明文字偏长，按钮挤到第二行 |
+## 行 73 · A10 南宁轻地图 · 2026-11-21（D8 / MEDIUM）
+
+开罗 `mapchip.txt` 218 行是逐格贴图。本作不做可走地图（一局两分钟没人逛），只做一张 6×4 的**视图**：十二个区按真实相对方位摆格子，一格说三件事 —— 我在这、有分店、还有几家抢客。
+
+纪律：地图不写存档字段（只读 district / branches / rivals）；同行只落当前区（`RivalState` 没有区字段，硬画到别的区就是编数据）；一格一个字都不多放。
+
+接线：`data/map.ts`（坐标表 + 短名）、`sim/map.ts`（mapCells / mapSummary / unvisitedDistricts / districtPitchOf）、`ui/panels.ts` 图鉴页地图段、`ui/hud.css` 像素格样式。
+
+验收：tsc 0；vitest **53 文件 604 用例**（新增 `map.test.ts` 9 例，含方位锁）；copy_gate 0；eye_gate `--slug a10` 五视口 724·765·585·1220·1374 色 stamp 130；ai_gate `ok: true`；build `index-BNxUFO1K.js` 1,529,867 B / `index-BgDNgWG1.css` 43,932 B。
+
+## 缺口（A10 新增）
+
+| 编号 | 问题 | 位置 | 说明 |
+| --- | --- | --- | --- |
+| P136 | 别的区看不到同行 | `sim/map.ts` | `RivalState` 无 district，开了分店才知道那边有谁 |
+| P137 | 格子不可点 | `ui/panels.ts` | 想搬区还得去「街面 · 换区」，两处信息没打通 |
+| P138 | 没有热力图 | `ui/hud.css` | 人流只有 title 里一行数字 |

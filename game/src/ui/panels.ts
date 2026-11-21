@@ -55,6 +55,7 @@ import { getLine, remoteLineCount } from "../ai/lines";
 import { icon } from "./icons";
 import { specialtiesOfRole } from "../data/specialty";
 import { specialtySummary } from "../sim/specialty";
+import { mapCells, mapSize, mapSummary, districtPitchOf } from "../sim/map";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -1201,11 +1202,37 @@ function collectionHtml(s: GameState): string {
     const newsRows = newsList(s)
       .map((n) => `<div class="nrow"><span class="ndate">${newsDate(n)}</span><span class="ntext">${n.text}</span></div>`)
       .join("");
-    const newsSec = `<div class="sec">
+      /**
+   * 南宁轻地图（A10）：十二个区摆在 6×4 格子上，上北下南。
+   * 一格一句话 —— 你在哪、有没有分店、还有几家在抢。不做可走地图。
+   */
+  function mapHtml(s: GameState): string {
+    const cells = mapCells(s);
+    const size = mapSize();
+    const grid = cells
+      .map(
+        (c) =>
+          `<div class="mcell${c.here ? " here" : ""}${c.branch ? " br" : ""}${c.rivals > 1 ? " hot" : ""}" ` +
+          `style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.name}｜每天约 ${c.traffic} 人｜${districtPitchOf(c.id)}">` +
+          `<b>${c.short}</b>` +
+          (c.rivals > 0 ? `<i>${c.rivals}</i>` : "") +
+          (c.here ? `<span class="mhere">在这</span>` : c.branch ? `<span class="mbr">分店</span>` : "") +
+          `</div>`,
+      )
+      .join("");
+    return `<div class="sec">
+        <div class="sechd">${icon("street")}南宁 · ${mapSummary(s)}</div>
+        <div class="mmap" style="--mw:${size.w};--mh:${size.h}">${grid}</div>
+        <div class="hint">格子里的小数字是同一条街上还在营业的同行；红框是竞争最挤的区。想搬区去「街面 · 换区」。</div>
+      </div>`;
+  }
+
+const newsSec = `<div class="sec">
       <div class="sechd">${icon("book")}街坊报 · ${newsSummary(s)}</div>
       <div class="lmeta" style="padding:0 2px 8px">每天打烊出一条，写这条街上真发生过的事 —— 开了店、评了段、赢了赛、同行关门、街上修好了什么。报上不评价你，只把事记下来。</div>
       ${newsRows || `<div class="lmeta">今天还没出报，明天打烊就有了。</div>`}
     </div>`;
+  const mapSec = mapHtml(s);
     const flavorSec = `<div class="sec"><div class="sechd">${icon("pan")}味道 · ${gotFlavors.length}/${FLAVOR_TOTAL}<span class="sechint">每条都是南宁真有人这么吃的，凑成一次就记下</span></div><div class="tgroups"><div class="tgroup"><div class="tgname">成型吃法</div><div class="cgrid">${flavorCards}</div></div></div></div>`;
 
     const near = nextTrophy(s);
@@ -1228,7 +1255,7 @@ function collectionHtml(s: GameState): string {
       <div class="sec"><div class="sechd">评级 ${p.grades}/5</div><div class="cgrid">${gradeChips}</div></div>
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
       ${trophySec}
-      ${flavorSec}${newsSec}
+      ${flavorSec}${mapSec}${newsSec}
       ${bowlSec}`;
   }
 
