@@ -3,6 +3,7 @@ import { NEWS, NEWS_KEEP, type NewsDef, type NewsKind } from "../data/news";
 import { streetById } from "../data/streets";
 import { gradeOf } from "./grade";
 import { RIVAL_BY_ID } from "../data/rivals";
+import { hashString } from "./rng";
 
 /**
  * 街坊报（A11）：每天打烊时写一条，只写「这条街今天真发生过的事」。
@@ -24,12 +25,7 @@ export interface NewsItem {
 }
 
 function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i += 1) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
+  return hashString(s);
 }
 
 function ofKind(kind: NewsKind): NewsDef[] {

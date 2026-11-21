@@ -61,3 +61,18 @@ export function shuffled<T>(rng: RngState, items: readonly T[]): T[] {
   }
   return out;
 }
+
+/**
+ * 稳定的字符串哈希（FNV-1a，32 位）。
+ *
+ * 用来做「同一天、同一款、同一件事永远选到同一句」：街坊报的标题、
+ * 今天的行情都靠它 —— **不吃 state.rng**，否则同一天重进游戏文案会变。
+ */
+export function hashString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i += 1) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}

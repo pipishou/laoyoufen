@@ -24,6 +24,7 @@ import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
 import { tierRemark } from "./tier";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
+import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
 import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
@@ -231,6 +232,8 @@ function spawnChance(state: GameState): number {
     districtEnergy(state) *
     // 热卖（开罗 Ramen Frenzy 2：一旦热卖，很多人会来）
     frenzySpawnBoost(state) *
+    // 南宁行情（批次三）：下雨、赶圩、开学，都在这一天
+    marketAttractMult(state) *
     FLOW.spawnScale *
     // 开局分流（P67）：前七天别把产能压垮
     spawnScaleByDay(state)
@@ -306,7 +309,7 @@ function arriveOne(state: GameState): void {
    *
    * 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
    */
-  const wallet = arch.budget * frenzyBudgetBoost(state) * tierBudgetPct(tier);
+  const wallet = arch.budget * frenzyBudgetBoost(state) * tierBudgetPct(tier) * marketWalletMult(state);
   const dish = pickDish(state, wallet, nextFloat(state.rng));
   if (!dish) {
     flow.lostToday += 1;
@@ -331,6 +334,8 @@ function arriveOne(state: GameState): void {
     bowlPatienceMult(state) *
     (regular ? 1.6 : 1) *
     tierPatiencePct(tier) *
+    // 南宁行情（批次三）：台风天人心急，寒潮里人愿意等砂锅
+    marketPatienceMult(state) *
     FLOW.patienceScale;
   flow.customers.push({
     id: flow.nextId++,
@@ -451,7 +456,7 @@ function settle(state: GameState, c: QueueCustomer): void {
    * 这里刻意**不扣份量加价**（P46）：点三两的人本来就饿，还会再加一份腐竹；
    * 把 +¥2 从 room 里扣掉，等于「多要一两粉就买不起加料了」，替身实测加购从 5.6% 掉到 0.7%。
    */
-  const wallet = arch ? arch.budget * priceTolerance(sc.total) : bowlPrice;
+  const wallet = arch ? arch.budget * priceTolerance(sc.total) * marketWalletMult(state) : bowlPrice;
   const sidePick = arch ? pickSides(state, arch, sat, wallet - item.price) : { items: [], paid: 0, cost: 0, combo: null, satBonus: 0 };
   if (sidePick.items.length > 0) {
     sat = clamp(sat + sidePick.satBonus, 0, 100);
@@ -478,6 +483,8 @@ function settle(state: GameState, c: QueueCustomer): void {
       pairCostFactor(item.recipe.toppings) *
       // 碗（A4）：大盆装得多也费料，打包碗有盒子钱
       bowlCostFactor(state) *
+      // 南宁行情（批次三）：回南天受潮、猪肉起价，都落在料钱上
+      marketCostFactor(state) *
       flavorCostFactor(item.recipe.toppings, item.noodle) +
     sidePick.cost;
   state.cash += paid - cost;

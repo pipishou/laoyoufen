@@ -459,7 +459,7 @@ describe("替身 36 个月", () => {
     FLOW.patienceScale = 1.5;
     FLOW.queueMax = 12;
 
-    for (const seed of [1, 2]) {
+    for (const seed of [1, 2, 3, 4]) {
       const s = play(seed);
       const months = s.months.length;
       const rev = s.months.reduce((n, m) => n + m.revenue, 0);

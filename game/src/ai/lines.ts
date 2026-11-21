@@ -29,7 +29,8 @@ export type LineKind =
   | "bowl_voice"
   | "guest_voice"
   | "guest_talk"
-  | "tier_voice";
+  | "tier_voice"
+  | "market_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -308,6 +309,19 @@ const LOCAL: Record<LineKind, readonly string[]> = {
    * 照例不许出现数字：档位是本地算的，句子只说感受。
    */
   tier_voice: TIER_VOICE_POOL.taste!,
+  /**
+   * 14. market_voice   今天街上的事（批次三 · 南宁行情）
+   *
+   * 开罗 `economy` 表里有二十多条「今天全场材料费 +」「今天客流 −」的限时条件，
+   * 落到界面上只有一枚小图标。我们让它由街坊说一句 —— 说的是天气与街上，
+   * **不许报数字**（乘数是本地算的，报出来就变成算账）。
+   */
+  market_voice: [
+    "这鬼天气，出门一趟鞋就废了。",
+    "今天街上没什么人，倒是清静。",
+    "这种天，还是你这里坐得住。",
+    "街上人挤人，我绕了两条巷才过来。",
+  ],
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */

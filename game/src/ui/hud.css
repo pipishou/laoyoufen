@@ -2322,3 +2322,19 @@ button.pill[disabled] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 今天街上的事（批次三）：回南天 / 赶圩 / 猪肉起价 —— 只有一行，鼠标停一下才展开细节 */
+#float .mktrow {
+  display: none;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--wood);
+}
+#float .mktrow.on {
+  display: block;
+}
+#float .mktrow.on::before {
+  content: "街上 · ";
+  color: var(--ink2);
+}

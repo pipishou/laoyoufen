@@ -6,6 +6,7 @@ import { FLAVOR_BY_ID } from "./data/flavor";
 import { dimById, tierWord, tierWords } from "./data/tier";
 import { tierById } from "./data/guest-tier";
 import { tierVoiceContext } from "./sim/guest-tier";
+import { marketOf } from "./sim/market";
 import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
@@ -647,6 +648,8 @@ let prevLost = state.flow.lostToday;
 let prevCooldown = state.flow.serveCooldown;
 let prevMonths = state.months.length;
 let prevContest = state.contest.results.length;
+/** 今天街上的事（批次三）说过哪一句 —— 一天只说一次，换天再说 */
+let lastMarketDay = "";
 let prevEventKey: string | null = null;
 let prevLostReason: string | null = null;
 
@@ -781,6 +784,27 @@ function tickFeedback(): void {
         day: s.day,
       }).then((line) => {
         if (line) hud.showToast(`客人说：「${line}」`, "info");
+      });
+    }
+  }
+
+  /**
+   * 南宁行情（批次三）：一天一句。街坊说的是天气和街上，乘数在本地算，句子不报数。
+   */
+  {
+    const mk = marketOf(s);
+    const mKey = mk ? `${mk.id}:${s.month}:${s.day}` : "";
+    if (mk && mKey !== lastMarketDay) {
+      lastMarketDay = mKey;
+      hud.showToast(`${mk.name}：${mk.line}`, "info");
+      void fetchLine({
+        kind: "market_voice",
+        key: mk.id,
+        context: { 天: mk.name, 时: mk.when, 事: mk.line },
+        month: s.month,
+        day: s.day,
+      }).then((line) => {
+        if (line) hud.showToast(`街坊说：「${line}」`, "info");
       });
     }
   }

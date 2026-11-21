@@ -31,6 +31,7 @@ import type { RecipeScore } from "../sim/score";
 import { bowlMinutes, serveMultiplier } from "../sim/staff";
 import { equipServeMultiplier, slowestStation, stageMinutes } from "../sim/equipment";
 import { STATION_NAMES } from "../data/equipment";
+import { marketOf, marketWords } from "../sim/market";
 import { icon } from "./icons";
 
 /**
@@ -194,6 +195,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <div class="t2" data-subs>汤 -- · 粉 -- · 魅 --</div>
       <div class="t2" data-econ>售价 ¥-- · 成本 ¥--</div>
       <div class="tierrow" data-tiers></div>
+      <div class="mktrow" data-market></div>
     </div>
   </div>
 
@@ -337,6 +339,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     frenzytxt: q("[data-frenzytxt]"),
     econ: q("[data-econ]"),
     tiers: q("[data-tiers]"),
+  market: q("[data-market]"),
     code: q("[data-code]"),
     total: q("[data-total]"),
     subs: q("[data-subs]"),
@@ -355,6 +358,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   let lastCustKey = "";
 /** 四维九档的渲染缓存键：只在档位变了才重建（悬停提示否则会一直闪） */
 let lastTierKey = "";
+let lastMarketKey = "";
 
   const chipEls = Array.from(root.querySelectorAll<HTMLButtonElement>(".chip"));
   const topCount = q("[data-topcount]");
@@ -640,6 +644,18 @@ const render = (s: GameState, score: RecipeScore): void => {
             `</div>`,
         )
         .join("");
+    }
+
+    // 今天街上的事（批次三）：回南天、赶圩、猪肉起价 —— 只有名字与四个数，点开才说细节
+    {
+      const mk = marketOf(s);
+      const mKey = mk ? `${mk.id}:${s.month}:${s.day}` : "";
+      if (mKey !== lastMarketKey) {
+        lastMarketKey = mKey;
+        el.market.textContent = mk ? `${mk.name} · ${marketWords(mk)}` : "";
+        el.market.title = mk ? `${mk.when}｜${mk.line}` : "";
+        el.market.className = mk ? "mktrow on" : "mktrow";
+      }
     }
 
     const selected = new Set(s.recipe.toppings);
