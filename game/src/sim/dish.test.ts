@@ -131,7 +131,7 @@ describe("饮料冰热（P43）", () => {
     s.sides.drinkTemp = "hot";
     const back = deserialize(serialize(s))!;
     expect(back.sides.drinkTemp).toBe("hot");
-    expect(SAVE_VERSION).toBe(32);
+    expect(SAVE_VERSION).toBe(33);
 
     const raw = JSON.parse(serialize(s)) as Record<string, unknown>;
     raw.saveVersion = 15;

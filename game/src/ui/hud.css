@@ -2354,3 +2354,8 @@ button.pill[disabled] {
 .rcol .qb b { color: var(--green); font-size: 10px; }
 .rcol .qb i { color: var(--wood); font-style: normal; font-size: 10px; }
 .rcol .qb.on { color: var(--ink); border-color: var(--green); background: var(--cream); }
+
+/* 手上的功夫（批次 6）：三个小方块表示练到第几级 */
+.skpips { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: middle; }
+.skpips i { width: 6px; height: 8px; background: var(--cream); border: 1px solid var(--sand); }
+.skpips i.on { background: var(--gold); border-color: var(--ink2); }

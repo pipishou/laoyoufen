@@ -31,6 +31,8 @@ import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { priceWarWords } from "../sim/price-war";
+import { FAMILY_NAMES, type SkillFamily } from "../data/skill";
+import { skillEffectWords, skillLine, skillSummary, skillViews } from "../sim/skill";
 import { qualitySummary, qualityViews, qualityWords } from "../sim/quality";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from "../sim/gear";
@@ -172,6 +174,7 @@ export interface PanelActions {
   setBowl(id: string): void;
   /** 换进货档（批次五）：免费，代价在每碗料钱里 */
   setQuality(id: string): void;
+  learnSkill(id: string): void;
   /** 进货档（A5）：换米 / 换骨，随时可换、代价进每碗料钱 */
   setRice(id: string): void;
   setBone(id: string): void;
@@ -455,6 +458,9 @@ let lastGradeKey = "";
       break;
     case "buybowl":
       actions.buyBowl(id);
+      break;
+    case "skill":
+      actions.learnSkill(id);
       break;
     case "quality":
       actions.setQuality(id);
@@ -872,7 +878,44 @@ let lastGradeKey = "";
         <div class="lmeta">${packOwned(s) ? `${packRateWords(s)} · 每天出 ${packSummary(s).replace("每天出 ", "").replace(" 袋 · 约 ¥", " 袋，赚 ¥").replace("/天", "")}` : `一次置办，每天出几袋卖到外地；袋子、酱料包、干粉都算在里面`}</div>
       </div>
       </div>`;
-    const gearRows = gv
+    /**
+   * 手上的功夫（批次 6）：十二支技法，每支三级。
+   * 与「店员专精」分开：这一层是老板自己的手，店员走了也还在。
+   */
+  const skv = skillViews(s);
+  const skillRows = (["heat", "knife", "host", "trade"] as SkillFamily[])
+    .map((fam) => {
+      const rows = skv
+        .filter((v) => v.branch.family === fam)
+        .map((v) => {
+          const pips = [1, 2, 3]
+            .map((n) => `<i class="${n <= v.level ? "on" : ""}"></i>`)
+            .join("");
+          const eff = v.next ? skillEffectWords(v.next.effect) : "";
+          return `<div class="lrow${v.level >= 3 ? " locked" : ""}" data-skill="${v.branch.id}">
+          <div class="lbtns">${
+            v.level >= 3
+              ? `<span class="tag2 on">练满了</span>`
+              : `<button type="button" class="pickbtn" data-act="skill" data-id="${v.branch.id}" ${
+                  v.affordable ? "" : "disabled"
+                }>练</button>`
+          }</div>
+          <span class="lname">${v.branch.name}<span class="skpips">${pips}</span></span>
+          <div class="lmeta">${v.branch.what}${eff ? `　·　${eff}` : ""}<br>${skillLine(v)}</div>
+        </div>`;
+        })
+        .join("");
+      return `<div class="sechd" style="margin-top:6px">${FAMILY_NAMES[fam]}</div>${rows}`;
+    })
+    .join("");
+  const skillSec = `
+      <div class="sec">
+        <div class="sechd">${icon("pan")}手上的功夫 · ${skillSummary(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">你自己练出来的手艺：十二支，每支三级，一级一级往上练，练过就永久在身上。人情是街坊给的面子，钱是买料自己练。店员学的「专精」是别人的手，这一层是你自己的。</div>
+        ${skillRows}
+      </div>`;
+
+  const gearRows = gv
       .map(
         (v) => `<div class="lrow${v.owned ? " locked" : ""}">
           <div class="lname">${v.def.name}<span class="tag2">${v.owned ? "已买" : money(v.def.costYuan)}</span>${
@@ -986,6 +1029,7 @@ ${packSec}
       </div>
       ${sidesSec}
       ${gc.ready ? "" : gradeSec}
+      ${skillSec}
       ${craftSec}
       ${streetSec}
       ${blockSec}

@@ -13,6 +13,7 @@ import { STYLE_BY_ID } from "../data/style";
 import { BONE_BY_ID, DEFAULT_BONE, DEFAULT_RICE, RICE_BY_ID } from "../data/grades";
 import type { NewsItem } from "./news";
 import { DEFAULT_QUALITY, QUALITY_BY_ID } from "../data/quality";
+import { SKILL_BY_ID } from "../data/skill";
 import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -104,6 +105,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 32 &&
     v.saveVersion !== 31 &&
     v.saveVersion !== 30 &&
     v.saveVersion !== 29 &&
@@ -592,6 +594,17 @@ export function deserialize(raw: string): GameState | null {
   // v31 → v32（批次五 配料品质档）：老档没有这个字段，一律按最省的平常货
   const qq = (parsed as { quality?: unknown }).quality;
   parsed.quality = typeof qq === "string" && QUALITY_BY_ID.has(qq) ? qq : DEFAULT_QUALITY;
+  // v32 → v33（批次六 手上的功夫）：只留表内支、只留 1–3 的整数
+  const rawSkills = (parsed as { skills?: unknown }).skills;
+  const nextSkills: Record<string, number> = {};
+  if (rawSkills && typeof rawSkills === "object") {
+    for (const [k, v] of Object.entries(rawSkills as Record<string, unknown>)) {
+      if (!SKILL_BY_ID.has(k)) continue;
+      const n = typeof v === "number" ? Math.floor(v) : 0;
+      if (n >= 1 && n <= 3) nextSkills[k] = n;
+    }
+  }
+  parsed.skills = nextSkills;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

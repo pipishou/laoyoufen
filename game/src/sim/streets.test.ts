@@ -225,7 +225,7 @@ describe("存档", () => {
     const back = deserialize(serialize(s))!;
     expect(back.streets.sort()).toEqual(["banyan_bench", "lane_lamp"]);
     expect(back.streetSeen.length).toBeGreaterThanOrEqual(1);
-    expect(SAVE_VERSION).toBe(32);
+    expect(SAVE_VERSION).toBe(33);
   });
 
   it("v19 老档没有街面 → 补空；坏 id 丢掉", () => {

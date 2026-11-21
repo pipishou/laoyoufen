@@ -33,6 +33,7 @@ import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
 import { buyBowl as buyBowlImpl, setBowl as setBowlImpl } from "./sim/bowl";
 import { qualityOf, setQuality as setQualityImpl } from "./sim/quality";
+import { learnSkill as learnSkillImpl } from "./sim/skill";
 import { bowlById } from "./data/bowl";
 import { setBone as setBoneImpl, setRice as setRiceImpl } from "./sim/materials";
 import { boneById, riceById } from "./data/grades";
@@ -537,6 +538,17 @@ panels = mountPanels(hudRoot, {
     playSfx("upgrade");
     hud.showToast(r.line ?? "碗换好了", "like");
     speakBowl(String(id));
+    refresh();
+  },
+  learnSkill(id) {
+    const r = learnSkillImpl(state, String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason ?? "现在练不了", "info");
+      refresh();
+      return;
+    }
+    playSfx("upgrade");
+    hud.showToast(`手上的功夫：${r.line ?? ""}`, "like");
     refresh();
   },
   setQuality(id) {

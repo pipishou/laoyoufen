@@ -20,10 +20,11 @@ import { pushNews } from "./news";
 import { checkTrophies } from "./trophies";
 import { settlePack } from "./pack";
 import { DEFAULT_QUALITY } from "../data/quality";
+
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 32;
+export const SAVE_VERSION = 33;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -545,6 +546,8 @@ export interface GameState {
   pack: boolean;
   /** 配料品质档（批次五）：plain / good / top —— 换来的是每碗料钱与卖相 */
   quality: string;
+  /** 手上的功夫（批次 6）：支 id → 练到第几级，0/1/2/3 */
+  skills: Record<string, number>;
   /** 街坊报：最近几天的头版（A11，见 `sim/news.ts`） */
   news: NewsItem[];
   /**
@@ -810,6 +813,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     gear: [],
     pack: false,
     quality: DEFAULT_QUALITY,
+    skills: {},
     news: [],
     styles: [],
     style: null,
