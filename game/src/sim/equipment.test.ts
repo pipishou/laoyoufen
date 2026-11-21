@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BENCH_CAPACITY_STEP, EQUIPMENT, MAX_EQUIP_LEVEL, STOVE_SERVE_FACTOR } from "../data/equipment";
+import { BENCH_CAPACITY_STEP, EQUIPMENT, MAX_EQUIP_LEVEL, STAGE_MINUTES, STATION_ORDER } from "../data/equipment";
 import { CAPITAL, bowls } from "../data/anchors";
 import { SERVE_MINUTES } from "./customer";
 import {
@@ -9,6 +9,10 @@ import {
   equipLevel,
   equipNextCost,
   equipServeMultiplier,
+  slowestStation,
+  stageMinutes,
+  stationCount,
+  stationServeFactor,
 } from "./equipment";
 import { createInitialState, SAVE_VERSION } from "./state";
 import { openForBusiness } from "./setup";
@@ -20,9 +24,9 @@ const fresh = () => {
   return s;
 };
 
-describe("设备 S4：三件主线设备", () => {
-  it("三件设备、每件四档，价格与 CAPITAL.equipmentYuan 一致（¥1,500→¥30,000）", () => {
-    expect(EQUIPMENT.map((e) => e.id)).toEqual(["stove", "strainer", "bench"]);
+describe("设备 S4：四件设备，三段并行", () => {
+  it("四件设备、每件四档，价格与 CAPITAL.equipmentYuan 一致（¥1,500→¥30,000）", () => {
+    expect(EQUIPMENT.map((e) => e.id)).toEqual(["stove", "pot", "strainer", "bench"]);
     for (const e of EQUIPMENT) {
       expect(e.tiers).toEqual([...CAPITAL.equipmentYuan]);
       expect(e.tiers.length).toBe(MAX_EQUIP_LEVEL);
@@ -31,9 +35,15 @@ describe("设备 S4：三件主线设备", () => {
     expect(bowls(CAPITAL.equipmentYuan[3]!)).toBe(3_000);
   });
 
-  it("新局三件都是 0 档，第一档要 ¥1,500", () => {
+  it("三段的基准分钟数加起来正好是一碗的 6 分钟", () => {
+    expect(STAGE_MINUTES.wok + STAGE_MINUTES.pot + STAGE_MINUTES.basket).toBeCloseTo(SERVE_MINUTES, 6);
+    expect(STATION_ORDER).toEqual(["wok", "pot", "basket"]);
+  });
+
+  it("新局四件都是 0 档，第一档要 ¥1,500", () => {
     const s = fresh();
     expect(equipLevel(s, "stove")).toBe(0);
+    expect(equipLevel(s, "pot")).toBe(0);
     expect(equipNextCost(s, "stove")).toBe(1_500);
   });
 
@@ -76,19 +86,36 @@ describe("设备 S4：三件主线设备", () => {
     expect(s.cash).toBe(15_000);
   });
 
-  it("猛火灶降出碗时间：0.85^n 倍，四档 6→5.1→4.3→3.7→3.1 分/碗", () => {
+  it("猛火灶是「多开一口炒锅」：档位越高，炒锅那一段摊得越薄", () => {
     const s = fresh();
     s.cash = 1_000_000;
-    const seen: number[] = [effectiveServeMinutes(s, SERVE_MINUTES, 1)];
+    expect(stationCount(s, "wok")).toBe(1);
+    const wok: number[] = [stageMinutes(s).wok];
     for (let i = 0; i < MAX_EQUIP_LEVEL; i += 1) {
       buyEquipment(s, "stove");
-      seen.push(effectiveServeMinutes(s, SERVE_MINUTES, 1));
+      wok.push(stageMinutes(s).wok);
     }
-    expect(seen[0]).toBeCloseTo(6, 6);
-    expect(seen[1]).toBeCloseTo(5.1, 6);
-    expect(seen[4]).toBeCloseTo(6 * Math.pow(STOVE_SERVE_FACTOR, 4), 6);
-    for (let i = 1; i < seen.length; i += 1) expect(seen[i]!).toBeLessThan(seen[i - 1]!);
-    expect(equipServeMultiplier(s)).toBeCloseTo(Math.pow(STOVE_SERVE_FACTOR, 4), 6);
+    expect(wok[1]).toBeCloseTo(STAGE_MINUTES.wok / 2, 6);
+    expect(wok[4]).toBeCloseTo(STAGE_MINUTES.wok / 5, 6);
+    for (let i = 1; i < wok.length; i += 1) expect(wok[i]!).toBeLessThan(wok[i - 1]!);
+  });
+
+  it("三段合计分钟数逐档下降，stationServeFactor 同步递减且永远小于 1", () => {
+    const s = fresh();
+    s.cash = 1_000_000;
+    expect(stationServeFactor(s)).toBeCloseTo(1, 6);
+    expect(effectiveServeMinutes(s, SERVE_MINUTES, 1)).toBeCloseTo(6, 6);
+    const seen: number[] = [stationServeFactor(s)];
+    for (const id of ["stove", "pot", "strainer", "stove", "pot"] as const) {
+      buyEquipment(s, id);
+      seen.push(stationServeFactor(s));
+    }
+    for (let i = 1; i < seen.length; i += 1) {
+      expect(seen[i]!).toBeLessThan(seen[i - 1]!);
+      expect(seen[i]!).toBeLessThan(1);
+    }
+    expect(equipServeMultiplier(s)).toBeCloseTo(stationServeFactor(s), 6);
+    expect(effectiveServeMinutes(s, SERVE_MINUTES, 1)).toBeLessThan(6);
   });
 
   it("粉篓降食材成本：0.97^n，四档一碗省 ¥0.56 左右", () => {
@@ -110,7 +137,20 @@ describe("设备 S4：三件主线设备", () => {
     expect(s.capacity).toBe(cap0 + BENCH_CAPACITY_STEP * MAX_EQUIP_LEVEL);
   });
 
-  it("存档 v9：设备档位能存能读，v8 老档补空对象", () => {
+  it("最慢的一段会跟着买的东西换（新局是炒锅与汤锅并列，先买哪边另一边就成瓶颈）", () => {
+    const s = fresh();
+    s.cash = 1_000_000;
+    const first = slowestStation(s);
+    expect(first.minutes).toBeCloseTo(Math.max(STAGE_MINUTES.wok, STAGE_MINUTES.pot, STAGE_MINUTES.basket), 6);
+    buyEquipment(s, "stove");
+    expect(slowestStation(s).station).not.toBe("wok");
+    buyEquipment(s, "pot");
+    buyEquipment(s, "pot");
+    buyEquipment(s, "pot");
+    expect(["wok", "pot", "basket"]).toContain(slowestStation(s).station);
+  });
+
+  it("存档：设备档位能存能读，老档补空对象", () => {
     const s = fresh();
     s.cash = 1_000_000;
     buyEquipment(s, "stove");
@@ -129,27 +169,32 @@ describe("设备 S4：三件主线设备", () => {
     expect(migrated!.saveVersion).toBe(SAVE_VERSION);
   });
 
-  it("买成之后要交代这一档到底换了什么（试玩二轮 F8）", () => {
+  it("买成之后要交代这一档到底换了什么（F8：说口数，不说分钟）", () => {
     const s = createInitialState("p1", 1);
     openForBusiness(s, "alley", "测试店");
     s.cash = 200_000;
 
     const stove = buyEquipment(s, "stove");
     expect(stove.ok).toBe(true);
-    expect(stove.line).toContain("出碗时间");
+    expect(stove.line).toContain("炒锅");
     expect(stove.line).toContain("第 1 档");
+    expect(stove.line).toContain("2 口");
+
+    const pot = buyEquipment(s, "pot");
+    expect(pot.line).toContain("汤锅");
+    expect(pot.line).toContain("口");
 
     const bench = buyEquipment(s, "bench");
     expect(bench.line).toContain("每天多备");
     expect(bench.line).toContain(String(BENCH_CAPACITY_STEP));
 
     const strainer = buyEquipment(s, "strainer");
-    expect(strainer.line).toContain("料钱");
+    expect(strainer.line).toContain("粉篓");
+    expect(strainer.line).toContain("筒");
 
-    // 失败时不给 line，免得 toast 说「换了」其实没换
     s.cash = 0;
     const poor = buyEquipment(s, "stove");
     expect(poor.ok).toBe(false);
     expect(poor.line).toBeUndefined();
   });
-})
+});

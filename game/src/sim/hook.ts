@@ -27,7 +27,7 @@ import { checkGrade } from "./grade";
 import { arenaViews } from "./arena";
 import { gearViews } from "./gear";
 import { streetViews } from "./streets";
-import { EQUIPMENT, MAX_EQUIP_LEVEL, type EquipId } from "../data/equipment";
+import { EQUIPMENT, MAX_EQUIP_LEVEL, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
 import { equipLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
 import { capacityGain, lossSplitOf } from "./bottleneck";
@@ -128,6 +128,8 @@ interface CapPick {
   what: string;
   cost: number;
   kind: CapKind;
+  /** 设备件属于哪一段（三段并行之后，钩子要能说出「卡在炒锅还是汤锅」） */
+  station?: StationId;
 }
 
 /**
@@ -137,9 +139,31 @@ interface CapPick {
  */
 const EQUIP_KIND: Record<EquipId, CapKind> = {
   stove: "speed",
+  pot: "speed",
   bench: "cap",
-  strainer: "cost",
+  strainer: "speed",
 };
+
+/** 设备件对应哪一段（三段并行之后，「卡在炒锅还是汤锅」要能说出来） */
+function stationOfEquip(id: EquipId): StationId | undefined {
+  return (Object.keys(STATION_EQUIP) as StationId[]).find((s) => STATION_EQUIP[s] === id);
+}
+
+/** 钩子的口吻键：卡在炒锅仍然是旧的 `capacity:stove`（探针与副行池都按它写过），
+ *  汤锅与粉篓是批次二新增的两档。 */
+function stationKeyOf(pick: CapPick): string {
+  if (pick.station === "pot") return "capacity:pot";
+  if (pick.station === "basket") return "capacity:basket";
+  return "capacity:stove";
+}
+
+/** 每件设备升一档能抬高多少碗（三段并行之后按段算，见 sim/bottleneck.ts 的 capacityGain） */
+function equipGainOf(id: EquipId, gain: ReturnType<typeof capacityGain>): number {
+  if (id === "stove") return gain.stove;
+  if (id === "pot") return gain.pot;
+  if (id === "strainer") return gain.basket;
+  return gain.bench;
+}
 
 /** 一件「真能把人接住」的东西：能加座的扩建，或设备里的出碗/上限件 */
 function capacityPick(state: GameState, preferSeat = false): CapPick | null {
@@ -153,7 +177,8 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
         what: `${eq.name}（第 ${lv + 1} 档）`,
         cost: equipNextCost(state, eq.id),
         kind: EQUIP_KIND[eq.id],
-        gain: eq.id === "stove" ? gain.stove : eq.id === "bench" ? gain.bench : 0,
+        station: stationOfEquip(eq.id),
+        gain: equipGainOf(eq.id, gain),
       });
     }
   }
@@ -242,7 +267,12 @@ export function nextHook(state: GameState): HookPlan {
         kind: "capacity",
         // 细分到「卡在哪一环」：给副行选池用（试玩 11-20 第 ②：主句说灶、副行说桌椅，
         // 玩家不知道跟哪句）。`kind` 仍是 capacity，只影响口吻，不影响机制。
-        key: pick.kind === "seat" ? "capacity:seat" : pick.kind === "cap" ? "capacity:cap" : "capacity:stove",
+        key:
+          pick.kind === "seat"
+            ? "capacity:seat"
+            : pick.kind === "cap"
+              ? "capacity:cap"
+              : stationKeyOf(pick),
         urgency: "high",
       };
     }

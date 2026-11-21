@@ -2,7 +2,7 @@ import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, CONTEST_TYPE_BY_ID, tierO
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
-import { EQUIPMENT } from "../data/equipment";
+import { EQUIPMENT, STATION_EQUIP, STATION_NAMES, STATION_ORDER, type StationId } from "../data/equipment";
 import { HIRE_FEE_RATE, MAX_STAFF, ROLE_LABEL, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
 import { UPGRADES } from "../data/shop";
 import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
@@ -11,7 +11,7 @@ import { arenaSummary, arenaViews } from "../sim/arena";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
 import { districtOptions } from "../sim/district";
 import { checkGrade } from "../sim/grade";
-import { equipLevel, equipNextCost } from "../sim/equipment";
+import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
 import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from "../sim/sides";
@@ -547,14 +547,29 @@ let lastGradeKey = "";
   }
 
   function shopHtml(s: GameState): string {
+    // 批次二：出碗拆成三段（炒锅 / 汤锅 / 粉篓），面板要把「现在卡在哪一段」写出来 ——
+    // 只写一个「几分/碗」的话，玩家不知道该买哪一件（这正是 P117 / P152 的病根）。
+    const st = stageMinutes(s);
+    const slow = slowestStation(s);
+    const stageLine = STATION_ORDER.map(
+      (k) => `${STATION_NAMES[k]} ${st[k].toFixed(1)} 分/${stationCount(s, k)}${k === "basket" ? " 筒" : " 口"}`,
+    ).join(" · ");
     const equipRows = EQUIPMENT.map((e) => {
       const lv = equipLevel(s, e.id);
       const cost = equipNextCost(s, e.id);
       const maxed = !Number.isFinite(cost);
       const next = maxed ? "已到顶档" : e.effects[lv] ?? "";
+      const now =
+        e.id === "bench"
+          ? `现在日上限 ${s.capacity} 碗`
+          : (() => {
+              const k = (Object.keys(STATION_EQUIP) as StationId[]).find((x) => STATION_EQUIP[x] === e.id);
+              if (!k) return "";
+              return `现在 ${stationCount(s, k)} ${k === "basket" ? "筒" : "口"} · ${st[k].toFixed(1)} 分`;
+            })();
       return `<div class="lrow">
         <div class="lname">${e.name}<span class="tag2">Lv ${lv}/4</span><span class="tag2">${next}</span></div>
-        <div class="lmeta">${e.desc}</div>
+        <div class="lmeta">${now}｜${e.desc}</div>
         <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? "已到顶档" : money(cost)}</button></div>
       </div>`;
     }).join("");
@@ -915,8 +930,8 @@ let lastGradeKey = "";
         ${expRow}
       </div>
       <div class="sec">
-        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗</div>
-        <div class="lmeta" style="padding:0 2px 8px">换灶、换粉篓、加案台，都是买一次用到底。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
+        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗<span class="tag2 hot2">最慢：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分</span></div>
+        <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
       <div class="sec">

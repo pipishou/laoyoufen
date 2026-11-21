@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "checks": {
+    "section_found": true,
+    "stage_line_three": true,
+    "slowest_shown": true,
+    "four_equip_rows": true,
+    "row_names": true,
+    "row_shows_count": true,
+    "econ_title_stages": true,
+    "buy_lowers_wok": true,
+    "buy_keeps_pot": true,
+    "buy_raises_count": true,
+    "save_version": true,
+    "console_clean": true
+  },
+  "errors": [],
+  "base": {
+    "found": true,
+    "head": "设备 · 现在出碗 2.0 分/碗最慢：炒锅 2.2 分",
+    "metas": [
+      "一碗分成三段：炒锅 2.2 分/1 口 · 汤锅 2.2 分/1 口 · 粉篓 1.6 分/1 筒。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥4.2。",
+      "现在 1 口 · 2.2 分｜双环猛火，一锅水翻得起来，爆香那一段靠它",
+      "现在 1 口 · 2.2 分｜一口锅滚一锅汤，汤不够滚，粉下得再快也出不去",
+      "现在 1 筒 · 1.6 分｜漏勺大小、汤勺刻度，决定每碗抓得准不准、起得快不快",
+      "现在日上限 200 碗｜切配、过水、装碗的地方够宽，才接得住更多人"
+    ],
+    "names": [
+      "猛火灶Lv 0/4炒锅开到 2 口",
+      "汤锅Lv 0/4汤锅添到 2 口",
+      "粉篓与汤勺Lv 0/4粉篓添到 2 筒",
+      "案台与备料区Lv 0/4日上限 +40 碗"
+    ],
+    "buys": 4,
+    "econTitle": "一碗 6.0 分：炒锅 2.2 · 汤锅 2.2 · 粉篓 1.6｜最慢是炒锅（2.2 分）",
+    "version": 31
+  },
+  "stage_meta": "一碗分成三段：炒锅 2.2 分/1 口 · 汤锅 2.2 分/1 口 · 粉篓 1.6 分/1 筒。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥4.2。"
+}

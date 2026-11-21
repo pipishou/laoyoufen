@@ -281,24 +281,30 @@ describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () =>
     expect(plan.text).not.toContain("打通隔墙");
   });
 
-  it("灶已经到顶、只剩扩建能提上限时，推能加座的扩建", () => {
+  it("三段设备都到顶、只剩扩建能提上限时，推能加座的扩建", () => {
     const s = fresh();
     s.cash = 200_000;
     s.venue.seats = 2;
-    s.equipment.stove = 4; // 灶满档，设备侧没有可买的了
+    s.equipment.stove = 4; // 三段都满档，设备侧没有可买的了
+    s.equipment.pot = 4;
+    s.equipment.strainer = 4;
     s.equipment.bench = 4;
     report(s, 60, 40);
     expect(nextHook(s).text).toContain("打通隔墙");
   });
 
-  it("粉篓（只省钱）永远不参与产能推荐", () => {
+  it("粉篓也是三段之一：只在它那段最慢时才被点名（批次二）", () => {
     const s = fresh();
-    s.cash = 200_000;
-    s.venue.seats = 2;
-    report(s, 60, 40);
-    expect(nextHook(s).text).not.toContain("粉篓");
+    s.cash = 400_000;
     s.venue.seats = 8;
+    s.capacity = 999;
+    report(s, 60, 40);
+    // 新局炒锅与汤锅并列最慢，粉篓不是瓶颈 → 不点名
     expect(nextHook(s).text).not.toContain("粉篓");
+    // 炒锅与汤锅都买满，只剩粉篓那一段最慢 → 点名粉篓
+    s.equipment.stove = 4;
+    s.equipment.pot = 4;
+    expect(nextHook(s).text).toContain("粉篓");
   });
 
   it("扩建被段位锁住时，退回设备里的出碗/上限件", () => {

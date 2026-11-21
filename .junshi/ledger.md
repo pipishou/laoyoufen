@@ -359,3 +359,10 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 | P160 | 四维之间没有交叉项 —— 开罗 `ramencalc` 有交叉惩罚，我们四维独立，堆料能同时抬「饱」与「相」而不互相拖 |
 | P161 | 「一天最多两次评价」写在 `game/src/sim/customer.ts` 的 settle 里，是个魔数；以后加食评本/留言板要变成配置 |
 | P162 | 图例只说「这一维看什么」，没说「现在这一碗差在哪一维」，玩家仍要自己比四行 |
+
+| P163 | 三段基准 2.2 / 2.2 / 1.6 分是照「一碗 6 分钟」拍出来的比例，没有现实秒数可参照，也说不清哪一段本该更慢 |
+| P164 | 汤锅与炒锅在 0 档完全一样（都是 2.2 分 1 口），新局看不出区别，玩家可能以为买错了 |
+| P165 | 粉篓同时管出碗与料钱（两个出口），面板只写「现在几筒 · 几分」，没写它还在省钱 |
+| P166 | `stageMinutes` 是纯串行相加，真实灶台上「等汤滚」和「等粉熟」是重叠的，模型里没有传递与等待 |
+
+| 81 | 2026-11-21 | 批次二：产能三段（炒锅 / 汤锅 / 粉篓并行口数） | HIGH | 按开罗 `storeequip` 的「并行口数」形状重做设备：`data/equipment.ts` 加 `StationId` / `STAGE_MINUTES = {wok 2.2, pot 2.2, basket 1.6}`（合计 = `SERVE_MINUTES`）/ `PARALLEL_BY_TIER = {wok [1..5], pot [1..6], basket [1..7]}` / `STATION_EQUIP` / `STATION_NAMES`，设备四件（新增汤锅 `pot`）。`sim/equipment.ts` 提供 `stationCount / stationCountAfter / stageMinutes / stationServeFactor（单出口）/ slowestStation`；`sim/bottleneck.ts` 的 `capacityGain` 改成按段算并返回 `{stove,pot,basket,bench,seat}`；`sim/hook.ts` 的 `EQUIP_KIND` 补 pot、粉篓从 cost 改 speed，`stationKeyOf` 细分 `capacity:stove|pot|basket`。**P117 的两套产能口径合成一套**。面板设备段写三段读数 + 「最慢：炒锅 2.2 分」+ 每行「现在几口 · 几分」；HUD 毛利条 title 挂三段；买成 toast 改成「炒锅第 1 档：开到 2 口」。五门全过（vitest 56 文件 640 用例 / eye stamp 134 / ai_gate ok / `stage_probe.py` 12 项全 true）；替身与基线逐位一致（它在 186.5 碗/日，从未顶到 230 碗的天花板） |

@@ -29,7 +29,8 @@ function fmtProgress(n: number): string {
 }
 import type { RecipeScore } from "../sim/score";
 import { bowlMinutes, serveMultiplier } from "../sim/staff";
-import { equipServeMultiplier } from "../sim/equipment";
+import { equipServeMultiplier, slowestStation, stageMinutes } from "../sim/equipment";
+import { STATION_NAMES } from "../data/equipment";
 import { icon } from "./icons";
 
 /**
@@ -613,6 +614,12 @@ const render = (s: GameState, score: RecipeScore): void => {
     el.total.textContent = String(score.total);
     el.subs.textContent = `汤 ${score.soup} · 粉 ${score.noodle} · 魅 ${score.charm} · 门店 ${score.storeScore}`;
     el.econ.textContent = `售价 ¥${score.price} · 成本 ¥${score.cost.toFixed(1)} · 毛利 ¥${score.margin.toFixed(1)}`;
+    // 三段并行的读法挂在 title 上：浮层不能变胖，但鼠标停一下要能看出卡在哪一段（批次二）
+    {
+      const sm = stageMinutes(s);
+      const slow = slowestStation(s);
+      el.econ.title = `一碗 ${(sm.total).toFixed(1)} 分：炒锅 ${sm.wok.toFixed(1)} · 汤锅 ${sm.pot.toFixed(1)} · 粉篓 ${sm.basket.toFixed(1)}｜最慢是${STATION_NAMES[slow.station]}（${slow.minutes.toFixed(1)} 分）`;
+    }
     /**
      * 四维九档（B1 批次一）：把「味 62 / 粉 55」换成客人会说的话。
      * 只在档位或评语变化时重建 DOM —— 每帧重写 innerHTML 会让悬停提示一直闪。

@@ -57,4 +57,27 @@ describe("今天最多卖几碗：灶、座位、总闸取最小", () => {
     s.capacity = 30;
     expect(tightWords(s)).toBe("备料不够卖");
   });
+
+  it("批次二：三段各有各的增益，最慢那段的增益最大", () => {
+    const s = fresh();
+    s.venue.seats = 12;
+    s.capacity = 999;
+    const g = capacityGain(s);
+    expect(g.stove).toBeGreaterThan(0);
+    expect(g.pot).toBeGreaterThan(0);
+    expect(g.basket).toBeGreaterThan(0);
+    // 新局炒锅与汤锅的分钟数一样（2.2 分 / 1 口），所以两者增益相等；粉篓那段更快（1.6），增益最小
+    expect(g.stove).toBeCloseTo(g.pot, 6);
+    expect(g.basket).toBeLessThan(g.stove);
+  });
+
+  it("批次二：把炒锅买满之后，本轮最该添的就变成汤锅或粉篓", () => {
+    const s = fresh();
+    s.venue.seats = 12;
+    s.capacity = 999;
+    s.equipment.stove = 4;
+    const g = capacityGain(s);
+    expect(g.pot).toBeGreaterThan(0);
+    expect(g.pot).toBeGreaterThan(g.stove);
+  });
 });

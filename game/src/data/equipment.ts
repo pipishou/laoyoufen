@@ -1,19 +1,44 @@
 /**
- * 设备（六阶 S4）—— 对应开罗 `storeequip.txt` 的 24 件设备，压成三件主线设备。
+ * 设备（S4 起）—— 对应开罗 `storeequip.txt` 的 24 件设备，压成四件主线设备。
  *
- * 为什么只留三件：开罗那 24 件里真正影响「一碗粉怎么更快更省」的只有三类——
- * 火力（灶）、煮制（锅/篓）、案面（砧板/柜台）。其余（饮水机、雕像、净化器）是氛围件，
- * 归到 S3 布置里做 charm，不进产能链。
+ * **批次二改口径**：开罗的设备表不是百分比，是**并行口数** —— 灶 1/2/4 口、粉篓 4→8 筒。
+ * 一碗粉在店里要过三段手：炒（爆香）、汤（滚汤）、粉（烫粉起碗）。哪一段口数少，那一段就是瓶颈，
+ * 这时候别的段再多口也没用。本作的灶原来只写「出碗快 15%」，玩家看不出瓶颈在哪，
+ * 也解释不了「为什么买了灶还是排队」—— 于是这一批改成三段并行。
  *
- * 每件四档，价格取自 `data/anchors.ts` 的 `CAPITAL.equipmentYuan`
- * = ¥1,500 / ¥3,800 / ¥9,000 / ¥30,000，折 150 / 380 / 900 / 3,000 碗。
- * 换算理由：一间 4 座小店月卖 2,100 碗、月净利约 6,000–9,000，
- * 顶档 3,000 碗 ≈ 一个半月的全部毛利——就像现实里换一台商用双眼灶。
+ * 三段基准节拍合计 6.0 游戏分钟，与 `sim/customer.ts` 的 `SERVE_MINUTES` 对齐：
+ * 炒 2.2 / 汤 2.2 / 粉 1.6。每段各有一条设备线抬它的口数。
+ *
+ * 价格仍取 `data/anchors.ts` 的 `CAPITAL.equipmentYuan` = ¥1,500 / ¥3,800 / ¥9,000 / ¥30,000
+ * （四档都同一套价，因为四件在现实里都是「换一台商用设备」的量级）。
  */
 
 import { CAPITAL } from "./anchors";
 
-export type EquipId = "stove" | "strainer" | "bench";
+export type EquipId = "stove" | "pot" | "strainer" | "bench";
+
+/** 一碗粉的三段手 */
+export type StationId = "wok" | "pot" | "basket";
+
+export const STATION_ORDER: readonly StationId[] = ["wok", "pot", "basket"];
+
+/** 三段基准分钟数（合计 6.0 = SERVE_MINUTES） */
+export const STAGE_MINUTES: Record<StationId, number> = { wok: 2.2, pot: 2.2, basket: 1.6 };
+
+/**
+ * 每段的口数：下标是设备档位 0–4（0 = 还没买，1–4 = 买过的四档）。
+ * 三条线各有节奏：灶是「一口一口加」，汤锅越到后面越靠换大锅，粉篓最便宜所以加得最猛。
+ */
+export const PARALLEL_BY_TIER: Record<StationId, readonly number[]> = {
+  wok: [1, 2, 3, 4, 5],
+  pot: [1, 2, 3, 4, 6],
+  basket: [1, 2, 3, 5, 7],
+};
+
+/** 哪件设备管哪一段（案台不进三段，它管日上限） */
+export const STATION_EQUIP: Record<StationId, EquipId> = { wok: "stove", pot: "pot", basket: "strainer" };
+
+export const STATION_NAMES: Record<StationId, string> = { wok: "炒锅", pot: "汤锅", basket: "粉篓" };
 
 export interface EquipDef {
   id: EquipId;
@@ -30,16 +55,23 @@ export const EQUIPMENT: readonly EquipDef[] = [
   {
     id: "stove",
     name: "猛火灶",
-    desc: "双环猛火，一锅水翻得起来，出碗快",
+    desc: "双环猛火，一锅水翻得起来，爆香那一段靠它",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["出碗快 15%", "出碗快 28%", "出碗快 39%", "出碗快 48%"],
+    effects: ["炒锅开到 2 口", "炒锅开到 3 口", "炒锅开到 4 口", "炒锅开到 5 口"],
+  },
+  {
+    id: "pot",
+    name: "汤锅",
+    desc: "一口锅滚一锅汤，汤不够滚，粉下得再快也出不去",
+    tiers: CAPITAL.equipmentYuan,
+    effects: ["汤锅添到 2 口", "汤锅还是 2 口，火更稳", "汤锅添到 3 口", "汤锅添到 4 口"],
   },
   {
     id: "strainer",
     name: "粉篓与汤勺",
-    desc: "漏勺大小、汤勺刻度，决定每碗抓得准不准",
+    desc: "漏勺大小、汤勺刻度，决定每碗抓得准不准、起得快不快",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["一碗省 ¥0.14", "一碗省 ¥0.29", "一碗省 ¥0.43", "一碗省 ¥0.56"],
+    effects: ["粉篓添到 2 筒", "粉篓添到 3 筒", "粉篓添到 4 筒", "粉篓添到 5 筒"],
   },
   {
     id: "bench",
@@ -52,10 +84,9 @@ export const EQUIPMENT: readonly EquipDef[] = [
 
 export const EQUIP_BY_ID: ReadonlyMap<string, EquipDef> = new Map(EQUIPMENT.map((e) => [e.id, e]));
 
-/** 每档出碗时间系数（基准 6 分钟一碗，见 customer.ts 的 SERVE_MINUTES） */
-export const STOVE_SERVE_FACTOR = 0.85;
-/** 每档食材成本系数 */
+/** 每档食材成本系数（粉篓与汤勺的第二效果：抓得准就少浪费） */
 export const STRAINER_COST_FACTOR = 0.97;
 /** 每档日上限加成 */
 export const BENCH_CAPACITY_STEP = 40;
+/** 四档（0 档 = 还没买） */
 export const MAX_EQUIP_LEVEL = 4;

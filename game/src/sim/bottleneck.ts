@@ -19,8 +19,8 @@
  */
 import { DAY_MINUTES, SERVE_MINUTES } from "./customer";
 import { bowlMinutes } from "./staff";
-import { equipServeMultiplier } from "./equipment";
-import { BENCH_CAPACITY_STEP, STOVE_SERVE_FACTOR } from "../data/equipment";
+import { stationCount, stationCountAfter, stationServeFactor, stageMinutes } from "./equipment";
+import { BENCH_CAPACITY_STEP, STAGE_MINUTES, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
 import type { GameState } from "./state";
 
 /**
@@ -55,7 +55,7 @@ function pack(stove: number, seats: number, cap: number, serveNow: number): Capa
 
 /** 当前产能画像 */
 export function capacityOf(state: GameState): Capacity {
-  const serveNow = bowlMinutes(state, SERVE_MINUTES, equipServeMultiplier(state));
+  const serveNow = bowlMinutes(state, SERVE_MINUTES, stationServeFactor(state));
   const stove = DAY_MINUTES / serveNow;
   const seats = (state.venue.seats * DAY_MINUTES) / (serveNow + EAT_MINUTES);
   return pack(stove, seats, state.capacity, serveNow);
@@ -64,22 +64,46 @@ export function capacityOf(state: GameState): Capacity {
 /**
  * 假设把某一件买下来，当天上限能抬高多少碗。
  * 只要其中一个环节没动，另外两个的增益就会被最小项吃掉 —— 这正是要算差值的原因。
+ *
+ * 批次二之后设备是**三段并行**（炒锅/汤锅/粉篓），所以先算「这一段升一档能把总分钟数降多少」，
+ * 再折回日上限。哪一段最慢，升它的增益就最大 —— 与 `sim/equipment.ts` 的
+ * `slowestStation()` 是同一条口径。
  */
 export function capacityGain(state: GameState): {
+  /** 炒锅升一档的增益（旧名保留：钩子与测试都读它） */
   stove: number;
+  pot: number;
+  basket: number;
   bench: number;
   seat: (n: number) => number;
 } {
   const now = capacityOf(state);
+  const m = stageMinutes(state);
 
-  // 灶升一档：出碗时间 ×0.85，座位翻台也跟着快一点（客人不用干等）
-  const serveUp = Math.max(0.1, now.serveNow * STOVE_SERVE_FACTOR);
-  const stove = pack(
-    DAY_MINUTES / serveUp,
-    (state.venue.seats * DAY_MINUTES) / (serveUp + EAT_MINUTES),
-    now.cap,
-    serveUp,
-  ).total - now.total;
+  const totalAfter = (station: StationId): number => {
+    const before = STAGE_MINUTES[station] / Math.max(1, stationCount(state, station));
+    const after = STAGE_MINUTES[station] / Math.max(1, stationCountAfter(state, station));
+    return m.total - before + after;
+  };
+  const gainOfStation = (station: StationId): number => {
+    const next = Math.max(0.1, (now.serveNow * totalAfter(station)) / Math.max(0.1, m.total));
+    return pack(
+      DAY_MINUTES / next,
+      (state.venue.seats * DAY_MINUTES) / (next + EAT_MINUTES),
+      now.cap,
+      next,
+    ).total - now.total;
+  };
+
+  const byEquip = (id: EquipId): number => {
+    const station = (Object.keys(STATION_EQUIP) as StationId[]).find((s) => STATION_EQUIP[s] === id);
+    return station ? gainOfStation(station) : 0;
+  };
+
+  // 炒锅升一档：出碗时间跟着降，座位翻台也快一点（客人不用干等）
+  const stove = byEquip("stove");
+  const pot = byEquip("pot");
+  const basket = byEquip("strainer");
 
   // 案台升一档：抬总闸，但抬不过灶与座位 —— 总闸不紧时增益就是 0
   const others = Math.min(now.stove, now.seats);
@@ -90,8 +114,7 @@ export function capacityGain(state: GameState): {
     pack(now.stove, ((state.venue.seats + n) * DAY_MINUTES) / (now.serveNow + EAT_MINUTES), now.cap, now.serveNow).total -
     now.total;
 
-  return { stove, bench, seat };
-}
+  return { stove, pot, basket, bench, seat };}
 
 /** 一句话说清谁在卡（打烊单与面板用） */
 export function tightWords(state: GameState): string {

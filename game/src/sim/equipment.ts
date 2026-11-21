@@ -2,10 +2,15 @@ import {
   BENCH_CAPACITY_STEP,
   EQUIP_BY_ID,
   MAX_EQUIP_LEVEL,
-  STOVE_SERVE_FACTOR,
+  PARALLEL_BY_TIER,
+  STAGE_MINUTES,
+  STATION_EQUIP,
+  STATION_NAMES,
+  STATION_ORDER,
   STRAINER_COST_FACTOR,
   type EquipDef,
   type EquipId,
+  type StationId,
 } from "../data/equipment";
 import type { GameState } from "./state";
 
@@ -16,15 +21,52 @@ export interface BuyResult {
   line?: string;
 }
 
+/** 某一段现在开到几口（设备 0 档 = 1 口） */
+export function stationCount(state: GameState, station: StationId): number {
+  const table = PARALLEL_BY_TIER[station];
+  const lv = Math.min(equipLevel(state, STATION_EQUIP[station]), table.length - 1);
+  return table[Math.max(0, lv)] ?? 1;
+}
+
+/** 升一档后这一段开到几口（满档返回当前值） */
+export function stationCountAfter(state: GameState, station: StationId): number {
+  const table = PARALLEL_BY_TIER[station];
+  const lv = Math.min(equipLevel(state, STATION_EQUIP[station]) + 1, table.length - 1);
+  return table[Math.max(0, lv)] ?? 1;
+}
+
+/** 三段各要几分钟（已按口数摊开）+ 合计 */
+export function stageMinutes(state: GameState): Record<StationId, number> & { total: number } {
+  const wok = STAGE_MINUTES.wok / Math.max(1, stationCount(state, "wok"));
+  const pot = STAGE_MINUTES.pot / Math.max(1, stationCount(state, "pot"));
+  const basket = STAGE_MINUTES.basket / Math.max(1, stationCount(state, "basket"));
+  return { wok, pot, basket, total: wok + pot + basket };
+}
+
+/**
+ * 三段合起来的出碗系数（相对基准 6.0 分钟）。
+ * **单出口**：HUD 的「分/碗」、打烊单的产能、钩子挑件都读这一个函数（合并 P117 / P152）。
+ */
+export function stationServeFactor(state: GameState): number {
+  const base = STAGE_MINUTES.wok + STAGE_MINUTES.pot + STAGE_MINUTES.basket;
+  return stageMinutes(state).total / base;
+}
+
+/** 哪一段最慢（面板与钩子用） */
+export function slowestStation(state: GameState): { station: StationId; minutes: number } {
+  const m = stageMinutes(state);
+  let best: StationId = "wok";
+  for (const s of STATION_ORDER) if (m[s] > m[best]) best = s;
+  return { station: best, minutes: m[best] };
+}
+
 /** 每件设备买下一档时，向玩家交代的那一句话 —— 必须是这一档真的改了的东西 */
 function upgradeLine(id: EquipId, level: number): string {
-  if (id === "stove") {
-    const pct = Math.round((1 - STOVE_SERVE_FACTOR) * 100);
-    return `猛火灶第 ${level} 档：出碗时间每档 −${pct}%`;
-  }
-  if (id === "strainer") {
-    const pct = Math.round((1 - STRAINER_COST_FACTOR) * 100);
-    return `粉篓第 ${level} 档：料钱每档 −${pct}%`;
+  const station = (Object.keys(STATION_EQUIP) as StationId[]).find((s) => STATION_EQUIP[s] === id);
+  if (station) {
+    const after = PARALLEL_BY_TIER[station][Math.min(level, PARALLEL_BY_TIER[station].length - 1)] ?? 1;
+    const unit = station === "basket" ? "筒" : "口";
+    return `${STATION_NAMES[station]}第 ${level} 档：开到 ${after} ${unit}`;
   }
   return `案台第 ${level} 档：每天多备 ${BENCH_CAPACITY_STEP} 碗的料`;
 }
@@ -57,12 +99,12 @@ export function buyEquipment(state: GameState, id: string): BuyResult {
   return { ok: true, line: upgradeLine(def.id, lv + 1) };
 }
 
-/** 出碗时间系数（猛火灶） */
+/** 出碗时间系数（三段并行后的合计，旧名保留，调用处不必全改） */
 export function equipServeMultiplier(state: GameState): number {
-  return Math.pow(STOVE_SERVE_FACTOR, equipLevel(state, "stove"));
+  return stationServeFactor(state);
 }
 
-/** 食材成本系数（粉篓与汤勺） */
+/** 食材成本系数（粉篓与汤勺的第二效果） */
 export function equipCostMultiplier(state: GameState): number {
   return Math.pow(STRAINER_COST_FACTOR, equipLevel(state, "strainer"));
 }
