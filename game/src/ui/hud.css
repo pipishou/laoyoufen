@@ -2078,3 +2078,76 @@ button.pill[disabled] {
   color: var(--wood);
   opacity: 0.8;
 }
+
+
+/* ---- 进货档（A5）----
+   米与骨三档随时可换，代价落进每碗料钱。所以按钮上写的不是价格，是当场能算清的账。 */
+.grades {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.grow {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.gk {
+  flex: 0 0 18px;
+  align-self: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wood);
+}
+
+.grades .mbtn {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 2px solid var(--cream);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+}
+
+.grades .mbtn b {
+  font-size: 13px;
+}
+
+.grades .mbtn i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--ink2);
+  opacity: 0.85;
+}
+
+.grades .mbtn:hover {
+  border-color: var(--gold);
+}
+
+.grades .mbtn.on {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green) inset;
+}
+
+.grades .mbtn.on i {
+  color: var(--green);
+  opacity: 1;
+  font-weight: 700;
+}
+
+.gnote {
+  font-size: 11px;
+  color: var(--wood);
+  line-height: 1.5;
+}

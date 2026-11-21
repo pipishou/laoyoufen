@@ -19,7 +19,7 @@ import { checkTrophies } from "./trophies";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 28;
+export const SAVE_VERSION = 29;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -506,6 +506,15 @@ export interface GameState {
   bowls: string[];
   /** 现在用的碗 id；开局就是那只消毒不锈钢碗 */
   bowl: string;
+
+  /**
+   * 进货档（A5，见 `data/grades.ts`）：米与骨。
+   *
+   * 与碗/门面不同，这一层**不买、不攒**：换档随时可换，代价直接落进每碗料钱与分数。
+   * 所以这里存的是「今天用哪一档」，不是「买过哪些档」。
+   */
+  rice: string;
+  bone: string;
   /** 人情（M3b）：街坊给的面子点数（见 `data/favor.ts`） */
   favor: number;
   /** 一共攒过多少点人情（只增，面板显示用） */
@@ -743,6 +752,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     style: null,
     bowls: [],
     bowl: "steel",
+    rice: "late",
+    bone: "spine",
     favor: 0,
     favorTotal: 0,
     treatDay: -1,
@@ -836,6 +847,8 @@ function bestTaste(state: GameState): number {
     const sc = scoreRecipe(item.recipe, item.price, item.noodle as NoodleId, {
       main: item.main,
       portion: item.portion,
+      rice: state.rice,
+      bone: state.bone,
     });
     if (sc.total > best) best = sc.total;
   }
@@ -843,6 +856,8 @@ function bestTaste(state: GameState): number {
   return scoreRecipe(state.recipe, state.price, noodleKindOf(state), {
     main: state.main,
     portion: state.portion,
+    rice: state.rice,
+    bone: state.bone,
   }).total;
 }
 

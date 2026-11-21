@@ -52,6 +52,8 @@ export function scoreOf(state: GameState): RecipeScore {
   return scoreRecipe(state.recipe, state.price, noodleKindOf(state), {
     main: state.main,
     portion: state.portion,
+    rice: state.rice,
+    bone: state.bone,
   });
 }
 

@@ -2,6 +2,7 @@ import { RAMEN_CALC, type CalcGroup } from "../data/ramen-calc";
 import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
 import type { NoodleId } from "../data/noodles";
 import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
+import { DEFAULT_BONE, DEFAULT_RICE, boneById, riceById } from "../data/grades";
 import { noodleFit } from "./noodles";
 import { flavorBonus } from "./flavor";
 import { pairingBonus } from "./pairing";
@@ -142,6 +143,9 @@ export function bowlCost(toppingIds: readonly string[]): number {
 export interface ScoreExtra {
   main?: string;
   portion?: number;
+  /** 进货档（A5）：米三档、骨三档。默认档零偏移，见 `data/grades.ts` */
+  rice?: string;
+  bone?: string;
 }
 
 /**
@@ -157,7 +161,9 @@ export function scoreRecipe(
 ): RecipeScore {
   const mainId = extra.main ?? START_MAIN;
   const portion = extra.portion ?? DEFAULT_PORTION;
-  const key = `${kind}|${mainId}|${portion}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
+  const rice = riceById(extra.rice ?? DEFAULT_RICE);
+  const bone = boneById(extra.bone ?? DEFAULT_BONE);
+  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -180,18 +186,27 @@ export function scoreRecipe(
    * 这样两层都能单独调，也不会因为叠乘把某一维顶到 100。
    */
   const pairing = pairingBonus(recipe.toppings);
-  const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup + pairing.soup);
+  /**
+   * 进货档（A5）：米只动米粉分与料钱，骨只动汤分与料钱。
+   * 默认档（晚籼米 / 脊骨）增减都是 0，所以所有历史回归锁不动。
+   */
+  const riceNoodle = rice?.noodleDelta ?? 0;
+  const boneSoup = bone?.soupDelta ?? 0;
+  const gradeCost = (rice?.costDelta ?? 0) + (bone?.costDelta ?? 0);
+  const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup + pairing.soup + boneSoup);
   // 粉型 × 汤 的契合度（REA soupaffinity）：切粉恒 100，所以默认粉型下分数不变。
   // 选错粉最多把「粉」这半分砍掉四成，选对最多加四成 —— 不碰 total 的权重公式。
   const fit = noodleFit(kind, recipe.soup);
-  const noodle = groupScore(subs, "noodle") * (0.6 + 0.4 * (fit / 100));
+  const noodle = Math.min(100, groupScore(subs, "noodle") * (0.6 + 0.4 * (fit / 100)) + riceNoodle);
   const total = soup * 0.55 + noodle * 0.45;
 
   const safePrice = Math.max(0, price);
   const charm = Math.min(100, charmOf(recipe.toppings) + flavor.charm + pairing.charm);
   const valueScore = valueScoreOf(safePrice);
   const cost =
-    Math.round((bowlCost(recipe.toppings) + mainCostYuan(mainId) + portionCostYuan(portion)) * 100) / 100;
+    Math.round(
+      (bowlCost(recipe.toppings) + mainCostYuan(mainId) + portionCostYuan(portion) + gradeCost) * 100,
+    ) / 100;
   const margin = safePrice - cost;
   const marginRate = safePrice > 0 ? margin / safePrice : 0;
   // 毛利率 55% 视为优秀；低于 0 直接 0 分

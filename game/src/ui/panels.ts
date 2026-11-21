@@ -38,6 +38,8 @@ import { noodleById } from "../data/noodles";
 import { flavorSummary, flavorViews, nearlyFlavor } from "../sim/flavor";
 import { PAIRING_TOTAL, type PairingEffect } from "../data/pairing";
 import { pairingSummary, pairingViews } from "../sim/pairing";
+import { type GradeDef } from "../data/grades";
+import { boneViews, gradeSummary, riceViews } from "../sim/materials";
 import { nextTrophy, trophySummary, trophyViews } from "../sim/trophies";
 import { STYLES, STYLE_PART_LABEL } from "../data/style";
 import { nextStyle, styleSummary, styleViews } from "../sim/style";
@@ -152,6 +154,9 @@ export interface PanelActions {
   setStyle(id: string): void;
   buyBowl(id: string): void;
   setBowl(id: string): void;
+  /** 进货档（A5）：换米 / 换骨，随时可换、代价进每碗料钱 */
+  setRice(id: string): void;
+  setBone(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -206,6 +211,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
               <div class="noodles" data-noodles></div>
               <div class="sechd">${icon("pan")}米粉 · 5 参</div>
               <div class="sliders" data-sliders="noodle">${sliderRows("noodle", NOODLE_DEFS)}</div>
+              <div class="sechd">${icon("bowl")}进货 · 米与骨<span class="sechint" data-gradesum></span></div>
+              <div class="grades" data-grades></div>
               <div class="sechd">${icon("coin")}售价 · 客单价</div>
               <label class="sl"><span class="slk">每碗</span><input type="range" min="6" max="25" step="1" data-price><b data-pricev>12</b></label>
             </div>
@@ -239,6 +246,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const econ2 = wrap.querySelector("[data-econ2]") as HTMLElement;
   const flavorsEl = wrap.querySelector("[data-flavors]") as HTMLElement;
   const pairsEl = wrap.querySelector("[data-pairs]") as HTMLElement;
+  const gradesEl = wrap.querySelector("[data-grades]") as HTMLElement;
+  const gradeSumEl = wrap.querySelector("[data-gradesum]") as HTMLElement;
   const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
   const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
   const mainsEl = wrap.querySelector("[data-mains]") as HTMLElement;
@@ -253,6 +262,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   let lastDishKey = "";
   /** 味道区（B1）的重绘缓存：只有浇头 / 粉型变了才重写 */
   let lastFlavorKey = "";
+let lastGradeKey = "";
 
   let current: PanelTab = "recipe";
   let lastReportYear = -1;
@@ -404,6 +414,12 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
       break;
     case "setbowl":
       actions.setBowl(id);
+      break;
+    case "setrice":
+      actions.setRice(id);
+      break;
+    case "setbone":
+      actions.setBone(id);
       break;
     case "takeover":
       actions.takeOver(id);
@@ -966,6 +982,37 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   }
 
   /** 一条组合的效果写成一行中文，面板与图鉴共用 */
+/**
+ * 进货档两行（A5）。
+ *
+ * 与碗/门面不同，这里没有买不买的问题 —— 三档随时可换，只是每碗料钱与分数变了。
+ * 所以按钮不写价格，写「每碗 +¥0.50 · 汤 +3」这种当场能算清的账。
+ */
+function gradeBtn(kind: "rice" | "bone", def: GradeDef<string>, active: boolean): string {
+  const delta =
+    def.costDelta === 0
+      ? "料钱不动"
+      : def.costDelta > 0
+        ? `每碗 +¥${def.costDelta.toFixed(2)}`
+        : `每碗 −¥${Math.abs(def.costDelta).toFixed(2)}`;
+  const eff = def.soupDelta
+    ? ` · 汤 ${def.soupDelta > 0 ? "+" : ""}${def.soupDelta}`
+    : def.noodleDelta
+      ? ` · 粉 ${def.noodleDelta > 0 ? "+" : ""}${def.noodleDelta}`
+      : "";
+  return `<button class="mbtn${active ? " on" : ""}" data-act="set${kind}" data-id="${def.id}" title="${def.why}｜出处：${def.source.label}"><b>${def.name}</b><i>${delta}${eff}</i></button>`;
+}
+
+function gradesHtml(s: GameState): string {
+  const r = riceViews(s);
+  const b = boneViews(s);
+  return (
+    `<div class="grow"><span class="gk">米</span>${r.map((v) => gradeBtn("rice", v.def, v.active)).join("")}</div>` +
+    `<div class="grow"><span class="gk">骨</span>${b.map((v) => gradeBtn("bone", v.def, v.active)).join("")}</div>` +
+    `<div class="gnote">${r.find((v) => v.active)?.def.look ?? ""}｜${b.find((v) => v.active)?.def.look ?? ""}</div>`
+  );
+}
+
 function effectWords(e: FlavorEffect | PairingEffect): string {
   const out: string[] = [];
   if (e.soup) out.push(`味道 +${e.soup}`);
@@ -1321,6 +1368,12 @@ function collectionHtml(s: GameState): string {
       const suggested = suggestPriceWithMain(s.main, s.portion);
       // 毛利按「实收价」算：三两加 ¥2 是收进来的钱，不能只拿菜单价减成本
       const realMargin = bowlPriceOf(s) - score.cost;
+      const gKey = `${s.rice}|${s.bone}`;
+      if (gKey !== lastGradeKey) {
+        lastGradeKey = gKey;
+        gradesEl.innerHTML = gradesHtml(s);
+        gradeSumEl.textContent = ` ${gradeSummary(s)}`;
+      }
       const fKey = `${s.noodle}|${s.recipe.toppings.join(",")}`;
       if (fKey !== lastFlavorKey) {
         lastFlavorKey = fKey;

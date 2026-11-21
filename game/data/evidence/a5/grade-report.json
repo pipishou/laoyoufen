@@ -1,0 +1,63 @@
+{
+  "ok": true,
+  "checks": {
+    "section_present": true,
+    "six_buttons": true,
+    "two_rows": true,
+    "default_on": true,
+    "sum_zero": true,
+    "rice_switched": true,
+    "rice_saves_money": true,
+    "rice_note_changed": true,
+    "rice_cheaper": true,
+    "bone_switched": true,
+    "bone_dearer": true,
+    "sum_names_both": true,
+    "console_clean": true
+  },
+  "steps": [
+    {
+      "name": "recipe_default",
+      "box": true,
+      "rows": 2,
+      "btns": 6,
+      "on": [
+        "late",
+        "spine"
+      ],
+      "sum": "晚籼米 · 脊骨 · 料钱不动",
+      "note": "粉身软韧，断条少｜汤清、带甜",
+      "econ": "魅力 30 · 性价比 100成本 ¥4.8 · 实收 ¥9 · 毛利 ¥4.2建议卖 ¥10门店吸引力 66",
+      "score": "68"
+    },
+    {
+      "name": "after_aged_rice",
+      "box": true,
+      "rows": 2,
+      "btns": 6,
+      "on": [
+        "aged",
+        "spine"
+      ],
+      "sum": "陈米 · 脊骨 · 每碗省 ¥0.65",
+      "note": "最便宜，容易断条｜汤清、带甜",
+      "econ": "魅力 30 · 性价比 100成本 ¥4.2 · 实收 ¥9 · 毛利 ¥4.8建议卖 ¥10门店吸引力 66",
+      "score": "66"
+    },
+    {
+      "name": "after_tube_bone",
+      "box": true,
+      "rows": 2,
+      "btns": 6,
+      "on": [
+        "aged",
+        "tube"
+      ],
+      "sum": "陈米 · 筒骨 · 每碗省 ¥0.15",
+      "note": "最便宜，容易断条｜汤色奶白、浓",
+      "econ": "魅力 30 · 性价比 100成本 ¥4.7 · 实收 ¥9 · 毛利 ¥4.3建议卖 ¥10门店吸引力 66",
+      "score": "67"
+    }
+  ],
+  "console_errors": []
+}

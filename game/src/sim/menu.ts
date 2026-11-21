@@ -51,11 +51,17 @@ export function dishPrice(item: MenuItem): number {
   return item.price + portionOf(item.portion).priceDelta;
 }
 
-/** 这款的评分（成本里含主料与份量的料钱） */
-export function scoreDish(item: MenuItem): RecipeScore {
+/**
+ * 这款的评分（成本里含主料与份量的料钱）。
+ *
+ * `state` 只用来读进货档（A5 的米与骨）：缺省时走默认档，历史断言全部不变。
+ */
+export function scoreDish(item: MenuItem, state?: GameState): RecipeScore {
   return scoreRecipe(item.recipe, item.price, item.noodle as NoodleId, {
     main: item.main,
     portion: item.portion,
+    rice: state?.rice,
+    bone: state?.bone,
   });
 }
 
@@ -111,7 +117,7 @@ export interface MenuView {
 export function menuViews(state: GameState): MenuView[] {
   const onCount = state.menu.filter((d) => d.on).length;
   return state.menu.map((item, index) => {
-    const sc = scoreDish(item);
+    const sc = scoreDish(item, state);
     return {
       index,
       item,
@@ -192,7 +198,7 @@ export function sellRecipe(
   const item = state.menu[index];
   if (!item) return { ok: false, reason: "没有这一款" };
   if (state.menu.length <= 1) return { ok: false, reason: "至少要留一款在卖，转不了" };
-  const favor = recipeSaleFavor(scoreDish(item).total, item.sold ?? 0);
+  const favor = recipeSaleFavor(scoreDish(item, state).total, item.sold ?? 0);
   const removed = removeDish(state, index);
   if (!removed.ok) return { ok: false, reason: removed.reason };
   // 成就（B 批）要记「转过一次方子」，这个计数只增不减，跟着存档走。
@@ -235,7 +241,7 @@ export function pickDish(state: GameState, wallet: number, roll: number): MenuIt
   const shopTolerance = priceTolerance(menuBestTaste(state));
   const affordable: { item: MenuItem; weight: number }[] = [];
   for (const item of dishes) {
-    const sc = scoreDish(item);
+    const sc = scoreDish(item, state);
     const price = dishPrice(item);
     if (price > wallet * shopTolerance) continue;
     // 味道 0–100 → 权重 0.1–1.0；价格相对钱包越贵，权重越低
@@ -269,7 +275,7 @@ export function cheapestPrice(state: GameState): number {
 export function menuStoreScore(state: GameState): number {
   let best = 0;
   for (const item of activeDishes(state)) {
-    const sc = scoreDish(item);
+    const sc = scoreDish(item, state);
     if (sc.storeScore > best) best = sc.storeScore;
   }
   const n = activeDishes(state).length;
@@ -280,7 +286,7 @@ export function menuStoreScore(state: GameState): number {
 export function menuBestTaste(state: GameState): number {
   let best = 0;
   for (const item of activeDishes(state)) {
-    const sc = scoreDish(item);
+    const sc = scoreDish(item, state);
     if (sc.total > best) best = sc.total;
   }
   return best;

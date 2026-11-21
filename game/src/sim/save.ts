@@ -10,6 +10,7 @@ import { TROPHY_BY_ID } from "../data/trophies";
 import { TOURNEY_BY_ID } from "../data/tourneys";
 import { FLAVOR_BY_ID } from "../data/flavor";
 import { STYLE_BY_ID } from "../data/style";
+import { BONE_BY_ID, DEFAULT_BONE, DEFAULT_RICE, RICE_BY_ID } from "../data/grades";
 import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -101,6 +102,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 28 &&
     v.saveVersion !== 27 &&
     v.saveVersion !== 26 &&
     v.saveVersion !== 25 &&
@@ -558,6 +560,13 @@ export function deserialize(raw: string): GameState | null {
     typeof bwl === "string" && BOWL_BY_ID.has(bwl) && (BOWL_BY_ID.get(bwl)?.free || parsed.bowls.includes(bwl))
       ? bwl
       : DEFAULT_BOWL_ID;
+  // v28 → v29（A5 材料分级）：现在进的米与骨。这一层没有「买过哪些」，
+  // 只有「今天用哪一档」，所以坏值/老档一律退回默认档 —— 默认档增减都是 0，
+  // 读档出来的分数与读档前完全一致。
+  const rc = (parsed as { rice?: unknown }).rice;
+  parsed.rice = typeof rc === "string" && RICE_BY_ID.has(rc) ? rc : DEFAULT_RICE;
+  const bn = (parsed as { bone?: unknown }).bone;
+  parsed.bone = typeof bn === "string" && BONE_BY_ID.has(bn) ? bn : DEFAULT_BONE;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

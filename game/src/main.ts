@@ -26,6 +26,8 @@ import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
 import { buyBowl as buyBowlImpl, setBowl as setBowlImpl } from "./sim/bowl";
 import { bowlById } from "./data/bowl";
+import { setBone as setBoneImpl, setRice as setRiceImpl } from "./sim/materials";
+import { boneById, riceById } from "./data/grades";
 import type { ContestTypeId } from "./data/contest";
 import { resolveEvent } from "./sim/events";
 import { deserialize, serialize, SAVE_STORAGE_KEY } from "./sim/save";
@@ -487,6 +489,28 @@ panels = mountPanels(hudRoot, {
     }
     playSfx("upgrade");
     hud.showToast(r.line ?? "换好了", "like");
+    refresh();
+  },
+  setRice(id) {
+    const rid = String(id);
+    if (!setRiceImpl(state, rid)) {
+      refresh();
+      return;
+    }
+    const def = riceById(rid);
+    playSfx("upgrade");
+    hud.showToast(`换成${def?.name ?? "新米"}：${def?.look ?? ""}`, "info");
+    refresh();
+  },
+  setBone(id) {
+    const bid = String(id);
+    if (!setBoneImpl(state, bid)) {
+      refresh();
+      return;
+    }
+    const def = boneById(bid);
+    playSfx("upgrade");
+    hud.showToast(`换成${def?.name ?? "新骨"}：${def?.look ?? ""}`, "info");
     refresh();
   },
   startArena(id) {
