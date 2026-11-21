@@ -19,10 +19,11 @@ import type { NewsItem } from "./news";
 import { pushNews } from "./news";
 import { checkTrophies } from "./trophies";
 import { settlePack } from "./pack";
+import { DEFAULT_QUALITY } from "../data/quality";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 31;
+export const SAVE_VERSION = 32;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -542,6 +543,8 @@ export interface GameState {
   gear: string[];
   /** 袋装老友粉的包装机（A7）：买了才有第二条收入线 */
   pack: boolean;
+  /** 配料品质档（批次五）：plain / good / top —— 换来的是每碗料钱与卖相 */
+  quality: string;
   /** 街坊报：最近几天的头版（A11，见 `sim/news.ts`） */
   news: NewsItem[];
   /**
@@ -806,6 +809,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     streetSeen: [],
     gear: [],
     pack: false,
+    quality: DEFAULT_QUALITY,
     news: [],
     styles: [],
     style: null,
@@ -911,6 +915,7 @@ function bestTaste(state: GameState): number {
       portion: item.portion,
       rice: state.rice,
       bone: state.bone,
+      quality: state.quality,
     });
     if (sc.total > best) best = sc.total;
   }
@@ -920,6 +925,7 @@ function bestTaste(state: GameState): number {
     portion: state.portion,
     rice: state.rice,
     bone: state.bone,
+    quality: state.quality,
   }).total;
 }
 

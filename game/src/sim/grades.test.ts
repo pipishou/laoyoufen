@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { createInitialState, SAVE_VERSION, type GameState } from "./state";
 import {
   BONE_BY_ID,
@@ -117,7 +117,7 @@ describe("进货档：米与骨（A5）", () => {
     const back = deserialize(raw);
     expect(back?.rice).toBe("aged");
     expect(back?.bone).toBe("tube");
-    expect(SAVE_VERSION).toBe(31);
+    expect(SAVE_VERSION).toBe(32);
 
     // 坏值兜底：喂一个不在表里的米与骨
     const dirty = { ...JSON.parse(raw), rice: "jasmine", bone: "fishbone", saveVersion: 28 };

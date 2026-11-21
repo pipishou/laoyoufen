@@ -12,6 +12,7 @@ import { FLAVOR_BY_ID } from "../data/flavor";
 import { STYLE_BY_ID } from "../data/style";
 import { BONE_BY_ID, DEFAULT_BONE, DEFAULT_RICE, RICE_BY_ID } from "../data/grades";
 import type { NewsItem } from "./news";
+import { DEFAULT_QUALITY, QUALITY_BY_ID } from "../data/quality";
 import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
@@ -103,6 +104,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 31 &&
     v.saveVersion !== 30 &&
     v.saveVersion !== 29 &&
     v.saveVersion !== 28 &&
@@ -587,6 +589,9 @@ export function deserialize(raw: string): GameState | null {
         )
         .slice(-5)
     : [];
+  // v31 → v32（批次五 配料品质档）：老档没有这个字段，一律按最省的平常货
+  const qq = (parsed as { quality?: unknown }).quality;
+  parsed.quality = typeof qq === "string" && QUALITY_BY_ID.has(qq) ? qq : DEFAULT_QUALITY;
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }

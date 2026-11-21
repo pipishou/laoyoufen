@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+﻿import Phaser from "phaser";
 import { fetchEventNarrative, localNarrative, localReaction } from "./ai/director";
 import { fetchLine, getLine, localLine, type LineAsk } from "./ai/lines";
 import { TOURNEY_BY_ID } from "./data/tourneys";
@@ -32,6 +32,7 @@ import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
 import { buyBowl as buyBowlImpl, setBowl as setBowlImpl } from "./sim/bowl";
+import { qualityOf, setQuality as setQualityImpl } from "./sim/quality";
 import { bowlById } from "./data/bowl";
 import { setBone as setBoneImpl, setRice as setRiceImpl } from "./sim/materials";
 import { boneById, riceById } from "./data/grades";
@@ -538,6 +539,18 @@ panels = mountPanels(hudRoot, {
     speakBowl(String(id));
     refresh();
   },
+  setQuality(id) {
+    const ok = setQualityImpl(state, String(id));
+    if (!ok) {
+      refresh();
+      return;
+    }
+    const q = qualityOf(state);
+    playSfx("upgrade");
+    hud.showToast(`${q.name}：${q.line}`, "like");
+    refresh();
+  },
+
   setBowl(id) {
     const r = setBowlImpl(state, String(id));
     if (!r.ok) {

@@ -3,6 +3,7 @@ import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
 import type { NoodleId } from "../data/noodles";
 import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
 import { DEFAULT_BONE, DEFAULT_RICE, boneById, riceById } from "../data/grades";
+import { qualityById } from "../data/quality";
 import { noodleFit } from "./noodles";
 import { flavorBonus } from "./flavor";
 import { pairingBonus } from "./pairing";
@@ -153,6 +154,8 @@ export interface ScoreExtra {
    * 所以历史回归锁一个数都不会动。
    */
   lockedTotal?: number | null;
+  /** 配料品质档（批次五）：只抬「相」与料钱，不动味道 total */
+  quality?: string;
 }
 
 /**
@@ -170,7 +173,8 @@ export function scoreRecipe(
   const portion = extra.portion ?? DEFAULT_PORTION;
   const rice = riceById(extra.rice ?? DEFAULT_RICE);
   const bone = boneById(extra.bone ?? DEFAULT_BONE);
-  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
+  const qq = qualityById(extra.quality);
+  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -214,11 +218,18 @@ export function scoreRecipe(
   const totalOut = typeof extra.lockedTotal === "number" ? extra.lockedTotal : total;
 
   const safePrice = Math.max(0, price);
-  const charm = Math.min(100, charmOf(recipe.toppings) + flavor.charm + pairing.charm);
+  /**
+   * 配料品质档（批次五）：靓货/头手货抬的是「卖相与分量感」，也就是相（charm）。
+   * 只抬 30 以上的那一部分 —— 30 是「一碗粉该有的样子」的地板，地板不因为进货贵就变高。
+   */
+  const charmBase = charmOf(recipe.toppings) + flavor.charm + pairing.charm;
+  const charm = Math.min(100, 30 + (charmBase - 30) * (1 + qq.charmBoost));
   const valueScore = valueScoreOf(safePrice);
+  // 品质档只乘配料那一段：主料、分量、进货档的米与骨都按原价（不然「头手货」会把整碗都变贵）
+  const topCost = Math.round((bowlCost(recipe.toppings) - BASE_COST) * 100) / 100;
   const cost =
     Math.round(
-      (bowlCost(recipe.toppings) + mainCostYuan(mainId) + portionCostYuan(portion) + gradeCost) * 100,
+      (BASE_COST + topCost * qq.costMult + mainCostYuan(mainId) + portionCostYuan(portion) + gradeCost) * 100,
     ) / 100;
   const margin = safePrice - cost;
   const marginRate = safePrice > 0 ? margin / safePrice : 0;

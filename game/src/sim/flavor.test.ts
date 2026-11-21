@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { FLAVORS, FLAVOR_BY_ID, FLAVOR_TOTAL, type FlavorDef } from "../data/flavor";
 import { TOPPINGS } from "../data/ingredients";
 import { NOODLES } from "../data/noodles";
@@ -178,7 +178,7 @@ describe("存档", () => {
   it("v26：凑成过的味道记进图鉴，读档还在", () => {
     const s = fresh();
     s.collection.flavors.push("classic");
-    expect(SAVE_VERSION).toBe(31);
+    expect(SAVE_VERSION).toBe(32);
     const back = deserialize(serialize(s))!;
     expect(back.collection.flavors).toEqual(["classic"]);
   });

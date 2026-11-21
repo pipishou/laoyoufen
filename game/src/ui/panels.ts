@@ -31,6 +31,7 @@ import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
 import { districtNameOf } from "../data/nanning";
 import { rivalViews, standingOf, streetSummary } from "../sim/rivals";
 import { priceWarWords } from "../sim/price-war";
+import { qualitySummary, qualityViews, qualityWords } from "../sim/quality";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
 import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from "../sim/gear";
 import { comboSummary, comboViews } from "../sim/combo";
@@ -169,6 +170,8 @@ export interface PanelActions {
   setStyle(id: string): void;
   buyBowl(id: string): void;
   setBowl(id: string): void;
+  /** 换进货档（批次五）：免费，代价在每碗料钱里 */
+  setQuality(id: string): void;
   /** 进货档（A5）：换米 / 换骨，随时可换、代价进每碗料钱 */
   setRice(id: string): void;
   setBone(id: string): void;
@@ -238,6 +241,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
               <div class="scorebig"><b data-scorebig>--</b><span data-grade>B</span></div>
               <div class="subs" data-sub-list></div>
               <div class="econ2" data-econ2></div>
+              <div class="qbox" data-quality></div>
               <div class="flavorbox" data-flavors></div>
               <div class="pairbox" data-pairs></div>
             </div>
@@ -261,6 +265,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const econ2 = wrap.querySelector("[data-econ2]") as HTMLElement;
   const flavorsEl = wrap.querySelector("[data-flavors]") as HTMLElement;
   const pairsEl = wrap.querySelector("[data-pairs]") as HTMLElement;
+  const qualityEl = wrap.querySelector("[data-quality]") as HTMLElement;
   const gradesEl = wrap.querySelector("[data-grades]") as HTMLElement;
   const gradeSumEl = wrap.querySelector("[data-gradesum]") as HTMLElement;
   const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
@@ -277,6 +282,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   let lastDishKey = "";
   /** 味道区（B1）的重绘缓存：只有浇头 / 粉型变了才重写 */
   let lastFlavorKey = "";
+let lastQualityKey = "";
 let lastGradeKey = "";
 
   let current: PanelTab = "recipe";
@@ -449,6 +455,9 @@ let lastGradeKey = "";
       break;
     case "buybowl":
       actions.buyBowl(id);
+      break;
+    case "quality":
+      actions.setQuality(id);
       break;
     case "setbowl":
       actions.setBowl(id);
@@ -1156,6 +1165,24 @@ function flavorBoxHtml(s: GameState): string {
 }
 
 /**
+ * 进货档（批次五）：三档 chips。这一档**不收钱**，代价全在每碗料钱里 ——
+ * 所以按钮上直接写乘数，让玩家自己算一碗要贵几毛。
+ */
+function qualityBoxHtml(s: GameState): string {
+  const views = qualityViews(s);
+  const cur = views.find((v) => v.active)?.def;
+  const chips = views
+    .map((v) => {
+      const title = `${v.def.word}｜${v.def.why}｜出处：${v.def.source.label}`;
+      const act = v.def.id === (s.quality ?? "plain") ? " on" : "";
+      const tag = v.def.id === (s.quality ?? "plain") ? `<b>正在用</b>` : `<i>料钱 ×${v.def.costMult}</i>`;
+      return `<span class="qb${act}" data-act="quality" data-id="${v.def.id}" title="${title}">${v.def.name}${tag}</span>`;
+    })
+    .join("");
+  return `<div class="qhd">进货 · ${qualitySummary(s)}<span class="sechint">${cur ? qualityWords(s) : ""}</span></div><div class="qlist">${chips}</div>`;
+}
+
+/**
  * 搭配区（A2）：24 条两件套。与味道区同一个写法，但**只列成立的与差一件的** ——
  * 24 条全铺出来会把配方页撑成一屏，玩家反而记不住哪条跟自己有关。
  * 其余那些收成一句「还有 N 搭要换别的配料」，想看全的去图鉴。
@@ -1548,6 +1575,7 @@ const newsSec = `<div class="sec">
       // 毛利按「实收价」算：三两加 ¥2 是收进来的钱，不能只拿菜单价减成本
       const realMargin = bowlPriceOf(s) - score.cost;
       const gKey = `${s.rice}|${s.bone}`;
+      const qualityKey = `${s.quality ?? "plain"}|${Math.floor(s.cash / 1000)}`;
       if (gKey !== lastGradeKey) {
         lastGradeKey = gKey;
         gradesEl.innerHTML = gradesHtml(s);
@@ -1558,6 +1586,10 @@ const newsSec = `<div class="sec">
         lastFlavorKey = fKey;
         flavorsEl.innerHTML = flavorBoxHtml(s);
         pairsEl.innerHTML = pairBoxHtml(s);
+      }
+      if (qualityKey !== lastQualityKey) {
+        lastQualityKey = qualityKey;
+        qualityEl.innerHTML = qualityBoxHtml(s);
       }
       econ2.innerHTML = `魅力 <b>${score.charm}</b> · 性价比 <b>${score.valueScore}</b><br>成本 ¥${score.cost.toFixed(1)} · 实收 ¥${bowlPriceOf(s).toFixed(0)} · 毛利 ¥${realMargin.toFixed(1)}<br>建议卖 ¥${suggested}<br>门店吸引力 <b>${score.storeScore}</b>`;
       const subKey = score.subs.map((x) => Math.round(x.value)).join(",");

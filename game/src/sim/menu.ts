@@ -64,6 +64,7 @@ export function scoreDish(item: MenuItem, state?: GameState): RecipeScore {
     rice: state?.rice,
     bone: state?.bone,
     lockedTotal: item.lockedTaste ?? null,
+    quality: state?.quality,
   });
   /**
    * 料钱定死（A6）：师傅教你拿秤称，这款每碗料钱 −8%。

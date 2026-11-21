@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { STREETS, STREET_BY_ID, STREET_TOTAL_YUAN } from "../data/streets";
 import { SAVE_VERSION, createInitialState, type GameState } from "./state";
 import { openForBusiness } from "./setup";
@@ -225,7 +225,7 @@ describe("存档", () => {
     const back = deserialize(serialize(s))!;
     expect(back.streets.sort()).toEqual(["banyan_bench", "lane_lamp"]);
     expect(back.streetSeen.length).toBeGreaterThanOrEqual(1);
-    expect(SAVE_VERSION).toBe(31);
+    expect(SAVE_VERSION).toBe(32);
   });
 
   it("v19 老档没有街面 → 补空；坏 id 丢掉", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { FAVOR_GAIN, FAVOR_MAX, recipeSaleFavor, TREAT_ATTRACT } from "../data/favor";
 import { SAVE_VERSION, createInitialState, type GameState } from "./state";
 import { openForBusiness } from "./setup";
@@ -150,7 +150,7 @@ describe("人情：存档", () => {
     addFavorFree(s, 33, "转手");
     s.treatDay = s.month * 100 + s.day;
     const back = deserialize(serialize(s))!;
-    expect(SAVE_VERSION).toBe(31);
+    expect(SAVE_VERSION).toBe(32);
     expect(favorOf(back)).toBe(33);
     expect(back.favorTotal).toBe(33);
     expect(back.treatDay).toBe(s.treatDay);

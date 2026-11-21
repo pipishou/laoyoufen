@@ -2338,3 +2338,19 @@ button.pill[disabled] {
   content: "街上 · ";
   color: var(--ink2);
 }
+
+/* 进货档（批次五）：三枚小签，正在用的写成实心，其余写在料钱乘数 */
+.rcol .qbox { margin-top: 4px; }
+.rcol .qhd { font-size: 11px; color: var(--ink2); margin-bottom: 3px; }
+.rcol .qhd .sechint { margin-left: 6px; font-size: 10px; color: var(--wood); }
+.rcol .qlist { display: flex; gap: 4px; flex-wrap: wrap; }
+.rcol .qb {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; font-size: 11px; cursor: pointer;
+  color: var(--ink2); background: var(--paper2);
+  border: 1px solid var(--sand); border-radius: 2px;
+}
+.rcol .qb:hover { border-color: var(--wood); }
+.rcol .qb b { color: var(--green); font-size: 10px; }
+.rcol .qb i { color: var(--wood); font-style: normal; font-size: 10px; }
+.rcol .qb.on { color: var(--ink); border-color: var(--green); background: var(--cream); }
