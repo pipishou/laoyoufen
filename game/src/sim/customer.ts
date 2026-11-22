@@ -8,7 +8,7 @@ import {
   type CustomerPrefs,
   type LikeDim,
 } from "../data/customers";
-import { FLOW } from "../data/balance";
+import { FLOW, GAS_PER_BOWL_YUAN } from "../data/balance";
 import { unlock } from "./collection";
 import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } from "./regulars";
 import { FAVOR_GAIN } from "../data/favor";
@@ -504,7 +504,9 @@ function settle(state: GameState, c: QueueCustomer): void {
       // 南宁行情（批次三）：回南天受潮、猪肉起价，都落在料钱上
       marketCostFactor(state) *
       flavorCostFactor(item.recipe.toppings, item.noodle) +
-    sidePick.cost;
+    sidePick.cost +
+    // 燃气与水（批次十二后半）：按碗算，不按天算 —— 灶一直点着，煮一碗与煮七十碗不是一个量级的火
+    GAS_PER_BOWL_YUAN;
   state.cash += paid - cost;
   state.monthRevenue += paid;
   state.flow.revenueToday += paid;

@@ -3,6 +3,21 @@ import { monthlyRentOf } from "./setup";
 import { branchMonthlyCost } from "./branches";
 import { pacifyGiftOf, rivalMonthTick } from "./rivals";
 import { BOWL } from "../data/anchors";
+import { UPKEEP_GRADE_STEP, UPKEEP_PER_TIER_YUAN } from "../data/balance";
+
+/**
+ * 设备维护：每台每档每月 ¥90 × (1 + 0.12 × 段位)。
+ *
+ * 为什么值得单列一笔：升级是「一次付钱、永久变好」，如果永远不再收钱，
+ * 后期就没有什么能把钱花掉（P173/P200）。这笔钱按**已有的档位**收，
+ * 不新开任何系统，也不拦人升级 —— 满配段 11 约 ¥3,340/月，一天一百多碗就挣回来。
+ */
+export function monthlyUpkeepOf(state: GameState): number {
+  const tiers = Object.values(state.equipment ?? {}).reduce((n, lv) => n + Math.max(0, lv), 0);
+  if (tiers === 0) return 0;
+  const mult = 1 + UPKEEP_GRADE_STEP * Math.max(0, state.gradeLevel ?? 0);
+  return Math.round(tiers * UPKEEP_PER_TIER_YUAN * mult);
+}
 const YEAR_BONUS: Record<YearRecord["rating"], number> = { S: 8000, A: 4000, B: 2000, C: 500, D: 0 };
 const GRADES: YearRecord["rating"][] = ["D", "C", "B", "A", "S"];
 
@@ -35,6 +50,8 @@ export function closeMonth(state: GameState): void {
   const rent = monthlyRentOf(state);
   // 分店（S6）的月固定成本：每家店的房租 + 店长工资（料钱已在日结里按碗扣过）
   const branchCost = branchMonthlyCost(state);
+  // 设备维护（批次十二后半）：四台设备各四档、段 11 时约 ¥3,340/月
+  const upkeep = monthlyUpkeepOf(state);
   // M1 同条街：月初同行也在过日子 —— 名气自己涨、被你压下去的会关门、台词轮着说。
   // 服了气的邻居每月送一次食材（每家抵一碗料钱 × 30 天），算成本抵扣。
   const street = rivalMonthTick(state);
@@ -47,8 +64,8 @@ export function closeMonth(state: GameState): void {
 
   // K1：日营收峰值在 endDay 里逐日更新（见 sim/state.ts），此处不再动 tally
 
-  state.cash -= rent + branchCost;
-  const profit = Math.round(revenue - wages - rent - branchCost) + giftYuan;
+  state.cash -= rent + branchCost + upkeep;
+  const profit = Math.round(revenue - wages - rent - branchCost - upkeep) + giftYuan;
 
   const record: MonthRecord = {
     month: state.month,
@@ -60,6 +77,7 @@ export function closeMonth(state: GameState): void {
     rent,
     branchCost,
     rivalGift: giftYuan,
+    upkeep,
     profit,
     target: Math.round(target),
     grade: gradeByRatio(revenue / Math.max(1, target)),

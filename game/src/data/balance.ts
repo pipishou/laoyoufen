@@ -197,4 +197,21 @@ export function realMinutesToGame(realMinutes: number): number {
   return realMinutes / REAL_MINUTES_PER_GAME_MINUTE;
 }
 
+/**
+ * 燃气与水：粉店是真烧气的（开罗没有这条，它把耗材折进料钱）。
+ *
+ * 为什么按碗算而不是按天算：灶一直点着，煮一碗与煮七十碗不是一个量级的火。
+ * 数取自南宁街边粉店的实际感受 —— 一罐气约一百四五十元，忙店三四天见底，
+ * 一天七八十碗摊下来每碗两毛到三毛；洗菜洗碗的水再加几分。
+ * 写 0.3 是把气与水合在一条上，宁可高一点，也别让「多卖」变成零成本。
+ */
+export const GAS_PER_BOWL_YUAN = 0.3;
 
+/**
+ * 设备维护：每台每档每月 ¥90 × (1 + 0.12 × 段位)。
+ *
+ * 现实依据是灶、冰柜、和面机的保养与折旧；段位越高，店里设备越贵、用得越狠。
+ * 满配（四台各四档＝16 档）在段 11 约 ¥3,340/月 —— 够贵，但不至于让人不敢升级。
+ */
+export const UPKEEP_PER_TIER_YUAN = 90;
+export const UPKEEP_GRADE_STEP = 0.12;

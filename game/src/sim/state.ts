@@ -273,6 +273,8 @@ export interface MonthRecord {
   branchCost?: number;
   /** M1：服气的邻居这个月送的食材钱（算成本抵扣，所以利润要加回） */
   rivalGift?: number;
+  /** 设备维护（批次十二后半）：每台每档 ¥90 × (1 + 0.12 × 段位) */
+  upkeep?: number;
   profit: number;
   target: number;
   grade: "S" | "A" | "B" | "C" | "D";
