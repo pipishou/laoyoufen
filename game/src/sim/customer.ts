@@ -28,6 +28,7 @@ import { stageMinutes } from "./equipment";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
 import { priceWarMult } from "./price-war";
+import { localCostFactor, localPatienceMult, localSideCostFactor } from "./local";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
 import { flavorCostFactor, flavorHits, flavorPatienceMult, flavorSatBonus, flavorServeFactor } from "./flavor";
 import { pairCostFactor, pairPatienceMult, pairSatBonus, pairServeFactor } from "./pairing";
@@ -356,6 +357,8 @@ function arriveOne(state: GameState): void {
     tierPatiencePct(tier) *
     // 南宁行情（批次三）：台风天人心急，寒潮里人愿意等砂锅
     marketPatienceMult(state) *
+    // 物产（批次九）：横州的花茶，坐下来的人不催
+    localPatienceMult(state) *
     FLOW.patienceScale;
   flow.customers.push({
     id: flow.nextId++,
@@ -518,8 +521,10 @@ function settle(state: GameState, c: QueueCustomer): void {
       bowlCostFactor(state) *
       // 南宁行情（批次三）：回南天受潮、猪肉起价，都落在料钱上
       marketCostFactor(state) *
+      // 物产（批次九）：马山的八角，香料这一项省两个点
+      localCostFactor(state) *
       flavorCostFactor(item.recipe.toppings, item.noodle) +
-    sidePick.cost +
+    sidePick.cost * localSideCostFactor(state) +
     // 燃气与水（批次十二后半）：按碗算，不按天算 —— 灶一直点着，煮一碗与煮七十碗不是一个量级的火
     GAS_PER_BOWL_YUAN;
   state.cash += paid - cost;

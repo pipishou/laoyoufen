@@ -20,6 +20,7 @@ import { districtOptions, moveShop } from "./sim/district";
 import { closeBranch, openBranch } from "./sim/branches";
 import { branchSizeById } from "./data/branches";
 import { districtNameOf } from "./data/nanning";
+import { ringDef, visibleRingOf } from "./data/map";
 import { takeOverShop } from "./sim/rivals";
 import { RIVAL_BY_ID } from "./data/rivals";
 import { buyStreet, nextRequest } from "./sim/streets";
@@ -882,6 +883,25 @@ function tickFeedback(): void {
           day: s.day,
         }).then((line) => {
           if (line) hud.showToast(`阿婆说：「${line}」`, "info");
+        });
+      }
+    }
+    // 又看得见一圈（批次九）：地图上多揭开一片，街坊提一句
+    {
+      const ring = visibleRingOf(s.gradeLevel ?? 0);
+      const seen = s.flow.lastRing ?? 1;
+      if (ring > seen) {
+        s.flow.lastRing = ring;
+        const def = ringDef(ring);
+        hud.showToast(`又看得见一片：${def.name}`, "like");
+        void fetchLine({
+          kind: "district_voice",
+          key: `ring${ring}`,
+          context: { 圈: def.name, 事: def.note, 区: districtNameOf(s.district) },
+          month: s.month,
+          day: s.day,
+        }).then((line) => {
+          if (line) hud.showToast(`街坊说：「${line}」`, "info");
         });
       }
     }

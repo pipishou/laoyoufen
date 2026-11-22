@@ -21,6 +21,14 @@ export interface MapCell {
   short: string;
   x: number;
   y: number;
+  /** 第几圈（批次九） */
+  ring: MapRing;
+  /** 看见这一圈要的段位 */
+  gate: number;
+  /** 还没揭开 */
+  locked: boolean;
+  /** 这一片出的物产名（没有就 null） */
+  local: string | null;
   /** 玩家现在就在这个区 */
   here: boolean;
   /** 这个区有你的分店 */
@@ -58,4 +66,64 @@ export const MAP_SPOTS: readonly Spot[] = [
 
 export function shortNameOf(name: string): string {
   return name.replace(/[区县市]$/, "");
+}
+
+/**
+ * 四圈（批次九）。
+ *
+ * 开罗 `hidearea.txt` 只有 `Lv1..Lv14` 十四行、没有坐标 —— 它做的事是
+ * **按段位一块一块把地图揭开**，而不是一次给你十二个区看。
+ *
+ * 我们照这个形状做四圈：先是脚下这一圈（起步就在兴宁），一评、二评、三评
+ * 各开一圈。圈不是正圆，是按转让费排的 —— 越远的区越贵，也越晚看得见。
+ *
+ * 注意：**锁住的格子仍占位**，只是写「第 N 段能看到这一片」。
+ * 直接不画会让地图缺角，看不出这城有多大。
+ */
+export type MapRing = 1 | 2 | 3 | 4;
+
+export interface RingDef {
+  ring: MapRing;
+  /** 看到这一圈需要的段位（gradeLevel，0 起算） */
+  gate: number;
+  /** 这一圈怎么叫 */
+  name: string;
+  note: string;
+}
+
+export const MAP_RINGS: readonly RingDef[] = [
+  { ring: 1, gate: 0, name: "脚下这一圈", note: "起步就在这儿，街坊都认得你的门牌。" },
+  { ring: 2, gate: 2, name: "城外一圈", note: "县城与老镇，客流不大但事少。" },
+  { ring: 3, gate: 4, name: "新区一圈", note: "大学城与五象，年轻人多、租金贵。" },
+  { ring: 4, gate: 6, name: "城心一圈", note: "机场、商务区，客单价最高，同行也最狠。" },
+] as const;
+
+export const RING_BY_SPOT: Readonly<Record<string, MapRing>> = {
+  xingning: 1,
+  yongning: 1,
+  mashan: 1,
+  shanglin: 1,
+  longan: 2,
+  binyang: 2,
+  hengzhou: 2,
+  wuming: 3,
+  liangqing: 3,
+  jiangnan: 4,
+  xixiangtang: 4,
+  qingxiu: 4,
+} as const;
+
+export function ringOfSpot(id: string): MapRing {
+  return RING_BY_SPOT[id] ?? 1;
+}
+
+export function ringDef(ring: MapRing): RingDef {
+  return MAP_RINGS.find((r) => r.ring === ring) ?? MAP_RINGS[0]!;
+}
+
+/** 这个段位能看见第几圈 */
+export function visibleRingOf(gradeLevel: number): MapRing {
+  let ring: MapRing = 1;
+  for (const r of MAP_RINGS) if (gradeLevel >= r.gate) ring = r.ring;
+  return ring;
 }

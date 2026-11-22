@@ -26,7 +26,7 @@ import { DEFAULT_QUALITY } from "../data/quality";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 34;
+export const SAVE_VERSION = 35;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -169,6 +169,8 @@ export interface CustomerFlow {
   noodleTried?: string[];
   /** 刚翻到的那一页，界面读完即消费 */
   lastNote?: string | null;
+  /** 上一次播报「又看得见一圈」时的圈号（批次九） */
+  lastRing?: number;
 
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;

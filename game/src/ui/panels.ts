@@ -66,6 +66,7 @@ import { icon } from "./icons";
 import { specialtiesOfRole } from "../data/specialty";
 import { specialtySummary } from "../sim/specialty";
 import { mapCells, mapSize, mapSummary, districtPitchOf } from "../sim/map";
+import { localSummary } from "../sim/local";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -1383,21 +1384,28 @@ function collectionHtml(s: GameState): string {
   function mapHtml(s: GameState): string {
     const cells = mapCells(s);
     const size = mapSize();
+    /**
+     * 锁住的格子不是不画，而是画成空框写「第 N 段能看到这一片」——
+     * 直接不画会让地图缺角，看不出这城还有多大（批次九）。
+     */
     const grid = cells
-      .map(
-        (c) =>
-          `<div class="mcell${c.here ? " here" : ""}${c.branch ? " br" : ""}${c.rivals > 1 ? " hot" : ""}" ` +
-          `style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.name}｜每天约 ${c.traffic} 人｜${districtPitchOf(c.id)}">` +
-          `<b>${c.short}</b>` +
-          (c.rivals > 0 ? `<i>${c.rivals}</i>` : "") +
-          (c.here ? `<span class="mhere">在这</span>` : c.branch ? `<span class="mbr">分店</span>` : "") +
-          `</div>`,
+      .map((c) =>
+        c.locked
+          ? `<div class="mcell lock" style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="第 ${c.gate} 段能看到这一片">` +
+            `<b>?</b><span class="mlock">第 ${c.gate} 段</span></div>`
+          : `<div class="mcell${c.here ? " here" : ""}${c.branch ? " br" : ""}${c.rivals > 1 ? " hot" : ""}" ` +
+            `style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.name}｜每天约 ${c.traffic} 人｜${districtPitchOf(c.id)}${c.local ? `｜这一片产${c.local}` : ""}">` +
+            `<b>${c.short}</b>` +
+            (c.local ? `<em class="mprod">${c.local.slice(-2)}</em>` : "") +
+            (c.rivals > 0 ? `<i>${c.rivals}</i>` : "") +
+            (c.here ? `<span class="mhere">在这</span>` : c.branch ? `<span class="mbr">分店</span>` : "") +
+            `</div>`,
       )
       .join("");
     return `<div class="sec">
         <div class="sechd">${icon("street")}南宁 · ${mapSummary(s)}</div>
         <div class="mmap" style="--mw:${size.w};--mh:${size.h}">${grid}</div>
-        <div class="hint">格子里的小数字是同一条街上还在营业的同行；红框是竞争最挤的区。想搬区去「街面 · 换区」。</div>
+        <div class="hint">${localSummary(s)}。格子里的小数字是同一条街上还在营业的同行；红框是竞争最挤的区；空框写着要几段才看得见。想搬区去「街面 · 换区」。</div>
       </div>`;
   }
 
@@ -1747,7 +1755,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;
       html = contestHtml(s, score);
     } else if (current === "collection") {
-      key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}|${(s.collection.flavors ?? []).length}|${(s.bowls ?? []).length}|${(s.flow.notes ?? []).length}|${s.news.length}|${(s.rivals ?? []).filter((r) => !r.closed).length}|${s.bowl ?? ""}`;
+      key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}|${(s.collection.flavors ?? []).length}|${(s.bowls ?? []).length}|${(s.flow.notes ?? []).length}|${s.news.length}|${(s.rivals ?? []).filter((r) => !r.closed).length}|${s.bowl ?? ""}|${s.gradeLevel}|${s.district}|${(s.branches ?? []).length}`;
       html = collectionHtml(s);
     } else {
       key = `${s.months.length}|${s.years.length}|${s.pendingReport?.year ?? -1}|${s.finished}|${Math.floor(s.cash / 100)}`;

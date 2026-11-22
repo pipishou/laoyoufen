@@ -2369,3 +2369,9 @@ button.pill[disabled] {
 .pane .nbody{font-size:11px;line-height:1.6;color:var(--ink2);margin-top:2px}
 .pane .nrow2.locked .ntitle{color:var(--wood)}
 .pane .nrow2.locked .nbody{color:var(--wood);opacity:.85;font-style:italic}
+
+/* 批次九：锁住的格子与物产小字 */
+.mmap .mcell.lock{background:transparent;border:1px dashed var(--sand);opacity:.7}
+.mmap .mcell.lock b{color:var(--sand);font-size:12px}
+.mmap .mcell .mlock{display:block;font-size:8px;color:var(--wood);line-height:1.1}
+.mmap .mcell .mprod{font-style:normal;display:block;font-size:8px;color:var(--green);line-height:1.1}

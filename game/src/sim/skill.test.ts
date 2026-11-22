@@ -184,7 +184,7 @@ describe("手上的功夫（批次 6）", () => {
 
   it("存档版本 33 与老档迁移：坏支与越界等级被丢掉", () => {
     const s = fresh();
-    expect(SAVE_VERSION).toBe(34);
+    expect(SAVE_VERSION).toBe(35);
     const raw = JSON.parse(serialize(s)) as Record<string, unknown>;
     raw.skills = { wok_fire: 2, not_a_branch: 3, sear: 9, slice: 0 };
     raw.saveVersion = 32;

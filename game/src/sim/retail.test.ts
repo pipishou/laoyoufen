@@ -135,7 +135,7 @@ describe("零售线（批次七）", () => {
 
   it("存档是 34，旧档迁移后渠道退门口、价位回建议价", () => {
     const s = fresh();
-    expect(SAVE_VERSION).toBe(34);
+    expect(SAVE_VERSION).toBe(35);
     const raw = JSON.parse(serialize(s)) as Record<string, unknown>;
     raw.saveVersion = 33;
     raw.retail = { channel: "nope", prices: { dry_noodle: 999 }, sold: { dry_noodle: -3 } };

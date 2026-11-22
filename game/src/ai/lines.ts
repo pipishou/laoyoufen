@@ -33,7 +33,8 @@ export type LineKind =
   | "market_voice"
   | "retail_voice"
   | "grade_voice"
-  | "notebook_voice";
+  | "notebook_voice"
+  | "district_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -324,6 +325,18 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "今天街上没什么人，倒是清静。",
     "这种天，还是你这里坐得住。",
     "街上人挤人，我绕了两条巷才过来。",
+  ],
+  /**
+   * 又看得见一圈（批次九）。
+   *
+   * 开罗 `hidearea` 揭开一格什么都不说；我们让街坊提一句 ——
+   * 但这句**不报段位数字**，说的是「城还有多大」。
+   */
+  district_voice: [
+    "听说北边山里也开得下去，就是要熬得住冷清。",
+    "我外家就在那边，赶圩那天人多得挤不过去。",
+    "你这门牌要是挂到那边去，得先认认路。",
+    "城心那些写字楼，中午排队排到马路上。",
   ],
   notebook_voice: [
     "嗱，粉厚了就要多烫一阵，唔好急。",

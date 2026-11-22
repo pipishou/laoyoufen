@@ -168,7 +168,7 @@ describe("碗（A4）", () => {
     expect(back).not.toBeNull();
     expect(back!.bowls).toContain("takeaway");
     expect(currentBowl(back!).id).toBe("takeaway");
-    expect(SAVE_VERSION).toBe(34);
+    expect(SAVE_VERSION).toBe(35);
   });
 
   it("老档（v27）没有碗这格：补默认钢碗，坏 id 丢掉", () => {

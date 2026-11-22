@@ -17,6 +17,7 @@ import { SKILL_BY_ID } from "../data/skill";
 import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 import { CHANNEL_BY_ID, RETAILS, type ChannelId } from "../data/retail";
 import { defaultRetail } from "./retail";
+import { RIVAL_BY_ID } from "../data/rivals";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -107,6 +108,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 34 &&
     v.saveVersion !== 33 &&
   v.saveVersion !== 32 &&
     v.saveVersion !== 31 &&
@@ -608,6 +610,15 @@ export function deserialize(raw: string): GameState | null {
     }
   }
   parsed.skills = nextSkills;
+  // v34 → v35（批次九 地图四圈）：同行补上所在区。
+  // 老档的 `RivalState` 没有 district，按 `RIVALS` 的定义补；表里也没有的（手改档）归当前区。
+  if (Array.isArray(parsed.rivals)) {
+    for (const r of parsed.rivals as { id: string; district?: string }[]) {
+      if (typeof r.district === "string" && r.district) continue;
+      const def = RIVAL_BY_ID.get(r.id);
+      r.district = def?.district ?? parsed.district;
+    }
+  }
   // v33 → v34（批次七 零售线）：老档没有货架，补一份默认（渠道=门口、价=建议零售、销量清零）
   const rawRetail = (parsed as { retail?: unknown }).retail;
   const fallback = defaultRetail();

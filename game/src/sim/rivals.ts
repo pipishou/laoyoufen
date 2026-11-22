@@ -28,6 +28,14 @@ import { gearRivalShield } from "./gear";
 
 export interface RivalState {
   id: string;
+  /**
+   * 这家店开在哪个区（批次九）。
+   *
+   * 此前 `RivalState` 没有区字段，地图上只能假设「八家都在你所在的区」，
+   * 于是别的区永远是空的（P136）。真开分店之后，同行得各在各的区抢客。
+   * 老档没有这一格，读档时按 `RIVALS` 的定义补。
+   */
+  district?: string;
   /** 名气，决定他抢走多少客 */
   fame: number;
   /** 你赢过他几次（服气判定） */
@@ -43,6 +51,7 @@ export interface RivalState {
 export function initRivals(): RivalState[] {
   return RIVALS.map((r) => ({
     id: r.id,
+    district: r.district,
     fame: r.fame,
     wins: 0,
     closed: false,

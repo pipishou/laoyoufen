@@ -126,7 +126,7 @@ describe("配料组合（A2）", () => {
 
   it("组合不占存档字段：版本仍是 28，新局没有额外状态", () => {
     const s = createInitialState("pair-player", 3);
-    expect(SAVE_VERSION).toBe(34);
+    expect(SAVE_VERSION).toBe(35);
     expect(Object.keys(s)).not.toContain("pairings");
   });
 });
