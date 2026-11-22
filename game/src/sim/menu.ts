@@ -1,3 +1,4 @@
+import { districtAppetite } from "./district";
 import { MAINS, portionOf } from "../data/mains";
 import { menuCapOf } from "../data/menu";
 import { priceTolerance, scoreRecipe, type RecipeScore } from "./score";
@@ -65,6 +66,7 @@ export function scoreDish(item: MenuItem, state?: GameState): RecipeScore {
     bone: state?.bone,
     lockedTotal: item.lockedTaste ?? null,
     quality: state?.quality,
+    xp: state?.ingredientXp,
   });
   /**
    * 料钱定死（A6）：师傅教你拿秤称，这款每碗料钱 −8%。
@@ -251,6 +253,13 @@ export function pickDish(state: GameState, wallet: number, roll: number): MenuIt
    * 于是同一家店的贵款全被挡回来，菜单做多反而摊薄客单价（P47 替身实测）。
    */
   const shopTolerance = priceTolerance(menuBestTaste(state));
+  /**
+   * 街区胃口（开罗 Sales Areas 2：Appetite affects how much ramen is eaten）。
+   *
+   * 处理方式是「大碗先失宠」而不是「人变穷」：胃口 < 1 时，三两那几款的权重按胃口打折，
+   * 客人于是更常点二两。**不动价格、不动钱包** —— 那两件事是别的系统在管（P233/P240）。
+   */
+  const appetite = districtAppetite(state);
   const affordable: { item: MenuItem; weight: number }[] = [];
   for (const item of dishes) {
     const sc = scoreDish(item, state);
@@ -260,7 +269,8 @@ export function pickDish(state: GameState, wallet: number, roll: number): MenuIt
     // 味道 0–100 → 权重 0.1–1.0；价格相对钱包越贵，权重越低
     const tasteW = Math.max(0.1, sc.total / 100);
     const priceW = Math.max(0.25, Math.min(1, (wallet * 1.6 - price) / (wallet * 1.6)));
-    affordable.push({ item, weight: tasteW * priceW });
+    const portionW = item.portion >= 3 ? Math.min(1, appetite) : 1;
+    affordable.push({ item, weight: tasteW * priceW * portionW });
   }
   if (affordable.length === 0) return null;
   const total = affordable.reduce((n, x) => n + x.weight, 0);

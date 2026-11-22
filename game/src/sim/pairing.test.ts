@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { TOPPINGS } from "../data/ingredients";
 import { PAIRINGS, PAIRING_TOTAL, pairingById } from "../data/pairing";
 import { SAVE_VERSION, createInitialState } from "./state";
@@ -20,11 +20,11 @@ const idSet = new Set(TOPPINGS.map((t) => t.id));
 const pairOf = (id: string) => PAIRINGS.find((p) => p.id === id)!.pair;
 
 describe("配料组合（A2）", () => {
-  it("24 搭：id 与名字不重样，每搭两件不同的真浇头", () => {
-    expect(PAIRINGS).toHaveLength(24);
-    expect(PAIRING_TOTAL).toBe(24);
-    expect(new Set(PAIRINGS.map((p) => p.id)).size).toBe(24);
-    expect(new Set(PAIRINGS.map((p) => p.name)).size).toBe(24);
+  it("19 搭：id 与名字不重样，每搭两件不同的真浇头", () => {
+    expect(PAIRINGS).toHaveLength(19);
+    expect(PAIRING_TOTAL).toBe(19);
+    expect(new Set(PAIRINGS.map((p) => p.id)).size).toBe(19);
+    expect(new Set(PAIRINGS.map((p) => p.name)).size).toBe(19);
     for (const p of PAIRINGS) {
       expect(p.pair).toHaveLength(2);
       expect(p.pair[0]).not.toBe(p.pair[1]);
@@ -110,10 +110,10 @@ describe("配料组合（A2）", () => {
     expect(pairServeFactor(q)).toBeCloseTo(1 - Math.min(PAIR_CAP.servePct, 0.02), 6);
   });
 
-  it("抬头写「凑成 N / 24 搭」", () => {
-    expect(pairingSummary([])).toBe("凑成 0 / 24 搭");
+  it("抬头写「凑成 N / 19 搭」", () => {
+    expect(pairingSummary([])).toBe("凑成 0 / 19 搭");
     const pair = pairOf("beef_mince");
-    expect(pairingSummary(pair)).toBe("凑成 1 / 24 搭");
+    expect(pairingSummary(pair)).toBe("凑成 1 / 19 搭");
   });
 
   it("差一件提示：只放一件时指向那一搭，凑齐后换下一条", () => {
@@ -126,7 +126,7 @@ describe("配料组合（A2）", () => {
 
   it("组合不占存档字段：版本仍是 28，新局没有额外状态", () => {
     const s = createInitialState("pair-player", 3);
-    expect(SAVE_VERSION).toBe(35);
+    expect(SAVE_VERSION).toBe(36);
     expect(Object.keys(s)).not.toContain("pairings");
   });
 });

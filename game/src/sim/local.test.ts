@@ -118,6 +118,6 @@ describe("地图四圈（批次九）", () => {
   });
 
   it("存档版本到 35", () => {
-    expect(SAVE_VERSION).toBe(35);
+    expect(SAVE_VERSION).toBe(36);
   });
 });

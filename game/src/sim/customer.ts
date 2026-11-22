@@ -24,6 +24,7 @@ import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
 import { tierRemark } from "./tier";
 import { noteTick, rememberNoodle } from "./notebook";
+import { rememberToppings, xpPickyEase } from "./topping-xp";
 import { stageMinutes } from "./equipment";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
@@ -452,7 +453,7 @@ function settle(state: GameState, c: QueueCustomer): void {
    * 款可能在他等待期间被下架/删掉 —— 那就按当前编辑款结账，别让这人白吃。
    */
   const item = state.menu.find((d) => d.id === c.dishId) ?? currentDish(state);
-  const sc = scoreDish(item);
+  const sc = scoreDish(item, state);
   /**
    * 阿婆的笔记本（批次八）：一碗出锅就是一次观察 —— 这一碗什么粉、配料哪几样、
    * 汤够不够、出锅要几分钟，都是玩家亲手做出来的事，够解锁哪条就记哪条。
@@ -465,6 +466,8 @@ function settle(state: GameState, c: QueueCustomer): void {
     toppings: item.recipe.toppings,
     serveMinutes: stageMinutes(state).total,
   });
+  // 浇头熟练度（批 A′）：这一碗用到的每一份料都长一碗的手熟
+  rememberToppings(state, item.recipe.toppings);
 
   // 主料与份量（P46）：牛肉比碎肉香，三两比二两管饱 —— 现在按**这一款**算
   const mainDef = mainById(item.main);
@@ -583,7 +586,11 @@ function settle(state: GameState, c: QueueCustomer): void {
   // 下限留 0.5：名不见经传，但不是「已经被街坊拉黑」。
   // 顾客等级（A8）：识食的吃到不满意的会当场减分（只减满意度，口碑那一层由权重管）
   const tierDef = tierById(c.tier);
-  const tierPenalty = tierSatPenalty(tierDef, sc.total);
+  // 浇头熟练度（批 A′）：手熟的那一手，识食客也挑不出那么多毛病
+  const tierPenalty = Math.max(
+    0,
+    tierSatPenalty(tierDef, sc.total) - xpPickyEase(state.ingredientXp, item.recipe.toppings),
+  );
   if (tierPenalty > 0) {
     sat = Math.max(0, sat - tierPenalty);
     state.flow.lastTier = tierDef.id;

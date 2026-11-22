@@ -11,7 +11,7 @@ import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
 import { canEnter, contestScore, maxTierOf } from "../sim/contest";
 import { arenaSummary, arenaViews } from "../sim/arena";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
-import { districtOptions } from "../sim/district";
+import { appetiteWords, districtOptions, homeAppetiteOf, homeEnergyOf } from "../sim/district";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
@@ -712,7 +712,7 @@ let lastGradeKey = "";
     const opts = districtOptions(s);
     const districtSec = `<div class="sec">
         <div class="sechd">${icon("street")}换区 · 现在 ${opts.find((o) => o.current)?.name ?? s.district}</div>
-        <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%。转让费一次性，搬完能量从 100%% 重新开始。</div>
+        <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%。客人还吃得下多少也在变：本区每季度 −4%（最低 75%），搬完两条都从 100% 重新养。</div><div class="lmeta" style="padding:0 2px 8px">这一片：客流 ×${homeEnergyOf(s).toFixed(2)} · 胃口 ×${homeAppetiteOf(s).toFixed(2)} —— ${appetiteWords(s)}</div>
         ${opts
           .slice(0, 6)
           .map(

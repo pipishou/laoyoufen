@@ -34,7 +34,7 @@ describe("魅力 / 价格 / 成本", () => {
   });
 
   it("老友三件套 + 青菜 + 西红柿有组合加成", () => {
-    const combo = charmOf(["top.sourbamboo", "top.douchi", "top.chili", "top.kongxincai", "top.tomato"]);
+    const combo = charmOf(["top.sourbamboo", "top.douchi", "top.chili", "top.shengcai", "top.tomato"]);
     const sameCountNoCombo = charmOf(["top.beef", "top.offal", "top.lean", "top.mince", "top.quail"]);
     expect(combo).toBeGreaterThan(sameCountNoCombo);
   });

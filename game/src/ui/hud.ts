@@ -32,6 +32,7 @@ import { bowlMinutes, serveMultiplier } from "../sim/staff";
 import { equipServeMultiplier, slowestStation, stageMinutes } from "../sim/equipment";
 import { STATION_NAMES } from "../data/equipment";
 import { marketOf, marketWords } from "../sim/market";
+import { levelOf, nextStep, toppingXpOf, xpWords } from "../sim/topping-xp";
 import { icon } from "./icons";
 
 /**
@@ -125,7 +126,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
 
   const chips = TOPPINGS.map(
     (t) =>
-      `<button type="button" class="chip" data-top="${t.id}" title="${t.tags.join("/")} · ¥${t.cost}">${t.name}</button>`,
+      `<button type="button" class="chip" data-top="${t.id}" title="${t.tags.join("/")} · ¥${t.cost}">${t.name}<b class="xl" data-xp="${t.id}"></b></button>`,
   ).join("");
 
   root.innerHTML = `
@@ -361,6 +362,29 @@ let lastTierKey = "";
 let lastMarketKey = "";
 
   const chipEls = Array.from(root.querySelectorAll<HTMLButtonElement>(".chip"));
+  /** 浇头熟练度（批 A′）：chip 是常量模板，等级只能每次渲染时贴上去 */
+  const chipById = new Map<string, HTMLButtonElement>();
+  chipEls.forEach((btn) => {
+    const id = btn.dataset.top;
+    if (id) chipById.set(id, btn);
+  });
+  const topById = new Map(TOPPINGS.map((t) => [t.id, t]));
+  const syncChipXp = (game: GameState): void => {
+    chipById.forEach((btn, id) => {
+      const t = topById.get(id);
+      if (!t) return;
+      const xp = toppingXpOf(game, id);
+      const level = levelOf(xp);
+      const badge = btn.querySelector<HTMLElement>("[data-xp]");
+      if (badge) badge.textContent = level > 0 ? `${level}` : "";
+      const next = nextStep(xp);
+      const src = t.source?.[0];
+      btn.title =
+        `${t.name}｜${t.tags.join("/")} · 料钱 ¥${t.cost}｜${xpWords(level)}（做过 ${xp} 碗` +
+        `${next === null ? "，已经拿手" : `，再做 ${next} 碗升一级`}）` +
+        `${src ? `｜出处：${src.label}「${src.quote}」` : ""}${t.note ? `｜${t.note}` : ""}`;
+    });
+  };
   const topCount = q("[data-topcount]");
   chipEls.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -623,6 +647,7 @@ const render = (s: GameState, score: RecipeScore): void => {
       const sm = stageMinutes(s);
       const slow = slowestStation(s);
       el.econ.title = `一碗 ${(sm.total).toFixed(1)} 分：炒锅 ${sm.wok.toFixed(1)} · 汤锅 ${sm.pot.toFixed(1)} · 粉篓 ${sm.basket.toFixed(1)}｜最慢是${STATION_NAMES[slow.station]}（${slow.minutes.toFixed(1)} 分）`;
+  syncChipXp(s);
     }
     /**
      * 四维九档（B1 批次一）：把「味 62 / 粉 55」换成客人会说的话。

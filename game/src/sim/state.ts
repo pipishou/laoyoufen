@@ -26,7 +26,7 @@ import { DEFAULT_QUALITY } from "../data/quality";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 35;
+export const SAVE_VERSION = 36;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -569,6 +569,8 @@ export interface GameState {
   pack: boolean;
   /** 配料品质档（批次五）：plain / good / top —— 换来的是每碗料钱与卖相 */
   quality: string;
+  /** 浇头熟练度（批 A′）：每份料做过的碗数。等级与出口见 `sim/topping-xp.ts` */
+  ingredientXp: Record<string, number>;
   /** 零售线（批次七）：渠道 / 每款定价 / 累计卖出件数 */
   retail: { channel: string; prices: Record<string, number>; sold: Record<string, number> };
   /** 手上的功夫（批次 6）：支 id → 练到第几级，0/1/2/3 */
@@ -839,6 +841,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     gear: [],
     pack: false,
     quality: DEFAULT_QUALITY,
+    ingredientXp: {},
     skills: {},
     retail: defaultRetail(),
     news: [],
@@ -947,6 +950,7 @@ function bestTaste(state: GameState): number {
       rice: state.rice,
       bone: state.bone,
       quality: state.quality,
+    xp: state.ingredientXp,
     });
     if (sc.total > best) best = sc.total;
   }
@@ -957,6 +961,7 @@ function bestTaste(state: GameState): number {
     rice: state.rice,
     bone: state.bone,
     quality: state.quality,
+    xp: state.ingredientXp,
   }).total;
 }
 

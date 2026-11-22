@@ -27,6 +27,19 @@ export const AWAY_GROWTH_PER_QUARTER = 0.06;
 export const ENERGY_MIN = 0.55;
 export const ENERGY_MAX = 1.25;
 
+/**
+ * 同一句话的另一半：**appetite —— 客人还吃得下多少**。
+ *
+ * 2026-11-22 补：这份文件原先把开罗的「energy and appetite」只做了 energy 那一半，
+ * 于是「这条街吃腻了」只能表现成「人变少」。开罗原意是两条通道：
+ * energy 管**来不来**，appetite 管**点多少**。这里补上后面那条，
+ * 并且刻意让它的出口与能量**不重叠** —— 只落加购与份量，不落进店。
+ */
+export const APPETITE_DECAY_PER_QUARTER = 0.04;
+export const APPETITE_GROWTH_PER_QUARTER = 0.03;
+export const APPETITE_MIN = 0.75;
+export const APPETITE_MAX = 1.15;
+
 function quarters(month: number): number {
   return Math.floor(Math.max(0, month) / 3);
 }
@@ -44,9 +57,36 @@ export function energyOf(state: GameState, id: string): number {
   return Math.min(ENERGY_MAX, 1 + AWAY_GROWTH_PER_QUARTER * age);
 }
 
+/** 本区胃口：住得越久，客人越吃不下（封底 0.75） */
+export function homeAppetiteOf(state: GameState): number {
+  const age = quarters(state.month - state.districtSince);
+  return Math.max(APPETITE_MIN, 1 - APPETITE_DECAY_PER_QUARTER * age);
+}
+
+/** 某区此刻的胃口（本区衰减、别区增长） */
+export function appetiteOf(state: GameState, id: string): number {
+  if (id === state.district) return homeAppetiteOf(state);
+  const age = quarters(state.month - state.districtSince);
+  return Math.min(APPETITE_MAX, 1 + APPETITE_GROWTH_PER_QUARTER * age);
+}
+
 /** 现在进店概率要乘的系数（本区能量） */
 export function districtEnergy(state: GameState): number {
   return homeEnergyOf(state);
+}
+
+/** 现在「点多少」要乘的系数（本区胃口）。不用于进店，只用于加购与份量 */
+export function districtAppetite(state: GameState): number {
+  return homeAppetiteOf(state);
+}
+
+/** 一句人话：这一片还吃不吃得下你家的粉 */
+export function appetiteWords(state: GameState): string {
+  const a = homeAppetiteOf(state);
+  if (a <= APPETITE_MIN + 1e-9) return "这一片吃你家的粉是真的吃腻了（点单已经掉到最省）";
+  if (a < 0.9) return `这一片有点吃腻了（点单 ×${a.toFixed(2)}，换区能重新养回来）`;
+  if (a >= 1.1) return `这一片正吃得下（点单 ×${a.toFixed(2)}）`;
+  return "这一片还吃得下（点单 ×1.00）";
 }
 
 /**

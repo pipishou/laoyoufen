@@ -2386,3 +2386,10 @@ button.pill[disabled] {
 .pane .g96 .gc.on.prep{background:var(--green)}
 .pane .g96 .gc.on.front{background:var(--blue)}
 .pane .g96 .gc.on{font-size:0;line-height:0;overflow:hidden}
+
+/* 浇头熟练度（批 A′）：角标只写等级数字，1/2/3；生手不写，免得托盘变花 */
+#tray .chip .xl{position:absolute;top:-4px;right:-4px;display:none;min-width:9px;height:9px;
+  line-height:9px;text-align:center;font-size:7px;font-weight:700;
+  color:var(--cream);background:var(--green);border:1px solid var(--ink);border-radius:2px}
+#tray .chip .xl:not(:empty){display:block}
+#tray .chip{position:relative}

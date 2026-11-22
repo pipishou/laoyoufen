@@ -55,6 +55,7 @@ export function scoreOf(state: GameState): RecipeScore {
     rice: state.rice,
     bone: state.bone,
     quality: state.quality,
+    xp: state.ingredientXp,
   });
 }
 

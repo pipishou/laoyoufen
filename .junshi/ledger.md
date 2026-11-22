@@ -636,3 +636,23 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P242** 限时投资「买量」绕开了乘数，但会与产能三段打架：+20 碗若落在最慢那段，实际增益可能只有一半（对 P164）。
 - **P243** AI 预算按 key 计数后，`guest_talk`（点击触发，key = 客型×场面）在长局里可能吃掉一半预算，需要单独配额。
 - **P244** 解读层三个落点依赖已算好的数值，一旦口径改了（如 P234 价目按 tier 一刀切），台词会跟着错，但没人会重新审台词。
+
+### 行 99 · 2026-11-22 · 浇头出处审计（37→20）+ 街区胃口 appetite + 浇头熟练度
+
+- **起因**：用户指出「老友粉浇头很少有牛腩，设置的时候要注意出处，如果没有就不要设置」。于是这一批先把浇头逐条取证，再补开罗 `Sales Areas 2` 里缺的那半句。
+- **浇头出处审计**：`game/src/data/ingredients.ts` 的 `Ingredient` 加 `source?: readonly IngredientSource[]`（label / http url / 原文摘句）与 `note?: string`。**TOPPINGS 37 → 20 条**，每条都挂着出处（DB4501/T 0046—2024 南宁市地方标准、金鹏老友粉加料价目、施记/芳姐/聪记探店、下厨房与豆果配方等）。
+- **牛腩留着但降级**：反证是硬的 —— 广西摄影网把「老友粉 / 猪蹄粉 / 牛腩粉」列为三个并列品类，论坛帖原话「老友粉的肉……注意一是猪肉」，而施记加菜单里确实有牛腩。所以它进「加菜」，`note` 写明「不是老友粉本体，牛腩粉是玉林那一系的独立品类」。
+- **删掉 17 条**（理由写进文件头注释）：紫苏、酸豆角、空心菜、油麦菜、菜心、西洋菜、木耳、黄花菜、萝卜干、猪红、猪手、五花肉、牛百叶、牛肉丸、牛杂、腐竹、花生。连带 `game/src/data/pairing.ts` 的配料组合 24 → 19 条（删 5 改 3）。
+- **街区胃口 appetite**：`game/src/sim/district.ts` 新增 `APPETITE_DECAY_PER_QUARTER = 0.04`、`APPETITE_GROWTH_PER_QUARTER = 0.03`、`APPETITE_MIN = 0.75`、`APPETITE_MAX = 1.15`、`homeAppetiteOf` / `appetiteOf` / `districtAppetite` / `appetiteWords`。**两条通道刻意不重叠**：energy 乘客流池（来不来），appetite 只乘 `pickSides` 的加购概率与 `pickDish` 里三两款的权重（点多少），不动价、不动钱包。
+- **浇头熟练度**：新建 `game/src/sim/topping-xp.ts`（`XP_STEPS = [50, 150, 400]`、`XP_TASTE_PER_LEVEL = 0.2`、`XP_TASTE_CAP = 2`、`XP_COST_PER_LEVEL = 0.02`、`XP_PICKY_PER_LEVEL = 1`、`XP_PICKY_CAP = 3`）。三个出口：味道末段 `totalFinal = totalOut + xpTasteBonus(...)`、料钱按件折 `t.cost * xpCostFactor(xp, id)`、识食客少扣 `max(0, tierSatPenalty - xpPickyEase)`。**明确不抬相** —— `charm` 已经被「头手货 ×1.55」顶到天花板。
+- **接线**：`dish.ts` / `menu.ts` / `state.ts` 两处直调都传 `xp: state.ingredientXp`；`customer.ts` 的 `scoreDish(item)` 改成 `scoreDish(item, state)`（原来没传 state，xp 与品质档都白搭），并加 `rememberToppings` 与 `xpPickyEase`；`SAVE_VERSION 35 → 36`，`GameState.ingredientXp: Record<string, number>`，迁移丢弃负数与非数字。
+- **界面**：`game/src/ui/hud.ts` 的托盘 chip 右上角加等级角标（1/2/3，生手不显示），`title` 写成「料钱 ¥0.8｜生手（做过 0 碗，再做 50 碗升一级）｜出处：……」，**出处与熟练度用同一口气说话**；换区面板把「客流 ×0.91 · 胃口 ×0.96 —— 这一片有点吃腻了」写在一起。
+- **验收**：`npx tsc --noEmit` 0；`npx vitest run` **67 文件 773 用例**（新增 `topping-xp.test.ts` 13 例、`appetite.test.ts` 7 例）；`copy_gate.py` ok；`eye_gate.py shot --slug calib2` 五视口 726·765·584·1208·1506、stamp **150**；`ai_gate.py` `ok: true`；`tools/gate/calib_probe.py`（preview 4217）**15 项全 true**（含 `chips_20`、`chip_has_source`、`xp_badge_shows_3`、`xp_title_says_handy`）；产物 `index-BuXCeims.js` 1,599.16 kB、`index-BmlPxP2D.css` 47.87 kB。
+- **替身四种子（36 月）**：种子 1 ¥94,272 / 200.7 碗 / 43% / 期末 ¥114,190；种子 2 ¥130,615 / 217.3 / 39% / ¥773,838；种子 3 ¥122,272 / 206.2 / 42% / ¥612,856；种子 4 ¥91,988 / 179.9 / 42% / ¥347,136 → 均值 **¥109,787 / 201.0 碗 / 41.5% / ¥462,005**。对照校准后基线（¥95,897 / 188.0 / 41.8% / ¥339,227）：营收 +14.5%、碗数 +7%、流失 −0.3pt、期末 +36%。**加购占比从 4.6% 掉到 2.5%**（3.8/1.8/1.8/2.6），正是 appetite 想要的形状：人还来，不再每碗配饮料。
+- **P245** 浇头出处只到「有这一份」，没到「这一份多少钱」：加价锚点是金鹏那张价目单，20 条里 11 条是照比例推的。
+- **P246** 西红柿与生菜属于「有人说必须有、有人说正宗没有」的分歧项，现在按可选处理，但游戏里没有「某家的版本」这层概念。
+- **P247** 胃口只影响加购与份量，**没有一条台词或打烊单说明**，玩家只能从「今天没人加饮料」反推（同 P144 那一类）。
+- **P248** 50/150/400 是拍的：按替身日均 190 碗、一份料一天用 40 次算，第三级要十天；但某份料长局里可能一次都不点。
+- **P249** `xpPickyEase` 只削扣分、不改「识食」判据，练满三手之后识食客与街坊只剩口碑权重差别。
+- **P250** `ingredientXp` 是全局的，不区分哪家店 —— 开分店后熟练度跟着老板走，而不是跟着师傅走。
+- 文档 `docs/浇头出处与街区胃口-2026-11-22.md`（八节：为什么要做出处审计 / 留下的 20 条 / 街区胃口 / 浇头熟练度 / 验收 / 四种子 / 新缺口 / 复现）。

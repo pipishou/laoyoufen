@@ -87,10 +87,39 @@ def main() -> int:
         detail["chips_n"] = len(chips)
         detail["chips_sample"] = chips[:6]
         detail["money0"] = m0.groups() if m0 else None
-        checks["chips_37"] = len(chips) == 37
+        checks["chips_20"] = len(chips) == 20
         checks["chips_no_price"] = bool(chips) and all("¥" not in c for c in chips)
         checks["money_shown"] = bool(m0)
         page.screenshot(path=f"{OUT}/01-calib-recipe.png")
+
+        # ①b 浇头出处（批 A′）：每一枚 chip 的 title 都要带来源摘句
+        titles = page.evaluate(
+            "() => [...document.querySelectorAll('[data-top]')].map((n) => n.getAttribute('title') || '')"
+        )
+        detail["titles_sample"] = titles[:3]
+        checks["chip_has_source"] = bool(titles) and all("出处：" in t for t in titles)
+        checks["chip_has_xp_word"] = bool(titles) and all("生手" in t or "上手" in t or "熟练" in t or "拿手" in t for t in titles)
+
+        # ①c 熟练度角标：把某一份料喂到 400 碗，角标应出现「3」
+        page.evaluate(
+            """() => {
+              const api = window.__laoyou;
+              if (!api) return;
+              api.state.ingredientXp = { ...(api.state.ingredientXp || {}), 'top.sourbamboo': 400 };
+              api.refresh();
+            }"""
+        )
+        page.wait_for_timeout(400)
+        badge = page.evaluate(
+            "() => (document.querySelector('[data-xp=\"top.sourbamboo\"]') || {}).textContent || ''"
+        )
+        title2 = page.evaluate(
+            "() => { const n = document.querySelector('[data-top=\"top.sourbamboo\"]'); return n ? (n.getAttribute('title') || '') : ''; }"
+        )
+        detail["badge"] = badge.strip()
+        detail["title_xp"] = title2[-60:]
+        checks["xp_badge_shows_3"] = badge.strip() == "3"
+        checks["xp_title_says_handy"] = "拿手" in title2
 
         # ② 加一份牛腩：成本应 +¥2.50
         cost0 = float(m0.group(2)) if m0 else -1
@@ -148,7 +177,7 @@ def main() -> int:
         ver = page.evaluate(
             "() => JSON.parse(localStorage.getItem('laoyou.save.v4') || '{}').saveVersion ?? -1"
         )
-        checks["save_version"] = ver == 35
+        checks["save_version"] = ver == 36
         checks["console_clean"] = not errors
 
         browser.close()

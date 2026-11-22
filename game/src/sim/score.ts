@@ -4,6 +4,7 @@ import type { NoodleId } from "../data/noodles";
 import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
 import { DEFAULT_BONE, DEFAULT_RICE, boneById, riceById } from "../data/grades";
 import { qualityById } from "../data/quality";
+import { xpCostFactor, xpKey, xpTasteBonus } from "./topping-xp";
 import { noodleFit } from "./noodles";
 import { flavorBonus } from "./flavor";
 import { pairingBonus } from "./pairing";
@@ -156,6 +157,11 @@ export interface ScoreExtra {
   lockedTotal?: number | null;
   /** 配料品质档（批次五）：只抬「相」与料钱，不动味道 total */
   quality?: string;
+  /**
+   * 浇头熟练度（批 A′）：`{ [toppingId]: 做过几碗 }`。
+   * 出口只有两个（味道末段、这一份料的损耗），第三条「识食客少扣分」在 `sim/customer.ts` 里。
+   */
+  xp?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -174,7 +180,7 @@ export function scoreRecipe(
   const rice = riceById(extra.rice ?? DEFAULT_RICE);
   const bone = boneById(extra.bone ?? DEFAULT_BONE);
   const qq = qualityById(extra.quality);
-  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
+  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${xpKey(extra.xp, recipe.toppings)}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -216,6 +222,13 @@ export function scoreRecipe(
    * 不是又一层加成，所以它换掉 total 而不是加 total。
    */
   const totalOut = typeof extra.lockedTotal === "number" ? extra.lockedTotal : total;
+  /**
+   * 浇头熟练度（批 A′）：练熟的那几手确实让这一碗更好吃，封顶 +2。
+   * 加在 total 的末段而不是 soup / noodle —— 手熟是「这一碗」的事，
+   * 挂在哪一维上都会把那一维的读数搅浑。
+   */
+  const xpTaste = xpTasteBonus(extra.xp, recipe.toppings);
+  const totalFinal = totalOut + xpTaste;
 
   const safePrice = Math.max(0, price);
   /**
@@ -226,7 +239,13 @@ export function scoreRecipe(
   const charm = Math.min(100, 30 + (charmBase - 30) * (1 + qq.charmBoost));
   const valueScore = valueScoreOf(safePrice);
   // 品质档只乘配料那一段：主料、分量、进货档的米与骨都按原价（不然「头手货」会把整碗都变贵）
-  const topCost = Math.round((bowlCost(recipe.toppings) - BASE_COST) * 100) / 100;
+  // 熟练度只压「这一份料」的损耗，不压主料/份量/进货档
+  let cookedTopCost = 0;
+  for (const id of recipe.toppings) {
+    const t = findTopping(id);
+    if (t) cookedTopCost += t.cost * xpCostFactor(extra.xp, id);
+  }
+  const topCost = Math.round(cookedTopCost * 100) / 100;
   const cost =
     Math.round(
       (BASE_COST + topCost * qq.costMult + mainCostYuan(mainId) + portionCostYuan(portion) + gradeCost) * 100,
@@ -236,13 +255,13 @@ export function scoreRecipe(
   // 毛利率 55% 视为优秀；低于 0 直接 0 分
   const costScore = clamp100(marginRate * 160);
 
-  const storeScore = totalOut * 0.45 + charm * 0.25 + valueScore * 0.2 + costScore * 0.1;
+  const storeScore = totalFinal * 0.45 + charm * 0.25 + valueScore * 0.2 + costScore * 0.1;
 
   const result: RecipeScore = {
     soup: Math.round(soup),
     noodle: Math.round(noodle),
-    total: Math.round(totalOut),
-    grade: gradeOf(totalOut),
+    total: Math.round(totalFinal),
+    grade: gradeOf(totalFinal),
     charm: Math.round(charm),
     price: safePrice,
     valueScore: Math.round(valueScore),

@@ -108,6 +108,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 35 &&
     v.saveVersion !== 34 &&
     v.saveVersion !== 33 &&
   v.saveVersion !== 32 &&
@@ -638,6 +639,15 @@ export function deserialize(raw: string): GameState | null {
   }
   parsed.retail = { channel, prices, sold };
   parsed.saveVersion = SAVE_VERSION;
+  // v35 → v36（批 A′）：浇头熟练度。老档没有这个字段，一律按「一手都没练」起算。
+  const rawXp = (parsed as { ingredientXp?: unknown }).ingredientXp;
+  const xpMap: Record<string, number> = {};
+  if (rawXp && typeof rawXp === "object") {
+    for (const [id, v] of Object.entries(rawXp as Record<string, unknown>)) {
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) xpMap[id] = Math.floor(v);
+    }
+  }
+  parsed.ingredientXp = xpMap;
   return parsed;
 }
 
