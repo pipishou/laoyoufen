@@ -2375,3 +2375,14 @@ button.pill[disabled] {
 .mmap .mcell.lock b{color:var(--sand);font-size:12px}
 .mmap .mcell .mlock{display:block;font-size:8px;color:var(--wood);line-height:1.1}
 .mmap .mcell .mprod{font-style:normal;display:block;font-size:8px;color:var(--green);line-height:1.1}
+
+/* 批次十：店里九十六格（只画不玩） */
+.pane .g96{display:grid;grid-template-columns:repeat(var(--gw),9px);grid-template-rows:repeat(var(--gh),9px);gap:1px;margin:6px 0 2px}
+.pane .g96 .gc{width:9px;height:9px;background:transparent;border:1px solid transparent}
+.pane .g96 .gc.slot{border:1px dashed var(--sand);opacity:.55}
+.pane .g96 .gc.on{border:1px solid var(--ink2)}
+.pane .g96 .gc.on.stove{background:var(--orange)}
+.pane .g96 .gc.on.table{background:var(--gold)}
+.pane .g96 .gc.on.prep{background:var(--green)}
+.pane .g96 .gc.on.front{background:var(--blue)}
+.pane .g96 .gc.on{font-size:0;line-height:0;overflow:hidden}

@@ -67,6 +67,7 @@ import { specialtiesOfRole } from "../data/specialty";
 import { specialtySummary } from "../sim/specialty";
 import { mapCells, mapSize, mapSummary, districtPitchOf } from "../sim/map";
 import { localSummary } from "../sim/local";
+import { filledCount, layoutOf, layoutSummary, stageCells } from "../sim/slots";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -929,6 +930,27 @@ let lastGradeKey = "";
       <div class="lmeta">${c.note}${c.cut > 0 ? `（抽 ${Math.round(c.cut * 100)}%）` : ""}</div>
     </div>`;
   }).join("");
+  /**
+   * 店里九十六格（批次十）：只画不玩。
+   *
+   * 开罗 `casket` 是家具摆放预设表；我们此前家当坐标写死（P112），买新件不挪窝。
+   * 这一格图把「灶 / 桌 / 备料 / 门面」四类摆出来，换门面只换配色不换格局。
+   */
+  const lyt = layoutOf(s);
+  const layoutSec = `
+  <div class="sec">
+    <div class="sechd">${icon("shop")}店里 · ${layoutSummary(s)}</div>
+    <div class="sechint">${filledCount(s)} / ${stageCells()} 格摆了东西；空槽是自己买得还不够，不是坏了。</div>
+    <div class="g96" style="--gw:${lyt.w};--gh:${lyt.h}">${lyt.cells
+      .map((c) =>
+        c.filled
+          ? `<span class="gc on ${c.kind}" style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.label}">${c.label}</span>`
+          : c.kind
+            ? `<span class="gc slot ${c.kind}" style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="空槽位"></span>`
+            : `<span class="gc" style="grid-column:${c.x + 1};grid-row:${c.y + 1}"></span>`,
+      )
+      .join("")}</div>
+  </div>`;
   const retailSec = `
   <div class="sec">
     <div class="sechd">${icon("crate")}货架 · ${retailSummary(s)}</div>
@@ -1082,7 +1104,7 @@ let lastGradeKey = "";
         ${bowlRows}
         <div class="lmeta" style="padding:4px 2px 0">现在这只：${currentBowl(s).line}</div>
       </div>
-${packSec}  ${retailSec}
+${layoutSec}${packSec}  ${retailSec}
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>
         ${ups}
