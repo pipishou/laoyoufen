@@ -81,7 +81,7 @@ export const TOPPINGS: readonly Ingredient[] = [
   { id: "top.kongxincai", name: "空心菜", reaRef: "Spinach", kind: "veg", tier: 1, cost: 0.8, price: 2, charm: 11, tags: ["青菜"] },
   { id: "top.youmaicai", name: "油麦菜", reaRef: "Leaf Mustard", kind: "veg", tier: 1, cost: 0.9, price: 2, charm: 10, tags: ["青菜"] },
   { id: "top.shengcai", name: "生菜", reaRef: "Cabbage", kind: "veg", tier: 1, cost: 0.7, price: 2, charm: 9, tags: ["青菜"] },
-  { id: "top.caixin", name: "菜心", reaRef: "Nappa Cabbage", kind: "veg", tier: 1, cost: 1.0, price: 2, charm: 11, tags: ["青菜"] },
+  { id: "top.caixin", name: "菜心", reaRef: "Nappa Cabbage", kind: "veg", tier: 1, cost: 1, price: 2, charm: 11, tags: ["青菜"] },
   { id: "top.douya", name: "豆芽", reaRef: "Bean Sprouts", kind: "veg", tier: 1, cost: 0.3, price: 1, charm: 7, tags: ["青菜"] },
   { id: "top.watercress", name: "西洋菜", reaRef: "Watercress", kind: "veg", tier: 1, cost: 0.8, price: 2, charm: 10, tags: ["青菜"] },
   { id: "top.muer", name: "木耳", reaRef: "Wood Ear", kind: "veg", tier: 1, cost: 0.6, price: 2, charm: 9, tags: ["香"] },
@@ -89,36 +89,36 @@ export const TOPPINGS: readonly Ingredient[] = [
   { id: "top.luobogan", name: "萝卜干", reaRef: "Pickled Radish", kind: "veg", tier: 1, cost: 0.4, price: 1, charm: 8, tags: ["咸", "香"] },
 
   // ---- 猪杂线 ----
-  { id: "top.offal", name: "猪杂", reaRef: "Stewed Pork", kind: "offal", tier: 3, cost: 3.5, price: 7, charm: 22, tags: ["肉", "杂", "鲜"] },
-  { id: "top.pigchitterling", name: "猪粉肠", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 3.8, price: 8, charm: 21, tags: ["肉", "杂"] },
+  { id: "top.offal", name: "猪杂", reaRef: "Stewed Pork", kind: "offal", tier: 3, cost: 2.5, price: 5, charm: 22, tags: ["肉", "杂", "鲜"] },
+  { id: "top.pigchitterling", name: "猪粉肠", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 2.5, price: 5, charm: 21, tags: ["肉", "杂"] },
   // 老友「三大脆」的另两件：花肠、猪肚（见 data/flavor.ts 的 three_crisp）。
   // 出处：兴宁区解放路桂邕天福香老友粉店的招牌「三大脆」= 花肠、粉肠、猪肚。
-  { id: "top.pigflower", name: "猪花肠", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 3.6, price: 8, charm: 20, tags: ["肉", "杂"] },
-  { id: "top.pigstomach", name: "猪肚", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 3.4, price: 7, charm: 19, tags: ["肉", "杂"] },
-  { id: "top.pigliver", name: "猪肝", reaRef: "Pork Liver", kind: "offal", tier: 2, cost: 3.0, price: 7, charm: 17, tags: ["肉", "杂", "鲜"] },
+  { id: "top.pigflower", name: "猪花肠", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 2.5, price: 5, charm: 20, tags: ["肉", "杂"] },
+  { id: "top.pigstomach", name: "猪肚", reaRef: "Pork Intestine", kind: "offal", tier: 3, cost: 2.5, price: 5, charm: 19, tags: ["肉", "杂"] },
+  { id: "top.pigliver", name: "猪肝", reaRef: "Pork Liver", kind: "offal", tier: 2, cost: 2.5, price: 5, charm: 17, tags: ["肉", "杂", "鲜"] },
   { id: "top.pigblood", name: "猪红", reaRef: "Pig Blood", kind: "offal", tier: 1, cost: 1.2, price: 3, charm: 9, tags: ["肉", "杂"] },
-  { id: "top.porkknuckle", name: "猪手", reaRef: "Pork Knuckle", kind: "meat", tier: 3, cost: 4.2, price: 9, charm: 23, tags: ["肉"] },
+  { id: "top.porkknuckle", name: "猪手", reaRef: "Pork Knuckle", kind: "meat", tier: 3, cost: 2.5, price: 5, charm: 23, tags: ["肉"] },
 
   // ---- 猪肉线 ----
-  { id: "top.pork", name: "猪肉片", reaRef: "Sliced Pork", kind: "meat", tier: 2, cost: 3.2, price: 7, charm: 18, tags: ["肉"] },
-  { id: "top.lean", name: "瘦肉片", reaRef: "Thin Roast Pork", kind: "meat", tier: 2, cost: 2.8, price: 6, charm: 16, tags: ["肉"] },
-  { id: "top.porkbelly", name: "五花肉", reaRef: "Pork Belly", kind: "meat", tier: 3, cost: 3.6, price: 8, charm: 19, tags: ["肉", "香"] },
+  { id: "top.pork", name: "猪肉片", reaRef: "Sliced Pork", kind: "meat", tier: 2, cost: 2.5, price: 5, charm: 18, tags: ["肉"] },
+  { id: "top.lean", name: "瘦肉片", reaRef: "Thin Roast Pork", kind: "meat", tier: 2, cost: 2.5, price: 5, charm: 16, tags: ["肉"] },
+  { id: "top.porkbelly", name: "五花肉", reaRef: "Pork Belly", kind: "meat", tier: 3, cost: 2.5, price: 5, charm: 19, tags: ["肉", "香"] },
   { id: "top.mince", name: "肉末", reaRef: "Ground Pork", kind: "meat", tier: 2, cost: 2.4, price: 5, charm: 14, tags: ["肉"] },
 
   // ---- 牛线 ----
-  { id: "top.beef", name: "牛肉片", reaRef: "Roast Pork", kind: "meat", tier: 3, cost: 4.5, price: 9, charm: 24, tags: ["肉"] },
-  { id: "top.beefoffal", name: "牛杂", reaRef: "Beef Offal", kind: "offal", tier: 3, cost: 4.2, price: 9, charm: 23, tags: ["肉", "杂", "鲜"] },
-  { id: "top.brisket", name: "牛腩", reaRef: "Beef Brisket", kind: "meat", tier: 3, cost: 5.0, price: 10, charm: 25, tags: ["肉", "香"] },
-  { id: "top.tripe", name: "牛百叶", reaRef: "Beef Tripe", kind: "offal", tier: 3, cost: 4.6, price: 10, charm: 24, tags: ["肉", "杂"] },
-  { id: "top.beefball", name: "牛肉丸", reaRef: "Beef Ball", kind: "meat", tier: 2, cost: 3.0, price: 6, charm: 15, tags: ["肉"] },
+  { id: "top.beef", name: "牛肉片", reaRef: "Roast Pork", kind: "meat", tier: 3, cost: 2.5, price: 5, charm: 24, tags: ["肉"] },
+  { id: "top.beefoffal", name: "牛杂", reaRef: "Beef Offal", kind: "offal", tier: 3, cost: 2.5, price: 5, charm: 23, tags: ["肉", "杂", "鲜"] },
+  { id: "top.brisket", name: "牛腩", reaRef: "Beef Brisket", kind: "meat", tier: 3, cost: 2.5, price: 5, charm: 25, tags: ["肉", "香"] },
+  { id: "top.tripe", name: "牛百叶", reaRef: "Beef Tripe", kind: "offal", tier: 3, cost: 2.5, price: 5, charm: 24, tags: ["肉", "杂"] },
+  { id: "top.beefball", name: "牛肉丸", reaRef: "Beef Ball", kind: "meat", tier: 2, cost: 2.5, price: 5, charm: 15, tags: ["肉"] },
 
   // ---- 蛋 / 豆 / 主食 ----
   { id: "top.quail", name: "鹌鹑蛋", reaRef: "Quail Egg", kind: "egg", tier: 1, cost: 1.2, price: 3, charm: 10, tags: ["鲜"] },
-  { id: "top.friedegg", name: "煎蛋", reaRef: "Boiled Eggs", kind: "egg", tier: 1, cost: 1.0, price: 2, charm: 11, tags: ["鲜"] },
+  { id: "top.friedegg", name: "煎蛋", reaRef: "Boiled Eggs", kind: "egg", tier: 1, cost: 1, price: 2, charm: 11, tags: ["鲜"] },
   { id: "top.fuzhu", name: "腐竹", reaRef: "Tofu", kind: "soy", tier: 1, cost: 0.8, price: 2, charm: 9, tags: ["鲜"] },
   { id: "top.youtiao", name: "油条", reaRef: "Fried Scallion", kind: "staple", tier: 1, cost: 0.8, price: 2, charm: 13, tags: ["香"] },
   { id: "top.peanut", name: "花生", reaRef: "Sesame", kind: "soy", tier: 1, cost: 0.4, price: 1, charm: 7, tags: ["香"] },
-  { id: "top.scallion", name: "葱花", reaRef: "Chopped Scallion", kind: "veg", tier: 1, cost: 0.2, price: 0, charm: 5, tags: ["香"] },
+  { id: "top.scallion", name: "葱花", reaRef: "Chopped Scallion", kind: "veg", tier: 1, cost: 0.2, price: 0.5, charm: 5, tags: ["香"] },
 ];
 
 export const TOPPING_BY_ID: ReadonlyMap<string, Ingredient> = new Map(TOPPINGS.map((t) => [t.id, t]));

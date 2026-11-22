@@ -283,6 +283,15 @@ const MAX_ARRIVALS_PER_MINUTE = 4;
  *
  * 抽出来的原因：来客从「每分钟一次伯努利」改成「每分钟一批」时，这段要能被循环调用。
  */
+/**
+ * 钱包地板（数值校准）：开罗 Customers 表里最穷的钱包 840 也买得起最便宜那碗 800
+ * —— **谁都吃得起一碗**，贵的款才要挑。这里把钱包抬到「至少买得起菜单上最便宜那一款」。
+ * 没有这条，学生（预算 8）站在 ¥10 的价牌前只能掉头，价牌流失会掩盖掉真正该修的东西。
+ */
+export function walletFloor(state: GameState, raw: number): number {
+  return Math.max(raw, cheapestPrice(state));
+}
+
 function arriveOne(state: GameState): void {
   const flow = state.flow;
   /**
@@ -330,7 +339,15 @@ function arriveOne(state: GameState): void {
    *
    * 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
    */
-  const wallet = arch.budget * frenzyBudgetBoost(state) * tierBudgetPct(tier) * marketWalletMult(state);
+  const walletRaw =
+    arch.budget * frenzyBudgetBoost(state) * tierBudgetPct(tier) * marketWalletMult(state);
+  /**
+   * 钱包地板（数值校准）：开罗 Customers 表里最穷的钱包 840 也买得起最便宜那碗 800
+   * —— **谁都吃得起一碗**，贵的款才要挑。我们照这个形状，把钱包抬到「至少买得起
+   * 菜单上最便宜那一款」。没有这条，学生（预算 8）站在 ¥10 的价牌前只能掉头，
+   * 价牌流失会掩盖掉真正该修的东西。
+   */
+  const wallet = walletFloor(state, walletRaw);
   const dish = pickDish(state, wallet, dishRoll);
   if (!dish) {
     flow.lostToday += 1;

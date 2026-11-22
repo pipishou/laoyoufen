@@ -64,14 +64,14 @@ describe("段位评定：差多少客人要说清是三天的还是三周的（�
   });
 
 describe("批次四：段位只降费，评语交给评委说出来", () => {
-  it("十一级评定费只降不升：合计 ¥82,600，最高一级 ¥23,000", () => {
+  it("十一级评定费逐级递增：合计 ¥660,800，最高一级 ¥184,000", () => {
     const fees = GRADES.map((g) => g.feeYuan);
     expect(fees).toHaveLength(11);
     expect(fees[10]).toBe(0);
     for (let i = 1; i < 10; i++) expect(fees[i]).toBeGreaterThan(fees[i - 1]!);
     const total = fees.reduce((a, b) => a + b, 0);
-    expect(total).toBe(82_600);
-    expect(Math.max(...fees)).toBe(23_000);
+    expect(total).toBe(660_800);
+    expect(Math.max(...fees)).toBe(184_000);
   });
 
   it("门槛一位不动（这一批只碰钱，不碰门槛）", () => {

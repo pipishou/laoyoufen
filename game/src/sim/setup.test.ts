@@ -119,22 +119,23 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     expect(CAPITAL.equipmentYuan[0]).toBeLessThan(top / 10); // 档间级差 ≥ 10 倍
   });
 
-  it("段位费合计 ≈ 开罗的 8,330 碗量级（钱必须真有去处，但不能比客单高一个数量级）", () => {
+  it("段位费是主出口：合计约六万六千碗（全程碗数的三成），照开罗 grade_review 的形状", () => {
     const fee = totalGradeFee();
-    // 批次四：原来 ¥333,000 ≈ 33,300 碗，是开罗的 4 倍；改成 ¥82,600 ≈ 8,260 碗。
-    expect(fee).toBe(82_600);
-    expect(bowls(fee)).toBeGreaterThan(7_500);
-    expect(bowls(fee)).toBeLessThan(9_500);
-    // 三年营收 ¥756,000：段位费占一成上下 —— 是长线去处，不是第二份房租
-    const threeYears = monthTargetFor(1) * 36;
-    expect(fee / threeYears).toBeGreaterThan(0.06);
-    expect(fee / threeYears).toBeLessThan(0.18);
+    // 数值校准：批次四的 ¥82,600（≈8,260 碗）是照旧口径算的；钱包地板之后
+    // 全程碗数约 24 万，段位费必须跟着抬，否则期末现金堆成 ¥1M+ 无处可去（P173）。
+    expect(fee).toBe(660_800);
+    expect(bowls(fee)).toBeGreaterThan(60_000);
+    expect(bowls(fee)).toBeLessThan(72_000);
   });
 
-  it("资本品总量比段位费贵，但不压死人（同一数量级）", () => {
+  it("段位费比全部资本品加起来还贵（开罗 storeequip 8,000 对段位费 8.33M）", () => {
     const cap = totalCapital();
-    expect(cap).toBeGreaterThan(totalGradeFee() * 1.5);
-    expect(cap).toBeLessThan(totalGradeFee() * 4);
+    const fee = totalGradeFee();
+    expect(cap).toBeGreaterThan(30_000);
+    expect(cap).toBeLessThan(fee);
+    // 单看设备（不含转让费与扩建）更是零头
+    const equip = CAPITAL.equipmentYuan.reduce((a, b) => a + b, 0);
+    expect(equip).toBeLessThan(fee * 0.1);
   });
 
   it("月租是铺位固定值（2025 实测）：摊位 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600，每年 +3%", () => {
