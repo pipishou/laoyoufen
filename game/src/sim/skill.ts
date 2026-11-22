@@ -10,8 +10,9 @@
  * 手上的功夫是**老板自己**的，一辈子跟着走，所以两条链各算各、各自封顶。
  */
 
-import { SKILL_BRANCHES, SKILL_BY_ID, SKILL_TOTAL, type SkillBranch, type SkillEffect } from "../data/skill";
+import { SKILL_BRANCHES, SKILL_BY_ID, SKILL_TOTAL, skillById, type SkillBranch, type SkillEffect } from "../data/skill";
 import type { GameState } from "./state";
+import { pushSkillNews } from "./news";
 
 /** 五条出口的封顶：三十六节点全练满也只能到这里，否则乘数会失真 */
 export const SKILL_CAP = {
@@ -126,6 +127,12 @@ export function skillViews(state: GameState): SkillView[] {
 export function learnSkill(state: GameState, id: string): SkillResult {
   const branch = SKILL_BY_ID.get(id);
   if (!branch) return { ok: false, reason: "没有这一支" };
+  if (branch.prev) {
+    const need = skillById(branch.prev);
+    if ((state.skills?.[branch.prev] ?? 0) < 1) {
+      return { ok: false, reason: `先练「${need?.name ?? branch.prev}」` };
+    }
+  }
   const level = skillLevelOf(state, id);
   if (level >= 3) return { ok: false, reason: `「${branch.name}」已经练满了` };
   const next = branch.levels[level]!;
@@ -138,6 +145,8 @@ export function learnSkill(state: GameState, id: string): SkillResult {
   state.favor = Math.max(0, state.favor - next.favorCost);
   state.cash -= next.costYuan;
   state.skills = { ...(state.skills ?? {}), [id]: level + 1 };
+  // 批次十一：练满一支就在街坊报上留一行 —— 手上的功夫也该被街上看见
+  if (level + 1 >= 3) pushSkillNews(state, branch.name);
   return { ok: true, line: next.line, level: level + 1 };
 }
 

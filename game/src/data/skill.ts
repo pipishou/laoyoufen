@@ -44,6 +44,8 @@ export interface SkillBranch {
   family: SkillFamily;
   /** 这一支练的是什么 */
   what: string;
+  /** 同一门里要先练出来的那一支（一级即可）；没有就是这一门的头一支 */
+  prev?: string;
   /** 三级：下标 0 是一级 */
   levels: readonly [SkillLevel, SkillLevel, SkillLevel];
   /** 开罗出处 */
@@ -74,6 +76,7 @@ export const SKILL_BRANCHES: readonly SkillBranch[] = [
     id: "sear",
     name: "爆香",
     family: "heat",
+    prev: "wok_fire",
     what: "酸笋豆豉下锅那一下，屋里屋外都闻得到",
     kairo: "开罗 ramen_skill：調理・香り",
     levels: [
@@ -110,6 +113,7 @@ export const SKILL_BRANCHES: readonly SkillBranch[] = [
     id: "sour_cut",
     name: "笋丝",
     family: "knife",
+    prev: "slice",
     what: "酸笋切得匀，酸味才不忽轻忽重",
     kairo: "开罗 ramen_skill：仕込み・切り方",
     levels: [
@@ -146,6 +150,7 @@ export const SKILL_BRANCHES: readonly SkillBranch[] = [
     id: "memory",
     name: "记脸",
     family: "host",
+    prev: "greet",
     what: "谁来吃过、要什么口味，不用问第二遍",
     kairo: "开罗 ramen_skill：接客・気配り",
     levels: [
@@ -182,6 +187,7 @@ export const SKILL_BRANCHES: readonly SkillBranch[] = [
     id: "queue",
     name: "排队",
     family: "trade",
+    prev: "ledger",
     what: "队排得顺，人就不觉得久",
     kairo: "开罗 ramen_skill：経営・行列",
     levels: [

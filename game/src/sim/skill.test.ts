@@ -191,4 +191,28 @@ describe("手上的功夫（批次 6）", () => {
     const loaded = deserialize(JSON.stringify(raw));
     expect(loaded?.skills).toEqual({ wok_fire: 2 });
   });
+
+  it("同门前置：没练「看火」就练不了「爆香」，练出来之后才放行", () => {
+    const s = fresh();
+    s.favor = 500;
+    s.cash = 50_000;
+    const blocked = learnSkill(s, "sear");
+    expect(blocked.ok).toBe(false);
+    expect(blocked.reason ?? "").toContain("看火");
+    expect(learnSkill(s, "wok_fire").ok).toBe(true);
+    expect(learnSkill(s, "sear").ok).toBe(true);
+  });
+
+  it("练满一支会在街坊报上留一行，没练满不留", () => {
+    const s = fresh();
+    s.favor = 500;
+    s.cash = 50_000;
+    const before = (s.news ?? []).length;
+    learnSkill(s, "wok_fire");
+    learnSkill(s, "wok_fire");
+    expect((s.news ?? []).length).toBe(before);
+    learnSkill(s, "wok_fire");
+    expect((s.news ?? []).length).toBe(before + 1);
+    expect((s.news ?? []).at(-1)?.kind).toBe("skill");
+  });
 });

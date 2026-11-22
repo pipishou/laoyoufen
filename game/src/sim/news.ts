@@ -83,6 +83,26 @@ export function pushNews(state: GameState): NewsItem {
 }
 
 /** 倒序：最新的在最上面 */
+/**
+ * 练满一支时在报上留一行（批次十一：外部回声）。
+ *
+ * 只写「练成了」这一件事，不报数字、不给奖励 —— 报纸是读的。
+ */
+export function pushSkillNews(state: GameState, branchName: string): NewsItem {
+  const pool = NEWS.filter((n) => n.kind === "skill");
+  const tpl = pool[Math.abs(hash(`${state.playerId}:skill:${branchName}:${state.month}:${state.day}`)) % pool.length]!;
+  const street = state.streets?.[0] ? (streetById(state.streets[0])?.name ?? state.district) : state.district;
+  const item: NewsItem = {
+    month: state.month,
+    day: state.day,
+    text: tpl.line.replace("{店}", state.shopName).replace("{街}", street),
+    kind: "skill",
+    kairo: tpl.kairo,
+  };
+  state.news = [...(state.news ?? []), item].slice(-NEWS_KEEP);
+  return item;
+}
+
 export function newsList(state: GameState): NewsItem[] {
   return [...(state.news ?? [])].reverse();
 }

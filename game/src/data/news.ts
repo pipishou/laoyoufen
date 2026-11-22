@@ -13,7 +13,7 @@
  * 我们只做「一条」，因为玩家每天只打开一次。
  */
 
-export type NewsKind = "open" | "grade" | "contest" | "rival" | "street" | "pack" | "plain";
+export type NewsKind = "open" | "grade" | "contest" | "rival" | "street" | "pack" | "skill" | "plain";
 
 export interface NewsDef {
   id: string;
@@ -28,6 +28,9 @@ export const NEWS: NewsDef[] = [
   { id: "n_open", kind: "open", line: "{街}新开一间粉店，老板凌晨四点就起来熬汤。", kairo: "news：开店报道" },
   { id: "n_open2", kind: "open", line: "街口那家粉店挂招牌了，红纸还没撕干净。", kairo: "news：开店报道" },
   { id: "n_open3", kind: "open", line: "有人说{街}这家新店的酸笋是自己腌的。", kairo: "news：开店报道" },
+  // 手上的功夫练出来了
+  { id: "n_skill", kind: "skill", line: "{店}的老板把一手功夫练成了，{街}有人专门跑来学。", kairo: "news：技艺报道" },
+  { id: "n_skill2", kind: "skill", line: "听说{店}那口灶现在闭着眼也烧得稳，隔壁店的人来看了两回。", kairo: "news：技艺报道" },
   // 段位
   { id: "n_grade", kind: "grade", line: "{店}评上了「{段}」，街坊说早就该评。", kairo: "news：评级报道" },
   { id: "n_grade2", kind: "grade", line: "「{段}」的牌子挂出来了，红底金字。", kairo: "news：评级报道" },
