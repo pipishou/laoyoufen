@@ -23,6 +23,7 @@ import { gearDrinkMult } from "./gear";
 import { nextFloat } from "./rng";
 import type { GameState } from "./state";
 import { districtAppetite } from "./district";
+import { goodsSideMult } from "./goods";
 
 export interface SideView {
   def: SideDef;
@@ -171,7 +172,11 @@ export function pickSides(
   if (on.length === 0) return EMPTY;
   // 街面（M2）凉茶铺：门口就有一杯凉的，加购概率跟着涨（上限仍受 sideChanceOf 约束）
   // 街区胃口（开罗 Sales Areas 2 的 appetite）：吃腻了的街区，先省的是「再加一份」这件事
-  const chance = Math.min(0.9, sideChanceOf(sat) * streetDrinkMult(state) * gearDrinkMult(state) * districtAppetite(state));
+  // 杂货铺（批 B′）：门口现炸的油条，配粉的人顺手就加一根
+  const chance = Math.min(
+    0.9,
+    sideChanceOf(sat) * streetDrinkMult(state) * gearDrinkMult(state) * districtAppetite(state) * goodsSideMult(state),
+  );
   if (nextFloat(state.rng) >= chance) return EMPTY;
 
   const toppings = on.filter((d) => d.kind === "topping").sort((a, b) => a.priceYuan - b.priceYuan);

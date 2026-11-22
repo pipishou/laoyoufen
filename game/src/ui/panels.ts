@@ -1,5 +1,7 @@
 import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, CONTEST_TYPE_BY_ID, tierOf } from "../data/contest";
 import { retailLines, retailSummary, channelOf, retailThroughput, retailBowlLoad } from "../sim/retail";
+import { goodsSummary, goodsViews, goodWords } from "../sim/goods";
+import { investSummary, investViews, investWords } from "../sim/invest";
 import { CHANNELS, PRICE_FLOOR, PRICE_CEIL } from "../data/retail";
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
@@ -150,6 +152,10 @@ export interface PanelActions {
   /** 批次七：货架换渠道 / 调价 */
   setRetailChannel(id: string): void;
   stepRetailPrice(id: string, dir: number): void;
+  /** 街上的门路（批 B′）：花一次钱买一天的量 */
+  buyInvest(id: string): void;
+  /** 杂货铺（批 B′）：花人情买一天的方便 */
+  buyGood(id: string): void;
   /** M3b：花人情 */
   useFavor(id: string): void;
   toggleDish(index: number): void;
@@ -436,6 +442,12 @@ let lastGradeKey = "";
         break;
       case "rtchannel":
         actions.setRetailChannel(id);
+        break;
+      case "buyinvest":
+        actions.buyInvest(String(id));
+        break;
+      case "buygood":
+        actions.buyGood(String(id));
         break;
       case "rtprice": {
         const [goods, dir] = String(id).split("|");
@@ -936,6 +948,60 @@ let lastGradeKey = "";
    * 开罗 `casket` 是家具摆放预设表；我们此前家当坐标写死（P112），买新件不挪窝。
    * 这一格图把「灶 / 桌 / 备料 / 门面」四类摆出来，换门面只换配色不换格局。
    */
+  /**
+   * 街上的门路（批 B′）：花一次钱，买一天的「量」。
+   *
+   * 三条都是「今天多做出几碗 / 今天多进来几个人」，一个乘数都不买 ——
+   * 料钱已经叠了五层（品质档、行情、物产、技法），再叠就没人算得清了（P154）。
+   */
+  const investSec = `
+  <div class="sec">
+    <div class="sechd">${icon("crate")}街上的门路 · ${investSummary(s)}</div>
+    <div class="hint2">钱能买到的是「今天多做出几碗」和「今天多进来几个人」，买不到乘数。同类只能走一条。</div>
+    ${investViews(s)
+      .map(
+        (v) => `<div class="lrow${v.affordable || v.active ? "" : " locked"}">
+      <div class="lbtns">${
+        v.active
+          ? `<span class="tag2 on">在走 · 还剩 ${v.leftDays} 天</span>`
+          : v.affordable
+            ? `<button type="button" class="pickbtn" data-act="buyinvest" data-id="${v.def.id}">${money(v.def.costYuan)}</button>`
+            : `<span class="tag2">${v.reason}</span>`
+      }</div>
+      <span class="lname">${v.def.name}</span>
+      <div class="lmeta">${v.def.what}｜${investWords(v.def)}${v.def.days > 1 ? `｜管 ${v.def.days} 天` : ""}</div>
+      <div class="lmeta" title="${v.def.source.map((x) => `${x.label}（${x.url}）：${x.quote}`).join("  ／  ")}">${v.def.why}</div>
+    </div>`,
+      )
+      .join("")}
+  </div>`;
+  /**
+   * 杂货铺（批 B′）：花人情，买一天的方便。
+   *
+   * 三件都是「身边就能办到」的事 —— 多备一筐粉、借三台电扇、现炸一筐油条。
+   * 没有库存（P205），所以买的不是货，是**今天的那个状态**，第二天自动失效。
+   */
+  const goodsSec = `
+  <div class="sec">
+    <div class="sechd">${icon("shop")}杂货铺 · ${goodsSummary(s)}</div>
+    <div class="hint2">这里花的是人情，不是钱。三件都是当天的，第二天自动没了。</div>
+    ${goodsViews(s)
+      .map(
+        (v) => `<div class="lrow${v.affordable || v.active ? "" : " locked"}">
+      <div class="lbtns">${
+        v.active
+          ? `<span class="tag2 on">今天在用</span>`
+          : v.affordable
+            ? `<button type="button" class="pickbtn" data-act="buygood" data-id="${v.def.id}">用 ${v.def.favorCost} 点人情</button>`
+            : `<span class="tag2">${v.reason}</span>`
+      }</div>
+      <span class="lname">${v.def.name}</span>
+      <div class="lmeta">${v.def.what}｜${goodWords(v.def)}</div>
+      <div class="lmeta" title="${v.def.source.map((x) => `${x.label}（${x.url}）：${x.quote}`).join("  ／  ")}">${v.def.why}</div>
+    </div>`,
+      )
+      .join("")}
+  </div>`;
   const lyt = layoutOf(s);
   const layoutSec = `
   <div class="sec">
@@ -1105,6 +1171,8 @@ let lastGradeKey = "";
         <div class="lmeta" style="padding:4px 2px 0">现在这只：${currentBowl(s).line}</div>
       </div>
 ${layoutSec}${packSec}  ${retailSec}
+      ${investSec}
+      ${goodsSec}
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>
         ${ups}
@@ -1771,7 +1839,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

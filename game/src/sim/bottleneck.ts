@@ -23,6 +23,8 @@ import { stationCount, stationCountAfter, stationServeFactor, stageMinutes } fro
 import { BENCH_CAPACITY_STEP, STAGE_MINUTES, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
 import type { GameState } from "./state";
 import { retailBowlLoad } from "./retail";
+import { investCapacityBonus } from "./invest";
+import { goodsCapacityBonus } from "./goods";
 
 /**
  * 坐下来吃一碗要几分钟。
@@ -65,7 +67,14 @@ export function capacityOf(state: GameState): Capacity {
    * 把「今天要做的件数」按 `RETAIL_LOAD_BOWL` 折成碗，直接从总闸里扣 ——
    * 于是「多开一条线」不是白拿钱，玩家每多定一档量，碗就少几碗。
    */
-  const cap = Math.max(1, state.capacity - retailBowlLoad(state));
+  const cap = Math.max(
+    1,
+    state.capacity +
+      // 街上的门路（批 B′）：料商留货；杂货铺：多备一筐粉
+      investCapacityBonus(state) +
+      goodsCapacityBonus(state) -
+      retailBowlLoad(state),
+  );
   return pack(stove, seats, cap, serveNow);
 }
 

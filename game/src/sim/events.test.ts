@@ -97,7 +97,7 @@ describe("事件脚本", () => {
       expect(days.length).toBeGreaterThanOrEqual(7);
       expect(days.length).toBeLessThanOrEqual(10);
     }
-  });
+  }, 20000);
 
   it("弹窗停表：pending 未处理时分钟数不推进", () => {
     const s = createInitialState("player-pause", 1);

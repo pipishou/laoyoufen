@@ -13,6 +13,7 @@ import {
   type StationId,
 } from "../data/equipment";
 import type { GameState } from "./state";
+import { investSlowestDelta } from "./invest";
 
 export interface BuyResult {
   ok: boolean;
@@ -40,7 +41,21 @@ export function stageMinutes(state: GameState): Record<StationId, number> & { to
   const wok = STAGE_MINUTES.wok / Math.max(1, stationCount(state, "wok"));
   const pot = STAGE_MINUTES.pot / Math.max(1, stationCount(state, "pot"));
   const basket = STAGE_MINUTES.basket / Math.max(1, stationCount(state, "basket"));
-  return { wok, pot, basket, total: wok + pot + basket };
+  /**
+   * 请老师傅来看一天（批 B′）：只把**最慢那一段**的分钟数减掉。
+   * 为什么不三段一起减 —— 三段里只有最慢那段真的卡人（P164 / P242）；
+   * 一起减等于买了一个全局乘数，而这一批的纪律是「只买量，不买乘数」。
+   * 减到 0.6 分就不动了（再快也得等另一段）。
+   */
+  const delta = investSlowestDelta(state);
+  const parts: Record<StationId, number> = { wok, pot, basket };
+  if (delta > 0) {
+    let slow: StationId = "wok";
+    if (pot > parts[slow]) slow = "pot";
+    if (basket > parts[slow]) slow = "basket";
+    parts[slow] = Math.max(0.6, parts[slow] - delta);
+  }
+  return { wok: parts.wok, pot: parts.pot, basket: parts.basket, total: parts.wok + parts.pot + parts.basket };
 }
 
 /**

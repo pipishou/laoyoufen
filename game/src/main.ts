@@ -30,6 +30,8 @@ import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { applyMaster as applyMasterImpl } from "./sim/master";
 import { buyPack as buyPackImpl } from "./sim/pack";
 import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channelOf, firstRetailMilestone, markRetailVoice } from "./sim/retail";
+import { buyGood as buyGoodImpl } from "./sim/goods";
+import { buyInvest as buyInvestImpl } from "./sim/invest";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
@@ -371,6 +373,30 @@ panels = mountPanels(hudRoot, {
     const base = priceOf(state, String(id));
     const ok = setPriceImpl(state, String(id), base + (dir >= 0 ? 1 : -1));
     if (ok) playSfx("ui");
+    refresh();
+  },
+  /** 街上的门路（批 B′）：花一次钱，买一天的量 */
+  buyInvest(id) {
+    const r = buyInvestImpl(state, String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    hud.showToast(r.line, "like");
+    playSfx("upgrade");
+    refresh();
+  },
+  /** 杂货铺（批 B′）：花人情，买一天的方便 */
+  buyGood(id) {
+    const r = buyGoodImpl(state, String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    hud.showToast(r.line, "like");
+    playSfx("upgrade");
     refresh();
   },
   applyMaster(index, id) {

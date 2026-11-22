@@ -656,3 +656,20 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P249** `xpPickyEase` 只削扣分、不改「识食」判据，练满三手之后识食客与街坊只剩口碑权重差别。
 - **P250** `ingredientXp` 是全局的，不区分哪家店 —— 开分店后熟练度跟着老板走，而不是跟着师傅走。
 - 文档 `docs/浇头出处与街区胃口-2026-11-22.md`（八节：为什么要做出处审计 / 留下的 20 条 / 街区胃口 / 浇头熟练度 / 验收 / 四种子 / 新缺口 / 复现）。
+
+### 行 100 · 2026-11-22 · 限时投资与杂货铺（批 B′）——钱买当天的量，人情买当天的便利
+
+- **两条新出口**：`game/src/data/invest.ts` 三条门路（跟料商多留一筐 ¥50/1 天/`capacity +20`、请老师傅来看一天 ¥120/1 天/最慢段 `−0.5 分`、请美食号写一篇 ¥400/3 天/进店 `+30%`）、`game/src/data/goods.ts` 三件杂货（多备一筐粉 6 点人情/`capacity +15`、借三台电扇过来 8 点/`耐心 +20%`、现炸一筐油条 12 点/`加购 ×1.5`）。
+- **纪律**：只买量与脉冲、不买乘数（料钱已叠五层，P154）；同类同时只能一条；**每条都带南宁出处**（糙米米粉半小时卖完、传承基地「传帮带」与「一两个月才出师」、3 台电扇与 50℃、切粉行按斤零售、「油条 2 元一根」、老友粉新媒体直播）；出处写进 `.lmeta` 的 `title`，格式 `label（url）：quote`，玩家点得到链接。
+- **接线**：`bottleneck.ts` 的 `capacityOf` 加 `investCapacityBonus + goodsCapacityBonus`；`equipment.ts` 的 `stageMinutes` 只减**最慢那一段**（`Math.max(0.6, parts[slow] - delta)`）；`customer.ts` 的 `spawnChance` 乘 `investAttractMult`、`patienceScale` 乘 `goodsPatienceMult`；`sides.ts` 的 `pickChance` 乘 `goodsSideMult`。
+- **存档**：`GameState` 加两个**可选**字段 `investments?: Record<string, number>`（到期那天）、`goods?: Record<string, number>`（`month*100 + day` 日戳），`createInitialState` 初始化 `{}`；**不升版本，仍 36**。
+- **界面**：店铺页新增「街上的门路」「杂货铺」两段；互斥时那一行不给按钮，只写「先等「X」过去」——**把原因写在原地，而不是弹窗**。
+- **第九次撞「面板缓存键漏字段」**：shop 面板 key 补 `investments` / `goods` / `favor`，否则买完不重绘（探针第一版就红在这）。
+- **验收**：`npx tsc --noEmit` 0；`npx vitest run` **69 文件 791 用例**（新增 `invest.test.ts` 10 例、`goods.test.ts` 8 例）；`copy_gate.py` ok；`eye_gate.py shot --slug invest` 五视口 724·765·583·1216·1506、stamp **154**；`ai_gate.py` `ok: true`；`tools/gate/invest_probe.py`（preview 4218）**14 项全 true**；产物 `index-D4chDU4I.js` 1,610.28 kB（gzip 475.18）、`index-BmlPxP2D.css` 47.87 kB。
+- **替身四种子（36 月）与批 A′ 逐位一致**：¥94,272 / ¥130,615 / ¥122,272 / ¥91,988，日均 200.7 / 217.3 / 206.2 / 179.9 碗，均值 **¥109,787 / 201.0 / 41.5% / ¥462,005**。替身不买门路也不逛杂货铺 —— 新出口是给**人**用的，对默认策略完全中性。
+- **P251** 三条门路的价（¥50/¥120/¥400）照「第一天营收 ¥150–300」拍，没有价位锚。
+- **P252** 同类互斥只按 `cls`（做货/说话）分，`supplier` 与 `goods.noodle_pile` 其实抢同一个出口（产能）却能同时买。
+- **P253** 老师傅减最慢段 0.5 分，面板不给「减完哪段最慢」的预览，效果看不见。
+- **P254** `press` 的 `+30%` 乘进店，与行情、物产、技法、口碑五层乘在一起，上限仍未验（同 P154）。
+- **P255** 门路与杂货都没有 AI 台词：买完街上没人说一句（同 P144/P247 那类「数值有、回声无」）。
+- 文档 `docs/限时投资与杂货铺B′-2026-11-22.md`（九节：这一批解决什么 / 三条门路 / 三件杂货 / 动了哪些文件 / 验收 / 四种子 / 与开罗逐项 / 新缺口 / 复现）。

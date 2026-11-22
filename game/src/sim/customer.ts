@@ -28,6 +28,8 @@ import { rememberToppings, xpPickyEase } from "./topping-xp";
 import { stageMinutes } from "./equipment";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
+import { investAttractMult } from "./invest";
+import { goodsPatienceMult } from "./goods";
 import { priceWarMult } from "./price-war";
 import { localCostFactor, localPatienceMult, localSideCostFactor } from "./local";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
@@ -377,6 +379,8 @@ function arriveOne(state: GameState): void {
     marketPatienceMult(state) *
     // 物产（批次九）：横州的花茶，坐下来的人不催
     localPatienceMult(state) *
+    // 杂货铺（批 B′）：借来的三台电扇，等的人不急着走
+    goodsPatienceMult(state) *
     FLOW.patienceScale;
   flow.customers.push({
     id: flow.nextId++,
@@ -651,7 +655,8 @@ export function tickCustomers(state: GameState): void {
   // 开罗 Popularity 影响「来访率」：来客是**每分钟一批**，不是一个个来。
   // 旧实现每分钟最多 1 人 → 一天上限 120 人，这个天花板比座位/灶位/人手都硬（P35）：
   // 8 座满编实测也只有 63 碗/日，扩建与雇人全被这道天花板吃掉。
-  const expected = spawnChance(state);
+  // 街上的门路（批 B′）：美食号写一篇，三天里多一点生面孔
+  const expected = spawnChance(state) * investAttractMult(state);
   let arrivals = Math.floor(expected);
   if (nextFloat(state.rng) < expected - arrivals) arrivals += 1;
   for (let i = 0; i < Math.min(arrivals, MAX_ARRIVALS_PER_MINUTE); i++) {

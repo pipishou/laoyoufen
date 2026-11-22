@@ -571,6 +571,10 @@ export interface GameState {
   quality: string;
   /** 浇头熟练度（批 A′）：每份料做过的碗数。等级与出口见 `sim/topping-xp.ts` */
   ingredientXp: Record<string, number>;
+  /** 街上的门路（批 B′）：id → 到期那天（打烊天数）；可选，老档缺省当没买过 */
+  investments?: Record<string, number>;
+  /** 杂货铺（批 B′）：id → 日戳 month*100+day；只当天有效 */
+  goods?: Record<string, number>;
   /** 零售线（批次七）：渠道 / 每款定价 / 累计卖出件数 */
   retail: { channel: string; prices: Record<string, number>; sold: Record<string, number> };
   /** 手上的功夫（批次 6）：支 id → 练到第几级，0/1/2/3 */
@@ -842,6 +846,8 @@ export function createInitialState(playerId: string, seed: number): GameState {
     pack: false,
     quality: DEFAULT_QUALITY,
     ingredientXp: {},
+    investments: {},
+    goods: {},
     skills: {},
     retail: defaultRetail(),
     news: [],
