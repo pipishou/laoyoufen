@@ -6,6 +6,7 @@ import { FLAVOR_BY_ID } from "./data/flavor";
 import { dimById, tierWord, tierWords } from "./data/tier";
 import { tierById } from "./data/guest-tier";
 import { tierVoiceContext } from "./sim/guest-tier";
+import { appetiteLineOf, lossWhyOf, markAppetiteSaid, menuLineOf } from "./sim/advice";
 import { marketOf } from "./sim/market";
 import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
@@ -1038,6 +1039,10 @@ function refresh(): void {
   arenaUi.render();
   // 打烊单一出就补那句口吻（内部按「钩子键:月:日」节流，一天最多一次）
   prefetchHookLine();
+  // 解读层两行（批 C′）：为什么掉人、菜单上哪款不动
+  prefetchDayLines();
+  // 胃口这句跟着打烊走：一个月最多一次，白天不打扰
+  if (state.dayReport) speakAppetite();
   scheduleSave();
 }
 
@@ -1135,6 +1140,82 @@ function prefetchHookLine(): void {
     if (!line) return;
     const node = document.querySelector<HTMLElement>("[data-hook-line]");
     if (node) node.textContent = line;
+  });
+}
+
+/**
+ * 解读层的两个落点（批 C′ 第 19、20 个）：`loss_explain` 与 `menu_advice`。
+ *
+ * 规矩与 `hook_voice` 一样：本地句已经写在打烊单上（带数字、带菜名），
+ * 在线句只**原地替换那一格**，不整块 `refresh()` —— 否则玩家看见字自己在变。
+ * 键用主因 / 菜名的组合，同一天同一件事只问一次。
+ */
+let lastWhyKey = "";
+function prefetchDayLines(): void {
+  if (!state.dayReport) return;
+  const why = lossWhyOf(state);
+  if (why) {
+    const ask = {
+      kind: "loss_explain" as const,
+      key: why.ask.key,
+      context: why.ask.context,
+      month: state.month,
+      day: state.day,
+    };
+    const id = `${ask.kind}:${ask.key}:${ask.month}:${ask.day}`;
+    if (id !== lastWhyKey) {
+      lastWhyKey = id;
+      void fetchLine(ask).then((line) => {
+        if (!line) return;
+        const node = document.querySelector<HTMLElement>("[data-loss-line]");
+        if (node) node.textContent = line;
+      });
+    }
+  }
+  const menuTalk = menuLineOf(state);
+  if (menuTalk) {
+    const ask = {
+      kind: "menu_advice" as const,
+      key: menuTalk.ask.key,
+      context: menuTalk.ask.context,
+      month: state.month,
+      day: state.day,
+    };
+    const id = `${ask.kind}:${ask.key}:${ask.month}:${ask.day}`;
+    if (id !== lastMenuKey) {
+      lastMenuKey = id;
+      void fetchLine(ask).then((line) => {
+        if (!line) return;
+        const node = document.querySelector<HTMLElement>("[data-menu-line]");
+        if (node) node.textContent = line;
+      });
+    }
+  }
+}
+let lastMenuKey = "";
+
+/**
+ * 21 个落点里最后一个：`appetite_voice`（批 C′，解 P247）。
+ *
+ * 胃口原来只在数值里（加购概率与份量权重），界面上一个字都没有。
+ * 这里让它一个月最多说一次，而且**只说感受、不报数字**；
+ * 同一句话说完就记月，跨月才可能再说。
+ */
+function speakAppetite(): void {
+  const line = appetiteLineOf(state);
+  if (!line) return;
+  markAppetiteSaid(state);
+  const ask = {
+    kind: "appetite_voice" as const,
+    key: line.ask.key,
+    context: line.ask.context,
+    month: state.month,
+    day: state.day,
+  };
+  hud.showToast(`街坊说：「${getLine(ask, localLine(ask))}」`, "info");
+  void fetchLine(ask).then((got) => {
+    if (!got) return;
+    hud.showToast(`街坊说：「${got}」`, "info");
   });
 }
 

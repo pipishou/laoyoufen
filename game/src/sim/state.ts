@@ -171,6 +171,10 @@ export interface CustomerFlow {
   lastNote?: string | null;
   /** 上一次播报「又看得见一圈」时的圈号（批次九） */
   lastRing?: number;
+  /** 上一次日结时各款的累计碗数（算今天差分用，不给界面看） */
+  menuSoldSeen?: Record<string, number>;
+  /** 上一次说「这一片吃腻了」是哪个月（同一个月只说一次） */
+  lastAppetiteMonth?: number;
 
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;
@@ -395,6 +399,13 @@ export interface DayRecord {
   /** 零售货架今天卖出几件、净收入多少（批次七） */
   retailSold?: number;
   retailNet?: number;
+  /**
+   * 今天每一款各卖了几碗（批次 C′，解 R7）。
+   *
+   * `MenuItem.sold` 是累计值，日结时用「今天减上次」算差分写在这里 ——
+   * 有了它，打烊单才说得出「哪款今天一碗没动」，而不是拿累计数吓人。
+   */
+  menuSold?: Record<string, number>;
 }
 
 export interface Tally {
@@ -1015,6 +1026,19 @@ function recordDay(state: GameState, taste: number): void {
     rec.retailSold = rt.units;
     rec.retailNet = rt.net;
     rec.revenue = Math.round(rec.revenue + rt.net);
+  }
+  // 各款今天的差分（批次 C′）：先算、再覆盖「上次看到的累计值」
+  {
+    const seen = state.flow.menuSoldSeen ?? {};
+    const today: Record<string, number> = {};
+    for (const item of state.menu ?? []) {
+      const key = String(item.id);
+      const delta = Math.max(0, (item.sold ?? 0) - (seen[key] ?? 0));
+      today[key] = delta;
+      seen[key] = item.sold ?? 0;
+    }
+    state.flow.menuSoldSeen = seen;
+    if (state.menu && state.menu.length > 0) rec.menuSold = today;
   }
   state.days.push(rec);
   if (state.days.length > 120) state.days.shift();

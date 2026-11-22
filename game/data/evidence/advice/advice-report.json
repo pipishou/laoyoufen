@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "checks": {
+    "rows_present": true,
+    "loss_has_number": true,
+    "loss_says_queue": true,
+    "menu_says_cold": true,
+    "save_version": true,
+    "appetite_spoken": true,
+    "appetite_marked": true,
+    "console_clean": true
+  },
+  "base": {
+    "rows": 2,
+    "loss": "今天有 9 位是门口站满了没进来 —— 灶和座总有一个先撑不住。",
+    "menu": "今天「第 1 款」走得最多，「第 2 款」一碗没动。",
+    "toasts": [
+      "中山老友粉店 开张了，先调好一碗粉的味道"
+    ],
+    "said": -1,
+    "month": 0,
+    "saveVersion": 36
+  },
+  "told": {
+    "rows": 2,
+    "loss": "今天有 3 位是看价牌掉头的 —— 不是味道的问题。",
+    "menu": "今天「第 1 款」走得最多，「第 2 款」一碗没动。",
+    "toasts": [
+      "中山老友粉店 开张了，先调好一碗粉的味道",
+      "街坊说：「最近不太吃得下大碗了，来一碗小的就好。」"
+    ],
+    "said": 0,
+    "month": 0,
+    "saveVersion": 36
+  },
+  "errors": []
+}

@@ -5,6 +5,8 @@ import {
   isCleanLine,
   lineId,
   localLine,
+  LINE_BUDGET,
+  lineBudgetLeft,
   remoteLineCount,
   resetLines,
   setProxyUrl,
@@ -30,6 +32,9 @@ const KINDS = [
   "retail_voice",
   "notebook_voice",
   "district_voice",
+  "loss_explain",
+  "menu_advice",
+  "appetite_voice",
 ] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {
@@ -227,5 +232,15 @@ describe("打烊单副行按用途分池", () => {
     const body = JSON.parse(String(spy.mock.calls[0]?.[1]?.body ?? "{}"));
     expect(body.context).toEqual({ 事: "灶台与座位" });
     expect(body.context.类型).toBeUndefined();
+  });
+});
+
+describe("在线预算（批 C′）：一局最多换 200 个不同的键", () => {
+  it("预算是 200，剩余就是 200 减已换到的条数", () => {
+    resetLines();
+    expect(LINE_BUDGET).toBe(200);
+    expect(lineBudgetLeft()).toBe(200);
+    expect(remoteLineCount()).toBe(0);
+    expect(lineBudgetLeft()).toBe(LINE_BUDGET - remoteLineCount());
   });
 });

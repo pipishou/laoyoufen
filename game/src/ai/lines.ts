@@ -34,7 +34,10 @@ export type LineKind =
   | "retail_voice"
   | "grade_voice"
   | "notebook_voice"
-  | "district_voice";
+  | "district_voice"
+  | "loss_explain"
+  | "menu_advice"
+  | "appetite_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -362,6 +365,40 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "牌子上我写的是实话，你自己心里也清楚。",
     "手艺到了这一步，剩下的是守不守得住。",
   ],
+  /**
+   * 19. loss_explain  打烊单上「今天这批人为什么走」下面那句口气（批 C′）
+   *
+   * 数字在本地那行（「今天有 N 位是…」），这里只说一句人话。
+   * 三档各说各的：门口挤 / 价签挡 / 等不及，**不许劝玩家该怎么干**。
+   */
+  loss_explain: [
+    "门口那条队，排到别人家门口去了。",
+    "有人掀了价牌看了一下，转身就走。",
+    "等的人脚尖一直在点地，你没看见。",
+    "锅里的水滚得再急，也追不上人的耐性。",
+  ],
+  /**
+   * 20. menu_advice  打烊单上「菜单上的一句话」下面那句口气（批 C′）
+   *
+   * 说的是「哪款有人点、哪款没人动」，不报碗数、不给经营建议。
+   */
+  menu_advice: [
+    "客人进门先看的还是那碗老的。",
+    "新添的那款，摆了一天没人问。",
+    "菜单越写越长，人反倒不晓得点什么。",
+    "有一款突然就有人认了，说不上为什么。",
+  ],
+  /**
+   * 21. appetite_voice  这一片吃腻了时街坊说的一句（批 C′，解 P247）
+   *
+   * 胃口这件事原来只在数值里（加购与份量），界面上一个字都没有。
+   */
+  appetite_voice: [
+    "最近不太吃得下大碗了，来一碗小的就好。",
+    "天天吃也不腻，就是吃不了那么多了。",
+    "这条街的粉我都吃遍了，嘴有点刁。",
+    "份量给少一点也没事，我主要是来喝口汤。",
+  ],
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */
@@ -394,6 +431,17 @@ export function localLine(ask: LineAsk): string {
 const CACHE = new Map<string, string>();
 const INFLIGHT = new Map<string, Promise<string | null>>();
 
+/**
+ * 一局里最多换 **200 个不同的键**（批 C′，解 R6）。
+ *
+ * 二次评估里把预算算错过一次：`fetchLine` 有 49 个调用点，但键全是名词
+ * （`${dim}:${tier}`、`ring${ring}`、货名、街面 id），同键命中缓存就永不重复，
+ * 所以真正的成本上限是**键空间**，实测约 170。留 200 的余量。
+ *
+ * 超了不是报错，是**静默改走本地句** —— 玩家不该因为预算用完而看见界面变样。
+ */
+export const LINE_BUDGET = 200;
+
 /** 已换到的在线句；没换到就用调用处给的本地句 */
 export function getLine(ask: LineAsk, fallback: string): string {
   return CACHE.get(lineId(ask)) ?? fallback;
@@ -408,6 +456,11 @@ export function resetLines(): void {
 /** 调试/测试用：看这一局到底有几条是线上来的 */
 export function remoteLineCount(): number {
   return CACHE.size;
+}
+
+/** 还剩几个键的预算（界面不显示，只给测试与探针看） */
+export function lineBudgetLeft(): number {
+  return Math.max(0, LINE_BUDGET - CACHE.size);
 }
 
 /**
@@ -457,6 +510,8 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
   const id = lineId(ask);
   const hit = CACHE.get(id);
   if (hit) return hit;
+  // 预算用完了就到此为止：后面的键一律本地句，不记日志、不报错
+  if (CACHE.size >= LINE_BUDGET) return null;
   const url = proxyUrl();
   if (!url) return null;
   const running = INFLIGHT.get(id);

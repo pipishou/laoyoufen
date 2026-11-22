@@ -12,6 +12,7 @@ import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
 import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
+import { lossWhyOf, menuLineOf } from "../sim/advice";
 import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
@@ -255,6 +256,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
+      <div class="daywhy"><span data-loss-line></span><span data-menu-line></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -274,6 +276,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const hookMain = dayWrap.querySelector("[data-hook-main]") as HTMLElement;
   const hookWhy = dayWrap.querySelector("[data-hook-why]") as HTMLElement;
   const hookLine = dayWrap.querySelector("[data-hook-line]") as HTMLElement;
+  const lossLine = dayWrap.querySelector("[data-loss-line]") as HTMLElement;
+  const menuLine = dayWrap.querySelector("[data-menu-line]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
@@ -532,6 +536,25 @@ const render = (s: GameState, score: RecipeScore): void => {
         day: s.day,
       };
       hookLine.textContent = plan.kind === "none" ? "" : getLine(voiceAsk, localLine(voiceAsk));
+      /**
+       * 解读层（批 C′）：为什么掉人、菜单上哪款不动。
+       * 本地句带数字，AI 只补一句口气；拿不到在线句就一直是本地句，
+       * 所以打烊单永远不会因为 AI 挂了而空着一行。
+       */
+      const why = lossWhyOf(s);
+      if (why) {
+        const ask = { kind: "loss_explain" as const, key: why.ask.key, context: why.ask.context, month: s.month, day: s.day };
+        lossLine.textContent = getLine(ask, why.text);
+      } else {
+        lossLine.textContent = "";
+      }
+      const menuLineOfDay = menuLineOf(s);
+      if (menuLineOfDay) {
+        const ask = { kind: "menu_advice" as const, key: menuLineOfDay.ask.key, context: menuLineOfDay.ask.context, month: s.month, day: s.day };
+        menuLine.textContent = getLine(ask, menuLineOfDay.text);
+      } else {
+        menuLine.textContent = "";
+      }
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);

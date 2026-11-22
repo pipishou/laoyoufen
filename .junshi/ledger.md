@@ -311,6 +311,17 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - 新增缺口 P240–P244（见下）。
 
 
+### 行 101 · 2026-11-22 · 批 C′ 解读层：打烊单说得出「今天为什么」
+
+- 来源：`docs/本土化与AI能力方案-二次评估-2026-11-22.md` 批 C′（R6 / R7 修正版）。
+- 三句话（`game/src/sim/advice.ts`）：`lossWhyOf`（队满 / 价牌 / 等不及，走人 < 3 时闭嘴）、`menuLineOf`（一款走得最多 + 一款一碗没动）、`appetiteLineOf`（吃腻了，一个月只说一次）。三条都有明确的 `return null` 分支 —— 在没有可说之处开口是机器味的第一来源。
+- 日结差分（解 R7）：`recordDay` 用 `daySoldSeen` 差分写 `DayRecord.menuSold`，两个字段都可选，**不升 SAVE_VERSION（仍 36）**。
+- 同名坑：两款同主料同粉型时 `dishNameOfItem` 给同一个名字，念出来是「老友粉走得最多，老友粉一碗没动」→ 退回「第 1 款 / 第 2 款」，落一条测试锁住。
+- 在线预算（解 R6）：`LINE_BUDGET = 200`（键空间 ≈ 170 + 余量），`fetchLine` 缓存命中后 `if (CACHE.size >= LINE_BUDGET) return null;` —— 超了静默走本地句，不报错不阻塞。
+- 接线：`hud.ts` 打烊单 `.daywhy` 两行（故意不用金色，不跟明天的钩子抢注意力）、`main.ts` 的 `prefetchDayLines()` / `speakAppetite()`、`server/app.py` 三个新场景。
+- 验收：tsc 0；vitest **70 文件 804 用例**；copy_gate ok；eye_gate `--slug advice` 726·765·584·1205·1504 色 stamp **155**；ai_gate ok；`tools/gate/advice_probe.py`（4219）**8 项全 true**；替身四种子 ¥94,272 / ¥130,615 / ¥122,272 / ¥91,988 → 均值 **¥109,787 · 201.0 · 41.5% · ¥462,005**（与批 B′ 逐位一致，解读层只是读法）；产物 `index-CwZq0GNW.js` **1,614,415 B** / `index-Bs-NEtHT.css` **48,164 B**。
+- 新缺口：**P256**（事后解释，没有事前预警）/ **P257**（只报主因，次要原因被吞）/ **P258**（不看「卖得动但毛利低」，P232 仍无人提醒）/ **P259**（预算是估算，没有服务端计数，降级玩家察觉不到）/ **P260**（换区重置胃口，易读成「味道变好了」）/ **P261**（探针靠注入 `dayReport`，没走真实打烊路径）。
+
 ## 缺口（A7 新增）
 
 | 编号 | 问题 | 位置 | 说明 |

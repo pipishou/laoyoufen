@@ -2393,3 +2393,27 @@ button.pill[disabled] {
   color:var(--cream);background:var(--green);border:1px solid var(--ink);border-radius:2px}
 #tray .chip .xl:not(:empty){display:block}
 #tray .chip{position:relative}
+
+/* 解读层（批 C′）：打烊单上「为什么掉人」与「菜单上的一句话」。
+   故意不用金色：那两行是**解释**，不是下一步该干的事，别跟 .dayhook 抢注意力。 */
+.daywhy {
+  margin: 0 14px 6px;
+  padding: 0 10px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--ink2);
+}
+.daywhy span {
+  display: block;
+}
+.daywhy span:empty {
+  display: none;
+}
+.daywhy [data-loss-line]::before {
+  content: "为什么 · ";
+  color: var(--wood);
+}
+.daywhy [data-menu-line]::before {
+  content: "菜单 · ";
+  color: var(--wood);
+}
