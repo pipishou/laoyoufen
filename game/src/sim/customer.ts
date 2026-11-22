@@ -686,8 +686,13 @@ export function tickCustomers(state: GameState): void {
   // 2. 灶台空闲且有空位时，队首入座
   //    先减冷却再判：否则 1 分钟的灶也会变成「每 2 分钟一碗」，
   //    实测差 2 倍（57.7 vs 119 碗/日的上限）。
-  if (flow.serveCooldown > 0) flow.serveCooldown = Math.max(0, flow.serveCooldown - 1);
-  if (flow.serveCooldown <= 0) {
+  // 出碗按「攒分钟」推进，不是整分钟倒计时。
+  // `FLOW.serveMinutes = 1` 之下，任何小于 1 的系数（灶 0.8167、汤锅、粉篓、洗碗池、碗、组合）
+  // 用「每分减 1、≤0 出一批」都会被吞成「还是每分钟一碗」——
+  // 于是所有「出碗更快」的升级在真实模拟里全部无效（试玩 11-22：买灶后碗数一动不动）。
+  flow.serveBank = (flow.serveBank ?? 0) + 1;
+  const serveInterval = Math.max(0.2, flow.serveCooldown);
+  if (flow.serveBank + 1e-9 >= serveInterval) {
     // 开罗 Staff 2：一锅同时煮 N 份、一趟同时端 N 碗 —— 冷却到点一次出一批。
     // 旧版这里只出一碗，于是 8 座满编实测也只有 63 碗/日，座位与灶位形同装饰（P35）。
     let slots = Math.max(1, Math.floor(serveParallel(state) * frenzyServeBoost(state)));
@@ -731,6 +736,9 @@ export function tickCustomers(state: GameState): void {
         // 出碗定死（A6）：师傅教过「数三十下就起」的那一款最快
         masterServeFactor(curDish) *
         flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
+      // 攒下的分钟扣掉这一轮的间隔，余数留到下一分钟继续攒 ——
+      // 0.8 分/碗 的一天是 150 批，1.0 分/碗 的一天是 120 批，差别终于是真的
+      flow.serveBank = Math.max(0, flow.serveBank - flow.serveCooldown);
     }
   }
 

@@ -14,6 +14,9 @@ import { canEnter, contestScore, maxTierOf } from "../sim/contest";
 import { arenaSummary, arenaViews } from "../sim/arena";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
 import { appetiteWords, districtOptions, homeAppetiteOf, homeEnergyOf } from "../sim/district";
+import { tightWords } from "../sim/bottleneck";
+import { hasGear } from "../sim/gear";
+import { GEARS } from "../data/gear";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
@@ -596,6 +599,16 @@ let lastGradeKey = "";
     // 只写一个「几分/碗」的话，玩家不知道该买哪一件（这正是 P117 / P152 的病根）。
     const st = stageMinutes(s);
     const slow = slowestStation(s);
+    // 批 D′（试玩 11-22）：真正卡住的往往不是灶，是座位 ——
+    // 两座、吃一碗六分多，一天只接得住三十来碗，买灶再多也没用。这一行必须写出来。
+    const tight = tightWords(s);
+    const seatFix = GEARS.filter((g) => (g.seats ?? 0) > 0 && !hasGear(s, g.id)).sort(
+      (a, b) => a.costYuan - b.costYuan,
+    )[0];
+    const tightLine =
+      tight === "座位坐不下" && seatFix
+        ? `今天卡在座位：${seatFix.name} ${money(seatFix.costYuan)} 就能多坐 ${seatFix.seats} 位（吃一碗要六分多钟，座位周转不过来）`
+        : `今天卡在：${tight}`;
     const stageLine = STATION_ORDER.map(
       (k) => `${STATION_NAMES[k]} ${st[k].toFixed(1)} 分/${stationCount(s, k)}${k === "basket" ? " 筒" : " 口"}`,
     ).join(" · ");
@@ -1137,6 +1150,7 @@ let lastGradeKey = "";
       </div>
       <div class="sec">
         <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗<span class="tag2 hot2">最慢：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分</span></div>
+        <div class="lmeta" data-tight>${tightLine}</div>
         <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
@@ -1839,7 +1853,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

@@ -269,19 +269,21 @@ describe("次日仍然算得清流失（试玩二轮 F1）", () => {
 });
 
 describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () => {
-  it("座位紧但灶更慢时，先推便宜一倍效能的灶而不是一万二的隔墙", () => {
+  it("座位紧的时候先推 ¥150 的矮凳，再贵就不叫「先把人接住」（试玩 11-22）", () => {
     const s = fresh();
     s.cash = 200_000;
     s.venue.seats = 2;
     report(s, 60, 40);
     const plan = nextHook(s);
     expect(plan.kind).toBe("capacity");
-    // 2 座 + 一口灶（2.0 分/碗）= 一天 60 碗，扩到 4 座也还是 60 碗 → 扩座这时候没用
-    expect(plan.text).toContain("猛火灶");
+    // 两座、吃一碗六分多 —— 一天只接得住三十来碗，加一张 ¥150 的矮凳立刻多十五碗；
+    // 而 ¥1,500 的灶在座位卡住时一碗也多不出来
+    expect(plan.text).toContain("塑料矮凳");
+    expect(plan.text).not.toContain("猛火灶");
     expect(plan.text).not.toContain("打通隔墙");
   });
 
-  it("三段设备都到顶、只剩扩建能提上限时，推能加座的扩建", () => {
+  it("三段设备都到顶、座位还紧时，推的仍是便宜的加座件而不是一万二的隔墙", () => {
     const s = fresh();
     s.cash = 200_000;
     s.venue.seats = 2;
@@ -290,7 +292,9 @@ describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () =>
     s.equipment.strainer = 4;
     s.equipment.bench = 4;
     report(s, 60, 40);
-    expect(nextHook(s).text).toContain("打通隔墙");
+    const text = nextHook(s).text;
+    expect(text.includes("塑料矮凳") || text.includes("竹躺椅")).toBe(true);
+    expect(text).not.toContain("打通隔墙");
   });
 
   it("粉篓也是三段之一：只在它那段最慢时才被点名（批次二）", () => {
@@ -299,9 +303,10 @@ describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () =>
     s.venue.seats = 8;
     s.capacity = 999;
     report(s, 60, 40);
-    // 新局炒锅与汤锅并列最慢，粉篓不是瓶颈 → 不点名
+    // 八座时座位已经不算卡（8 座一天能接一百多碗），但门口站满时钩子仍会先推加座件
     expect(nextHook(s).text).not.toContain("粉篓");
-    // 炒锅与汤锅都买满，只剩粉篓那一段最慢 → 点名粉篓
+    // 座位彻底给够（三十座），再把炒锅与汤锅买满 —— 这时最慢的是粉篓那一段，才点名粉篓
+    s.venue.seats = 30;
     s.equipment.stove = 4;
     s.equipment.pot = 4;
     expect(nextHook(s).text).toContain("粉篓");

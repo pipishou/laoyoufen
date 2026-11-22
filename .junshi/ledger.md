@@ -695,3 +695,45 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P254** `press` 的 `+30%` 乘进店，与行情、物产、技法、口碑五层乘在一起，上限仍未验（同 P154）。
 - **P255** 门路与杂货都没有 AI 台词：买完街上没人说一句（同 P144/P247 那类「数值有、回声无」）。
 - 文档 `docs/限时投资与杂货铺B′-2026-11-22.md`（九节：这一批解决什么 / 三条门路 / 三件杂货 / 动了哪些文件 / 验收 / 四种子 / 与开罗逐项 / 新缺口 / 复现）。
+
+### 行 101 · 2026-11-22 · 解读层 C′（为什么 / 菜单 / 胃口三落点 + 200 key 预算）
+
+- **三处新落点都长在已有的数字上，没有新开维度**：`game/src/sim/advice.ts` 的 `lossWhyOf`（读 `lossSplitOf`：队满 / 看价牌 / 等不及三主因）、`menuLineOf`（读 `state.dayReport.menuSold ?? days 末条`，最好款与一碗没动的款）、`appetiteLineOf`（`districtAppetite < 0.9` 才开口，按月只说一次）。
+- **菜单差分的口径**：`DayRecord.menuSold?: Record<string, number>`，日结时用 `flow.menuSoldSeen` 做差分（解 R7，不升存档版本）。
+- **预算**：`game/src/ai/lines.ts` 加 `LINE_BUDGET = 200` 与 `lineBudgetLeft()`；依据是 49 个 `fetchLine` 调用点但 key 全是名词，成本上限＝key 空间≈170，超预算静默走本地池。
+- **界面**：打烊单 `dayhook` 下方加 `.daywhy` 两行（`[data-loss-line]` / `[data-menu-line]`，`::before` 写「为什么 · 」「菜单 · 」；故意不上金色，不跟主句抢眼）。
+- **同名款退让**：两款同主料同粉型时退回「第 N 款」，测试锁死；合理性来自「玩家看不到 id」。
+- **验收**：71 文件 807 用例 → 当时的 70 文件 804 用例；`audit_ai` 落点 18→21，线上 21/21 remote；`copy_gate` ok；`eye_gate --slug advice` stamp 155。
+- **缺口 P256** 主因是「队满」时，为什么那行仍把灶与座并列说，没有指出哪个更紧（这一批 D′ 才补上）。
+- **缺口 P257** `menuSold` 只记「卖了几碗」，不记「看了没买」的款（下架判断缺一半）。
+- **缺口 P258** `appetite_voice` 的 key 只有月份，模型不知道玩家这家店到底掉了多少。
+- **缺口 P259** 解读层三句都只说今天，没有「连着三天都这样」的累计视角。
+- **缺口 P260** `LINE_BUDGET` 是拍的两百，没有按 key 频率做过实测分布。
+- **缺口 P261** `guest_talk` 的 key 空间随客型增长，长局可能吃掉预算的一半（P243 的复现版）。
+
+### 行 102 · 2026-11-22 · 整体验收（七批 + 校准 + A′/B′/C′）
+
+- **四批表**：批 7 零售线（8 款 / 3 渠道）、批 8 阿婆的笔记本（12 条 3 组）、批 9 四圈与物产（3 处）、批 10 九十六格、批 11 技法校准（12 支）、批 12 热度去噪与现金出口、数值校准（配料价目 / 钱包地板 / 段位费 ¥660,800）、批 A′（浇头 37→20 + appetite + 熟练度）、批 B′（三条门路 + 三件杂货）、批 C′（解读层三落点）。
+- **五门**：`tsc` 0；`vitest` 70 文件 804 用例；`copy_gate` ok；`eye_gate --slug advice` stamp 155；`ai_gate` ok。
+- **四个审计**：`audit_counts` 44 文件 472 条 id；`audit_pixel` 字面色值 0 / 12 token / 16 图标 / 13 keyframes / `steps()` 7 处 / reduced-motion 1；`audit_ai` 21/21 remote；`audit_money` 通过。
+- **四种子五时点**：见 `docs/整体验收-2026-11-22.md` 第五节（校准前 ¥131,514 → 只改配料与钱包 ¥184,437 → 三处全改 ¥95,897 → A′/B′ ¥109,787 → C′ ¥109,787）。
+- **开罗对照**：`help.txt` 57 节玩法全部落地或有明确「不做」理由；`topping` / `customer` / `grade_review` / `storeequip` / `economy` / `rally` / `custom` / `compatibility` / `bowl` / `investment` / `topics` / `hidearea` 十二张表逐条对过。
+- **CCGS 五条**：核心循环 10 秒内可见；每一步都有可读反馈；失败可解释（解读层）；长局有目标（段位 / 技法 / 图鉴）；本地化不靠翻译腔。
+- **文档**：`docs/整体验收-2026-11-22.md`。
+
+### 行 103 · 2026-11-22 · 座位与出碗（批 D′）——买灶没用的三个真原因
+
+- **依据**：`老友粉试玩总结-2026-11-22.md`（18:52 包，saveVersion 35）。三家买了 ¥1,500 的灶与 ¥1,500 的汤锅，D4 流失仍 44–50%、卖碗 30–36，座位全程 2。
+- **根因一（致命）**：`game/src/sim/customer.ts` 出碗倒计时是「每分减 1、≤0 出一批」，而 `FLOW.serveMinutes = 1` —— 任何小于 1 的系数（灶 0.8167 / 汤锅 / 粉篓 / 洗碗池 / 碗 / 组合）都被吞成「还是一分钟一碗」。改法：`flow.serveBank` 攒分钟（`serveInterval = max(0.2, serveCooldown)`，出完 `serveBank -= 新间隔`），`CustomerFlow.serveBank?: number` 可选字段，**不升版本（仍 36）**。
+- **根因二**：`game/src/sim/bottleneck.ts` 的 `EAT_MINUTES` 从 1 改成 **6**（`data/customers.ts` 二十四位客人 `eatSpeed` 均值 6.17）。座位产能 80 → 约 30，新局 `tight` 直接是 `seats`，`tightWords` 说「座位坐不下」。
+- **根因三**：`game/src/sim/hook.ts` 的 `capacityPick` 候选池补上 `GEARS` 里 `seats > 0` 且未拥有的家当（`kind: "seat"`，增益 `gain.seat(n)`）。实测队满主因时主句变成「先把「塑料矮凳」加上（¥150）」。
+- **界面**：`game/src/ui/panels.ts` 设备段上方加 `[data-tight]` 一行（卡座位时写「塑料矮凳 ¥150 就能多坐 1 位（吃一碗要六分多钟）」）；shop 面板缓存键补 `venue.seats` / `venue.stoves` / `equipment`（第十次「键漏字段」防范）。
+- **文案**：事件 `suan_ye_stall` 的「门口借两张凳」改「让阿姐在门口摆摊」—— 那句是阿姐借去摆摊，玩家读成加座是合理误读。
+- **验收**：`tsc` 0；`vitest` **71 文件 807 用例**（新增 `game/src/sim/serve-bank.test.ts` 3 例；`bottleneck.test.ts` 4 条、`hook.test.ts` 3 条按新模型重写）；`copy_gate` ok；`eye_gate --slug seat` 723 · 765 · 586 · 1210 · 1509 色 stamp 155；`ai_gate` ok；`tools/gate/seat_probe.py`（preview 4220）**10/10 true**。
+- **替身四种子**：¥89,238 / ¥103,403 / ¥98,538 / ¥92,209 → 均值 **¥95,847 · 198.5 碗 · 42.3% · 期末 ¥211,903**（基线 ¥109,787 / 201.0 / 41.5% / ¥462,005：营收 −12.7%、碗数 −1.3%、现金 −54%）。替身照钩子买设备却从不买矮凳 —— 正好证明「光修出碗不够，得让它知道加座」。
+- **缺口 P262** 替身不会买矮凳，四种子量不出这一批的收益（要加一条「座位紧就先买最便宜加座件」的替身策略）。
+- **缺口 P263** `serveBank` 的零头在打烊时被清掉，一天最多损失一批。
+- **缺口 P264** 吃一碗按均值 6 分算，`eatSpeed` 3 与 9 差三倍，一个九分种的客人占座等于两个人。
+- **缺口 P265** 店铺页只说「卡在哪」，不说「加这一张能多卖几碗」。
+- **缺口 P266** 客人坐满时打烊单仍说「灶和座总有一个先撑不住」，没点名座位。
+- **文档**：`docs/座位与出碗-2026-11-22.md`。

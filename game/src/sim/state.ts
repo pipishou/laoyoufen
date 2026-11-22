@@ -175,6 +175,14 @@ export interface CustomerFlow {
   menuSoldSeen?: Record<string, number>;
   /** 上一次说「这一片吃腻了」是哪个月（同一个月只说一次） */
   lastAppetiteMonth?: number;
+  /**
+   * 出碗攒下的分钟（批 D′）。
+   *
+   * 旧字段 `serveCooldown` 是「还要几分钟」，整数倒计时；1 分钟基准下任何提速都无效。
+   * 现在 `serveCooldown` 只存间隔，`serveBank` 才是进度，多出来的零头会留到下一分钟。
+   * 可选字段，老档缺省按 0 起攒，不升 SAVE_VERSION。
+   */
+  serveBank?: number;
 
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;

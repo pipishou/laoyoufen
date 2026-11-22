@@ -31,7 +31,10 @@ import { goodsCapacityBonus } from "./goods";
  * 一游戏分钟 ≈ 六现实分钟（见 `data/balance.ts` 的注释），所以 1 分钟 ≈ 6 分钟，
  * 正好是「坐下嗦一碗粉」的时间；再长就变成慢餐，座位周转会假性变紧。
  */
-export const EAT_MINUTES = 1;
+export // 吃一碗要几分钟：`data/customers.ts` 二十四种客人的 eatSpeed 均值 6.17
+// （最慢 9、最快 3）。旧值写 1，模型于是算「2 座一天能接 80 碗」，
+// 而实测只有 36 碗 —— 模型一直在说「灶最紧」，真正的瓶颈是座位（试玩 11-22）。
+const EAT_MINUTES = 6;
 
 export type TightOn = "stove" | "seats" | "cap";
 

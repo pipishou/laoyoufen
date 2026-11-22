@@ -719,7 +719,7 @@ export const EVENTS: readonly GameEventDef[] = [
         ],
       },
       {
-        label: "门口借两张凳",
+        label: "让阿姐在门口摆摊",
         summary: "口碑 +0.05",
         result: "阿姐在门口摆开摊子，客人端着粉出来蹲着吃，倒也有了点街边气。",
         effects: [{ kind: "reputation", amount: 0.05 }],

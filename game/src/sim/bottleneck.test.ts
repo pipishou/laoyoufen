@@ -10,13 +10,15 @@ function fresh(): GameState {
 }
 
 describe("今天最多卖几碗：灶、座位、总闸取最小", () => {
-  it("两口座 + 一口灶：卡在灶上，不是座位", () => {
+  it("两口座：卡在座位上（试玩 11-22 的病灶）", () => {
     const s = fresh();
     s.venue.seats = 2;
     const c = capacityOf(s);
-    expect(c.tight).toBe("stove");
-    expect(c.total).toBeCloseTo(c.stove, 5);
-    expect(tightWords(s)).toBe("灶台出得慢");
+    // 吃一碗 6 分多、出一碗 2 分多，两个座位一天只接得住三十来碗 —— 这就是试玩里
+    // 「买了两档灶，卖出的碗数还是 32–38」的全部原因
+    expect(c.tight).toBe("seats");
+    expect(c.total).toBeCloseTo(c.seats, 5);
+    expect(tightWords(s)).toBe("座位坐不下");
   });
 
   it("灶升档之后，灶这一项的产能真的涨（不是只换文案）", () => {
@@ -30,18 +32,17 @@ describe("今天最多卖几碗：灶、座位、总闸取最小", () => {
     expect(after.serveNow).toBeLessThan(capacityOf(fresh()).serveNow);
   });
 
-  it("扩座在灶还慢的时候一点用都没有（试玩 11-20 阿兰的坑）", () => {
+  it("座位紧的时候，加一张 ¥150 的矮凳比 ¥1,500 的灶划算得多", () => {
     const s = fresh();
     s.venue.seats = 2;
     const g = capacityGain(s);
-    expect(g.seat(2)).toBeLessThan(0.5);
-    // 同一家店，把灶升一档是实打实的一天多十碗
-    expect(g.stove).toBeGreaterThan(5);
+    expect(g.seat(1)).toBeGreaterThan(5);
+    expect(g.seat(1)).toBeGreaterThan(g.stove);
   });
 
   it("灶已经顶到总闸时，再升灶也没有用", () => {
     const s = fresh();
-    s.venue.seats = 2;
+    s.venue.seats = 12;
     s.equipment.stove = 4;
     s.capacity = 40; // 总闸卡死
     const g = capacityGain(s);
@@ -52,7 +53,8 @@ describe("今天最多卖几碗：灶、座位、总闸取最小", () => {
   it("三句话里必须能说清谁在卡", () => {
     const s = fresh();
     s.venue.seats = 2;
-    expect(tightWords(s)).toBe("灶台出得慢");
+    expect(tightWords(s)).toBe("座位坐不下");
+    s.venue.seats = 12;
     s.equipment.stove = 4;
     s.capacity = 30;
     expect(tightWords(s)).toBe("备料不够卖");

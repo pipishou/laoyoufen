@@ -28,6 +28,8 @@ import { arenaViews } from "./arena";
 import { gearViews } from "./gear";
 import { streetViews } from "./streets";
 import { EQUIPMENT, MAX_EQUIP_LEVEL, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
+import { GEARS } from "../data/gear";
+import { hasGear } from "./gear";
 import { equipLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
 import { capacityGain, lossSplitOf } from "./bottleneck";
@@ -181,6 +183,19 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
         gain: equipGainOf(eq.id, gain),
       });
     }
+  }
+
+  // 加座的家当（塑料矮凳 / 竹躺椅，各 ¥150 多坐一个人）比打通隔墙（¥12,000）便宜八十倍。
+  // 旧版候选池里只有设备与扩建，于是「门口站满」时钩子永远把人往 ¥1,500 的灶上引（试玩 11-22）。
+  for (const g of GEARS) {
+    if (!g.seats || g.seats <= 0) continue;
+    if (hasGear(state, g.id)) continue;
+    picks.push({
+      what: g.name,
+      cost: g.costYuan,
+      kind: "seat",
+      gain: gain.seat(g.seats),
+    });
   }
 
   const ex = nextExpansion(state);
