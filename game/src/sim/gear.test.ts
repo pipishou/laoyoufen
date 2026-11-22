@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { GEARS, GEAR_BY_ID, GEAR_TOTAL_YUAN } from "../data/gear";
 import { SAVE_VERSION, createInitialState, type GameState } from "./state";
 import { openForBusiness } from "./setup";
@@ -164,7 +164,7 @@ describe("家当（M3）", () => {
     const back = deserialize(serialize(s));
     expect(back).not.toBeNull();
     expect(back!.gear).toEqual(["wash_sink", "banner"]);
-    expect(SAVE_VERSION).toBe(33);
+    expect(SAVE_VERSION).toBe(34);
 
     const old = JSON.parse(serialize(s)) as Record<string, unknown>;
     delete old.gear;

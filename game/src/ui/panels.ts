@@ -1,4 +1,6 @@
 import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, CONTEST_TYPE_BY_ID, tierOf } from "../data/contest";
+import { retailLines, retailSummary, channelOf, retailThroughput, retailBowlLoad } from "../sim/retail";
+import { CHANNELS, PRICE_FLOOR, PRICE_CEIL } from "../data/retail";
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
@@ -141,6 +143,9 @@ export interface PanelActions {
   applyMaster(index: number, id: string): void;
   /** 袋装线（A7）：置办包装机 */
   buyPack(): void;
+  /** 批次七：货架换渠道 / 调价 */
+  setRetailChannel(id: string): void;
+  stepRetailPrice(id: string, dir: number): void;
   /** M3b：花人情 */
   useFavor(id: string): void;
   toggleDish(index: number): void;
@@ -425,6 +430,14 @@ let lastGradeKey = "";
       case "buypack":
         actions.buyPack();
         break;
+      case "rtchannel":
+        actions.setRetailChannel(id);
+        break;
+      case "rtprice": {
+        const [goods, dir] = String(id).split("|");
+        actions.stepRetailPrice(goods ?? "", Number(dir));
+        break;
+      }
       case "master": {
         // data-id 形如「0|cost_set」：款号 + 方子 id
         const [idx, mid] = String(id).split("|");
@@ -879,6 +892,50 @@ let lastGradeKey = "";
       </div>
       </div>`;
     /**
+   * 货架（批次七）：把店里的手艺做成货。
+   *
+   * 三层渠道 + 每款自己定价 + 与堂食抢产能。
+   * 面板只写「渠道 / 每款价 / 今天约几件 / 要占掉几碗」，
+   * 净值留给打烊单 —— 让玩家定的时候盯着取舍，不是盯着收益表。
+   */
+  const rtChannel = channelOf(s);
+  const rtRows = retailLines(s)
+    .map((l) => {
+      return `<div class="lrow">
+        <div class="lbtns">
+          <button type="button" class="pickbtn" data-act="rtprice" data-id="${l.def.id}|-1">−</button>
+          <button type="button" class="pickbtn" data-act="rtprice" data-id="${l.def.id}|1">+</button>
+        </div>
+        <span class="lname">${l.def.name}</span>
+        <div class="lmeta">出厂 ¥${l.def.costYuan.toFixed(1)} ｜ 卖 ¥${l.price.toFixed(1)} ｜ 今天约 ${l.units} 件 ｜ 净 ¥${Math.round(l.net)}</div>
+      </div>`;
+    })
+    .join("");
+  const rtChannelRows = CHANNELS.map((c) => {
+    const gate = (s.gradeLevel ?? 0) < c.gradeGate;
+    const on = c.id === rtChannel.id;
+    return `<div class="lrow${gate ? " locked" : ""}">
+      <div class="lbtns">${
+        on
+          ? `<span class="tag2 on">在走</span>`
+          : gate
+            ? `<span class="tag2">第 ${c.gradeGate + 1} 段</span>`
+            : `<button type="button" class="pickbtn" data-act="rtchannel" data-id="${c.id}">换这条</button>`
+      }</div>
+      <span class="lname">${c.name}</span>
+      <div class="lmeta">${c.note}${c.cut > 0 ? `（抽 ${Math.round(c.cut * 100)}%）` : ""}</div>
+    </div>`;
+  }).join("");
+  const retailSec = `
+  <div class="sec">
+    <div class="sechd">${icon("crate")}货架 · ${retailSummary(s)}</div>
+    <div class="hint2">干粉、酸笋包、老友酱、汤底包、自热、礼盒、整箱 —— 八款都是南宁货架上真有的东西。做货占案台与手，<b>今天要做的件数会从当天的碗里扣掉 ${retailBowlLoad(s)} 碗</b>；产能 ${retailThroughput(s)} 件/天。</div>
+    <div class="sechint">走哪条渠道</div>
+    ${rtChannelRows}
+    <div class="sechint">八款货 · 价能下调 ${Math.round((1 - PRICE_FLOOR) * 100)}%、上调 ${Math.round((PRICE_CEIL - 1) * 100)}%</div>
+    ${rtRows}
+  </div>`;
+  /**
    * 手上的功夫（批次 6）：十二支技法，每支三级。
    * 与「店员专精」分开：这一层是老板自己的手，店员走了也还在。
    */
@@ -1022,7 +1079,7 @@ let lastGradeKey = "";
         ${bowlRows}
         <div class="lmeta" style="padding:4px 2px 0">现在这只：${currentBowl(s).line}</div>
       </div>
-${packSec}
+${packSec}  ${retailSec}
       <div class="sec">
         <div class="sechd">${icon("crate")}摆件</div>
         ${ups}
@@ -1658,7 +1715,7 @@ const newsSec = `<div class="sec">
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${remoteLineCount()}`;
       html = shopHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;

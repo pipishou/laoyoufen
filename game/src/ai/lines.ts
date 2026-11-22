@@ -31,6 +31,7 @@ export type LineKind =
   | "guest_talk"
   | "tier_voice"
   | "market_voice"
+  | "retail_voice"
   | "grade_voice";
 
 export interface LineAsk {
@@ -322,6 +323,12 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "今天街上没什么人，倒是清静。",
     "这种天，还是你这里坐得住。",
     "街上人挤人，我绕了两条巷才过来。",
+  ],
+  retail_voice: [
+    "你那个汤包，我带到深圳给同事试了，他们问哪里买的。",
+    "上回买的两包酸笋，我妈拿来煮鱼，说比菜市的香。",
+    "寄外省的东西，包装得再结实点，路上颠得厉害。",
+    "我在网上看到有人拍你家的粉，评论里一堆人问地址。",
   ],
   /**
    * 15. grade_voice   评委收笔时抬头说的那句（批次四 · 段位评定）

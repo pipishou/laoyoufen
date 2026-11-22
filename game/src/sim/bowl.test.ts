@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { BOWLS, BOWL_TOTAL, DEFAULT_BOWL_ID, bowlById } from "../data/bowl";
 import { SAVE_VERSION, createInitialState, type GameState } from "./state";
 import { openForBusiness } from "./setup";
@@ -168,7 +168,7 @@ describe("碗（A4）", () => {
     expect(back).not.toBeNull();
     expect(back!.bowls).toContain("takeaway");
     expect(currentBowl(back!).id).toBe("takeaway");
-    expect(SAVE_VERSION).toBe(33);
+    expect(SAVE_VERSION).toBe(34);
   });
 
   it("老档（v27）没有碗这格：补默认钢碗，坏 id 丢掉", () => {

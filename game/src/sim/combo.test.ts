@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { COMBOS, COMBO_TOTAL, COMBOS as ALL } from "../data/combo";
 import { GEAR_BY_ID } from "../data/gear";
 import { SAVE_VERSION, createInitialState, type GameState } from "./state";
@@ -130,7 +130,7 @@ describe("家当搭配 · 存档", () => {
   it("搭配完全由已买家当推导，不占新字段（版本仍是 26）", () => {
     const s = fresh();
     own(s, "plastic_stool", "bamboo_chair");
-    expect(SAVE_VERSION).toBe(33);
+    expect(SAVE_VERSION).toBe(34);
     expect(activeCombos(s).length).toBe(1);
   });
 });

@@ -28,6 +28,7 @@ import { TROPHY_BY_ID } from "./data/trophies";
 import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { applyMaster as applyMasterImpl } from "./sim/master";
 import { buyPack as buyPackImpl } from "./sim/pack";
+import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channelOf, firstRetailMilestone, markRetailVoice } from "./sim/retail";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
@@ -340,6 +341,26 @@ panels = mountPanels(hudRoot, {
     }
     hud.showToast("包装机转起来了：每天出的那点货，明天打烊就结", "like");
     playSfx("upgrade");
+    refresh();
+  },
+  /** 货架（批次七）：换渠道 —— 量大的渠道抽成多、门槛高 */
+  setRetailChannel(id) {
+    const ok = setChannelImpl(state, String(id));
+    if (!ok) {
+      hud.showToast("这条渠道还走不了（要段位或已经在走这条）", "info");
+      refresh();
+      return;
+    }
+    const ch = channelOf(state);
+    hud.showToast(`改走${ch.name}：${ch.note}`, "like");
+    playSfx("upgrade");
+    refresh();
+  },
+  /** 货架（批次七）：每款货的定价，上下各一档 ¥1 */
+  stepRetailPrice(id, dir) {
+    const base = priceOf(state, String(id));
+    const ok = setPriceImpl(state, String(id), base + (dir >= 0 ? 1 : -1));
+    if (ok) playSfx("ui");
     refresh();
   },
   applyMaster(index, id) {
@@ -846,6 +867,25 @@ function tickFeedback(): void {
         day: s.day,
       }).then((line) => {
         if (line) hud.showToast(`街坊说：「${line}」`, "info");
+      });
+    }
+  }
+
+  {
+    // 零售落点（16）：某款货第一次卖到五十件 —— 买的人不是街坊，是「外面的人」
+    const goods = firstRetailMilestone(s);
+    if (goods) {
+      markRetailVoice(s, goods.id);
+      const ch = channelOf(s);
+      hud.showToast(`${goods.name}卖过五十件了（${ch.name}）`, "like");
+      void fetchLine({
+        kind: "retail_voice",
+        key: goods.id,
+        context: { 货: goods.name, 渠道: ch.name, 买的人: "外面的人" },
+        month: s.month,
+        day: s.day,
+      }).then((line) => {
+        if (line) hud.showToast(`外面的人说：「${line}」`, "info");
       });
     }
   }

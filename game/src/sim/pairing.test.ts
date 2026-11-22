@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { TOPPINGS } from "../data/ingredients";
 import { PAIRINGS, PAIRING_TOTAL, pairingById } from "../data/pairing";
 import { SAVE_VERSION, createInitialState } from "./state";
@@ -126,7 +126,7 @@ describe("配料组合（A2）", () => {
 
   it("组合不占存档字段：版本仍是 28，新局没有额外状态", () => {
     const s = createInitialState("pair-player", 3);
-    expect(SAVE_VERSION).toBe(33);
+    expect(SAVE_VERSION).toBe(34);
     expect(Object.keys(s)).not.toContain("pairings");
   });
 });

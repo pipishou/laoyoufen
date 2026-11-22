@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ARENAS, COMMANDS, COMMAND_BY_ID, COMMAND_KEY_MAP, arenaById } from "../data/arena";
 import { SAVE_VERSION, createInitialState, tickMinute, type GameState } from "./state";
 import { openForBusiness } from "./setup";
@@ -223,7 +223,7 @@ describe("落场：面板与存档", () => {
     expect(back.arena).toBeNull();
     expect(back.arenaDay).toBe(s.arenaDay);
     expect(back.arenaRuns).toBe(1);
-    expect(SAVE_VERSION).toBe(33);
+    expect(SAVE_VERSION).toBe(34);
   });
 
   it("老档没有这些字段也能读，坏值归零", () => {

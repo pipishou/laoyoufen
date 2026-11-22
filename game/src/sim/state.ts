@@ -19,12 +19,13 @@ import type { NewsItem } from "./news";
 import { pushNews } from "./news";
 import { checkTrophies } from "./trophies";
 import { settlePack } from "./pack";
+import { defaultRetail, settleRetail } from "./retail";
 import { DEFAULT_QUALITY } from "../data/quality";
 
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 33;
+export const SAVE_VERSION = 34;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -185,6 +186,8 @@ export interface CustomerFlow {
   /** 上次开口的日子 + 当天已经说了几次，用来限一天只开口一两次 */
   tierVoiceDay?: number;
   tierVoiceCount?: number;
+  /** 零售落点（16）已经说过话的货 id（每款只说一次） */
+  retailVoiceDone?: string[];
   /** 上次报加料组合的绝对分钟（节流用，免得每碗都弹） */
   sideToastAt: number;
 }
@@ -376,6 +379,9 @@ export interface DayRecord {
   packSold?: number;
   /** 袋装线今天的净收入（已算进 `revenue`） */
   packNet?: number;
+  /** 零售货架今天卖出几件、净收入多少（批次七） */
+  retailSold?: number;
+  retailNet?: number;
 }
 
 export interface Tally {
@@ -385,6 +391,8 @@ export interface Tally {
   bestDayRevenue: number;
   /** 袋装线累计卖出的袋数（A7） */
   packSold: number;
+  /** 零售线累计卖出件数（批次七） */
+  retailSold?: number;
   /** 同时排队人数峰值 */
   maxQueue: number;
   /** 已开店（或已在营）的区，见 data/nanning.ts */
@@ -548,6 +556,8 @@ export interface GameState {
   pack: boolean;
   /** 配料品质档（批次五）：plain / good / top —— 换来的是每碗料钱与卖相 */
   quality: string;
+  /** 零售线（批次七）：渠道 / 每款定价 / 累计卖出件数 */
+  retail: { channel: string; prices: Record<string, number>; sold: Record<string, number> };
   /** 手上的功夫（批次 6）：支 id → 练到第几级，0/1/2/3 */
   skills: Record<string, number>;
   /** 街坊报：最近几天的头版（A11，见 `sim/news.ts`） */
@@ -685,6 +695,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       bowls: 0,
       bestDayRevenue: 0,
       packSold: 0,
+  retailSold: 0,
       maxQueue: 0,
       districts: [START_DISTRICT],
       sideRevenue: 0,
@@ -816,6 +827,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     pack: false,
     quality: DEFAULT_QUALITY,
     skills: {},
+    retail: defaultRetail(),
     news: [],
     styles: [],
     style: null,
@@ -972,6 +984,13 @@ function recordDay(state: GameState, taste: number): void {
     rec.packSold = pk.sold;
     rec.packNet = pk.net;
     rec.revenue = Math.round(rec.revenue + pk.net);
+  }
+  // 零售货架（批次七）：与袋装线并列，各算各的净额
+  const rt = settleRetail(state);
+  if (rt.units > 0) {
+    rec.retailSold = rt.units;
+    rec.retailNet = rt.net;
+    rec.revenue = Math.round(rec.revenue + rt.net);
   }
   state.days.push(rec);
   if (state.days.length > 120) state.days.shift();

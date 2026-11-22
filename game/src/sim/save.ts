@@ -15,6 +15,8 @@ import type { NewsItem } from "./news";
 import { DEFAULT_QUALITY, QUALITY_BY_ID } from "../data/quality";
 import { SKILL_BY_ID } from "../data/skill";
 import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
+import { CHANNEL_BY_ID, RETAILS, type ChannelId } from "../data/retail";
+import { defaultRetail } from "./retail";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -105,7 +107,8 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
-    v.saveVersion !== 32 &&
+    v.saveVersion !== 33 &&
+  v.saveVersion !== 32 &&
     v.saveVersion !== 31 &&
     v.saveVersion !== 30 &&
     v.saveVersion !== 29 &&
@@ -605,6 +608,24 @@ export function deserialize(raw: string): GameState | null {
     }
   }
   parsed.skills = nextSkills;
+  // v33 → v34（批次七 零售线）：老档没有货架，补一份默认（渠道=门口、价=建议零售、销量清零）
+  const rawRetail = (parsed as { retail?: unknown }).retail;
+  const fallback = defaultRetail();
+  const rt = rawRetail && typeof rawRetail === "object" ? (rawRetail as Record<string, unknown>) : {};
+  const channel = typeof rt.channel === "string" && CHANNEL_BY_ID.has(rt.channel) ? (rt.channel as ChannelId) : "door";
+  const prices: Record<string, number> = {};
+  const rawPrices = rt.prices && typeof rt.prices === "object" ? (rt.prices as Record<string, unknown>) : {};
+  for (const g of RETAILS) {
+    const v = rawPrices[g.id];
+    prices[g.id] = typeof v === "number" && Number.isFinite(v) ? v : (fallback.prices[g.id] ?? g.suggestYuan);
+  }
+  const sold: Record<string, number> = {};
+  const rawSold = rt.sold && typeof rt.sold === "object" ? (rt.sold as Record<string, unknown>) : {};
+  for (const g of RETAILS) {
+    const v = rawSold[g.id];
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) sold[g.id] = Math.floor(v);
+  }
+  parsed.retail = { channel, prices, sold };
   parsed.saveVersion = SAVE_VERSION;
   return parsed;
 }
