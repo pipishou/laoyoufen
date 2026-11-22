@@ -182,3 +182,66 @@ describe("顾客循环", () => {
     expect(discovered(5)).toBeGreaterThan(discovered(0));
   });
 });
+
+/**
+ * 批次十二 · P171：抽签前置。
+ *
+ * 改这条之前，`arriveOne` 是「先判队满 → 满了直接 return」，被挡住的那位客人
+ * **不消耗随机数**。于是任何让客流动一点点的改动都会改变「谁被挡住」，
+ * 整条 rng 流错位，36 个月的结果全变 —— 四种子营收差三成，
+ * 我们以为在调经济，其实在掷骰子。
+ *
+ * 现在「来一个人」固定抽 4 次（常客 + 原型 + 档位 + 挑款），
+ * 无论他最后坐下、看价牌走，还是被队满挡在门外。
+ * 这里用计数代理数**一次队满的分钟里随机数被碰了几下**：
+ * 只有「进门抽签」（1 次）的话是 2 下（读 s + 写 s），
+ * 加上被挡住那位的 4 次抽签后必然 ≥ 10 下。
+ */
+describe("抽签前置：队满也照抽骰子（P171）", () => {
+  /** 数 `rng.s` 被读写的次数（`nextFloat` 一次抽签 = 读一次 + 写一次） */
+  const counting = (s: GameState) => {
+    const box = { n: 0 };
+    const proxy = new Proxy(s.rng, {
+      get(t, k, r) {
+        if (k === "s") box.n += 1;
+        return Reflect.get(t, k, r);
+      },
+      set(t, k, v, r) {
+        if (k === "s") box.n += 1;
+        return Reflect.set(t, k, v, r);
+      },
+    });
+    s.rng = proxy;
+    return box;
+  };
+
+  const jam = (s: GameState, n: number) => {
+    const first = ARCHETYPE_BY_ID.keys().next().value as string;
+    s.flow.customers = Array.from({ length: n }, (_, i) => ({
+      id: 9_000 + i,
+      archetypeId: first,
+      dishId: 0,
+      status: "waiting" as const,
+      elapsed: 0,
+      waited: 0,
+      patience: 9_999,
+      satisfaction: -1,
+      regular: false,
+      survey: 0,
+    }));
+  };
+
+  it("队满被挡在门外的那一位，也把四次骰子抽掉了", () => {
+    const s = createInitialState("p1", 31);
+    s.gradeLevel = 10;
+    s.reputation = 5;
+    s.capacity = 400;
+    s.venue.seats = 4;
+    jam(s, 60);
+    const box = counting(s);
+    advanceMinute(s);
+    expect(s.flow.lostQueue).toBeGreaterThan(0);
+    // 1 次进店抽签（2 下）+ 至少一位被挡住（4 次 × 2 下 = 8 下）
+    expect(box.n).toBeGreaterThanOrEqual(10);
+  });
+});

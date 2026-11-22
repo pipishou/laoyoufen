@@ -282,6 +282,22 @@ const MAX_ARRIVALS_PER_MINUTE = 4;
  */
 function arriveOne(state: GameState): void {
   const flow = state.flow;
+  /**
+   * 抽签前置（批次十二 · P171）：**先掷骰子，再判队满**。
+   *
+   * 原来是「队满 → 直接 return」，于是被挡在门外的那位客人**不消耗随机数**；
+   * 任何让客流变动一点点的改动（行情 ±2%、段位、家当）都会改变「谁被挡住」，
+   * 从而整条 rng 流错位，热卖点火/熄火、36 个月全变 —— 四种子营收差 30%，
+   * 我们以为在调经济，其实在掷骰子。
+   *
+   * 现在「来一个人」固定消耗 4 个随机数（常客判定 + 原型 + 档位 + 挑款），
+   * 无论他最后是坐下、看价牌走，还是被队满挡住 —— 随机流与经营结果解耦。
+   */
+  const regularId = maybePickRegular(state);
+  const archRoll = nextFloat(state.rng);
+  const tierRoll = nextFloat(state.rng);
+  const dishRoll = nextFloat(state.rng);
+
   const waiting = flow.customers.reduce((n, c) => n + (c.status === "waiting" ? 1 : 0), 0);
   if (waiting >= queueMaxOf(state)) {
     flow.lostToday += 1;
@@ -289,11 +305,10 @@ function arriveOne(state: GameState): void {
     state.monthLost += 1;
     return;
   }
-  const regularId = maybePickRegular(state);
   const arch = regularId
     ? ARCHETYPE_BY_ID.get(regularId)
     : pickArchetype(
-        nextFloat(state.rng),
+        archRoll,
         state.trend,
         Math.min(3, Math.floor(state.flow.minuteOfDay / (DAY_MINUTES / 4))),
       );
@@ -302,7 +317,7 @@ function arriveOne(state: GameState): void {
    * 顾客等级（A8）：钱包、耐心、口碑权重、挑剔扣分四个出口。
    * 常客直接给「街坊」—— 老客不是抽中的，是他自己回来的。
    */
-  const tier = rollTier(state, nextFloat(state.rng), regularId !== null);
+  const tier = rollTier(state, tierRoll, regularId !== null);
   /**
    * 到售卖机前挑券（开罗 `Staff 3`：After a customer buys a ticket…）。
    *
@@ -313,7 +328,7 @@ function arriveOne(state: GameState): void {
    * 热卖期间的来客「stats 更高」（开罗 Frenzy 2），钱包也跟着抬一档。
    */
   const wallet = arch.budget * frenzyBudgetBoost(state) * tierBudgetPct(tier) * marketWalletMult(state);
-  const dish = pickDish(state, wallet, nextFloat(state.rng));
+  const dish = pickDish(state, wallet, dishRoll);
   if (!dish) {
     flow.lostToday += 1;
     flow.lostPrice += 1;

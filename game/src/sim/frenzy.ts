@@ -119,8 +119,22 @@ export function frenzyTick(state: GameState, waiting: number, goodBowls: number)
 
   // 判据用「这一分钟有没有满意的碗」，不用当日均值：日均在开场只有两三碗时
   // 忽高忽低（阿兰局能冲到 65%，巷内局又长期压在 58 边缘），玩家看不出规律。
-  const satisfying = waiting >= FRENZY_MIN_QUEUE && goodBowls >= 1;
-  const gain = Math.min(FRENZY_MAX_GAIN, FRENZY_PER_BOWL * Math.max(1, goodBowls));
+  /**
+   * 批次十二 · 去噪：**「有人站着」不再是攒槽的前提**。
+   *
+   * 原来要求 waiting >= 1 同时有人吃得满意，于是小店的命运被写成二值的：
+   * 座位多、队伍不积的店一天都没在攒槽，另一个种子天天攒。
+   * 四种子实测 344 / 234 / 19 / 332 次，标准差/均值 0.56 —— 不是经济差，
+   * 是「有没有人恰好站着」这一条把连续的手艺变成了掷硬币。
+   *
+   * 现在按满意度攒槽（这就是开罗原句「customers are eating ramen that they like」），
+   * 排队仍然有用，但是**加成**而不是门槛：留一点队，槽涨得快五成。
+   */
+  const gain = Math.min(
+    FRENZY_MAX_GAIN,
+    FRENZY_PER_BOWL * Math.max(1, goodBowls) * (waiting >= FRENZY_MIN_QUEUE ? 1.5 : 1),
+  );
+  const satisfying = goodBowls >= 1;
   f.gauge = Math.max(0, Math.min(FRENZY_MAX, f.gauge + (satisfying ? gain : -FRENZY_DECAY)));
 
   if (f.gauge < FRENZY_MAX) return { triggered: false, active: false };
