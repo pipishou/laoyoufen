@@ -24,6 +24,8 @@ import { dishNameOf, dishNameOfItem } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
 import { tierLine } from "../sim/tier";
+import { noteSummary, noteViews } from "../sim/notebook";
+import { NOTE_GROUPS } from "../data/notebook";
 import { PACK_SETUP } from "../data/pack";
 import { packOwned, packRateWords, packSummary } from "../sim/pack";
 import { newsDate, newsList, newsSummary } from "../sim/news";
@@ -1399,7 +1401,31 @@ function collectionHtml(s: GameState): string {
       </div>`;
   }
 
-const newsSec = `<div class="sec">
+/**
+   * 阿婆的笔记本（批次八）：图鉴最末一段。
+   * 已解开的写正文（六十来字，阿婆口吻），没解开的只留一句「等你遇上」——
+   * **不写条件**，写了就变成任务清单，册子就不是册子了。
+   */
+  const noteSec = `<div class="sec">
+      <div class="sechd">${icon("book")}阿婆的笔记本 · ${noteSummary(s)}</div>
+      <div class="sechint">她写字慢，一条一条来；遇上过的事，她才肯写下来。</div>
+      ${NOTE_GROUPS.map((g) => {
+        const rows = noteViews(s).filter((v) => v.def.group === g.id);
+        const got = rows.filter((v) => v.unlocked).length;
+        return `<div class="ngroup">
+          <div class="nghd">${g.name} · ${got} / ${rows.length}</div>
+          ${rows
+            .map((v) =>
+              v.unlocked
+                ? `<div class="nrow2" title="阿婆原话：${v.def.elder}"><div class="ntitle">${v.def.title}</div><div class="nbody">${v.def.body}</div></div>`
+                : `<div class="nrow2 locked"><div class="ntitle">${v.def.title}</div><div class="nbody">${v.def.cue}</div></div>`,
+            )
+            .join("")}
+        </div>`;
+      }).join("")}
+    </div>`;
+
+  const newsSec = `<div class="sec">
       <div class="sechd">${icon("book")}街坊报 · ${newsSummary(s)}</div>
       <div class="lmeta" style="padding:0 2px 8px">每天打烊出一条，写这条街上真发生过的事 —— 开了店、评了段、赢了赛、同行关门、街上修好了什么。报上不评价你，只把事记下来。</div>
       ${newsRows || `<div class="lmeta">今天还没出报，明天打烊就有了。</div>`}
@@ -1437,7 +1463,7 @@ const newsSec = `<div class="sec">
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
       ${tierSec}
       ${trophySec}
-      ${flavorSec}${mapSec}${newsSec}
+      ${flavorSec}${mapSec}${newsSec}${noteSec}
       ${bowlSec}`;
   }
 
@@ -1721,7 +1747,7 @@ const newsSec = `<div class="sec">
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;
       html = contestHtml(s, score);
     } else if (current === "collection") {
-      key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}`;
+      key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}|${(s.collection.flavors ?? []).length}|${(s.bowls ?? []).length}|${(s.flow.notes ?? []).length}|${s.news.length}|${(s.rivals ?? []).filter((r) => !r.closed).length}|${s.bowl ?? ""}`;
       html = collectionHtml(s);
     } else {
       key = `${s.months.length}|${s.years.length}|${s.pendingReport?.year ?? -1}|${s.finished}|${Math.floor(s.cash / 100)}`;

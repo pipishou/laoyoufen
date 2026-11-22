@@ -32,7 +32,8 @@ export type LineKind =
   | "tier_voice"
   | "market_voice"
   | "retail_voice"
-  | "grade_voice";
+  | "grade_voice"
+  | "notebook_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -323,6 +324,12 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "今天街上没什么人，倒是清静。",
     "这种天，还是你这里坐得住。",
     "街上人挤人，我绕了两条巷才过来。",
+  ],
+  notebook_voice: [
+    "嗱，粉厚了就要多烫一阵，唔好急。",
+    "汤要滚，滚到翻花，粉落去先熟得透。",
+    "酸笋先落，豆豉后落，两样都要过油。",
+    "钱要省在客人看不见的地方，唔好省在碗里。",
   ],
   retail_voice: [
     "你那个汤包，我带到深圳给同事试了，他们问哪里买的。",

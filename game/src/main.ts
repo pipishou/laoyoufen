@@ -62,6 +62,7 @@ import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
 import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
 import { noodleSummary, setNoodleKind } from "./sim/noodles";
+import { noteById, noteTick, noteVoiceContext, rememberNoodle } from "./sim/notebook";
 import { dishNameOfItem, scoreOf } from "./sim/dish";
 import { addFavorFree, useFavor as useFavorImpl } from "./sim/favor";
 import { mainSummary, portionSummary, setMain, setPortion } from "./sim/mains";
@@ -224,9 +225,12 @@ panels = mountPanels(hudRoot, {
     refresh();
   },
   setPrice(value) {
+    const before = state.price;
     state.price = Math.max(1, Math.min(99, Math.round(value)));
     syncEditing(state);
     guide.notify("price");
+    // 阿婆的笔记本（批次八）：价签动过就记一笔（涨跌都算，话里说的是怎么动）
+    if (state.price !== before) noteTick(state, { priceChanged: true });
     refresh();
   },
   hire(uid) {
@@ -283,7 +287,12 @@ panels = mountPanels(hudRoot, {
   setNoodle(id) {
     const r = setNoodleKind(state, String(id));
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
-    else hud.showToast(`换粉了：${noodleSummary(state)}`, "info");
+    else {
+      hud.showToast(`换粉了：${noodleSummary(state)}`, "info");
+      // 阿婆的笔记本（批次八）：换粉是「粉的厚薄」那一页的钥匙
+      const tried = rememberNoodle(state, state.noodle);
+      noteTick(state, { noodle: state.noodle, noodlesTried: tried });
+    }
     playSfx("ui");
     refresh();
   },
@@ -615,6 +624,8 @@ panels = mountPanels(hudRoot, {
     const def = boneById(bid);
     playSfx("upgrade");
     hud.showToast(`换成${def?.name ?? "新骨"}：${def?.look ?? ""}`, "info");
+    // 阿婆的笔记本（批次八）：换过骨档，「猪骨与筒骨」那一页就翻开了
+    noteTick(state, { boneChanged: true });
     refresh();
   },
   startArena(id) {
@@ -854,6 +865,26 @@ function tickFeedback(): void {
    * 南宁行情（批次三）：一天一句。街坊说的是天气和街上，乘数在本地算，句子不报数。
    */
   {
+    /**
+     * 阿婆的笔记本（批次八）：翻到新的一页就先弹那句册子上的话，
+     * 再让阿婆自己说一句（落点 17 notebook_voice）—— 册子死、口气活。
+     */
+    if (s.flow.lastNote) {
+      const def = noteById(s.flow.lastNote);
+      s.flow.lastNote = null;
+      if (def) {
+        hud.showToast(`阿婆的笔记本 · ${def.title}：${def.body}`, "info");
+        void fetchLine({
+          kind: "notebook_voice",
+          key: def.id,
+          context: noteVoiceContext(def),
+          month: s.month,
+          day: s.day,
+        }).then((line) => {
+          if (line) hud.showToast(`阿婆说：「${line}」`, "info");
+        });
+      }
+    }
     const mk = marketOf(s);
     const mKey = mk ? `${mk.id}:${s.month}:${s.day}` : "";
     if (mk && mKey !== lastMarketDay) {

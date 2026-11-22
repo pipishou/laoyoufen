@@ -19,6 +19,7 @@ import type { NewsItem } from "./news";
 import { pushNews } from "./news";
 import { checkTrophies } from "./trophies";
 import { settlePack } from "./pack";
+import { noteTick } from "./notebook";
 import { defaultRetail, settleRetail } from "./retail";
 import { DEFAULT_QUALITY } from "../data/quality";
 
@@ -159,6 +160,16 @@ export interface CustomerFlow {
   lastGift: string | null;
   /** 最近一次「为什么跑了」的提示（目前只有看价牌走人），HUD 读完即消费 */
   lastLostReason: string | null;
+  /**
+   * 阿婆的笔记本（批次八）：已解锁的条目 id。
+   * 可选字段 —— 老档没有这一格，按空处理，玩家继续玩就从当前进度开始记。
+   */
+  notes?: string[];
+  /** 换过哪些粉型（用来数「三种都上过手」） */
+  noodleTried?: string[];
+  /** 刚翻到的那一页，界面读完即消费 */
+  lastNote?: string | null;
+
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;
   satCountToday: number;
@@ -994,6 +1005,15 @@ function recordDay(state: GameState, taste: number): void {
   }
   state.days.push(rec);
   if (state.days.length > 120) state.days.shift();
+  /**
+   * 阿婆的笔记本（批次八）：一天里走了多少人，是「座位与灶哪个先加」那一页的钥匙。
+   * 只看客流够看的日子（卖出 + 走掉 >= 20），头几天一两个人不作数。
+   */
+  {
+    const seen = rec.served + rec.lost;
+    if (seen >= 20) noteTick(state, { lostRate: rec.lost / seen });
+  }
+
   state.phase = "closing";
 }
 

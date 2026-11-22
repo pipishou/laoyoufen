@@ -1,4 +1,5 @@
 import type { GameState, MonthRecord, YearRecord } from "./state";
+import { noteTick } from "./notebook";
 import { monthlyRentOf } from "./setup";
 import { branchMonthlyCost } from "./branches";
 import { pacifyGiftOf, rivalMonthTick } from "./rivals";
@@ -83,6 +84,11 @@ export function closeMonth(state: GameState): void {
     grade: gradeByRatio(revenue / Math.max(1, target)),
   };
   state.months.push(record);
+  /**
+   * 阿婆的笔记本（批次八）：这个月账上见了红，就翻到「成本在哪」那一页。
+   */
+  noteTick(state, { monthProfit: record.profit });
+
 
   // K1 目标换骨（账本行 19）：月营收不再判定成败。
   // 原实现「达标 +0.08 口碑 / 未达标 -0.05 口碑」是我们自己发明的月度 KPI：

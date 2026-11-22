@@ -2359,3 +2359,13 @@ button.pill[disabled] {
 .skpips { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: middle; }
 .skpips i { width: 6px; height: 8px; background: var(--cream); border: 1px solid var(--sand); }
 .skpips i.on { background: var(--gold); border-color: var(--ink2); }
+
+/* 阿婆的笔记本（批次八）：像一本线装册子 —— 虚线分隔、标题木色、正文墨色偏淡 */
+.pane .ngroup{margin-top:8px}
+.pane .nghd{font-size:11px;color:var(--wood);margin-bottom:3px}
+.pane .nrow2{padding:5px 0;border-bottom:1px dashed var(--sand)}
+.pane .nrow2:last-child{border-bottom:0}
+.pane .ntitle{font-size:12px;color:var(--ink);font-weight:700}
+.pane .nbody{font-size:11px;line-height:1.6;color:var(--ink2);margin-top:2px}
+.pane .nrow2.locked .ntitle{color:var(--wood)}
+.pane .nrow2.locked .nbody{color:var(--wood);opacity:.85;font-style:italic}

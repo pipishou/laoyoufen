@@ -23,6 +23,8 @@ import { shopAttractMultiplier, shopCharmBonus, shopPatienceMultiplier } from ".
 import { demandCapOf, districtEnergy } from "./district";
 import { streetAttractMult, streetGiftMult, streetPatienceMult } from "./streets";
 import { tierRemark } from "./tier";
+import { noteTick, rememberNoodle } from "./notebook";
+import { stageMinutes } from "./equipment";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
 import { priceWarMult } from "./price-war";
@@ -431,6 +433,19 @@ function settle(state: GameState, c: QueueCustomer): void {
    */
   const item = state.menu.find((d) => d.id === c.dishId) ?? currentDish(state);
   const sc = scoreDish(item);
+  /**
+   * 阿婆的笔记本（批次八）：一碗出锅就是一次观察 —— 这一碗什么粉、配料哪几样、
+   * 汤够不够、出锅要几分钟，都是玩家亲手做出来的事，够解锁哪条就记哪条。
+   */
+  rememberNoodle(state, item.noodle);
+  noteTick(state, {
+    noodle: item.noodle,
+    noodlesTried: state.flow.noodleTried?.length ?? 0,
+    soup: sc.soup,
+    toppings: item.recipe.toppings,
+    serveMinutes: stageMinutes(state).total,
+  });
+
   // 主料与份量（P46）：牛肉比碎肉香，三两比二两管饱 —— 现在按**这一款**算
   const mainDef = mainById(item.main);
   const portionDef = portionOf(item.portion);
@@ -553,6 +568,7 @@ function settle(state: GameState, c: QueueCustomer): void {
   }
   // 口碑权重：识食的一句抵一句半，路过的只算七成
   state.reputation = clamp(state.reputation + ((sat - 55) / 800) * tierRepWeight(tierDef), 0.5, 5);
+  noteTick(state, { reputation: state.reputation });
 
   /**
    * 四维评价（批次一）：只有极端档位客人才会特意开口。
