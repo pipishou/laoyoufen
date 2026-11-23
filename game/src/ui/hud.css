@@ -2458,3 +2458,5 @@ html.prefs-big #hud .stat .k{font-size:12px}
 html.prefs-big #float .k{font-size:12px}
 html.prefs-big #float .v{font-size:17px}
 html.prefs-big #hud .clock{font-size:17px}
+
+.pane .prefrow.prefreset{margin-top:6px;border-top:1px dashed var(--sand);padding-top:6px}

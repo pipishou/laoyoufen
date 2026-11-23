@@ -27,6 +27,8 @@ export interface TodayLine {
   /** 指向面板里的哪一件（店铺页拿来高亮那一行） */
   gearId?: string;
   equipId?: string;
+  /** 今天到底卡在哪（给 AI 的上下文用，界面不显示） */
+  blocked?: string;
 }
 
 /** 一碗能赚几个钱（今天的价签减这一碗的料钱） */
@@ -53,6 +55,28 @@ export function paybackDays(cost: number, gain: number, margin: number): number 
 }
 
 /**
+ * 回本给一个区间，而不是一个数（P273 / P275）。
+ *
+ * 一个数会让人以为「第七天准回本」。可这个数只按**今天这一碗**的料钱与卖价算，
+ * 明天换了配料、涨了价、来了台风，它就变了。所以上界取今天，下界按七五折的赚头算，
+ * 并在句子里写明「按今天这碗算」——把口径摆在数字旁边，比把数字算准更要紧。
+ */
+export function paybackRange(cost: number, gain: number, margin: number): [number, number] {
+  const best = paybackDays(cost, gain, margin);
+  const worst = paybackDays(cost, gain, margin * 0.75);
+  if (best <= 0 || worst <= 0) return [0, 0];
+  return best === worst ? [best, best] : [best, worst];
+}
+
+/** 「约 4–6 天回本（按今天这碗算）」；白送就只说一句 */
+export function paybackWords(cost: number, gain: number, margin: number): string {
+  if (cost <= 0) return "不花钱，当天就见效";
+  const [lo, hi] = paybackRange(cost, gain, margin);
+  if (lo <= 0) return "看不清几天回本";
+  return lo === hi ? `约 ${lo} 天回本（按今天这碗算）` : `约 ${lo}–${hi} 天回本（按今天这碗算）`;
+}
+
+/**
  * 今天那一句。没有该做的事（`kind === "none"`）时返回 null ——
  * 「在没有可说之处开口，是机器味的第一来源」。
  */
@@ -64,14 +88,14 @@ export function todayLine(state: GameState): TodayLine | null {
 
   if (plan.kind === "capacity" && ref) {
     const bowls = Math.max(1, Math.round(ref.gain));
-    const days = paybackDays(ref.cost, ref.gain, margin);
     const money = Math.round(ref.cost);
     if (ref.gearId) {
       return {
         main: plan.text,
-        detail: `多坐一位，一天多卖约 ${bowls} 碗，约 ${days} 天回本 · 在「家当」第 ${gearRowOf(ref.gearId)} 行`,
+        detail: `多坐一位，一天多卖约 ${bowls} 碗，${paybackWords(ref.cost, ref.gain, margin)} · 在「家当」第 ${gearRowOf(ref.gearId)} 行`,
         key: plan.key,
         gearId: ref.gearId,
+        blocked: tightWords(state),
       };
     }
     if (ref.equipId) {
@@ -79,7 +103,7 @@ export function todayLine(state: GameState): TodayLine | null {
         (k) => STATION_EQUIP[k] === ref.equipId,
       );
       const minutes = capacityOf(state).serveNow;
-      const buy = money > 0 ? `，约 ${days} 天回本` : "";
+      const buy = money > 0 ? `，${paybackWords(ref.cost, ref.gain, margin)}` : "";
       return {
         main: plan.text,
         detail: `今天卡在${tightWords(state)}：这一段 ${minutes.toFixed(1)} 分一碗${buy} · 在「设备」第 ${equipRowOf(
@@ -87,6 +111,7 @@ export function todayLine(state: GameState): TodayLine | null {
         )} 行${station ? `（${STATION_NAMES[station]}）` : ""}`,
         key: plan.key,
         equipId: String(ref.equipId),
+        blocked: tightWords(state),
       };
     }
   }
@@ -96,6 +121,7 @@ export function todayLine(state: GameState): TodayLine | null {
       main: plan.text,
       detail: `街坊掏钱时手会停一下：降一块，一天能多留几个人 · 价签在「配方」页`,
       key: plan.key,
+      blocked: "价签",
     };
   }
 
@@ -113,6 +139,7 @@ export function todayLine(state: GameState): TodayLine | null {
       detail: `当天就见效的小件 · 在「家当」第 ${gearRowOf(ref.gearId)} 行`,
       key: plan.key,
       gearId: ref.gearId,
+      blocked: tightWords(state),
     };
   }
 
@@ -149,6 +176,9 @@ export function todayVoiceContext(line: TodayLine): Record<string, string> {
         : line.detail.includes("评定")
           ? "门口的招牌"
           : "店里的事",
+    // P277：模型只看到「该做什么」，说不出「为什么现在卡这里」。
+    // 这一格给它一个名词（座位 / 出碗 / 价签 …），让它一句闲话能落在因果上。
+    卡: (line.blocked ?? "").replace(/[¥0-9]/g, "").slice(0, 12),
   };
 }
 

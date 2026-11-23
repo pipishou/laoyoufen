@@ -3,7 +3,16 @@ import { createInitialState } from "./state";
 import { GEARS } from "../data/gear";
 import { EQUIPMENT } from "../data/equipment";
 import { buyGear } from "./gear";
-import { equipRowOf, gearRowOf, marginPerBowl, paybackDays, todayLine, todayVoiceContext } from "./today";
+import {
+  equipRowOf,
+  gearRowOf,
+  marginPerBowl,
+  paybackDays,
+  paybackRange,
+  paybackWords,
+  todayLine,
+  todayVoiceContext,
+} from "./today";
 
 /**
  * 批 F′：店铺页「今天」那一条 —— 主句照钩子，副句给回本与位置。
@@ -118,5 +127,34 @@ describe("pointer 上下文（批 F′ 补）：服务端会把带数量词的�
     const QTY = /[一二两三四五六七八九十百千万]+(?:几|多)?(?:位|碗|元|块|天|人|张|个|家|份|次|名|斤)/;
     expect(ctx["事"]).not.toMatch(QTY);
     expect(ctx["事"]).not.toMatch(/[0-9¥]/);
+  });
+});
+
+describe("回本给区间（批 H′，P273 / P275）", () => {
+  it("区间下界不快于上界，下界按七五折的赚头算", () => {
+    const [lo, hi] = paybackRange(150, 6, 4);
+    expect(lo).toBeGreaterThan(0);
+    expect(hi).toBeGreaterThanOrEqual(lo);
+    expect(hi).toBe(paybackDays(150, 6, 3));
+  });
+
+  it("赚头足够好时区间收成一个数", () => {
+    expect(paybackRange(100, 100, 9.99)).toEqual([1, 1]);
+    expect(paybackWords(100, 100, 9.99)).toContain("约 1 天回本");
+  });
+
+  it("句子里一定带口径「按今天这碗算」", () => {
+    const words = paybackWords(150, 6, 4);
+    expect(words).toContain("按今天这碗算");
+    expect(/约 \d+–\d+ 天回本|约 \d+ 天回本/.test(words)).toBe(true);
+  });
+
+  it("白送的东西不说回本天数", () => {
+    expect(paybackWords(0, 6, 4)).toBe("不花钱，当天就见效");
+  });
+
+  it("卖不动（gain 为 0）时不说几天，改说看不清", () => {
+    expect(paybackRange(150, 0, 4)).toEqual([0, 0]);
+    expect(paybackWords(150, 0, 4)).toBe("看不清几天回本");
   });
 });

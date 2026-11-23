@@ -42,9 +42,9 @@ def main() -> None:
         btn.click()
         pg.wait_for_timeout(220)
         rows = pg.query_selector_all(".prefmodal .prefrow")
-        checks["five_rows"] = len(rows) == 5
+        checks["six_rows"] = len(rows) == 6
         names = [r.query_selector(".prefname").inner_text() for r in rows]
-        checks["names_cn"] = names == ["音乐", "音效", "音量", "高对比", "大字"]
+        checks["names_cn"] = names == ["音乐", "音效", "音量", "高对比", "大字", "恢复默认"]
         pg.screenshot(path=os.path.join(EVID, "01-settings-open.png"))
 
         # 2) 关音乐 → localStorage 立刻变
@@ -98,6 +98,17 @@ def main() -> None:
         pg.wait_for_timeout(600)
         cls2 = pg.evaluate("() => document.documentElement.className")
         checks["survives_reload"] = "prefs-contrast" in cls2
+
+        # 7b) 恢复默认：点一下回到「全开 + 音量中 + 高对比关」（P281）
+        pg.click("[data-prefs]")
+        pg.wait_for_timeout(200)
+        checks["reset_row_present"] = pg.query_selector('.prefmodal [data-pref="reset"]') is not None
+        pg.click('.prefmodal [data-pref="reset"]')
+        pg.wait_for_timeout(150)
+        checks["reset_back_to_mid"] = pg.inner_text('.prefmodal [data-pref="volume"]').strip() == "中"
+        checks["reset_music_on"] = pg.inner_text('.prefmodal [data-pref="music"]').strip() == "开"
+        checks["reset_contrast_off"] = "prefs-contrast" not in pg.evaluate("() => document.documentElement.className")
+        pg.click("[data-prefs-close]")
 
         # 8) 存档版本没被这一改动带跑
         pg.wait_for_timeout(200)

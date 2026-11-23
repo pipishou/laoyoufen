@@ -1,6 +1,6 @@
 import type { EventNarrative } from "../ai/director";
 import { playSfx } from "../audio/sfx";
-import { applyPrefs, loadPrefs, nextVolume, prefWords, savePrefs, togglePref, type Prefs } from "./prefs";
+import { applyPrefs, defaultPrefs, loadPrefs, nextVolume, prefWords, savePrefs, togglePref, type Prefs } from "./prefs";
 import { ARCHETYPE_BY_ID } from "../data/customers";
 import { EVENTS_BY_ID } from "../data/events";
 import { TOPPINGS } from "../data/ingredients";
@@ -431,7 +431,7 @@ let lastMarketKey = "";
     <div class="prefbox card">
       <div class="prefhd"><span class="dttl">设置</span><button type="button" class="mclose" data-prefs-close title="关闭">×</button></div>
       <div class="prefbody" data-prefs-body></div>
-      <div class="preffoot">改了立刻生效，存在这台机器上；换台设备要重新调。</div>
+      <div class="preffoot">改了立刻生效。这份设置只记在这台机器上，不进存档；换台设备、清了缓存就回到默认。</div>
     </div>`;
   root.appendChild(prefsWrap);
 
@@ -455,7 +455,10 @@ let lastMarketKey = "";
           <button type="button" class="prefval${cls}" data-pref="${r.key}">${text}</button>
         </div>`;
       })
-      .join("");
+      .join("") + `<div class="prefrow prefreset">
+          <div class="preftext"><div class="prefname">恢复默认</div><div class="prefhint">音乐音效全开、音量中、高对比与大字关</div></div>
+          <button type="button" class="prefval step" data-pref="reset">恢复</button>
+        </div>`;
   };
 
   const commitPrefs = (next: Prefs): void => {
@@ -482,6 +485,7 @@ let lastMarketKey = "";
     if (!btn) return;
     const key = String(btn.dataset.pref ?? "");
     if (key === "volume") commitPrefs(nextVolume(prefs, 1));
+    else if (key === "reset") commitPrefs(defaultPrefs());
     else if (key === "music" || key === "sfx" || key === "contrast" || key === "bigText") commitPrefs(togglePref(prefs, key));
   });
 
