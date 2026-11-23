@@ -135,7 +135,13 @@ export function todayHot(state: GameState): { gearId?: string; equipId?: string 
 /** 副句给 AI 的上下文：只给名词 */
 export function todayVoiceContext(line: TodayLine): Record<string, string> {
   return {
-    事: line.main.replace(/（.*?）/g, "").replace(/[¥0-9]/g, "").trim(),
+    // 服务端的 `CN_QUANTITY` 会把带数量词的句子整句丢掉（模型爱回抄上下文），
+    // 所以这里把「一位 / 几碗 / 两天」这类片段先剥掉，只留事情本身。
+    事: line.main
+      .replace(/（.*?）/g, "")
+      .replace(/[¥0-9]/g, "")
+      .replace(/[一二两三四五六七八九十百千万]+(?:几|多)?(?:位|碗|元|块|天|人|张|个|家|份|次|名|斤)/g, "")
+      .trim(),
     在: line.detail.includes("家当")
       ? "店里的家当"
       : line.detail.includes("设备")

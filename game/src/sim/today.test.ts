@@ -108,3 +108,15 @@ describe("今天那一条（批 F′，试玩 11-22-2109 第 5 条）", () => {
     }
   });
 });
+
+describe("pointer 上下文（批 F′ 补）：服务端会把带数量词的整句丢掉", () => {
+  it("座位紧时，「事」里不留「一位」「几碗」「两天」这类片段", () => {
+    const s = fresh();
+    s.venue.seats = 2;
+    const line = todayLine(s)!;
+    const ctx = todayVoiceContext(line);
+    const QTY = /[一二两三四五六七八九十百千万]+(?:几|多)?(?:位|碗|元|块|天|人|张|个|家|份|次|名|斤)/;
+    expect(ctx["事"]).not.toMatch(QTY);
+    expect(ctx["事"]).not.toMatch(/[0-9¥]/);
+  });
+});
