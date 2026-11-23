@@ -1,4 +1,4 @@
-import { audioContext, masterGain, unlockAudio } from "./engine";
+import { audioContext, isBgmOn, masterGain, unlockAudio } from "./engine";
 import { midiHz, noise, tone } from "./synth";
 
 /**
@@ -56,6 +56,7 @@ export function isBgmPlaying(): boolean {
 }
 
 export function startBgm(): void {
+  if (!isBgmOn()) return;
   unlockAudio();
   const ctx = audioContext();
   const master = masterGain();

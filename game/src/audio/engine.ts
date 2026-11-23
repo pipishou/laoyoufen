@@ -94,3 +94,37 @@ export function toggleMuted(): boolean {
 export function getVolume(): number {
   return settings.volume;
 }
+
+/**
+ * 批 G′：设置页要能调音量（开罗 `text.txt` 的「音量」一项）。
+ * 三档由界面决定（低/中/高），这里只吃 0–1。
+ */
+export function setVolume(volume: number): void {
+  settings = { ...settings, volume: Math.max(0, Math.min(1, volume)) };
+  persist();
+  applyGain();
+}
+
+/**
+ * 批 G′：音乐与音效分开开关 —— 开罗把「音乐」「音效」「音量」列成三项，
+ * 玩家常常只想关掉循环 BGM 而保留出碗音。开关放在总线上，
+ * `bgm.ts` 与 `sfx.ts` 各自先问一句，避免「关了还在排程」。
+ */
+let bgmOn = true;
+let sfxOn = true;
+
+export function isBgmOn(): boolean {
+  return bgmOn;
+}
+
+export function isSfxOn(): boolean {
+  return sfxOn;
+}
+
+export function setBgmOn(on: boolean): void {
+  bgmOn = on;
+}
+
+export function setSfxOn(on: boolean): void {
+  sfxOn = on;
+}

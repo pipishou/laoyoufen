@@ -1,4 +1,4 @@
-import { audioContext, masterGain, unlockAudio } from "./engine";
+import { audioContext, isSfxOn, masterGain, unlockAudio } from "./engine";
 import { noise, tone } from "./synth";
 
 /**
@@ -13,6 +13,7 @@ const MIN_GAP = 0.055;
 const lastAt: Partial<Record<SfxId, number>> = {};
 
 export function playSfx(id: SfxId): void {
+  if (!isSfxOn()) return;
   if (!audioContext()) unlockAudio();
   const ctx = audioContext();
   const out = masterGain();

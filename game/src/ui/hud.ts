@@ -1,4 +1,6 @@
 import type { EventNarrative } from "../ai/director";
+import { playSfx } from "../audio/sfx";
+import { applyPrefs, loadPrefs, nextVolume, prefWords, savePrefs, togglePref, type Prefs } from "./prefs";
 import { ARCHETYPE_BY_ID } from "../data/customers";
 import { EVENTS_BY_ID } from "../data/events";
 import { TOPPINGS } from "../data/ingredients";
@@ -140,6 +142,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     <div class="stat" title="顾客的酸 / 辣 / 浓 / 淡偏好，对上几维就记几维；偏好发现得越多，常客回访越勤"><span class="k">常客</span><span class="v" data-regs>0</span><span class="k">喜好</span><span class="v" data-likes>0/${LIKES_TOTAL}</span></div>
     <div class="stat"><span class="k">员工</span><span class="v" data-staffn>0</span></div>
     <div class="spacer"></div>
+    <button type="button" class="prefsbtn" data-prefs title="设置：音乐、音效、音量、高对比、大字">设置</button>
     <button type="button" class="audio" data-audio title="背景音乐与音效">音乐</button>
     <button type="button" class="pill prep" data-openpill title="营业时间 06:00–14:00，开门后才开始走时间">● 开门营业</button>
   </div>
@@ -265,6 +268,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     </div>`;
   root.appendChild(dayWrap);
 
+
   const dayRev = dayWrap.querySelector("[data-day-rev]") as HTMLElement;
   const dayServed = dayWrap.querySelector("[data-day-served]") as HTMLElement;
   const dayLost = dayWrap.querySelector("[data-day-lost]") as HTMLElement;
@@ -354,6 +358,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     cookbar: q("[data-cookbar]"),
     cooknow: q("[data-cooknow]"),
     audio: q<HTMLButtonElement>("[data-audio]"),
+    prefsbtn: q<HTMLButtonElement>("[data-prefs]"),
     clock: q("[data-clock]"),
     shopname: q("[data-shopname]"),
     openpill: q<HTMLButtonElement>("[data-openpill]"),
@@ -410,6 +415,74 @@ let lastMarketKey = "";
       const v = Number(btn.dataset.speed);
       if (Number.isFinite(v) && v > 0) opts.onSpeed?.(v);
     });
+  });
+
+
+  /**
+   * 设置弹窗（批 G′）：开罗把这五项放在标题菜单里，我们放在顶栏 ——
+   * 手机上标题菜单离手指远，而音量是随时想改的东西。
+   * 改动即存（`laoyou.prefs.v1`），不进存档，不占 `SAVE_VERSION`。
+   */
+  let prefs: Prefs = loadPrefs();
+  const prefsWrap = document.createElement("div");
+  prefsWrap.className = "modal prefmodal";
+  prefsWrap.hidden = true;
+  prefsWrap.innerHTML = `
+    <div class="prefbox card">
+      <div class="prefhd"><span class="dttl">设置</span><button type="button" class="mclose" data-prefs-close title="关闭">×</button></div>
+      <div class="prefbody" data-prefs-body></div>
+      <div class="preffoot">改了立刻生效，存在这台机器上；换台设备要重新调。</div>
+    </div>`;
+  root.appendChild(prefsWrap);
+
+  const prefsBody = prefsWrap.querySelector("[data-prefs-body]") as HTMLElement;
+
+  const renderPrefs = (): void => {
+    const rows: readonly { key: "music" | "sfx" | "contrast" | "bigText" | "volume"; name: string; hint: string }[] = [
+      { key: "music", name: "音乐", hint: "循环的那支曲子" },
+      { key: "sfx", name: "音效", hint: "出碗、进账、门口的短音" },
+      { key: "volume", name: "音量", hint: "低 / 中 / 高三档" },
+      { key: "contrast", name: "高对比", hint: "亮屏下分不清深浅时开" },
+      { key: "bigText", name: "大字", hint: "顶栏那几行数字放大" },
+    ];
+    const words = prefWords(prefs);
+    prefsBody.innerHTML = rows
+      .map((r, i) => {
+        const text = r.key === "volume" ? words[i]!.split(" ")[1]! : prefs[r.key] ? "开" : "关";
+        const cls = r.key === "volume" ? " step" : text === "关" ? " off" : "";
+        return `<div class="prefrow">
+          <div class="preftext"><div class="prefname">${r.name}</div><div class="prefhint">${r.hint}</div></div>
+          <button type="button" class="prefval${cls}" data-pref="${r.key}">${text}</button>
+        </div>`;
+      })
+      .join("");
+  };
+
+  const commitPrefs = (next: Prefs): void => {
+    prefs = next;
+    savePrefs(prefs);
+    applyPrefs(prefs);
+    renderPrefs();
+    playSfx("ui");
+  };
+
+  renderPrefs();
+
+  el.prefsbtn.addEventListener("click", () => {
+    prefsWrap.hidden = false;
+    renderPrefs();
+  });
+  prefsWrap.addEventListener("click", (ev) => {
+    const target = ev.target as HTMLElement;
+    if (target.closest("[data-prefs-close]") || target === prefsWrap) {
+      prefsWrap.hidden = true;
+      return;
+    }
+    const btn = target.closest("[data-pref]") as HTMLElement | null;
+    if (!btn) return;
+    const key = String(btn.dataset.pref ?? "");
+    if (key === "volume") commitPrefs(nextVolume(prefs, 1));
+    else if (key === "music" || key === "sfx" || key === "contrast" || key === "bigText") commitPrefs(togglePref(prefs, key));
   });
 
   el.audio.addEventListener("click", () => {

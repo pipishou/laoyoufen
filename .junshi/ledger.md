@@ -772,3 +772,19 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **缺口 P276** 预算 260 是估的（键空间 ≈170 + 落点 19 + 余量），长局仍可能顶到。
 - **缺口 P277** `pointer_voice` 上下文只有 `{事, 在}`，模型只能说人味，说不出「为什么卡这里」。
 - **文档**：`docs/今天那一条F′-2026-11-23.md`。
+
+### 行 106 · 2026-11-23 · 批 G′：设置页（开罗七项设置里我们真有的五项）
+
+- **依据**：`English.lproj__text.txt` 1173 行里，设置项只有七条 —— 画质（高中低）、性能（普通/高速）、音乐、音效、音量、画面旋转（自动/固定）、中断续玩。前三项本作没有对应物（固定 2D 像素画面、时间轴自算），中断续玩本来就常开。
+- **做了五项**：音乐开/关、音效开/关（原来一个按钮一起管，关了就全哑）、音量三档（`low 0.3 / mid 0.55 / high 0.85`）、高对比（换色板不动版式）、大字（只放大「一眼要看」的数字）。存 `localStorage` 的 `laoyou.prefs.v1`，**不进存档、不升 `SAVE_VERSION`（仍 36）**。
+- **新建 `game/src/ui/prefs.ts`**：`Prefs` 五字段、`normalizePrefs`（坏值退默认）、`loadPrefs`/`savePrefs`/`applyPrefs`、`togglePref`/`nextVolume`/`prefWords`/`prefsSummary`、`applyContrastPalette`。
+- **`game/src/audio/engine.ts`** 加 `setVolume` 与 `isBgmOn/setBgmOn`、`isSfxOn/setSfxOn`；`sfx.ts` 与 `bgm.ts` 各自先问一句（关了就不排程）。
+- **`game/src/ui/hud.ts`** 顶栏「设置」+ `.prefmodal` 五行；**`game/src/main.ts`** 开机在 `ensureAudio()` 之前 `applyPrefs(loadPrefs())`（上次关了音乐，这次开局不能响）。
+- **两个真坑**：① 根节点色板是**内联**写在 `documentElement.style` 上的（`render/stage.ts` 按缩放写），内联优先于任何样式表 → `html.prefs-contrast{--ink:#000}` 完全无效，改成同样写内联并保存/还原原值；② 顶栏 `#hud` 整体 `pointer-events:none`，`.prefsbtn` 不写 `pointer-events:auto` 就点不动；`.stat .v` 本来就是 15px，「大字」写 15px 等于没变 → 18px。
+- **验收**：`tsc` 0；`vitest` **73 文件 823 用例**；`copy_gate` ok；`eye_gate --slug settings` 723·778·585·1246·1507 色 stamp **157**；`ai_gate` ok；`tools/gate/settings_probe.py`（preview 4223）**15/15 true**。
+- **替身四种子**：¥89,238 / ¥103,403 / ¥98,538 / ¥92,209 → 均值 **¥95,847 · 198.5 碗 · 42.3% · 末期 ¥211,903**，与批 F′ 逐位一致。
+- **缺口 P278** 没有分路音量（音乐小、音效大）。
+- **缺口 P279** 高对比只换色，不换字号线宽，真需要的人还得再点「大字」。
+- **缺口 P280** 设置存本机不写存档，换浏览器回默认，界面没提示。
+- **缺口 P281** 没有「恢复默认」。
+- **文档**：`docs/设置页G′-2026-11-23.md`。

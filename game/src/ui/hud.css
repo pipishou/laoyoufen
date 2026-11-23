@@ -2429,3 +2429,32 @@ button.pill[disabled] {
 .pane .lrow.hotrow::before{content:"→ ";color:var(--red);font-weight:700}
 .pane .lrow.hotrow{background:color-mix(in srgb, var(--paper) 92%, var(--gold) 8%)}
 .pane .lmeta.tightline{font-size:10px;color:var(--wood)}
+
+/* ── 批 G′：设置（音乐 / 音效 / 音量 / 高对比 / 大字）─────────────
+   开罗把这几项放在标题菜单里；我们放顶栏，因为音量是随时想改的东西。 */
+.prefsbtn{font-family:inherit;padding:4px 8px 3px;font-size:11px;letter-spacing:1px;color:var(--ink);background:var(--paper2);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--shadow);cursor:pointer;pointer-events:auto}
+.prefsbtn:hover{background:var(--cream)}
+.prefmodal .prefbox{width:min(360px,92vw);background:var(--paper);border:2px solid var(--ink2)}
+.prefmodal .prefhd{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:2px solid var(--sand)}
+.prefmodal .prefbody{padding:6px 10px}
+.prefmodal .prefrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px dashed var(--sand)}
+.prefmodal .prefrow:last-child{border-bottom:0}
+.prefmodal .prefname{font-size:12px;color:var(--ink);font-weight:700}
+.prefmodal .prefhint{font-size:10px;color:var(--wood);margin-top:1px}
+.prefmodal .prefval{min-width:44px;padding:3px 8px;font-size:11px;color:var(--ink);background:var(--cream);border:1px solid var(--sand);border-radius:3px;cursor:pointer}
+.prefmodal .prefval.off{color:var(--wood);background:var(--paper2)}
+.prefmodal .prefval.step{background:var(--cream)}
+.prefmodal .preffoot{padding:6px 10px 10px;font-size:9px;color:var(--wood);line-height:1.5}
+
+/* 高对比：只换色板，不动版式（像素风的深浅两色在亮屏下最容易糊） */
+html.prefs-contrast{
+  --ink:#000000;--ink2:#241708;--wood:#463d2a;--sand:#6d5c43;--cream:#fffdf6;
+  --paper:#fffef9;--paper2:#f2e8d4;--red:#8c1f14;--orange:#a8501f;--green:#155c30;--gold:#7a5c08;--blue:#274a63;
+}
+
+/* 大字：只放大顶栏与浮层里那几个「一眼要看」的数字 */
+html.prefs-big #hud .stat .v{font-size:18px}
+html.prefs-big #hud .stat .k{font-size:12px}
+html.prefs-big #float .k{font-size:12px}
+html.prefs-big #float .v{font-size:17px}
+html.prefs-big #hud .clock{font-size:17px}

@@ -13,6 +13,7 @@ import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
 import { isMuted, toggleMuted, unlockAudio } from "./audio/engine";
+import { applyPrefs, loadPrefs } from "./ui/prefs";
 import { playSfx } from "./audio/sfx";
 import { EVENTS_BY_ID } from "./data/events";
 import { createGameConfig } from "./render/world";
@@ -732,6 +733,11 @@ function onToggleTopping(id: string): void {
  * 首次点击/按键时解锁并起 BGM；之后静音只影响主增益，不反复重建。
  */
 let audioReady = false;
+/**
+ * 批 G′：设置页存的音量/音乐开关要在**第一次出声之前**落到总线上，
+ * 否则「上次关了音乐」开局还是会响一声（`startBgm` 的守卫看的是引擎里的开关）。
+ */
+applyPrefs(loadPrefs());
 function ensureAudio(): void {
   if (audioReady) return;
   audioReady = true;
