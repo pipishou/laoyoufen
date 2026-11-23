@@ -72,6 +72,13 @@ export interface HookPlan {
   key: string;
   /** 高：今天已经吃亏了，明天必须先处理 */
   urgency: "high" | "normal";
+  /**
+   * 这一句指的是哪一件东西（批 F′）。
+   * 不是机制，只是让店铺页能说出「几天回本」和「在面板哪一行」——
+   * 开罗把「线砖、盆栽这类东西在哪一段」写进帮助里（`Construction (Other)`），
+   * 我们还没有帮助页，就把那句指路放在它该出现的地方。
+   */
+  ref?: { gearId?: string; equipId?: string; cost: number; gain: number };
 }
 
 interface LostSample {
@@ -132,6 +139,11 @@ interface CapPick {
   kind: CapKind;
   /** 设备件属于哪一段（三段并行之后，钩子要能说出「卡在炒锅还是汤锅」） */
   station?: StationId;
+  /** 家当件 / 设备件的 id（批 F′：指路与回本都靠它） */
+  gearId?: string;
+  equipId?: EquipId;
+  /** 买下这一件，一天能多接几位 */
+  gain: number;
 }
 
 /**
@@ -170,7 +182,7 @@ function equipGainOf(id: EquipId, gain: ReturnType<typeof capacityGain>): number
 /** 一件「真能把人接住」的东西：能加座的扩建，或设备里的出碗/上限件 */
 function capacityPick(state: GameState, preferSeat = false): CapPick | null {
   const gain = capacityGain(state);
-  const picks: (CapPick & { gain: number })[] = [];
+  const picks: CapPick[] = [];
 
   for (const eq of EQUIPMENT) {
     const lv = equipLevel(state, eq.id);
@@ -180,6 +192,7 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
         cost: equipNextCost(state, eq.id),
         kind: EQUIP_KIND[eq.id],
         station: stationOfEquip(eq.id),
+        equipId: eq.id,
         gain: equipGainOf(eq.id, gain),
       });
     }
@@ -194,6 +207,7 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
       what: g.name,
       cost: g.costYuan,
       kind: "seat",
+      gearId: g.id,
       gain: gain.seat(g.seats),
     });
   }
@@ -289,6 +303,7 @@ export function nextHook(state: GameState): HookPlan {
               ? "capacity:cap"
               : stationKeyOf(pick),
         urgency: "high",
+        ref: { gearId: pick.gearId, equipId: pick.equipId, cost: pick.cost, gain: pick.gain },
       };
     }
   }
@@ -324,6 +339,7 @@ export function nextHook(state: GameState): HookPlan {
       kind: "gear",
       key: `gear:${gear.def.id}`,
       urgency: "normal",
+      ref: { gearId: gear.def.id, cost: gear.def.costYuan, gain: 0 },
     };
   }
 

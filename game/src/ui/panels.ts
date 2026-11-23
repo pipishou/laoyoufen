@@ -29,6 +29,7 @@ import { dishNameOf, dishNameOfItem } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
 import { tierLine } from "../sim/tier";
+import { todayLine } from "../sim/today";
 import { noteSummary, noteViews } from "../sim/notebook";
 import { NOTE_GROUPS } from "../data/notebook";
 import { PACK_SETUP } from "../data/pack";
@@ -612,6 +613,20 @@ let lastGradeKey = "";
     const stageLine = STATION_ORDER.map(
       (k) => `${STATION_NAMES[k]} ${st[k].toFixed(1)} 分/${stationCount(s, k)}${k === "basket" ? " 筒" : " 口"}`,
     ).join(" · ");
+    /**
+     * 批 F′（试玩 11-22-2109 第 5 条）：这一页只留一条主提示。
+     * 主句照钩子，副句由 `sim/today.ts` 算回本与位置 —— 开罗把「这件东西在哪一段」
+     * 写进帮助（`Construction (Other)`），我们没有帮助页，就把它写在这一行里。
+     */
+    const today = todayLine(s);
+    const todayBox = today
+      ? `<div class="todaybox" data-todaybox>
+        <div class="tmain" data-todaybox-main>${today.main}</div>
+        <div class="tvoice" data-todaybox-voice></div>
+        ${today.detail ? `<div class="tdetail" data-todaybox-detail>${today.detail}</div>` : ""}
+      </div>`
+      : "";
+
     const equipRows = EQUIPMENT.map((e) => {
       const lv = equipLevel(s, e.id);
       const cost = equipNextCost(s, e.id);
@@ -625,7 +640,7 @@ let lastGradeKey = "";
               if (!k) return "";
               return `现在 ${stationCount(s, k)} ${k === "basket" ? "筒" : "口"} · ${st[k].toFixed(1)} 分`;
             })();
-      return `<div class="lrow">
+      return `<div class="lrow${today?.equipId === e.id ? " hotrow" : ""}">
         <div class="lname">${e.name}<span class="tag2">Lv ${lv}/4</span><span class="tag2">${next}</span></div>
         <div class="lmeta">${now}｜${e.desc}</div>
         <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? "已到顶档" : money(cost)}</button></div>
@@ -646,6 +661,7 @@ let lastGradeKey = "";
     hotPlan?.kind === "capacity" && (hotPlan.key === "capacity:stove" || hotPlan.key === "capacity:cap")
       ? " hot"
       : "";
+
 
     // 扩建：四档，按顺序买（data/expansion.ts），后两档挂段位门槛（开罗 rank）
     const nextExp = nextExpansion(s);
@@ -1081,7 +1097,7 @@ let lastGradeKey = "";
 
   const gearRows = gv
       .map(
-        (v) => `<div class="lrow${v.owned ? " locked" : ""}">
+        (v) => `<div class="lrow${v.owned ? " locked" : ""}${!v.owned && today?.gearId === v.def.id ? " hotrow" : ""}">
           <div class="lname">${v.def.name}<span class="tag2">${v.owned ? "已买" : money(v.def.costYuan)}</span>${
             !v.owned && GEAR_EFFICIENCY_IDS.has(v.def.id) ? '<span class="tag2 hot2">省事</span>' : ""
           }</div>
@@ -1146,14 +1162,14 @@ let lastGradeKey = "";
         <div class="lbtns"><button type="button" data-act="buy" data-id="${u.id}" ${maxed ? "disabled" : ""}>${maxed ? "已满级" : money(cost)}</button></div>
       </div>`;
     }).join("");
-    return `${gc.ready ? gradeSec : ""}<div class="sec">
+    return `${todayBox}${gc.ready ? "" : ""}<div class="sec">
         <div class="sechd${hotSeat}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
         ${expRow}
       </div>
       <div class="sec">
-        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗<span class="tag2 hot2">最慢：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分</span></div>
-        <div class="lmeta" data-tight>${tightLine}</div>
+        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗<span class="tag2">最慢：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分</span></div>
+        <div class="lmeta tightline" data-tight>${tightLine}</div>
         <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
@@ -1195,7 +1211,7 @@ ${layoutSec}${packSec}  ${retailSec}
         ${ups}
       </div>
       ${sidesSec}
-      ${gc.ready ? "" : gradeSec}
+      ${gradeSec}
       ${skillSec}
       ${craftSec}
       ${streetSec}

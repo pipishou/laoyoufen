@@ -6,6 +6,7 @@ import { FLAVOR_BY_ID } from "./data/flavor";
 import { dimById, tierWord, tierWords } from "./data/tier";
 import { tierById } from "./data/guest-tier";
 import { tierVoiceContext } from "./sim/guest-tier";
+import { todayLine, todayVoiceContext } from "./sim/today";
 import { appetiteLineOf, lossWhyOf, markAppetiteSaid, menuLineOf } from "./sim/advice";
 import { marketOf } from "./sim/market";
 import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
@@ -1041,6 +1042,7 @@ function refresh(): void {
   prefetchHookLine();
   // 解读层两行（批 C′）：为什么掉人、菜单上哪款不动
   prefetchDayLines();
+  speakToday();
   // 胃口这句跟着打烊走：一个月最多一次，白天不打扰
   if (state.dayReport) speakAppetite();
   scheduleSave();
@@ -1153,6 +1155,33 @@ function prefetchHookLine(): void {
  * 键用主因 / 菜名的组合，同一天同一件事只问一次。
  */
 let lastWhyKey = "";
+/**
+ * 批 F′（试玩 11-22-2109 第 5 条）：店铺页「今天」那一条后面跟一句街坊口气。
+ * 账是 `sim/today.ts` 算好的，模型只写人味，不许报价、不许算回本。
+ * 同一天同一件事只打一次；在线句回来原地替换 `[data-todaybox-voice]`，不整块 refresh。
+ */
+let lastTodayKey = "";
+function speakToday(): void {
+  const line = todayLine(state);
+  if (!line) return;
+  const ask = {
+    kind: "pointer_voice" as const,
+    key: line.key,
+    context: todayVoiceContext(line),
+    month: state.month,
+    day: state.day,
+  };
+  const id = `${ask.kind}:${ask.key}:${ask.month}:${ask.day}`;
+  if (id === lastTodayKey) return;
+  lastTodayKey = id;
+  void fetchLine(ask).then((got) => {
+    if (!got) return;
+    for (const node of Array.from(document.querySelectorAll<HTMLElement>("[data-todaybox-voice]"))) {
+      node.textContent = `街坊：「${got}」`;
+    }
+  });
+}
+
 function prefetchDayLines(): void {
   if (!state.dayReport) return;
   const why = lossWhyOf(state);

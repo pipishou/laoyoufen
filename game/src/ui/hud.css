@@ -2417,3 +2417,15 @@ button.pill[disabled] {
   content: "菜单 · ";
   color: var(--wood);
 }
+
+/* ── 批 F′：店铺页顶部「今天」那一条 ─────────────────────────────
+   试玩 11-22-2109 第 5 条：红标、最慢、评定三处一起抢眼，读者不知道该动哪件。
+   现在只留这一条（红边、12px），其余降成读数。 */
+.pane .todaybox{margin:0 0 8px;padding:6px 8px;border:1px solid var(--red);border-left:3px solid var(--red);background:color-mix(in srgb, var(--paper) 88%, var(--red) 6%)}
+.pane .todaybox .tmain{font-size:12px;font-weight:700;color:var(--ink);line-height:1.4}
+.pane .todaybox .tdetail{font-size:10px;color:var(--ink2);line-height:1.5;margin-top:2px}
+.pane .todaybox .tvoice{font-size:10px;color:var(--wood);line-height:1.45;margin-top:2px}
+.pane .todaybox .tvoice:empty{display:none}
+.pane .lrow.hotrow::before{content:"→ ";color:var(--red);font-weight:700}
+.pane .lrow.hotrow{background:color-mix(in srgb, var(--paper) 92%, var(--gold) 8%)}
+.pane .lmeta.tightline{font-size:10px;color:var(--wood)}

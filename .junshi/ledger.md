@@ -754,3 +754,21 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **缺口 P271** 报告第 5 条的视觉层级（红标、最慢、评定三行抢眼）整块没动，要单独一批重排店铺页。
 - **缺口 P272** 副行键空间 ×3，`LINE_BUDGET = 200` 余量变薄，预算判据未复核。
 - **文档**：`docs/为什么与副行E′-2026-11-23.md`。
+
+### 行 105 · 2026-11-23 · 批 F′：今天那一条（一处境一句话，指路指到第几行）
+
+- **依据**：`C:\Users\Mo\Desktop\老友粉试玩总结-2026-11-22-2109.md`（锁包 `index-CwZq0GNW.js` / saveVersion 36）。第 5 条说店铺页三处一起抢眼（「← 现在最缺」「最慢：炒锅 2.2 分」「可评定/交费评定」），玩家不知道该动哪件；第 4 条说副行「人多起来是好事，接不住就成了坏事。」三家四天一字不差。
+- **开罗对照**：`balloon.txt` 102 条按处境分的短口气池（一句一处境）；`help.txt` 的 `Shop Stats` 只指一件事（Staff / Equipment / Deco 三段进去看）；`Construction (Other)` 用「这东西属于哪一段」来指路，而不是加红标。
+- **新建 `game/src/sim/today.ts`**：`marginPerBowl` / `gearRowOf` / `equipRowOf` / `paybackDays` / `todayLine`（主句照钩子，副句算「一天多卖约 N 碗，约 M 天回本 · 在「家当」第 K 行」）/ `todayHot` / `todayVoiceContext`（只给名词）。
+- **`game/src/sim/hook.ts`**：`HookPlan.ref = { gearId?, equipId?, cost, gain }`，让「今天」能指到具体行。
+- **`game/src/ui/panels.ts`**：顶部 `.todaybox`（`data-todaybox-main/-detail/-voice`）；指到的行加 `.hotrow`（`→` 前缀）；「最慢：…」去红标；「卡在哪」降成 `.tightline` 小字；评定段不再插队到最上。
+- **`game/src/ui/hud.ts`**：左下角「一碗约 X 分」四态都带上（忙着时也看得到自己的速度）。
+- **`game/src/ai/lines.ts`**：`HOOK_VOICE` 九档 34 句 → **68 句**（一处境八句，`none` 四句）；`LINE_BUDGET` 200 → **260**；新增落点 19 `pointer_voice`。`server/app.py` 补 `pointer_voice` 场景；`tools/gate/audit_ai.py` 落点 21 → **22**。
+- **验收**：`tsc` 0；`vitest` **72 文件 816 用例**；`copy_gate` ok；`eye_gate --slug today` 727·765·584·1213·1505 色 stamp **156**；`ai_gate` ok；`tools/gate/today_probe.py`（preview 4222）**12/12 true**。
+- **替身四种子**：¥89,238 / ¥103,403 / ¥98,538 / ¥92,209 → 均值 **¥95,847 · 198.5 碗 · 42.3% · 末期 ¥211,903**，与批 E′ **逐位一致**（文案层不许偷偷改经济）。
+- **缺口 P273** 副句「一天多卖约 N 碗」用的是 `capacityGain` 估算不是实测，读起来像承诺。
+- **缺口 P274** 「第 K 行」按 `data/gear.ts` 顺序算，以后允许排序就全错。
+- **缺口 P275** `paybackDays` 用今天的毛利除，价一改回本天数就变，界面没说「按今天算」。
+- **缺口 P276** 预算 260 是估的（键空间 ≈170 + 落点 19 + 余量），长局仍可能顶到。
+- **缺口 P277** `pointer_voice` 上下文只有 `{事, 在}`，模型只能说人味，说不出「为什么卡这里」。
+- **文档**：`docs/今天那一条F′-2026-11-23.md`。

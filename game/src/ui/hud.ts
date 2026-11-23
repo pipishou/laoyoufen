@@ -760,13 +760,19 @@ const render = (s: GameState, score: RecipeScore): void => {
     });
     el.cookbar.style.width = cooking ? `${Math.round(progress * 100)}%` : "0%";
     const left = Math.max(1, Math.ceil(cool));
+    /**
+     * 批 F′（试玩 11-22-2109 备注）：左下角原先写死「一碗约 6.0 分钟」，
+     * 右侧座位行却随设备变。现在两处同源；而且忙着的时候也带上这个数 ——
+     * 开罗的 frenzy 槽一直挂在画面上，玩家随时看得到自己的火候。
+     */
+    const span = `一碗约 ${bowlSpan.toFixed(1)} 分`;
     el.cooknow.textContent = !cooking
-      ? `等客落座 · 一碗约 ${bowlSpan.toFixed(1)} 分钟`
+      ? `等客落座 · ${span}钟`
       : done
-        ? `盛装 · 撒葱花与酸料 · ${s.venue.stoves} 口灶`
+        ? `盛装 · 撒葱花与酸料 · ${s.venue.stoves} 口灶 · ${span}`
         : half
-          ? `合煮 · 高汤下锅 · 还要 ${left} 分钟`
-          : `炒料 + 煮粉 双锅并行 · 还要 ${left} 分钟`;
+          ? `合煮 · 高汤下锅 · 还要 ${left} 分钟 · ${span}`
+          : `炒料 + 煮粉 双锅并行 · 还要 ${left} 分钟 · ${span}`;
 
     const muted = opts.getAudioMuted?.() ?? false;
     el.audio.textContent = muted ? "静音" : "音乐";

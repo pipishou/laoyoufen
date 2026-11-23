@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "ok": true,
+    "checks": {
+      "box_present": true,
+      "main_has_words": true,
+      "detail_has_payback": true,
+      "detail_names_section": true,
+      "detail_has_row": true,
+      "hot_single": true,
+      "hot_is_seat_gear": true,
+      "slow_not_hot": true,
+      "save_version": true,
+      "changes_with_state": true,
+      "still_one_hot": true,
+      "console_clean": true
+    },
+    "errors": []
+  },
+  "base": {
+    "has_box": true,
+    "main": "先把「塑料矮凳」加上（¥150）",
+    "detail": "多坐一位，一天多卖约 15 碗，约 3 天回本 · 在「家当」第 2 行",
+    "voice": "",
+    "hot": [
+      "塑料矮凳¥150\n          搬进来\n "
+    ],
+    "slow_hot": 0,
+    "ver": 36
+  },
+  "after": {
+    "has_box": true,
+    "main": "先把「猛火灶（第 1 档）」加上（¥1,500）",
+    "detail": "今天卡在灶台出得慢：这一段 2.0 分一碗，约 27 天回本 · 在「设备」第 1 行（炒锅）",
+    "voice": "",
+    "hot": [
+      "猛火灶Lv 0/4炒锅开到 2 口\n      "
+    ],
+    "slow_hot": 0,
+    "ver": 36
+  }
+}

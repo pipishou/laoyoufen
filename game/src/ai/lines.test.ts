@@ -35,6 +35,7 @@ const KINDS = [
   "loss_explain",
   "menu_advice",
   "appetite_voice",
+  "pointer_voice",
 ] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {
@@ -193,7 +194,11 @@ describe("打烊单副行按用途分池", () => {
     day,
   });
 
-  it("九档合起来 34 句，且每句都过数字红线", () => {
+  /**
+   * 批 F′（开罗 `balloon.txt` 102 条按处境分的池子）：一处境八句起步。
+   * 原来九档共 34 句，同一条副行连说两天就被认出来了。
+   */
+  it("九档合起来 68 句，且每句都过数字红线", () => {
     const all = new Set<string>();
     for (const k of HOOK_KINDS) {
       for (let d = 1; d <= 30; d++) {
@@ -202,7 +207,13 @@ describe("打烊单副行按用途分池", () => {
         all.add(line);
       }
     }
-    expect(all.size).toBe(34);
+    expect(all.size).toBe(68);
+    // 每一档自己也不许少于八句（`none` 四句）—— 少了就退回「一句模板」
+    for (const k of HOOK_KINDS) {
+      const mine = new Set<string>();
+      for (let d = 1; d <= 40; d++) mine.add(localLine(withKind(k, d)));
+      expect(mine.size).toBeGreaterThanOrEqual(k === "none" ? 4 : 8);
+    }
   });
 
   it("加灶与街面两池没有交集", () => {
@@ -235,11 +246,11 @@ describe("打烊单副行按用途分池", () => {
   });
 });
 
-describe("在线预算（批 C′）：一局最多换 200 个不同的键", () => {
-  it("预算是 200，剩余就是 200 减已换到的条数", () => {
+describe("在线预算（批 C′ / F′）：一局最多换 260 个不同的键", () => {
+  it("预算是 260，剩余就是 260 减已换到的条数", () => {
     resetLines();
-    expect(LINE_BUDGET).toBe(200);
-    expect(lineBudgetLeft()).toBe(200);
+    expect(LINE_BUDGET).toBe(260);
+    expect(lineBudgetLeft()).toBe(260);
     expect(remoteLineCount()).toBe(0);
     expect(lineBudgetLeft()).toBe(LINE_BUDGET - remoteLineCount());
   });
