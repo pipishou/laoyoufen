@@ -25,7 +25,7 @@ import { ringDef, visibleRingOf } from "./data/map";
 import { takeOverShop } from "./sim/rivals";
 import { RIVAL_BY_ID } from "./data/rivals";
 import { buyStreet, nextRequest } from "./sim/streets";
-import { hookVoiceContext, nextHook } from "./sim/hook";
+import { hookVoiceContext, hookVoiceKeyFor, nextHook } from "./sim/hook";
 import { TROPHY_BY_ID } from "./data/trophies";
 import { checkTrophies, trophyVoiceContext } from "./sim/trophies";
 import { applyMaster as applyMasterImpl } from "./sim/master";
@@ -1124,12 +1124,14 @@ function prefetchHookLine(): void {
   if (!state.dayReport) return;
   const plan = nextHook(state);
   if (plan.kind === "none") return;
-  const id = `${plan.key}:${state.month}:${state.day}`;
+  // 键按天取模：同一个键在服务端缓存里永远是同一句，相邻两天要换说法（试玩 11-22-2109 第 4 条）
+  const voiceKey = hookVoiceKeyFor(plan, state.day);
+  const id = `${voiceKey}:${state.month}:${state.day}`;
   if (id === lastHookKey) return;
   lastHookKey = id;
   void fetchLine({
     kind: "hook_voice",
-    key: plan.key,
+    key: voiceKey,
     context: hookVoiceContext(plan),
     month: state.month,
     day: state.day,

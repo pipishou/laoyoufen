@@ -900,7 +900,10 @@ let lastGradeKey = "";
       .join("");
     const gv = gearViews(s);
     /** 试玩二轮 F7：产能吃紧、而能提产能的家当还没买齐 → 家当这一段也标红 */
-    const gearHot = hotPlan?.kind === "gear" && gearEfficiencyLeft(s).length > 0;
+    const gearHot =
+      (hotPlan?.kind === "gear" && gearEfficiencyLeft(s).length > 0) ||
+      // 卡座位时钩子点的是塑料矮凳/竹躺椅，那两件摆在「店里 · 家当」这一段
+      (hotPlan?.kind === "capacity" && hotPlan.key === "capacity:seat");
     /**
      * 袋装老友粉（A7）：一次买断的包装机 + 每天按口碑出的货。
      * 没买时只有一行按钮；买了显示「每天出 N 袋 · 约 ¥M/天」和风味还原度 ——

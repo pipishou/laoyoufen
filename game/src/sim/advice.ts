@@ -1,5 +1,5 @@
 import type { GameState } from "./state";
-import { lossSplitOf } from "./bottleneck";
+import { capacityOf, EAT_MINUTES, lossSplitOf } from "./bottleneck";
 import { activeDishes } from "./menu";
 import { districtAppetite } from "./district";
 import { dishNameOfItem } from "./dish";
@@ -30,21 +30,35 @@ export function lossWhyOf(state: GameState): ExplainLine | null {
   const split = lossSplitOf(state);
   if (split.dominant === "none" || split.total < 3) return null;
   const n = split[split.dominant];
+  // 日注已经说了「走了 N 位：M 位是门口站满」，这一行要给的是**为什么**：
+  // 几张桌、一碗占多久、一天最多接得住几碗（试玩 11-22-2109 第 4 条：三局四天
+  // 「为什么」都是同一句模板，和日注重复，读起来像系统说明）。
+  const cap = capacityOf(state);
+  const seats = Math.max(1, state.venue.seats);
+  const serve = Math.max(0.2, cap.serveNow);
   if (split.dominant === "queue") {
+    const perDay = Math.max(0, Math.round(cap.total));
     return {
-      text: `今天有 ${n} 位是门口站满了没进来 —— 灶和座总有一个先撑不住。`,
-      ask: { key: "queue", context: { 事: "门口站满了，有人没进来", 缘故: "灶与座先撑不住" } },
+      text: `今天 ${n} 位站在门口没进来：${seats} 张桌，一碗占 ${Math.round(EAT_MINUTES)} 分钟，一天最多接得住 ${perDay} 碗。`,
+      ask: {
+        key: `queue:${seats}:${perDay}`,
+        context: { 事: "门口站满了，有人没进来", 缘故: "桌子少，一碗又占得久" },
+      },
     };
   }
   if (split.dominant === "price") {
+    const cheap = Math.min(
+      ...activeDishes(state).map((d) => d.price).filter((p) => Number.isFinite(p)),
+      state.price,
+    );
     return {
-      text: `今天有 ${n} 位是看价牌掉头的 —— 不是味道的问题。`,
-      ask: { key: "price", context: { 事: "有人看了价牌就走了", 缘故: "价签挡在门口" } },
+      text: `今天 ${n} 位看了价牌就走：最便宜那款 ¥${cheap.toFixed(0)}，街坊掏钱时手会停一下。`,
+      ask: { key: `price:${cheap.toFixed(0)}`, context: { 事: "有人看了价牌就走了", 缘故: "价签挡在门口" } },
     };
   }
   return {
-    text: `今天有 ${n} 位是等不及走的 —— 出碗慢过人的耐性。`,
-    ask: { key: "wait", context: { 事: "有人没等到就走了", 缘故: "出碗慢过耐性" } },
+    text: `今天 ${n} 位等不及：一碗要 ${serve.toFixed(1)} 分钟，站着的人没那么多耐性。`,
+    ask: { key: `wait:${serve.toFixed(1)}`, context: { 事: "有人没等到就走了", 缘故: "出碗慢过耐性" } },
   };
 }
 

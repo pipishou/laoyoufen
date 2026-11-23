@@ -736,6 +736,8 @@ export function tickCustomers(state: GameState): void {
         // 出碗定死（A6）：师傅教过「数三十下就起」的那一款最快
         masterServeFactor(curDish) *
         flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
+      // HUD 左下的「一碗约 N 分钟」读这个数：写死常量会和右边 HUD 的 2.0/1.6/1.3 打架（试玩 11-22-2109 备注）
+      flow.serveInterval = flow.serveCooldown;
       // 攒下的分钟扣掉这一轮的间隔，余数留到下一分钟继续攒 ——
       // 0.8 分/碗 的一天是 150 批，1.0 分/碗 的一天是 120 批，差别终于是真的
       flow.serveBank = Math.max(0, flow.serveBank - flow.serveCooldown);

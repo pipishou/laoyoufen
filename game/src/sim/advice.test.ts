@@ -22,7 +22,9 @@ describe("解读层（批 C′）：打烊单上那两行", () => {
     const got = lossWhyOf(s)!;
     expect(got.text).toContain("7");
     expect(got.text).toContain("门口");
-    expect(got.ask.key).toBe("queue");
+    // 批 E′：这一行给的是「几张桌、一碗占多久、一天接得住几碗」
+    expect(got.text).toContain("张桌");
+    expect(got.ask.key.startsWith("queue")).toBe(true);
   });
 
   it("看价牌主因：说的是价签，不是味道", () => {
@@ -30,7 +32,7 @@ describe("解读层（批 C′）：打烊单上那两行", () => {
     s.flow.lostQueue = 2;
     s.flow.lostPrice = 9;
     const got = lossWhyOf(s)!;
-    expect(got.ask.key).toBe("price");
+    expect(got.ask.key.startsWith("price")).toBe(true);
     expect(got.text).toContain("9");
     expect(got.text).toContain("价牌");
   });
@@ -41,8 +43,9 @@ describe("解读层（批 C′）：打烊单上那两行", () => {
     s.flow.lostPrice = 0;
     s.flow.lostWait = 6;
     const got = lossWhyOf(s)!;
-    expect(got.ask.key).toBe("wait");
+    expect(got.ask.key.startsWith("wait")).toBe(true);
     expect(got.text).toContain("等不及");
+    expect(got.text).toContain("分钟");
   });
 
   it("走的人太少就闭嘴（少于三位不算一件事）", () => {

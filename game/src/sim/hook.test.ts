@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, type DayRecord, type GameState } from "./state";
 import { openForBusiness } from "./setup";
-import { CAPACITY_LOST_RATE, hookVoiceContext, lostRateOf, nextHook, nextHookOf } from "./hook";
+import {
+  CAPACITY_LOST_RATE,
+  hookVoiceContext,
+  hookVoiceKeyFor,
+  lostRateOf,
+  nextHook,
+  nextHookOf,
+} from "./hook";
 import { spawnScaleByDay } from "./customer";
 import { checkGrade } from "./grade";
 import { buyGear } from "./gear";
@@ -334,5 +341,37 @@ describe("时间前缀只在 CSS 里说一次（试玩二轮 F3）", () => {
     g.totalCustomers = 90;
     g.cash = 0;
     expect(nextHook(g).text).not.toContain("明天");
+  });
+});
+
+describe("副行不重样（批 E′，试玩 11-22-2109 第 4 条）", () => {
+  it("同一个钩子，相邻两天用不同的键", () => {
+    const s = fresh();
+    s.gradeLevel = 4;
+    s.capacity = 40;
+    s.venue.seats = 2;
+    s.flow.lostQueue = 30;
+    s.flow.lostPrice = 0;
+    s.flow.lostWait = 0;
+    s.flow.lostToday = 30;
+    const plan = nextHook(s);
+    if (plan.kind === "none") return;
+    const keys = [1, 2, 3, 4, 5, 6].map((d) => hookVoiceKeyFor(plan, d));
+    // 三天一循环：隔天不同，第四天回到第一份
+    expect(keys[0]).not.toBe(keys[1]);
+    expect(keys[1]).not.toBe(keys[2]);
+    expect(keys[3]).toBe(keys[0]);
+    expect(keys[4]).toBe(keys[1]);
+    // 键空间只放大三倍，不是每局都换新键
+    expect(new Set(keys).size).toBe(3);
+  });
+
+  it("没有钩子时键是 none（不占预算）", () => {
+    const s = fresh();
+    s.phase = "open";
+    const plan = nextHook(s);
+    if (plan.kind === "none") {
+      expect(hookVoiceKeyFor(plan, 3)).toBe("none");
+    }
   });
 });

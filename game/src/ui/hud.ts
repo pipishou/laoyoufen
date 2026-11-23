@@ -6,7 +6,7 @@ import { LIKES_TOTAL } from "../sim/collection";
 import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
 import { queueMaxOf } from "../sim/unlocks";
 import { favorOf } from "../sim/favor";
-import { hookVoiceContext, nextHook } from "../sim/hook";
+import { hookVoiceContext, hookVoiceKeyFor, nextHook } from "../sim/hook";
 import { tierBudgetPct } from "../sim/guest-tier";
 import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
@@ -466,7 +466,7 @@ function dayNoteOf(rep: DayRecord, margin: number): string {
     const w = rep.lostWait ?? 0;
     const top = p >= q && p >= w ? "price" : q >= w ? "queue" : "wait";
     if (top === "price") return `走了 ${rep.lost} 位：${p} 位是看价牌掉头的 —— 最便宜那款再低一块试试。`;
-    if (top === "queue") return `走了 ${rep.lost} 位：${q} 位是门口站满了没进来 —— 座位和出碗两头看一眼。`;
+    if (top === "queue") return `走了 ${rep.lost} 位：${q} 位是门口站满了没进来。`;
     return `走了 ${rep.lost} 位：${w} 位是等不及 —— 出碗慢的时候，人站着就烦。`;
   }
   return `今天站住了：一碗毛利约 ¥${margin.toFixed(1)}，明天试试多卖几碗。`;
@@ -530,7 +530,7 @@ const render = (s: GameState, score: RecipeScore): void => {
       // 副行只给口吻，数字全在上面那行（本地算的），AI 挂了就留本地句
       const voiceAsk = {
         kind: "hook_voice" as const,
-        key: plan.key,
+        key: hookVoiceKeyFor(plan, s.day),
         context: hookVoiceContext(plan),
         month: s.month,
         day: s.day,
@@ -742,7 +742,7 @@ const render = (s: GameState, score: RecipeScore): void => {
 
     // 工序：serveCooldown 从满值倒数，正好当一碗的进度条。
     // 前 55% 炒料与煮粉两口锅并行，55%–95% 合煮，95% 之后盛装出餐。
-    const bowlSpan = Math.max(1, SERVE_MINUTES * serveMultiplier(s));
+    const bowlSpan = Math.max(0.4, s.flow.serveInterval ?? SERVE_MINUTES * serveMultiplier(s));
     const cool = s.flow.serveCooldown;
     const cooking = cool > 0;
     const progress = cooking ? Math.min(1, Math.max(0, 1 - cool / bowlSpan)) : 0;

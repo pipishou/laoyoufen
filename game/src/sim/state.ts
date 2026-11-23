@@ -183,6 +183,8 @@ export interface CustomerFlow {
    * 可选字段，老档缺省按 0 起攒，不升 SAVE_VERSION。
    */
   serveBank?: number;
+  /** 当前这一轮的出碗间隔（分钟）：HUD 左下那行要跟它一致，别写死 6.0 */
+  serveInterval?: number;
 
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;

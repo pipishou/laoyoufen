@@ -353,6 +353,16 @@ export function nextHookOf(state: GameState): string {
   return nextHook(state).text;
 }
 
+/**
+ * 副行的键按天取模（试玩 11-22-2109 第 4 条）：阿兰第 2–3 天、老韦第 3 天、
+ * 小陆第 2–3 天都是「人多起来是好事，接不住就成了坏事。」—— 同一个键在服务端
+ * 缓存里永远是同一句。取模三份，相邻两天就不会一字不差，键空间仍然只有 3 倍。
+ */
+export function hookVoiceKeyFor(plan: HookPlan, day: number): string {
+  if (plan.kind === "none") return "none";
+  return `${plan.key}#d${((Math.max(1, day) - 1) % 3) + 1}`;
+}
+
 /** 给 AI 那条口吻用的键（种类 + 名词，不含数字） */
 export function hookVoiceKey(plan: HookPlan): string {
   return plan.kind === "none" ? "none" : plan.key;
