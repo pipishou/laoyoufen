@@ -2447,10 +2447,6 @@ button.pill[disabled] {
 .prefmodal .preffoot{padding:6px 10px 10px;font-size:9px;color:var(--wood);line-height:1.5}
 
 /* 高对比：只换色板，不动版式（像素风的深浅两色在亮屏下最容易糊） */
-html.prefs-contrast{
-  --ink:#000000;--ink2:#241708;--wood:#463d2a;--sand:#6d5c43;--cream:#fffdf6;
-  --paper:#fffef9;--paper2:#f2e8d4;--red:#8c1f14;--orange:#a8501f;--green:#155c30;--gold:#7a5c08;--blue:#274a63;
-}
 
 /* 大字：只放大顶栏与浮层里那几个「一眼要看」的数字 */
 html.prefs-big #hud .stat .v{font-size:18px}
