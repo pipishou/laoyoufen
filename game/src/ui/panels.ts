@@ -49,7 +49,7 @@ import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from 
 import { comboSummary, comboViews } from "../sim/combo";
 import { GEAR_BY_ID, GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
-import { CAPACITY_LOST_RATE, lostRateOf, nextHook } from "../sim/hook";
+import { nextHook } from "../sim/hook";
 import { favorSummary, favorViews } from "../sim/favor";
 import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
 import { DIMS, TIER_WORDS, tierWord } from "../data/tier";
@@ -655,7 +655,10 @@ let lastGradeKey = "";
    * 「← 现在最缺」既指着打通隔墙又指着猛火灶，玩家反而不知道该买哪件。
    * 钩子每天只说一件事，红标也只说这一件。
    */
-  const hotPlan = lostRateOf(s) >= CAPACITY_LOST_RATE ? nextHook(s) : null;
+  // 红标与打烊单的钩子必须是**同一句**（试玩 11-24 第 2 / 5 条：买完矮凳后红标移到竹躺椅，
+  // 打烊钩子却改去评「摆摊仔」，两处各说一件）。旧版这里多一道 `lostRateOf >= 阈值` 的闸，
+  // 而钩子那边用的是打烊样本的阈值 —— 两个口径一错开就分叉。现在两边都只问 `nextHook`。
+  const hotPlan = nextHook(s);
   const hotSeat = hotPlan?.kind === "capacity" && hotPlan.key === "capacity:seat" ? " hot" : "";
   const hotEquip =
     hotPlan?.kind === "capacity" && (hotPlan.key === "capacity:stove" || hotPlan.key === "capacity:cap")

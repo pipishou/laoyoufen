@@ -9,7 +9,8 @@ import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
 import { takeOverShop } from "./rivals";
 import { buyStreet, streetViews } from "./streets";
-import { buyGear, nextGear } from "./gear";
+import { buyGear, hasGear, nextGear } from "./gear";
+import { GEARS } from "../data/gear";
 import { RIVAL_BY_ID } from "../data/rivals";
 import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
@@ -277,6 +278,17 @@ spendFavor(s);
       // 先买设备再扩建：一个灶/一档粉篓 ¥1,500 起，比 ¥12,000 的扩建便宜一个数量级，
       // 而且直接改「每轮几碗」。旧版替身从不买设备，于是所有「产能不够」的结论
       // 都被记到了扩建头上（P36）。
+      // 先看加座：试玩 11-24 证明「只加灶走失不掉、加一张矮凳（¥150）就掉到 25–33%」。
+      // 替身原来照设备单子买，从来不买矮凳，于是 D′ 修好的「出碗变快」换不来碗数（P285）。
+      if (lostRate > 0.4) {
+        const seatGear = GEARS.filter((g) => (g.seats ?? 0) > 0 && !hasGear(s, g.id)).sort(
+          (x, y) => x.costYuan - y.costYuan,
+        )[0];
+        if (seatGear && s.cash >= seatGear.costYuan + 4_000 && buyGear(s, seatGear.id).ok) {
+          gears += 1;
+        }
+      }
+
       if (lostRate > 0.4) {
         for (const id of ["stove", "strainer", "bench"] as const) {
           const cost = equipNextCost(s, id);

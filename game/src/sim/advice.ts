@@ -38,8 +38,14 @@ export function lossWhyOf(state: GameState): ExplainLine | null {
   const serve = Math.max(0.2, cap.serveNow);
   if (split.dominant === "queue") {
     const perDay = Math.max(0, Math.round(cap.total));
+    // 模型给的「一天最多」常低于今天真卖出的数量（模型按均值算吃一碗）。
+    // 不能让它说出比事实更小的数 —— 那会让玩家立刻不信这一句。
+    const servedNow = Math.max(0, Math.round(state.dayReport?.served ?? 0));
     return {
-      text: `今天 ${n} 位站在门口没进来：${seats} 张桌，一碗占 ${Math.round(EAT_MINUTES)} 分钟，一天最多接得住 ${perDay} 碗。`,
+      text:
+        servedNow >= perDay
+          ? `今天 ${n} 位站在门口没进来。就 ${seats} 张桌，一碗要吃上 ${Math.round(EAT_MINUTES)} 分钟——今天出了 ${servedNow} 碗，已经顶到边了。`
+          : `今天 ${n} 位站在门口没进来。就 ${seats} 张桌，一碗要吃上 ${Math.round(EAT_MINUTES)} 分钟，一天撑死也就 ${perDay} 碗。`,
       ask: {
         key: `queue:${seats}:${perDay}`,
         context: { 事: "门口站满了，有人没进来", 缘故: "桌子少，一碗又占得久" },
@@ -52,12 +58,12 @@ export function lossWhyOf(state: GameState): ExplainLine | null {
       state.price,
     );
     return {
-      text: `今天 ${n} 位看了价牌就走：最便宜那款 ¥${cheap.toFixed(0)}，街坊掏钱时手会停一下。`,
+      text: `今天 ${n} 位看了价牌就走。最便宜那款要 ¥${cheap.toFixed(0)}，街坊掏钱手是要停一下的。`,
       ask: { key: `price:${cheap.toFixed(0)}`, context: { 事: "有人看了价牌就走了", 缘故: "价签挡在门口" } },
     };
   }
   return {
-    text: `今天 ${n} 位等不及：一碗要 ${serve.toFixed(1)} 分钟，站着的人没那么多耐性。`,
+    text: `今天 ${n} 位等不及走了。一碗要 ${serve.toFixed(1)} 分钟，站着的人哪有那么好性子。`,
     ask: { key: `wait:${serve.toFixed(1)}`, context: { 事: "有人没等到就走了", 缘故: "出碗慢过耐性" } },
   };
 }

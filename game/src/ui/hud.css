@@ -2456,3 +2456,9 @@ html.prefs-big #float .v{font-size:17px}
 html.prefs-big #hud .clock{font-size:17px}
 
 .pane .prefrow.prefreset{margin-top:6px;border-top:1px dashed var(--sand);padding-top:6px}
+
+/* 试玩 11-24 第 1 条：打烊单弹出时，toast（z-index 80）正好压在「明天继续」旁边那几行上，
+   第一眼要等 toast 褪去（约 8 秒）才读得到钩子。打烊单是这一刻唯一该读的东西，抬到 toast 之上。 */
+.modal.dayreport{z-index:90}
+/* 反过来，打烊单开着时把 toast 往上挪，免得挡住「明天继续」这个按钮 */
+.dayreport:not([hidden]) ~ #toasts{bottom:auto;top:16px}
