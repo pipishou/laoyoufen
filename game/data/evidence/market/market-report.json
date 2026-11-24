@@ -1,37 +1,21 @@
 {
-  "ok": true,
+  "url": "http://localhost:4232/",
   "checks": {
-    "row_present": true,
-    "shown_on_market_day": true,
-    "text_has_name": true,
-    "text_has_numbers": true,
-    "title_has_when": true,
-    "hidden_on_plain_day": true,
-    "switches_with_day": true,
+    "goods_rows_10": true,
+    "bucket_row_present": true,
+    "bucket_why_mentions_stop": true,
+    "bucket_has_source": true,
+    "bucket_costs_favor": true,
+    "bucket_dated_today": true,
+    "market_line_pair": true,
+    "pair_words_no_digits": true,
     "save_version": true,
     "console_clean": true
   },
-  "errors": [],
-  "days": {
-    "first": [
-      1,
-      3,
-      "marketRush"
-    ],
-    "other": [
-      1,
-      7,
-      "porkUp"
-    ],
-    "plain": [
-      1,
-      1
-    ]
-  },
-  "texts": {
-    "on": "赶圩日 · 进店 +28% · 耐心 −14% · 客单价 −4%",
-    "off": "",
-    "other": "猪肉起价 · 客单价 −2% · 料钱 +14%",
-    "title": "逢圩的日子，早市那条街挤不进人｜天没亮就有人在巷口排队，赶完圩才想起吃粉。"
-  }
+  "pairText": "气价上调 · 耐心 −4% · 料钱 +10%（好在今天还赶圩日）",
+  "pairDay": [
+    1,
+    22
+  ],
+  "errors": []
 }

@@ -1058,6 +1058,7 @@ let lastGradeKey = "";
     stool_row: "shop",
     chalkboard: "chalk",
     helper: "staff",
+  water_bucket: "cup",
   };
   const goodsSec = `
   <div class="sec">
@@ -1095,11 +1096,11 @@ let lastGradeKey = "";
             : `<span class="gc" style="grid-column:${c.x + 1};grid-row:${c.y + 1}"></span>`,
       )
       .join("")}</div>
-    <div class="sechint">成套 · ${slotSetSummary(s)}（配齐一类，才真的多坐一位、多几个人看见）</div>
+    <div class="sechint">成套 · ${slotSetSummary(s)}（配齐一类，坐着更松、门口更显眼；多坐一个人还是得另买凳子）</div>
     ${slotSets
       .map(
         (v) =>
-          `<div class="lrow${v.done ? "" : " locked"}"><div class="lname">${v.def.name}<span class="tag2">${v.done ? "已凑齐" : v.progress}</span></div><div class="lmeta">${slotSetWords(v)}｜${v.def.line}</div></div>`,
+          `<div class="lrow${v.done ? " setdone" : " locked"}"><div class="lname">${v.def.name}<span class="tag2">${v.done ? "已凑齐" : v.progress}</span></div><div class="lmeta">${slotSetWords(v)}｜${v.def.line}</div></div>`,
       )
       .join("")}
   </div>`;

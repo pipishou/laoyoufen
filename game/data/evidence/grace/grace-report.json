@@ -1,0 +1,18 @@
+{
+  "url": "http://localhost:4232/",
+  "at": "2026-11-24 18:54:37",
+  "checks": {
+    "save_version": true,
+    "pressure_marked": true,
+    "pressure_title_text": true,
+    "plain_unmarked": true,
+    "mark_follows_event": true,
+    "no_pressure_yet": true,
+    "console_clean": true
+  },
+  "notes": {
+    "save_version": "37",
+    "pressure_marked": "隔壁开螺蛳粉",
+    "pressure_title_text": "隔壁开螺蛳粉"
+  }
+}

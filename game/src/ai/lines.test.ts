@@ -262,17 +262,17 @@ describe("分项配额（批 O′，解 P243）", () => {
     expect(kindUsed("perk_voice")).toBe(0);
   });
 
-  it("预算从两百六提到三百二（新增三个落点）", () => {
-    expect(LINE_BUDGET).toBe(320);
-    expect(lineBudgetLeft()).toBe(320);
+  it("预算从两百六提到三百三（新增三个落点）", () => {
+    expect(LINE_BUDGET).toBe(340);
+    expect(lineBudgetLeft()).toBe(340);
   });
 });
 
-describe("在线预算（批 C′ / F′ / O′）：一局最多换三百二十个不同的键", () => {
-  it("预算是三百二，剩余就是三百二减已换到的条数", () => {
+describe("在线预算（批 C′ / F′ / O′）：一局最多换三百四十个不同的键", () => {
+  it("预算是三百三，剩余就是三百三减已换到的条数", () => {
     resetLines();
-    expect(LINE_BUDGET).toBe(320);
-    expect(lineBudgetLeft()).toBe(320);
+    expect(LINE_BUDGET).toBe(340);
+    expect(lineBudgetLeft()).toBe(340);
     expect(remoteLineCount()).toBe(0);
     expect(lineBudgetLeft()).toBe(LINE_BUDGET - remoteLineCount());
   });

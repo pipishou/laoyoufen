@@ -16,6 +16,19 @@ import { GOODS, GOOD_BY_ID, type GoodDef } from "../data/goods";
 import { favorOf } from "./favor";
 import type { GameState } from "./state";
 
+/**
+ * 今天买的那几件里，有没有一件是专门治这条行情的（批 B″）。
+ *
+ * 读的是 `state.goods` 的日戳，所以它天然「只管当天」。
+ */
+export function goodFixesApplied(state: GameState, marketId: string): boolean {
+  for (const def of GOODS) {
+    if (def.fixes !== marketId) continue;
+    if (goodToday(state, def.id)) return true;
+  }
+  return false;
+}
+
 /** 今天的日戳（与 treatDay 同构：month * 100 + day） */
 export function todayStamp(state: GameState): number {
   return state.month * 100 + state.day;

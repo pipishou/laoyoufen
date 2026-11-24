@@ -30,6 +30,7 @@ import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearSe
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
 import { investAttractMult } from "./invest";
 import { goodsAttractMult, goodsPatienceMult } from "./goods";
+import { slotPatienceMult } from "./slots";
 import { slotAttractMult } from "./slots";
 import { priceWarMult } from "./price-war";
 import { localCostFactor, localPatienceMult, localSideCostFactor } from "./local";
@@ -386,6 +387,8 @@ function arriveOne(state: GameState): void {
     localPatienceMult(state) *
     // 杂货铺（批 B′）：借来的三台电扇，等的人不急着走
     goodsPatienceMult(state) *
+    // 成套（批 P′）：桌子摆开了，坐着的人不挤，等的人也不催
+    slotPatienceMult(state) *
     FLOW.patienceScale;
   flow.customers.push({
     id: flow.nextId++,

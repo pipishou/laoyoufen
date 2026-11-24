@@ -21,9 +21,9 @@ const newState = () => {
 };
 
 describe("杂货铺：花人情买一天的方便", () => {
-  it("九件（批 J′），id 不重复，各有 name / what / line / why / kairo", () => {
-    expect(GOOD_TOTAL).toBe(9);
-    expect(new Set(GOODS.map((d) => d.id)).size).toBe(9);
+  it("十件（批 J′ 九件 + 批 B″ 借两桶水），id 不重复，各有 name / what / line / why / kairo", () => {
+    expect(GOOD_TOTAL).toBe(10);
+    expect(new Set(GOODS.map((d) => d.id)).size).toBe(10);
     for (const d of GOODS) {
       expect(d.name.length).toBeGreaterThan(2);
       expect(d.what.length).toBeGreaterThan(6);

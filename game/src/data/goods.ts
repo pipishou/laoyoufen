@@ -25,7 +25,10 @@ export type GoodId =
   | "lamp"
   | "stool_row"
   | "chalkboard"
-  | "helper";
+  | "helper"
+  | "water_bucket";
+
+import type { MarketId } from "./market";
 
 export interface GoodSource {
   label: string;
@@ -47,6 +50,13 @@ export interface GoodDef {
   sideMult?: number;
   /** 当天进店率 +N（门口多亮一盏灯那种） */
   attractPct?: number;
+  /**
+   * 这一天专门治哪条行情（批 B″，解 P320）。
+   *
+   * 只有「借两桶水」用它：停水那条的进店惩罚从 −16% 收回到 −6%。
+   * 别的杂货都不填 —— 有出处才治，没出处不乱造。
+   */
+  fixes?: MarketId;
   line: string;
   why: string;
   kairo: string;
@@ -234,6 +244,23 @@ export const GOODS: readonly GoodDef[] = [
         url: "http://sub.gxnews.com.cn/staticpages/20200325/newgx5e7ac2ff-19389663.shtml",
         quote:
           "该基地将“传帮带”一批技术过硬的煮粉师傅，解决老友粉的传承问题。",
+      },
+    ],
+  },
+  {
+    id: "water_bucket",
+    name: "借两桶水",
+    what: "停水那天跟隔壁粉店、楼上住户各借两桶，碗就洗得过来",
+    favorCost: 4,
+    fixes: "waterCut",
+    line: "两桶水提回来，先烫碗，再留着擦桌子。",
+    why: "停水最先垮的是洗碗；报道里那条街一停水，楼下餐饮店的生意就跟着受影响——能借到水，就还能开火。",
+    kairo: "itemdata / 道具店：临时补一个当天的消耗品",
+    source: [
+      {
+        label: "手机广西网《突发停水 居民商家受影响》",
+        url: "https://v.gxnews.com.cn/a/20244703",
+        quote: "因为停水，楼下餐饮店的生意也受到了影响",
       },
     ],
   },

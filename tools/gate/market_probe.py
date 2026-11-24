@@ -1,190 +1,146 @@
-"""批次三（南宁行情）的探针：HUD 上说清的「今天街上」，是不是真的跟着日子换。
+# -*- coding: utf-8 -*-
+"""批 B″ 探针：坏行情配上好事、「借两桶水」治停水、杂货铺十件。
 
-六件事：
-1. 浮层里有 `[data-market]` 这一行；
-2. 换到一个有行情的日子：行显示出来，写着行情名与四个数（进店 / 耐心 / 客单价 / 料钱）；
-3. `title` 里写着「什么时候」的原话；
-4. 换到没有行情的日子：这一行收起来，一个字都不留；
-5. 换到另一条行情：字跟着变（不是写死一次）；
-6. 存档版本仍 31、控制台干净。
-
-用法：先在 4207 起 preview，再 `python tools/gate/market_probe.py`。
+preview: npx vite preview --port 4231   →   PW_URL=http://localhost:4231/
 """
-
-from __future__ import annotations
-
 import json
 import os
 
 from playwright.sync_api import sync_playwright
 
-URL = "http://127.0.0.1:4207/"
-OUT = "game/data/evidence/market"
+URL = os.environ.get("PW_URL", "http://localhost:4231/")
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+EVID = os.path.join(ROOT, "game", "data", "evidence", "market")
+os.makedirs(EVID, exist_ok=True)
 
-# 与 game/src/data/market.ts 的 SEASON / MARKET_CHANCE 对齐（python 这边只是挑日子用）
-SEASON = {
-    "huiNanTian": [2, 3],
-    "storm": [7, 8, 9],
-    "heat": [6, 7, 8],
-    "coldSnap": [12, 1, 2],
-    "marketRush": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    "inspection": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    "porkUp": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    "schoolOpen": [3, 9],
-}
-ORDER = list(SEASON.keys())
-CHANCE = 0.34
-
-
-def hash_string(s: str) -> int:
-    """FNV-1a 32 位，与 game/src/sim/rng.ts 的 hashString 一致"""
-    h = 2166136261
-    for ch in s:
-        h ^= ord(ch)
-        h = (h * 16777619) & 0xFFFFFFFF
-    return h
-
-
-def roll(player_id: str, month: int, day: int, salt: str) -> float:
-    return hash_string(f"{player_id}:market:{month}:{day}:{salt}") / 4294967296
-
-
-def market_at(player_id: str, month: int, day: int) -> str | None:
-    """按 sim/market.ts 的 todayMarket 复算今天是不是行情、是哪一条"""
-    if roll(player_id, month, day, "has") > CHANCE:
-        return None
-    pool = [m for m in ORDER if month in SEASON[m]]
-    if not pool:
-        return None
-    idx = int(roll(player_id, month, day, "pick") * len(pool)) % len(pool)
-    return pool[idx]
-
-
-def find_days(player_id: str) -> tuple[tuple[int, int, str], tuple[int, int, str], tuple[int, int]]:
-    """找三天：一条指定行情 / 另一条不同行情 / 一个没有行情"""
-    first: tuple[int, int, str] | None = None
-    other: tuple[int, int, str] | None = None
-    plain: tuple[int, int] | None = None
-    for month in range(1, 13):
-        for day in range(1, 29):
-            got = market_at(player_id, month, day)
-            if got is None:
-                if plain is None:
-                    plain = (month, day)
-                continue
-            if first is None:
-                first = (month, day, got)
-            elif other is None and got != first[2]:
-                other = (month, day, got)
-        if first and other and plain:
-            break
-    if not (first and plain):
-        raise SystemExit("找不到合适的日子：换一个 playerId 再试")
-    return first, other or first, plain
-
-
-READ = """() => {
-  const row = document.querySelector("[data-market]");
-  return {
-    exists: !!row,
-    text: row ? (row.textContent || "") : "",
-    cls: row ? (row.className || "") : "",
-    title: row ? (row.getAttribute("title") || "") : "",
-    version: (window.__laoyou && window.__laoyou.state && window.__laoyou.state.saveVersion) || 0,
-    player: (window.__laoyou && window.__laoyou.state && window.__laoyou.state.playerId) || "",
-  };
-}"""
-
-SET_DAY = """([month, day]) => {
-  const s = window.__laoyou.state;
-  s.month = month;
-  s.day = day;
-  window.__laoyou.refresh();
-  return true;
-}"""
-
-
-def kill_modals(page) -> None:
-    """打烊单 / 事件 / 引导会拦住下面的操作；面板本身也是 `.modal`，靠 `[data-tab2]` 认出来别删"""
-    page.evaluate(
-        "() => { document.querySelectorAll('.modal').forEach((m) => {"
-        " if (!m.querySelector('[data-tab2]')) m.remove(); }); }"
-    )
+checks = {}
+errors = []
 
 
 def main() -> int:
-    os.makedirs(OUT, exist_ok=True)
-    checks: dict[str, bool] = {}
-    errors: list[str] = []
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
-        page = browser.new_page(viewport={"width": 1440, "height": 900})
-        page.on("pageerror", lambda e: errors.append(str(e)))
-        page.goto(URL, wait_until="networkidle")
-        page.evaluate("() => { localStorage.clear(); location.reload(); }")
-        page.wait_for_timeout(1200)
-        page.click('.sitecard[data-site="alley"]')
-        page.click("[data-chips] .chip")
-        page.click("[data-open]")
-        page.wait_for_timeout(600)
-        try:
-            page.locator(".gbtn.ghost").click(timeout=1200)
-        except Exception:
-            pass
-        page.wait_for_timeout(400)
-        kill_modals(page)
+        b = pw.chromium.launch()
+        pg = b.new_page(viewport={"width": 1440, "height": 900})
+        pg.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+        pg.on("pageerror", lambda e: errors.append(str(e)))
+        pg.goto(URL, wait_until="load")
+        pg.wait_for_timeout(700)
 
-        base = page.evaluate(READ)
-        player = base["player"] or "p1"
-        checks["row_present"] = base["exists"]
-        first, other, plain = find_days(player)
+        pg.click('.sitecard[data-site="alley"]')
+        pg.wait_for_timeout(200)
+        pg.click("[data-chips] .chip")
+        pg.wait_for_timeout(150)
+        pg.click("[data-open]")
+        pg.wait_for_timeout(600)
+        if pg.query_selector(".gbtn.ghost"):
+            pg.click(".gbtn.ghost")
+            pg.wait_for_timeout(600)
 
-        # 1) 有行情的日子
-        page.evaluate(SET_DAY, [first[0], first[1]])
-        page.wait_for_timeout(400)
-        on = page.evaluate(READ)
-        checks["shown_on_market_day"] = "on" in on["cls"].split() and bool(on["text"].strip())
-        checks["text_has_name"] = "·" in on["text"] and any(
-            name in on["text"] for name in ("回南天", "台风", "高温", "寒潮", "赶圩", "创城", "猪肉", "开学")
+        # 人情给够，开店铺页
+        pg.evaluate(
+            """() => {
+              const s = window.__laoyou.state;
+              s.favor = 60;
+              s.cash = 60_000;
+              window.__laoyou.refresh();
+            }"""
         )
-        checks["text_has_numbers"] = any(k in on["text"] for k in ("进店", "耐心", "客单价", "料钱")) and (
-            "%" in on["text"]
+        pg.wait_for_timeout(200)
+        pg.evaluate("() => document.querySelector('[data-tab=\"recipe\"]')?.click()")
+        pg.wait_for_timeout(300)
+        pg.evaluate("() => document.querySelector('[data-tab2=\"shop\"]')?.click()")
+        pg.wait_for_timeout(500)
+
+        goods = pg.evaluate(
+            """() => {
+              const secs = Array.from(document.querySelectorAll('.pane .sec'));
+              const sec = secs.find((x) => (x.querySelector('.sechd') || {}).textContent?.includes('杂货铺'));
+              const rows = sec ? Array.from(sec.querySelectorAll('.lrow')) : [];
+              const bucket = rows.find((r) => r.textContent.includes('借两桶水')) || null;
+              return {
+                rows: rows.length,
+                names: rows.map((r) => (r.querySelector('.lname') || {}).textContent || ''),
+                bucket: bucket ? bucket.textContent.trim() : '',
+                bucketTitle: bucket ? Array.from(bucket.querySelectorAll('.lmeta')).map((n) => n.getAttribute('title') || '').join(' ') : '',
+                favor: window.__laoyou.state.favor,
+              };
+            }"""
         )
-        checks["title_has_when"] = len(on["title"]) > 4
-        page.screenshot(path=f"{OUT}/01-market-on.png")
+        checks["goods_rows_10"] = goods["rows"] == 10
+        checks["bucket_row_present"] = "借两桶水" in (goods["names"] or [])
+        checks["bucket_why_mentions_stop"] = "停水" in goods["bucket"]
+        checks["bucket_has_source"] = "gxnews" in goods["bucketTitle"]
 
-        # 2) 没有行情的日子：这一行收起来
-        page.evaluate(SET_DAY, [plain[0], plain[1]])
-        page.wait_for_timeout(400)
-        off = page.evaluate(READ)
-        checks["hidden_on_plain_day"] = "on" not in off["cls"].split() and off["text"].strip() == ""
-        page.screenshot(path=f"{OUT}/02-market-off.png")
+        # 买水
+        pg.evaluate(
+            """() => {
+              const btn = document.querySelector('[data-act="buygood"][data-id="water_bucket"]');
+              if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            }"""
+        )
+        pg.wait_for_timeout(500)
+        after = pg.evaluate(
+            """() => ({ favor: window.__laoyou.state.favor, stamp: (window.__laoyou.state.goods || {}).water_bucket || 0 })"""
+        )
+        checks["bucket_costs_favor"] = after["favor"] == goods["favor"] - 4
+        checks["bucket_dated_today"] = after["stamp"] > 0
 
-        # 3) 换到另一条行情：字跟着变
-        page.evaluate(SET_DAY, [other[0], other[1]])
-        page.wait_for_timeout(400)
-        two = page.evaluate(READ)
-        checks["switches_with_day"] = bool(two["text"].strip()) and two["text"] != on["text"]
-        page.screenshot(path=f"{OUT}/03-market-other.png")
+        pg.screenshot(path=os.path.join(EVID, "01-market-goods.png"), full_page=False)
 
-        checks["save_version"] = base["version"] == 31
-        checks["console_clean"] = len(errors) == 0
-        browser.close()
+        # 找一天「坏事 + 配对」的行情行
+        pair_text = ""
+        pair_hit = None
+        for month in range(12):
+            for day in (1, 4, 7, 10, 13, 16, 19, 22, 25, 28):
+                t = pg.evaluate(
+                    """([m, d]) => {
+                      const api = window.__laoyou;
+                      api.state.month = m;
+                      api.state.day = d;
+                      api.refresh();
+                      const el = document.querySelector('[data-market]');
+                      return el ? el.textContent.trim() : '';
+                    }""",
+                    [month, day],
+                )
+                if t and "（" in t:
+                    pair_text = t
+                    pair_hit = [month, day]
+                    break
+            if pair_hit:
+                break
 
-    ok = all(checks.values())
-    report = {
-        "ok": ok,
-        "checks": checks,
-        "errors": errors,
-        "days": {"first": first, "other": other, "plain": plain},
-        "texts": {"on": on["text"], "off": off["text"], "other": two["text"], "title": on["title"]},
-    }
-    with open(f"{OUT}/market-report.json", "w", encoding="utf-8") as fh:
-        json.dump(report, fh, ensure_ascii=False, indent=2)
-    print(json.dumps({"ok": ok, "checks": checks}, ensure_ascii=False, indent=2))
-    if not ok:
-        print(json.dumps({"texts": report["texts"], "days": report["days"], "errors": errors}, ensure_ascii=False)[:1500])
-    return 0 if ok else 1
+        checks["market_line_pair"] = bool(pair_hit)
+        checks["pair_words_no_digits"] = bool(pair_text) and not any(ch.isdigit() for ch in pair_text.split("（")[-1])
+
+        pg.screenshot(path=os.path.join(EVID, "02-market-pair.png"), full_page=False)
+
+        checks["save_version"] = pg.evaluate("() => window.__laoyou.state.saveVersion") == 37
+
+        bad = [
+            e
+            for e in errors
+            if "Failed to load resource" not in e and "laoyou-api" not in e and "404" not in e
+        ]
+        checks["console_clean"] = len(bad) == 0
+
+        report = {
+            "url": URL,
+            "checks": checks,
+            "pairText": pair_text,
+            "pairDay": pair_hit,
+            "errors": bad[:8],
+        }
+        with open(os.path.join(EVID, "market-report.json"), "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2)
+
+        b.close()
+
+    for k, v in checks.items():
+        print(("true " if v else "FALSE") + "  " + k)
+    print("---")
+    print(json.dumps(checks, ensure_ascii=False))
+    return 0 if all(checks.values()) else 1
 
 
 if __name__ == "__main__":

@@ -950,3 +950,32 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **判据**：A ″ 四种子月均 ≤ ¥110,000 且碗数不升、`seats` 不变；B ″ 四种子 ≥ ¥105,000、`market_pair` 测试、停水买水桶后 attract −16% → −6%；C ″ 前 30 天压迫型 0 次；AI 落点 25 → **27**，`audit_ai` 27/27。
 - **P331** 气价与修路的对冲件没有本地出处，暂时无解。**P332** 行情配对是「次日优先」，玩家看不见「明天补一条」。**P333** 成套改耐心之后与「借三台电扇」的 `patiencePct` 叠加未验。**P334** `set_voice` 只有两个键。**P335** `kind` 是手写分类，新事件忘了标就绕过门槛（与 P323 同型）。**P336** 新手期 30 天是拍的，没有实测数据。
 - 文档 `docs/三条缺口三维度方案-2026-11-24.md`（六节：开罗取证 / 三条方案各三落点 / 二次确认撤掉六条 / 三批施工与判据 / P331–P336 / 复现）。
+
+### 行 120 · 2026-11-25 · 三缺口三批 A″/B″/C″：成套改耐心、行情配对、前一个月的体面
+
+**做了什么**
+- A″ 成套：`game/src/data/slots.ts` 的 `SlotSetDef.seats` → `patiencePct`，`room_done` 0.12；`game/src/sim/slots.ts` 删 `slotSeatTaken`/`claimSlotPrizes`，加 `slotPatienceMult`/`announceSlotSets`；成套只影响耐心，多坐一个人仍须买凳子（对齐开罗 `storeequip` 柜台行要钱、`storeparts` 内装只管气氛）。
+- B″ 行情：`MarketDef.pair` 给三条坏行情配一条好消息（停水→发薪日、气价→赶圩、修路→开学，配那条不当季退回赶圩），`PAIR_WEIGHT = 0.6`；杂货加第十件 `water_bucket`「借两桶水」（人情 4，停水进店惩罚 −16% → −6%，出处手机广西网 `https://v.gxnews.com.cn/a/20244703`）；AI 落点 27 `market_answer_voice`。
+- C″ 事件：`isPressureEvent()` 按选项算（每条都要掏钱且最便宜那条 ≥ ¥100）得出 25 件压迫型；`PRESSURE_MIN_DAY = 30` 满月才出场，`PRESSURE_GAP = 21` 两次之间隔三周（按 `lastPressureDay` 算，不看中间插的普通事）；HUD 标题加 `⚠` 记号；AI 落点 26 `set_voice`（`LINE_BUDGET` 340）。
+- 探针：新建 `tools/gate/grace_probe.py`（7 项）与 `tools/gate/market_probe.py`（10 项）、`tools/gate/set_probe.py`（9 项），全 true。
+
+**教训**
+- 成套那条耐心加成在替身局里无感：0.12 改成 0.08 再跑，四种子**逐位不变** —— 替身的流失几乎全是「门口站满」，等不及那段本来就小。加成保留给玩家，不指望替身。
+- 压迫型的三十天第一版写成 `def.minDay ?? 30`（二选一），有 `minDay` 的事件直接绕过；测试「前三十天一条都进不了池子」把它抓出来，改成两条线相「与」。
+- 「两次压迫型隔三周」第一版按上一条事件的类型算，中间插一件普通事就清零，实测出现 14 天间隔；必须单独记 `lastPressureDay`。
+- `game/src/ui/hud.ts` 的 `state.events.pending = null` 之后再读 `pending.id` 会被 TS 收窄成 `never`，测试里要 `as { id: string; absDay: number } | null`。
+- 探针读档版本要从 `localStorage` 里找 `laoyou.save*` 的 `saveVersion`；`window.__laoyou.export()` 返的是 `playtest-2` 这类设备串，不是存档 JSON。
+
+**验收**
+- `npx tsc --noEmit` 0；`npx vitest run` **81 文件 897 用例**；`copy_gate` ok；`eye_gate --slug grace` 723 · 778 · 584 · 1242 · 1510 色、stamp 164；`ai_gate` ok；产物 `index-CYRyqY29.js` 1,709,253 B / `index-BNIRQSyp.css` 53,064 B。
+- 替身四种子（36 月）：¥115,938 / ¥100,452 / ¥109,109 / ¥110,380 → 均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**（对照 A″ 后 ¥110,764 / 201.7 / 40% / ¥551,732：营收 −1.6%、期末 −7.3%）。
+- 文档 `docs/成套耐心与行情配对-2026-11-25.md`。
+
+**新缺口**
+- P337 成套耐心在「门口站满」的局里无感（0.12 与 0.08 逐位相同）。
+- P338 `announceSlotSets` 只在打烊记账时跑，白天凑齐要等收市才说话。
+- P339 配对按当天算，玩家看不到明天配哪条。
+- P340 `water_bucket` 只在停水当天有用，其余日子占一行没有理由。
+- P341 `isPressureEvent` 的 ¥100 门槛是拍的（¥80 多七件、¥150 少七件，无对局证据）。
+- P342 `PRESSURE_GAP = 21` 正好三个抽取周期，抽取周期一改要重算。
+- P343 `⚠` 用的是字符而不是图标，与「页签与面板行首一律用图标」的纪律不一致。

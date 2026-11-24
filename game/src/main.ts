@@ -8,7 +8,7 @@ import { tierById } from "./data/guest-tier";
 import { tierVoiceContext } from "./sim/guest-tier";
 import { todayLine, todayVoiceContext } from "./sim/today";
 import { appetiteLineOf, lossWhyOf, markAppetiteSaid, menuLineOf } from "./sim/advice";
-import { marketOf } from "./sim/market";
+import { marketOf, pairedMarketOf } from "./sim/market";
 import { learnSpecialty as learnSpecialtyImpl } from "./sim/specialty";
 import { enterTourney as enterTourneyImpl, tourneyGate } from "./sim/tourneys";
 import { startBgm } from "./audio/bgm";
@@ -1080,6 +1080,8 @@ function refresh(): void {
   // 胃口这句跟着打烊走：一个月最多一次，白天不打扰
   if (state.dayReport) speakAppetite();
   speakStaffGrow();
+  speakSet();
+  speakMarket();
   scheduleSave();
 }
 
@@ -1235,6 +1237,56 @@ function speakStaffGrow(): void {
     kind: "staff_grow_voice",
     key: first.uid,
     context: { 谁: first.name, 会: said.split("·")[0]?.trim() ?? said },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((line) => {
+    if (line) hud.showToast(`街坊说：「${line}」`, "info");
+  });
+}
+
+let lastSetLine = "";
+
+/**
+ * 成套凑齐（落点 23，批 P′，解 P301 之后的那句人话）。
+ *
+ * 触发只认 `state.dayReport.slotSet` —— 打烊时 `announceSlotSets` 写的，
+ * 同一套只写一次，所以这条不会天天响。
+ */
+function speakSet(): void {
+  const said = state.dayReport?.slotSet ?? "";
+  if (!said || said === lastSetLine) return;
+  lastSetLine = said;
+  const ask: LineAsk = {
+    kind: "set_voice",
+    key: said,
+    context: { 事: said, 在: "店里的摆设" },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((line) => {
+    if (line) hud.showToast(`街坊说：「${line}」`, "info");
+  });
+}
+
+let lastMarketKey = "";
+
+/**
+ * 坏行情撞上好事（落点 24，批 B″，解 P320）。
+ *
+ * 只在「今天有坏事 + 今天配上了一件好事」时说一句；同一天说一次。
+ */
+function speakMarket(): void {
+  const m = marketOf(state);
+  const pair = pairedMarketOf(state);
+  if (!m || !pair || !m.pair) return;
+  const id = `${m.id}:${pair.id}:${state.month}:${state.day}`;
+  if (id === lastMarketKey) return;
+  lastMarketKey = id;
+  const ask: LineAsk = {
+    kind: "market_answer_voice",
+    key: `${m.id}:${pair.id}`,
+    context: { 事: `街上${m.name}`, 好在: `刚${pair.name}` },
     month: state.month,
     day: state.day,
   };

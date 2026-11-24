@@ -2506,3 +2506,11 @@ html.prefs-big #hud .clock{font-size:17px}
 .pane .mpage[open] summary::before{content:"▾ "}
 .pane .mpage .mgist{font-size:9px;color:var(--wood);margin:2px 0 3px}
 .pane .mpage .mbody{font-size:10px;line-height:1.6;color:var(--ink2);margin-bottom:4px}
+
+/* 成套凑齐（批 P′）：金色勾 + 名字上色，仍然是 2px 像素语言，不新增颜色 */
+.pane .lrow.setdone .lname::before{content:"✔ ";color:var(--gold)}
+.pane .lrow.setdone .tag2{color:var(--gold)}
+
+/* 压迫型事件（每条选项都要掏钱）的记号，批 C″ */
+.pane .eventtitle.pressure::before,
+.eventtitle.pressure::before{content:"⚠ ";color:var(--red)}

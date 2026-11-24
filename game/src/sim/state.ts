@@ -22,7 +22,7 @@ import { checkTrophies } from "./trophies";
 import { settlePack } from "./pack";
 import { noteTick } from "./notebook";
 import { defaultRetail, settleRetail } from "./retail";
-import { claimSlotPrizes } from "./slots";
+import { announceSlotSets } from "./slots";
 import { DEFAULT_QUALITY } from "../data/quality";
 
 import type { ArenaRun } from "./arena";
@@ -187,8 +187,8 @@ export interface CustomerFlow {
   serveBank?: number;
   /** 当前这一轮的出碗间隔（分钟）：HUD 左下那行要跟它一致，别写死 6.0 */
   serveInterval?: number;
-  /** 成套度（批 J′）已经补过几张座位 —— 有值就代表领过，不再重复发 */
-  slotSeatPrize?: number;
+  /** 成套度（批 J′）：已经报过一声的成套 id（同一套只报一次） */
+  slotsAnnounced?: string[];
 
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;
@@ -375,6 +375,15 @@ export interface EventRuntime {
   log: EventLogEntry[];
   /** 今天是否已掷过骰（绝对日） */
   rolledDay: number;
+  /**
+   * 上一次抽到的事件是「压迫型」还是普通型（批 C″，解 P325）。
+   *
+   * 只用来做「两条压迫型之间隔三周」的间隔判断；老档缺省当作没抽过。
+   */
+  lastKind?: "pressure" | "plain";
+  lastKindDay?: number;
+  /** 上一次抽到「压迫型」事件的绝对天（只给三周间隔用） */
+  lastPressureDay?: number;
   /** 累计触发次数 */
   count: number;
 }
@@ -419,7 +428,8 @@ export interface DayRecord {
   retailSold?: number;
   retailNet?: number;
   /** 成套度第一次凑齐时补的那一张座位（批 J′，只记一天） */
-  seatPrize?: number;
+  /** 今天新凑齐的成套（打烊单与 AI 一句话用） */
+  slotSet?: string;
   /**
    * 今天每一款各卖了几碗（批次 C′，解 R7）。
    *
@@ -1086,11 +1096,11 @@ function recordDay(state: GameState, taste: number): void {
   }
   /**
    * 成套度（批 J′）：桌子摆够六张的那天，把「多一张小方桌」发下去。
-   * 只在打烊时发一次（`flow.slotSeatPrize` 记着），不与家当、事件抢同一处改动。
+   * 成套凑齐只在打烊时报一声（`flow.slotsAnnounced` 记着），不动 `venue.seats`。
    */
   {
-    const won = claimSlotPrizes(state);
-    if (won > 0) rec.seatPrize = won;
+    const fresh = announceSlotSets(state);
+    if (fresh.length > 0) rec.slotSet = fresh.map((d) => d.name).join("、");
   }
 
   state.phase = "closing";

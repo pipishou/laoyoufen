@@ -3,6 +3,7 @@ import { playSfx } from "../audio/sfx";
 import { applyPrefs, defaultPrefs, loadPrefs, nextVolume, prefWords, savePrefs, togglePref, type Prefs } from "./prefs";
 import { ARCHETYPE_BY_ID } from "../data/customers";
 import { EVENTS_BY_ID } from "../data/events";
+import { isPressureEvent } from "../sim/events";
 import { TOPPINGS } from "../data/ingredients";
 import { LIKES_TOTAL } from "../sim/collection";
 import { clockOf, minutesLeft, SHOP_CLOSE_LABEL, SHOP_OPEN_LABEL } from "../sim/shop-hours";
@@ -34,7 +35,7 @@ import type { RecipeScore } from "../sim/score";
 import { bowlMinutes, serveMultiplier } from "../sim/staff";
 import { equipServeMultiplier, slowestStation, stageMinutes } from "../sim/equipment";
 import { STATION_NAMES } from "../data/equipment";
-import { marketOf, marketWords } from "../sim/market";
+import { marketOf, marketPairWords, marketWords } from "../sim/market";
 import { levelOf, nextStep, toppingXpOf, xpWords } from "../sim/topping-xp";
 import { icon } from "./icons";
 
@@ -777,7 +778,12 @@ const render = (s: GameState, score: RecipeScore): void => {
       const mKey = mk ? `${mk.id}:${s.month}:${s.day}` : "";
       if (mKey !== lastMarketKey) {
         lastMarketKey = mKey;
-        el.market.textContent = mk ? `${mk.name} · ${marketWords(mk)}` : "";
+        const mp = mk ? marketPairWords(s) : "";
+      el.market.textContent = mk
+        ? mp
+          ? `${mk.name} · ${marketWords(mk)}（${mp}）`
+          : `${mk.name} · ${marketWords(mk)}`
+        : "";
         el.market.title = mk ? `${mk.when}｜${mk.line}` : "";
         el.market.className = mk ? "mktrow on" : "mktrow";
       }
@@ -803,6 +809,8 @@ const render = (s: GameState, score: RecipeScore): void => {
         evtWrap.hidden = true;
       } else {
         evtTitle.textContent = def.title;
+        // 压迫型（每条选项都要掏钱）加个记号，让玩家先有心理准备（批 C″）
+        evtTitle.classList.toggle("pressure", isPressureEvent(def));
         evtBody.textContent = def.body;
         evtSrc.textContent = "街上听来的";
         evtSrc.classList.remove("remote");

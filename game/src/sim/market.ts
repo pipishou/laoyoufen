@@ -1,4 +1,5 @@
 import { MARKET_BY_ID, MARKETS, type MarketDef, type MarketId } from "../data/market";
+import { goodFixesApplied } from "./goods";
 import { hashString } from "./rng";
 import type { GameState } from "./state";
 
@@ -39,6 +40,17 @@ function roll(state: GameState, salt: string): number {
 }
 
 /** 今天有没有行情、是哪一条（**不消耗 state.rng** —— 与街坊报同一个做法） */
+/**
+ * 配对的权重（批 B″）：好事只按六成算。
+ *
+ * 定六成的理由：它要「抵一抵」，不能「抹平」。停水 −16% 撞上发薪日 +16%
+ * 只剩 −3.4%，玩家能感觉到这一天不至于白过，可也不会觉得停水没影响。
+ */
+const PAIR_WEIGHT = 0.6;
+
+/** 配对的兜底：开学有月份限制，别的月份撞上修路就配赶圩 */
+const PAIR_FALLBACK: MarketId = "marketRush";
+
 export function todayMarket(state: GameState): MarketDef | null {
   if (roll(state, "has") > MARKET_CHANCE) return null;
   const pool = MARKETS.filter((m) => SEASON[m.id].includes(state.month));
@@ -50,6 +62,20 @@ export function todayMarket(state: GameState): MarketDef | null {
 /** 今天的行情（给界面与接线读） */
 export function marketOf(state: GameState): MarketDef | null {
   return todayMarket(state);
+}
+
+/**
+ * 今天跟坏事配在一起的那件好事（批 B″，解 P320）。
+ *
+ * 只给填了 `pair` 的行情算；配对那条要是当月不在季（比如八月撞上修路，
+ * 「开学」还没到），退回赶圩 —— 街上总有摊子，别让配对空着。
+ */
+export function pairedMarketOf(state: GameState): MarketDef | null {
+  const m = marketOf(state);
+  if (!m || !m.pair) return null;
+  const def = MARKET_BY_ID.get(m.pair);
+  if (def && SEASON[def.id]?.includes(state.month)) return def;
+  return MARKET_BY_ID.get(PAIR_FALLBACK) ?? null;
 }
 
 export interface MarketTotals {
@@ -65,11 +91,24 @@ const clampCap = (v: number): number => Math.max(-MARKET_CAP, Math.min(MARKET_CA
 export function marketTotals(state: GameState): MarketTotals {
   const m = marketOf(state);
   if (!m) return { attract: 0, patience: 0, wallet: 0, cost: 0 };
+  const pair = pairedMarketOf(state);
+  const sum = (a?: number, b?: number): number =>
+    (a ?? 0) + (b ?? 0) * PAIR_WEIGHT;
+  const totals = {
+    attract: sum(m.effect.attractPct, pair?.effect.attractPct),
+    patience: sum(m.effect.patiencePct, pair?.effect.patiencePct),
+    wallet: sum(m.effect.walletPct, pair?.effect.walletPct),
+    cost: sum(m.effect.costPct, pair?.effect.costPct),
+  };
+  // 借两桶水（批 B″）：停水那条的进店惩罚从 −16% 收回到 −6%
+  if (m.id === "waterCut" && goodFixesApplied(state, "waterCut")) {
+    totals.attract = -0.06;
+  }
   return {
-    attract: clampCap(m.effect.attractPct ?? 0),
-    patience: clampCap(m.effect.patiencePct ?? 0),
-    wallet: clampCap(m.effect.walletPct ?? 0),
-    cost: clampCap(m.effect.costPct ?? 0),
+    attract: clampCap(totals.attract),
+    patience: clampCap(totals.patience),
+    wallet: clampCap(totals.wallet),
+    cost: clampCap(totals.cost),
   };
 }
 
@@ -94,6 +133,17 @@ export function marketCostFactor(state: GameState): number {
 }
 
 /** 「回南天 · 进店 −12% · 耐心 +10%」这样一行话（界面与钩子用） */
+/** 「偏偏今天还发薪」这类一句（界面挂在行情后面） */
+export function marketPairWords(state: GameState): string {
+  const m = marketOf(state);
+  const pair = pairedMarketOf(state);
+  if (!m || !pair) return "";
+  if (m.id === "waterCut" && goodFixesApplied(state, "waterCut")) {
+    return "借到了水，人还没散";
+  }
+  return `好在今天还${pair.name}`;
+}
+
 export function marketWords(def: MarketDef): string {
   const parts: string[] = [];
   const e = def.effect;

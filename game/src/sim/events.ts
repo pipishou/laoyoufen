@@ -41,12 +41,44 @@ function viewOf(state: GameState): EventView {
   };
 }
 
+/** 压迫型事件最早第几天来（批 C″：头一个月先让人活下来） */
+export const PRESSURE_MIN_DAY = 30;
+
+/** 「最便宜那条也要这么多钱」的门槛（批 C″ 的判据，见 isPressureEvent） */
+export const PRESSURE_COST = 100;
+
+/** 两条压迫型之间至少隔多少天（同一类事不会连着砸下来） */
+export const PRESSURE_GAP = 21;
+
+/**
+ * 是不是「压迫型」事件（批 C″，解 P325）。
+ *
+ * 判据是**算**出来的，不是手写标签（手写会漏标，见 P335）：
+ * 每条选项都要掏钱、且最不亏的那条也要 ¥100 以上。这种事件落在头一个月，
+ * 新手只能借钱、掉口碑，等于开局劝退。
+ *
+ * `def.kind` 可以手动覆盖：`plain` 摘出来，`pressure` 硬标进去。
+ */
+export function isPressureEvent(def: GameEventDef): boolean {
+  if (def.kind === "pressure") return true;
+  if (def.kind === "plain") return false;
+  const cash = def.choices.flatMap((c) =>
+    c.effects.filter((e) => e.kind === "cash").map((e) => e.amount ?? 0),
+  );
+  if (cash.length === 0) return false;
+  if (cash.some((a) => a >= 0)) return false;
+  const cheapest = Math.max(...cash);
+  return Math.abs(cheapest) >= PRESSURE_COST;
+}
+
 /** 月份窗口、冷却、一次性、门槛、自定义判据，五道都得过 */
 export function eventEligible(state: GameState, def: GameEventDef, today: number): boolean {
   const seen = state.events.seen;
   if (def.once && seen.includes(def.id)) return false;
   // 开罗 economy 表的 month_ 是硬窗口：不在当月就不进池，不是「优先」。
   if (def.season && !def.season.includes(state.month)) return false;
+  // 压迫型的两条线是「与」的关系：既不能早于它自己的门槛，也不能早于三十天
+  if (isPressureEvent(def) && today < PRESSURE_MIN_DAY) return false;
   if (def.minDay !== undefined && today < def.minDay) return false;
   const last = state.events.lastFired[def.id];
   if (last !== undefined && today - last < def.cooldownDays) return false;
@@ -70,7 +102,13 @@ export function tickEvents(state: GameState): void {
   if (ev.rolledDay === today) return;
   ev.rolledDay = today;
 
-  const pool = EVENTS.filter((def) => eventEligible(state, def, today));
+  const lastPressureDay = ev.lastPressureDay ?? -9999;
+  const pool = EVENTS.filter((def) => {
+    if (!eventEligible(state, def, today)) return false;
+    // 两条压迫型之间隔三周：按「上一次压迫型」算，不看中间插了几件普通事
+    if (isPressureEvent(def) && today - lastPressureDay < PRESSURE_GAP) return false;
+    return true;
+  });
   if (pool.length === 0) return;
 
   let total = 0;
@@ -85,6 +123,10 @@ export function tickEvents(state: GameState): void {
     }
   }
   ev.pending = { id: picked.id, absDay: today };
+  const pressure = isPressureEvent(picked);
+  ev.lastKind = pressure ? "pressure" : "plain";
+  ev.lastKindDay = today;
+  if (pressure) ev.lastPressureDay = today;
 }
 
 function clamp(v: number, lo: number, hi: number): number {

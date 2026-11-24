@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { SLOTS, SLOT_COUNT, STAGE_CELLS, STAGE_H, STAGE_W } from "../data/slots";
 import { createInitialState } from "./state";
 import {
-  claimSlotPrizes,
+  announceSlotSets,
   filledCount,
   layoutOf,
   layoutSummary,
   slotAttractMult,
-  slotSeatTaken,
+  slotPatienceMult,
   slotSetSummary,
   slotSetViews,
   slotSetWords,
@@ -121,24 +121,28 @@ describe("成套度（批 J′，解 P290）", () => {
     expect(slotSetSummary(s)).toBe("成套 0 / 2");
   });
 
-  it("桌子六张 → 补一张座位，只补一次", () => {
+  it("桌子六张 → 耐心 +12%，座位一个都不白送（批 P′，解 P301）", () => {
     const s = fresh();
+    expect(slotPatienceMult(s)).toBe(1);
     s.venue.seats = 6;
-    expect(slotSeatTaken(s)).toBe(false);
-    expect(claimSlotPrizes(s)).toBe(1);
-    expect(s.venue.seats).toBe(7);
-    expect(slotSeatTaken(s)).toBe(true);
-    // 第二次调不再发
-    expect(claimSlotPrizes(s)).toBe(0);
-    expect(s.venue.seats).toBe(7);
+    expect(slotPatienceMult(s)).toBeCloseTo(1.12, 5);
+    // 座位是花钱买的（矮凳 ¥150 / 躺椅 ¥150），成套只管气氛
+    expect(s.venue.seats).toBe(6);
   });
 
-  it("桌子不够就不发，也不写标记", () => {
+  it("凑齐只报一声：第一次给一条，第二次空", () => {
+    const s = fresh();
+    s.venue.seats = 6;
+    const first = announceSlotSets(s);
+    expect(first.map((d) => d.id)).toContain("room_done");
+    expect(announceSlotSets(s)).toHaveLength(0);
+  });
+
+  it("桌子不够就不报，也不写标记", () => {
     const s = fresh();
     s.venue.seats = 5;
-    expect(claimSlotPrizes(s)).toBe(0);
-    expect(s.venue.seats).toBe(5);
-    expect(slotSeatTaken(s)).toBe(false);
+    expect(announceSlotSets(s)).toHaveLength(0);
+    expect(s.flow.slotsAnnounced).toBeUndefined();
   });
 
   it("门面四件齐了：进店 +4%，且是常驻", () => {
@@ -151,7 +155,7 @@ describe("成套度（批 J′，解 P290）", () => {
 
   it("两条的奖励写法不重样，句子都带因果", () => {
     const vs = slotSetViews(fresh());
-    expect(slotSetWords(vs[0]!)).toContain("座位 +1");
+    expect(slotSetWords(vs[0]!)).toContain("耐心 +12%");
     expect(slotSetWords(vs[1]!)).toContain("进店 +4%");
     for (const v of vs) expect(v.def.line.length).toBeGreaterThan(8);
   });

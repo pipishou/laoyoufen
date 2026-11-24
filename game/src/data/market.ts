@@ -52,6 +52,14 @@ export interface MarketDef {
   /** 老板视角的一句解释 */
   line: string;
   effect: MarketEffect;
+  /**
+   * 对冲的那一条（批 B″，解 P320）：这条是坏的，可同一天街上还有一件好事。
+   *
+   * 只给「坏的那几条」填；好事那几条不填 —— 于是「停水」撞上「发薪日」
+   * 的时候，进店不会一路掉到底。配对只按六成算（见 `sim/market.ts` 的
+   * `PAIR_WEIGHT`），免得好事把坏事全抹平。
+   */
+  pair?: MarketId;
   /** 为什么是这几个数（写给后来的人看，不进游戏） */
   why: string;
   /** 开罗那张表里对应什么 */
@@ -173,7 +181,8 @@ export const MARKETS: readonly MarketDef[] = [
     when: "说不准，老城区管网一修就停半天",
     line: "水龙头只有气声，洗碗的水要去隔壁借。",
     effect: { attractPct: -0.16, costPct: 0.05 },
-    why: "没水洗不了碗、烫不了粉，出碗被卡死；临时买桶装水、借水，料钱也上去。",
+    pair: "payday",
+    why: "没水洗不了碗、烫不了粉，出碗被卡死；临时买桶装水、借水，料钱也上去。街上刚发薪，手里有钱的人还是照来。",
     kairo: "对应 `economy` 的「营业受阻」类",
   },
   {
@@ -182,7 +191,8 @@ export const MARKETS: readonly MarketDef[] = [
     when: "说不准，一调就是整个季度",
     line: "灌气的三轮车来了，说这个月涨了，往后还得涨。",
     effect: { costPct: 0.1, patiencePct: -0.04 },
-    why: "老友粉全靠猛火，气贵了就得上成本；火小了出碗慢，客人等得心烦。",
+    pair: "marketRush",
+    why: "老友粉全靠猛火，气贵了就得上成本；火小了出碗慢，客人等得心烦。赶上赶圩那天，人气能抵一抵。",
     kairo: "对应 `economy` 的「材料费 +」",
   },
   {
@@ -191,7 +201,8 @@ export const MARKETS: readonly MarketDef[] = [
     when: "常年都有，家门口那条路说挖就挖",
     line: "蓝铁皮把路口围掉一半，老客要绕两条巷子才看得见招牌。",
     effect: { attractPct: -0.18, patiencePct: 0.06 },
-    why: "围挡挡掉路过的客流；能绕进来的都是认门的老客，不催不赶。",
+    pair: "schoolOpen",
+    why: "围挡挡掉路过的客流；能绕进来的都是认门的老客，不催不赶。开学那天家长带小孩绕路来吃，多少补回来一点。",
     kairo: "对应 `economy` 的「位置受阻」（客流 −）",
   },
   {

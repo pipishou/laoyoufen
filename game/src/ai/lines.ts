@@ -41,7 +41,9 @@ export type LineKind =
   | "pointer_voice"
   | "staff_grow_voice"
   | "perk_voice"
-  | "item_voice";
+  | "item_voice"
+  | "set_voice"
+  | "market_answer_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -477,6 +479,28 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "街坊之间讲的是人情，不是账本。",
     "东西买回来要会用，用不上就是占地方。",
   ],
+  /**
+   * 23. 成套凑齐那天（批 P′，解 P301）：摆设齐了，别人的感受。
+   *
+   * 这一句不讲数值（耐心多少、进店多少）—— 那是面板的事；只讲「店里像不像个店」。
+   */
+  set_voice: [
+    "屋里一摆开，进来的人都不自觉地放轻了手脚。",
+    "桌子与桌子让得开，吃粉的人也就坐得住。",
+    "看着是几件家什，坐下来才知道是口气。",
+    "别家挤得胳膊碰胳膊，你这里坐着能伸腿。",
+  ],
+  /**
+   * 24. 坏行情撞上好事那天（批 B″，解 P320）：街坊怎么把话往好里说。
+   *
+   * 不报数字、不提百分比、不劝老板做什么 —— 只把「今天还不算最坏」讲出来。
+   */
+  market_answer_voice: [
+    "停水是停水，好在今天刚发薪，手里有钱的人照样来吃。",
+    "这天要是放别家早关门了，你这里还有人蹲墙边嗦。",
+    "街上是不顺，可老客认门，绕两条巷也照来。",
+    "天不帮忙，人还得吃粉，锅别停。",
+  ],
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */
@@ -518,7 +542,7 @@ const INFLIGHT = new Map<string, Promise<string | null>>();
  *
  * 超了不是报错，是**静默改走本地句** —— 玩家不该因为预算用完而看见界面变样。
  */
-export const LINE_BUDGET = 320;
+export const LINE_BUDGET = 340;
 
 /**
  * 分项配额（批 O′，解 P243）。

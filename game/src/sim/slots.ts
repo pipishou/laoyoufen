@@ -139,27 +139,37 @@ export function slotSetViews(state: GameState): SlotSetView[] {
   });
 }
 
-/** 已经收过的那一份座位奖励（老档没有 = 没领过） */
-export function slotSeatTaken(state: GameState): boolean {
-  return (state.flow?.slotSeatPrize ?? 0) > 0;
+/**
+ * 成套给的耐心加成（`room_done` 那一条）。
+ *
+ * 与 `slotAttractMult` 分开放：一个是「愿不愿意进来」，一个是「进来之后愿不愿意等」，
+ * 两个出口刻意不重叠（同 energy / appetite 的分工）。
+ */
+export function slotPatienceMult(state: GameState): number {
+  const pct = slotSetViews(state)
+    .filter((v) => v.done)
+    .reduce((n, v) => n + (v.def.patiencePct ?? 0), 0);
+  return 1 + pct;
 }
 
 /**
- * 把凑齐的座位奖励发下去 —— 由 `recordDay` 每天调一次。
+ * 打烊时把「今天新凑齐的成套」记下来 —— 给打烊单与 AI 用，同一套只报一次。
  *
- * 为什么在打烊时发、而不是买的那一刻发：格子是画，「坐得下」要看**当天**的
- * 座位与家当；而且发座位要动 `venue.seats`，那是别处也在改的字段（家当、
- * 事件、分店），集中在打烊一处改，回滚与存档都简单。
+ * 原来这里发座位（`claimSlotPrizes`）。座位不进这里了（见 data/slots.ts 的注释），
+ * 这一层只剩「记一笔」，所以不再改 `venue.seats`，也不与家当、事件抢同一处改动。
  */
-export function claimSlotPrizes(state: GameState): number {
-  if (slotSeatTaken(state)) return 0;
-  const room = slotSetViews(state).find((v) => v.def.id === "room_done");
-  if (!room || !room.done) return 0;
-  const seats = Math.max(0, room.def.seats ?? 0);
-  if (seats <= 0) return 0;
-  state.venue.seats = Math.max(1, (state.venue.seats ?? 2) + seats);
-  state.flow = { ...(state.flow as object), slotSeatPrize: seats } as GameState["flow"];
-  return seats;
+export function announceSlotSets(state: GameState): SlotSetDef[] {
+  const said = new Set(state.flow?.slotsAnnounced ?? []);
+  const fresh = slotSetViews(state)
+    .filter((v) => v.done && !said.has(v.def.id))
+    .map((v) => v.def);
+  if (fresh.length > 0) {
+    state.flow = {
+      ...(state.flow as object),
+      slotsAnnounced: [...said, ...fresh.map((d) => d.id)],
+    } as GameState["flow"];
+  }
+  return fresh;
 }
 
 /** 常驻的进店加成（门面齐了那一条） */
@@ -179,7 +189,7 @@ export function slotSetSummary(state: GameState): string {
 
 export function slotSetWords(v: SlotSetView): string {
   const bits: string[] = [];
-  if (v.def.seats) bits.push(`座位 +${v.def.seats}（一次性）`);
+  if (v.def.patiencePct) bits.push(`耐心 +${Math.round(v.def.patiencePct * 100)}%`);
   if (v.def.attractPct) bits.push(`进店 +${Math.round(v.def.attractPct * 100)}%`);
   return bits.join(" · ");
 }

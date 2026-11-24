@@ -89,8 +89,15 @@ export const SLOT_COUNT: Readonly<Record<SlotKind, number>> = {
  * 已经叠了四五层，再加一层就是第六层，P154 的上限没人验过）。
  *
  * 所以只剩：
- *   - `room_done`（店里坐得下）→ **座位永久 +1，一次性**（记在 `flow.slotSeatPrize`）；
+ *   - `room_done`（店里坐得下）→ **耐心 +12%，常驻**；
  *   - `front_done`（门面齐了）→ 进店率 +4%，**常驻**（门面件不会被卖掉）。
+ *
+ * 改过一版（批 P′，解 P301）：`room_done` 原来白送座位 +1。座位是本作唯一的
+ * 真瓶颈（`EAT_MINUTES = 6`），白送一个座位等于白送一天十碗，替身四种子因此多赚
+ * 两成。开罗那边座位在 `storeequip` 的柜台行（0 / 700 / 1750 / 7800 换 4/6/8/12 位）
+ * 是要花钱买的设备，内装成套（`storeparts` + `storepattern`）只管气氛。
+ * 所以这一条改回「气氛」：桌与桌之间让开，坐着不挤，愿意多等一会儿；
+ * 「多坐一位」交回 `plastic_stool` / `bamboo_chair`（各 ¥150）。
  *
  * 两个都不改料钱、不改出碗时间 —— 那是别的批已经占了的位置。
  */
@@ -99,8 +106,8 @@ export interface SlotSetDef {
   name: string;
   /** 凑齐条件：各类槽位至少摆满几个 */
   need: Readonly<Partial<Record<SlotKind, number>>>;
-  /** 凑齐当场给一次座位（永久，只给一次） */
-  seats?: number;
+  /** 凑齐之后常驻的耐心加成（桌子让开了，坐着不挤） */
+  patiencePct?: number;
   /** 凑齐之后常驻的进店加成 */
   attractPct?: number;
   line: string;
@@ -113,9 +120,9 @@ export const SLOT_SETS: readonly SlotSetDef[] = [
     id: "room_done",
     name: "店里坐得下了",
     need: { table: 6 },
-    seats: 1,
-    line: "桌子摆开六张，墙边还能再塞一张小方桌 —— 座位多一个。",
-    why: "散着买只是好看，配齐了才真的多坐一个人 —— 桌与桌之间让出的那条过道，才是多出来的那一位。",
+    patiencePct: 0.12,
+    line: "桌子摆开六张，桌与桌之间还能侧身过 —— 坐着的人不挤，等的人也不催。",
+    why: "散着摆是挤，六张摆开才叫坐下来吃。多一个人坐还是得多一张凳，那是要另外买的；成套买的是这一口气。",
     kairo: "storepattern：成套内装给成套效果",
   },
   {

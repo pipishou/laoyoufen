@@ -42,6 +42,14 @@ export interface EventView {
 }
 
 export interface GameEventDef {
+  /**
+   * 「压迫型」的手动覆盖（批 C″，解 P325）。
+   *
+   * 不填的时候由 `sim/events.ts` 的 `isPressureEvent()` 按选项**算**出来：
+   * 每条选项都得掏钱、最便宜那条也要一百元以上 —— 这种事件在头一个月
+   * 来，新手只能借钱。写 `plain` 可以把某一条从压迫型里摘出来（比如它其实
+   * 是个机会，只是碰巧每条都要钱），写 `pressure` 可以反过来。 */
+  kind?: "pressure" | "plain";
   id: string;
   title: string;
   body: string;

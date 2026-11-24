@@ -30,6 +30,8 @@ CASES = [
     ("staff_grow_voice", "probe-1", {"谁": "阿强", "会": "看火"}),
     ("perk_voice", "heat_taste_1", {"族": "镬气", "事": "爆得透"}),
     ("item_voice", "invest:supplier", {"事": "跟料商多留一筐", "在哪": "街上的门路"}),
+    ("set_voice", "店里坐得下了", {"事": "店里坐得下了", "在": "店里的摆设"}),
+    ("market_answer_voice", "waterCut:payday", {"事": "街上停水", "好在": "刚发薪"}),
 ]
 
 ok = 0

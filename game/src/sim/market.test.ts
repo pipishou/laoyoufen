@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MARKETS, MARKET_BY_ID, marketById } from "../data/market";
+import { goodFixesApplied } from "./goods";
 import {
   MARKET_CAP,
   MARKET_TOTAL,
@@ -12,6 +13,7 @@ import {
   marketTotals,
   marketWalletMult,
   marketWords,
+  pairedMarketOf,
 } from "./market";
 import { createInitialState, type GameState } from "./state";
 
@@ -129,18 +131,24 @@ describe("sim/market 四个乘数", () => {
     expect(marketCostFactor(s)).toBe(1);
   });
 
-  it("有行情的日子，乘数与这条行情同号且不越 ±35%", () => {
+  it("有行情的日子：本条全额 + 配对那条按六成，且不越 ±35%（批 B″）", () => {
     const seen = scan();
     expect(seen.length).toBeGreaterThan(0);
     for (const x of seen.slice(0, 24)) {
       const s = at(x.month, x.day, `scan-${x.month}-${x.day}`);
       const m = marketOf(s)!;
+      const pair = pairedMarketOf(s);
       const t = marketTotals(s);
       const e = m.effect;
-      expect(t.attract).toBeCloseTo(e.attractPct ?? 0, 6);
-      expect(t.patience).toBeCloseTo(e.patiencePct ?? 0, 6);
-      expect(t.wallet).toBeCloseTo(e.walletPct ?? 0, 6);
-      expect(t.cost).toBeCloseTo(e.costPct ?? 0, 6);
+      const p = pair?.effect;
+      const mix = (a?: number, b?: number): number => (a ?? 0) + (b ?? 0) * 0.6;
+      // 停水那天借了水会单独收回进店惩罚，这里只核没借水的情形
+      if (!(m.id === "waterCut" && goodFixesApplied(s, "waterCut"))) {
+        expect(t.attract).toBeCloseTo(mix(e.attractPct, p?.attractPct), 6);
+      }
+      expect(t.patience).toBeCloseTo(mix(e.patiencePct, p?.patiencePct), 6);
+      expect(t.wallet).toBeCloseTo(mix(e.walletPct, p?.walletPct), 6);
+      expect(t.cost).toBeCloseTo(mix(e.costPct, p?.costPct), 6);
       for (const v of Object.values(t)) expect(Math.abs(v)).toBeLessThanOrEqual(MARKET_CAP + 1e-9);
     }
   });
