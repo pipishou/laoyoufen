@@ -1,0 +1,14 @@
+{
+  "no_sku_before_pack": true,
+  "two_sku_at_grade_0": true,
+  "sku_names_cn": true,
+  "sku_price_shown": true,
+  "sku_count_shown": true,
+  "sku_words_lock_gift": true,
+  "gift_unlocks": true,
+  "gift_says_box": true,
+  "sku_counts_positive": true,
+  "sku_counts_spread": true,
+  "save_version": true,
+  "console_clean": true
+}

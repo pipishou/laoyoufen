@@ -438,6 +438,8 @@ export interface DayRecord {
   packSold?: number;
   /** 袋装线今天的净收入（已算进 `revenue`） */
   packNet?: number;
+  /** 批 W′：三档货各几件（汤底包 / 酸笋包 / 礼盒） */
+  packSku?: Record<string, number>;
   /** 零售货架今天卖出几件、净收入多少（批次七） */
   retailSold?: number;
   retailNet?: number;
@@ -1091,6 +1093,7 @@ function recordDay(state: GameState, taste: number): void {
   if (pk.sold > 0) {
     rec.packSold = pk.sold;
     rec.packNet = pk.net;
+    if (Object.keys(pk.extra).length > 0) rec.packSku = pk.extra;
     rec.revenue = Math.round(rec.revenue + pk.net);
   }
   // 零售货架（批次七）：与袋装线并列，各算各的净额

@@ -35,7 +35,7 @@ import { todayLine } from "../sim/today";
 import { noteSummary, noteViews } from "../sim/notebook";
 import { NOTE_GROUPS } from "../data/notebook";
 import { PACK_SETUP } from "../data/pack";
-import { packOwned, packRateWords, packSummary } from "../sim/pack";
+import { packOwned, packRateWords, packSkuLines, packSkuWords, packSummary } from "../sim/pack";
 import { newsDate, newsList, newsSummary } from "../sim/news";
 import { MANUAL_TOTAL, manualSections } from "../data/manual";
 import { placeLineOf, placeShortsOf } from "../data/places";
@@ -1026,6 +1026,22 @@ let lastGradeKey = "";
         <span class="lname">封口机与首批包装</span>
         <div class="lmeta">${packOwned(s) ? `${packRateWords(s)} · 每天出 ${packSummary(s).replace("每天出 ", "").replace(" 袋 · 约 ¥", " 袋，赚 ¥").replace("/天", "")}` : `一次置办，每天出几袋卖到外地；袋子、酱料包、干粉都算在里面`}</div>
       </div>
+      ${
+        packOwned(s)
+          ? `<div class="lmeta" data-packsku>${packSkuWords(s)}</div>
+        ${packSkuLines(s)
+          .map(
+            (l) => `<div class="lrow" data-sku="${l.def.id}">
+          <span class="lname">${l.def.name}</span>
+          <span class="tag2">${l.count} 件</span>
+          <div class="lmeta">${l.def.line}｜一件 ¥${l.def.priceYuan}，赚 ¥${Math.round(l.def.priceYuan - l.def.costPerPack)}${
+            l.count > 0 ? "" : " · 今天没分到量"
+          }</div>
+        </div>`,
+          )
+          .join("")}`
+          : ""
+      }
       </div>`;
     /**
    * 货架（批次七）：把店里的手艺做成货。
