@@ -36,6 +36,14 @@ export interface PerkDef {
   what: string;
   /** 花几点手艺点 */
   cost: number;
+  /**
+   * 必须先点的那一项（批 X′，解「十六项之间没有先后」）。
+   *
+   * 开罗 `rank` 是一棵树，不是一个篮子 —— 先点得出「最大含水量」，才点得出下一档。
+   * 我们这十六项按族串成四根链，每族从最便宜那一项起手；没点前置时按钮上写
+   * 「先点「X」」，不扣点也不消耗。
+   */
+  prev?: string;
   effect: PerkEffect;
   /** 一句人话：为什么这一项值 */
   why: string;
@@ -68,6 +76,7 @@ export const PERKS: readonly PerkDef[] = [
   },
   {
     id: "heat_taste_2",
+    prev: "heat_taste_1",
     family: "heat",
     name: "锅气不散",
     what: "起锅前那一下不犹豫，末段再抬一点",
@@ -78,6 +87,7 @@ export const PERKS: readonly PerkDef[] = [
   },
   {
     id: "heat_serve_1",
+    prev: "heat_taste_2",
     family: "heat",
     name: "两锅轮着来",
     what: "炒料与煮粉交替着走，出碗快一点",
@@ -88,6 +98,7 @@ export const PERKS: readonly PerkDef[] = [
   },
   {
     id: "heat_serve_2",
+    prev: "heat_serve_1",
     family: "heat",
     name: "火不熄",
     what: "灶上一直有火，不用重新热锅",
@@ -109,17 +120,8 @@ export const PERKS: readonly PerkDef[] = [
     kairo: "rank：More Toppings（增加可选浇头数）",
   },
   {
-    id: "knife_slot_2",
-    family: "knife",
-    name: "码得齐",
-    what: "案板上分区摆好，再多配一样不慌",
-    cost: 5,
-    effect: { kind: "topping", amount: 1 },
-    why: "「案板靠墙，转身就到」—— 案子顺不顺，决定忙时还能不能多配一样。",
-    kairo: "rank：同上（第二档）",
-  },
-  {
     id: "knife_taste_1",
+    prev: "knife_slot_1",
     family: "knife",
     name: "丝切得匀",
     what: "酸笋丝粗细一致，入口的层次更整",
@@ -130,6 +132,7 @@ export const PERKS: readonly PerkDef[] = [
   },
   {
     id: "knife_serve_1",
+    prev: "knife_taste_1",
     family: "knife",
     name: "粉抖得开",
     what: "下锅前把粉抖散，煮的时间短一截",
@@ -137,6 +140,17 @@ export const PERKS: readonly PerkDef[] = [
     effect: { kind: "serve", amount: 0.1 },
     why: "粉一坨下去，中间那截永远不熟 —— 抖开是省时间的第一步。",
     kairo: "rank：Speed 一类",
+  },
+  {
+    id: "knife_slot_2",
+    prev: "knife_serve_1",
+    family: "knife",
+    name: "码得齐",
+    what: "案板上分区摆好，再多配一样不慌",
+    cost: 5,
+    effect: { kind: "topping", amount: 1 },
+    why: "「案板靠墙，转身就到」—— 案子顺不顺，决定忙时还能不能多配一样。",
+    kairo: "rank：同上（第二档）",
   },
 
   // ── 记性：柜台上的手艺，落「人情日上限」──
@@ -151,7 +165,19 @@ export const PERKS: readonly PerkDef[] = [
     kairo: "rank：本作没有对应项，按本地「认脸」补",
   },
   {
+    id: "memory_taste_1",
+    prev: "memory_favor_1",
+    family: "memory",
+    name: "记得住火候",
+    what: "哪一锅该多大火，手上有数",
+    cost: 3,
+    effect: { kind: "taste", amount: 2 },
+    why: "老友粉讲究「少一分醋则不酸，多一分酱则过咸」—— 差的就是这一点记性。",
+    kairo: "rank：Ramen Quality 一类",
+  },
+  {
     id: "memory_favor_2",
+    prev: "memory_taste_1",
     family: "memory",
     name: "记得住口味",
     what: "谁不要葱、谁要加辣，记在心上",
@@ -162,6 +188,7 @@ export const PERKS: readonly PerkDef[] = [
   },
   {
     id: "memory_slot_1",
+    prev: "memory_favor_2",
     family: "memory",
     name: "记得住搭法",
     what: "哪两样配一起好吃，心里有本账",
@@ -169,16 +196,6 @@ export const PERKS: readonly PerkDef[] = [
     effect: { kind: "topping", amount: 1 },
     why: "搭配不是玄学：酸笋配生菜、猪肉配煎蛋 —— 记住组合的人配得更准。",
     kairo: "rank：More Toppings（换成本地搭配）",
-  },
-  {
-    id: "memory_taste_1",
-    family: "memory",
-    name: "记得住火候",
-    what: "哪一锅该多大火，手上有数",
-    cost: 3,
-    effect: { kind: "taste", amount: 2 },
-    why: "老友粉讲究「少一分醋则不酸，多一分酱则过咸」—— 差的就是这一点记性。",
-    kairo: "rank：Ramen Quality 一类",
   },
 
   // ── 人情：街上的手艺，落「人情日上限」与「出碗」──
@@ -193,7 +210,19 @@ export const PERKS: readonly PerkDef[] = [
     kairo: "rank：本作没有对应项，按「街坊」补",
   },
   {
+    id: "human_taste_1",
+    prev: "human_favor_1",
+    family: "human",
+    name: "肯听劝",
+    what: "客人说咸了淡了，第二天就改",
+    cost: 4,
+    effect: { kind: "taste", amount: 2 },
+    why: "老友粉的口味是街坊一口一口调出来的，不是师傅一个人定的。",
+    kairo: "rank：Ramen Quality 一类",
+  },
+  {
     id: "human_favor_2",
+    prev: "human_taste_1",
     family: "human",
     name: "肯赊一碗",
     what: "手头紧的熟客先吃着，回头加倍还",
@@ -204,6 +233,7 @@ export const PERKS: readonly PerkDef[] = [
   },
   {
     id: "human_serve_1",
+    prev: "human_favor_2",
     family: "human",
     name: "帮手肯搭手",
     what: "忙的时候有人递碗递料，手上快一点",
@@ -211,16 +241,6 @@ export const PERKS: readonly PerkDef[] = [
     effect: { kind: "serve", amount: 0.2 },
     why: "传承基地「传帮带」出来的那批师傅，快的不是手，是配合。",
     kairo: "rank：Speed 一类（人多手快）",
-  },
-  {
-    id: "human_taste_1",
-    family: "human",
-    name: "肯听劝",
-    what: "客人说咸了淡了，第二天就改",
-    cost: 4,
-    effect: { kind: "taste", amount: 2 },
-    why: "老友粉的口味是街坊一口一口调出来的，不是师傅一个人定的。",
-    kairo: "rank：Ramen Quality 一类",
   },
 ];
 

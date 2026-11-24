@@ -88,9 +88,18 @@ export const SLOT_COUNT: Readonly<Record<SlotKind, number>> = {
  * 「每格 0.5%、满格 +48%」这一版撤掉了（`capacityOf` / `stageMinutes` 各自
  * 已经叠了四五层，再加一层就是第六层，P154 的上限没人验过）。
  *
- * 所以只剩：
- *   - `room_done`（店里坐得下）→ **耐心 +12%，常驻**；
- *   - `front_done`（门面齐了）→ 进店率 +4%，**常驻**（门面件不会被卖掉）。
+ * 所以只剩两个出口：**耐心** 与 **进店率**，全部常驻、全部不改料钱、不改出碗时间。
+ *
+ * 批 J′ 先做两条（`room_done` / `front_done`），批 X′ 补到六条，照开罗
+ * `storepattern` 的六套内装（Chic / Cafe / Retro / Natural 各五件）把「配齐一类」
+ * 这件事做厚一点：
+ *
+ *   - `room_done`（桌 6）→ 耐心 +12%（桌子让开，坐着不挤）
+ *   - `front_done`（门面 4）→ 进店 +4%（招牌、灯箱、锦旗、风扇各管一头）
+ *   - `wok_done`（灶 3）→ 耐心 +3%（灶挨着排开，火不互相等）
+ *   - `prep_done`（备料 4）→ 进店 +3%（案子摆到门口，路过的人看得见在切什么）
+ *   - `full_house`（灶 3 + 桌 8）→ 耐心 +5%（灶与桌对上号，端过去不穿人）
+ *   - `lane_show`（门面 4 + 桌 6）→ 进店 +4%（门口一条街都看见这家在满座）
  *
  * 改过一版（批 P′，解 P301）：`room_done` 原来白送座位 +1。座位是本作唯一的
  * 真瓶颈（`EAT_MINUTES = 6`），白送一个座位等于白送一天十碗，替身四种子因此多赚
@@ -102,7 +111,7 @@ export const SLOT_COUNT: Readonly<Record<SlotKind, number>> = {
  * 两个都不改料钱、不改出碗时间 —— 那是别的批已经占了的位置。
  */
 export interface SlotSetDef {
-  id: "room_done" | "front_done";
+  id: "room_done" | "front_done" | "wok_done" | "prep_done" | "full_house" | "lane_show";
   name: string;
   /** 凑齐条件：各类槽位至少摆满几个 */
   need: Readonly<Partial<Record<SlotKind, number>>>;
@@ -124,6 +133,42 @@ export const SLOT_SETS: readonly SlotSetDef[] = [
     line: "桌子摆开六张，桌与桌之间还能侧身过 —— 坐着的人不挤，等的人也不催。",
     why: "散着摆是挤，六张摆开才叫坐下来吃。多一个人坐还是得多一张凳，那是要另外买的；成套买的是这一口气。",
     kairo: "storepattern：成套内装给成套效果",
+  },
+  {
+    id: "wok_done",
+    name: "灶排开了",
+    need: { stove: 3 },
+    patiencePct: 0.03,
+    line: "三口灶挨着排开，一锅炒料一锅煮粉，第三口留着下面——火不互相等。",
+    why: "灶挤在一起时，谁都要等上一口让位；三口排开，手上才接得上。等的人看灶上一直有动静，就不催。",
+    kairo: "storepattern：同一套里的灶位（Chic 那套五格里两口灶一张台）",
+  },
+  {
+    id: "prep_done",
+    name: "案子摆开了",
+    need: { prep: 4 },
+    attractPct: 0.03,
+    line: "案子从墙边一路摆到门口，酸笋、豆豉、辣椒酱各自一格，路过的人都看得见在切什么。",
+    why: "老友粉的料是当着人面下的——案子摆到门口，等于把「现炒」这件事写在街上。",
+    kairo: "storeparts：厨房类内装（散着买没效果，摆成一片才算）",
+  },
+  {
+    id: "full_house",
+    name: "灶桌对上号",
+    need: { stove: 3, table: 8 },
+    patiencePct: 0.05,
+    line: "灶在后墙一排，桌子从灶前沿下来——端出去不用穿人，碗到手还是烫的。",
+    why: "散着摆要绕路，绕路就凉；灶与桌对上号，坐着的人看见碗一路直着过来，也就不急。",
+    kairo: "storepattern：整套内装给的成套效果（位置对了才有）",
+  },
+  {
+    id: "lane_show",
+    name: "门口一条街",
+    need: { front: 4, table: 6 },
+    attractPct: 0.04,
+    line: "招牌亮着，门口挤着六张桌都坐了人，路过的一眼就知道这家不用挑。",
+    why: "门面管「看见」，满座管「信得过」——两样凑一块，比单挂一块招牌管用。",
+    kairo: "storeparts + storepattern：门面类与桌椅成套叠在一起的效果",
   },
   {
     id: "front_done",

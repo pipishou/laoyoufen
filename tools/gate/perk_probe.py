@@ -68,6 +68,18 @@ CLICK_CELL_ID = """(id) => {
 
 FIRST_CELL = "() => { const n = document.querySelector('.ptree .pc'); return n ? n.getAttribute('data-id') : ''; }"
 
+CHAIN = """() => {
+  const cells = [...document.querySelectorAll('.ptree .pc')];
+  const blk = cells.filter((c) => c.classList.contains('blk'));
+  const second = cells.find((c) => c.classList.contains('blk'));
+  return {
+    cells: cells.length,
+    blocked: blk.length,
+    title: second ? second.getAttribute('title') ?? '' : '',
+    id: second ? second.getAttribute('data-id') ?? '' : '',
+  };
+}"""
+
 
 def kill_modals(page) -> None:
     page.evaluate(
@@ -118,11 +130,14 @@ def main() -> int:
         page.evaluate(SET_GRADE, 0)
         open_perk(page)
         base = page.evaluate(READ)
+        chain0 = page.evaluate(CHAIN)
         checks["tab_present"] = base["tab"]
         checks["tabs_scroll"] = base["overflowX"] == "auto"
         checks["four_blocks"] = base["blocks"] == 4
         checks["sixteen_cells"] = base["cells"] == 16
         checks["points_shown"] = "点手艺" in base["points"]
+        checks["chain_blocked_twelve"] = chain0["blocked"] == 12
+        checks["chain_title_says_first"] = "先点「" in chain0["title"]
         page.screenshot(path=f"{OUT}/01-perk-tree.png")
 
         # 零段位：点不动
@@ -132,6 +147,15 @@ def main() -> int:
         toasts = page.evaluate(TOASTS)
         zero = page.evaluate(READ)
         checks["cannot_buy_at_zero"] = zero["perks"] == [] and any("还差" in t for t in toasts)
+
+        # 零段位点被挡住的那一格：说「先点「X」」，一样不买
+        page.evaluate(CLICK_CELL_ID, chain0["id"])
+        page.wait_for_timeout(300)
+        blocked_toasts = page.evaluate(TOASTS)
+        blocked_now = page.evaluate(READ)
+        checks["chain_refuses"] = blocked_now["perks"] == [] and any(
+            "先点" in t for t in blocked_toasts
+        )
 
         # 抬到第 5 段：28 点
         page.evaluate(SET_GRADE, 5)
@@ -163,6 +187,7 @@ def main() -> int:
             "after": after,
             "toasts": toasts[:3] + again[:3] + toasts2[:3],
             "first_id": first_id,
+            "chain": chain0,
             "errors": errors[:5],
         }
         with open(f"{OUT}/perk-report.json", "w", encoding="utf-8") as fh:

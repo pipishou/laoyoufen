@@ -112,13 +112,13 @@ describe("店里九十六格（批次十）", () => {
 });
 
 describe("成套度（批 J′，解 P290）", () => {
-  it("新局两条都没凑齐，进度从 0 起", () => {
+  it("新局六条都没凑齐，进度从 0 起", () => {
     const s = fresh();
     const vs = slotSetViews(s);
-    expect(vs).toHaveLength(2);
+    expect(vs).toHaveLength(6);
     expect(vs.every((v) => !v.done)).toBe(true);
     expect(vs[0]!.progress).toContain("/ 6");
-    expect(slotSetSummary(s)).toBe("成套 0 / 2");
+    expect(slotSetSummary(s)).toBe("成套 0 / 6");
   });
 
   it("桌子六张 → 耐心 +12%，座位一个都不白送（批 P′，解 P301）", () => {
@@ -150,13 +150,37 @@ describe("成套度（批 J′，解 P290）", () => {
     expect(slotAttractMult(s)).toBe(1);
     s.gear = ["banner", "lucky_statue", "aroma_fan", "wall_fan"];
     expect(slotAttractMult(s)).toBeCloseTo(1.04, 5);
-    expect(slotSetSummary(s)).toContain("1 / 2");
+    expect(slotSetSummary(s)).toContain("1 / 6");
   });
 
-  it("两条的奖励写法不重样，句子都带因果", () => {
+  it("六条的奖励只走耐心与进店两个出口，句子都带因果", () => {
     const vs = slotSetViews(fresh());
     expect(slotSetWords(vs[0]!)).toContain("耐心 +12%");
-    expect(slotSetWords(vs[1]!)).toContain("进店 +4%");
-    for (const v of vs) expect(v.def.line.length).toBeGreaterThan(8);
+    expect(slotSetWords(vs[5]!)).toContain("进店 +4%");
+    for (const v of vs) {
+      expect(v.def.line.length).toBeGreaterThan(8);
+      const p = v.def.patiencePct ?? 0;
+      const a = v.def.attractPct ?? 0;
+      // 只给这两个出口，且每条只给一个（不给第六层乘数）
+      expect(p > 0 !== a > 0).toBe(true);
+    }
+  });
+
+  it("灶排开、案子摆开、灶桌对上号、门口一条街：四条新成套各认自己的条件", () => {
+    const s = fresh();
+    s.equipment.stove = 3;
+    const ids = () => slotSetViews(s).filter((v) => v.done).map((v) => v.def.id);
+    expect(ids()).toContain("wok_done");
+    expect(ids()).not.toContain("prep_done");
+    s.equipment.bench = 4;
+    expect(ids()).toContain("prep_done");
+    s.venue.seats = 8;
+    expect(ids()).toContain("full_house");
+    s.gear = ["banner", "lucky_statue", "aroma_fan", "wall_fan"];
+    expect(ids()).toContain("lane_show");
+    expect(slotSetSummary(s)).toBe("成套 6 / 6");
+    // 四条新成套加起来：耐心 +8%（灶 3 + 满堂 5）、进店 +7%（案子 3 + 门口 4）
+    expect(slotPatienceMult(s)).toBeCloseTo(1 + 0.12 + 0.03 + 0.05, 5);
+    expect(slotAttractMult(s)).toBeCloseTo(1 + 0.04 + 0.03 + 0.04, 5);
   });
 });

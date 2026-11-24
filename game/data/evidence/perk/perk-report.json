@@ -6,7 +6,10 @@
     "four_blocks": true,
     "sixteen_cells": true,
     "points_shown": true,
+    "chain_blocked_twelve": true,
+    "chain_title_says_first": true,
     "cannot_buy_at_zero": true,
+    "chain_refuses": true,
     "buy_one": true,
     "owned_style": true,
     "save_version": true,
@@ -49,14 +52,21 @@
     "saveVersion": 37
   },
   "toasts": [
-    "邕江老友粉铺 开张了，先调好一碗粉的味道",
+    "阿婆老友粉 开张了，先调好一碗粉的味道",
     "还差 3 点手艺",
     "还差 3 点手艺",
+    "先点「爆得透」",
     "爆得透 —— 蒜末豆豉在锅里多爆半分钟，味道的末段抬一点",
-    "还差 3 点手艺",
+    "先点「爆得透」",
     "爆得透 —— 蒜末豆豉在锅里多爆半分钟，味道的末段抬一点",
     "已经点过"
   ],
   "first_id": "heat_taste_1",
+  "chain": {
+    "cells": 16,
+    "blocked": 12,
+    "title": "锅气不散｜味道末段 +2｜先点「爆得透」",
+    "id": "heat_taste_2"
+  },
   "errors": []
 }

@@ -2516,6 +2516,7 @@ html.prefs-big #hud .clock{font-size:17px}
 .eventtitle.pressure::before{content:"⚠ ";color:var(--red)}
 
 /* 手艺：每族标一条「先点这个」（批 Q′，解 P306） */
+.pane .pc.blk{opacity:.62;border-style:dotted;cursor:default}
 .pane .pc.rec{outline:2px dashed var(--wood);outline-offset:1px}
 .daywhy [data-invest-line]::before{content:"到点 · "}
 .daywhy [data-act-line]::before{content:"功课 · "}

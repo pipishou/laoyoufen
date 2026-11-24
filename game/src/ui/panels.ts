@@ -1784,7 +1784,7 @@ function collectionHtml(s: GameState): string {
         const cells = fam.rows
           .map((v) => {
             const rec = fam.rec === v.def.id;
-            const cls = v.owned ? "pc on" : v.affordable ? "pc can" : "pc";
+            const cls = v.owned ? "pc on" : v.affordable ? "pc can" : v.blocked ? "pc blk" : "pc";
             const title = `${rec ? "先点这个 · " : ""}${v.def.name}｜${v.effectWords}｜${v.reason || "点一下就用掉手艺点"}`;
             return `<button type="button" class="${cls}${rec ? " rec" : ""} ${familyColor[fam.family] ?? "ink"}" data-act="buyperk" data-id="${v.def.id}"${rec ? ' data-rec="1"' : ""} title="${title}">${v.def.name}</button>`;
           })
@@ -1795,7 +1795,7 @@ function collectionHtml(s: GameState): string {
     return `
   <div class="sec">
     <div class="sechd">${icon("star")}${perkSummary(s)}</div>
-    <div class="sechint">段位每升一级发手艺点，一共 ${perkPoints(s)} 点在手。<b>点了就退不回来</b>，四条线各管一头：镬气管味道、刀工管浇头、记性管出碗、人情管人情。</div>
+    <div class="sechint">段位每升一级发手艺点，一共 ${perkPoints(s)} 点在手。<b>点了就退不回来</b>，四条线各管一头：镬气管味道、刀工管浇头、记性管出碗、人情管人情。线要从最便宜那一项起手，前一项没点，后一项写「先点「X」」。</div>
     <div class="ppoints">还剩 <b>${pts}</b> 点手艺</div>
     ${blocks}
     <div class="lmeta">${views.filter((v) => v.owned).length} / ${views.length} 项已经点上</div>

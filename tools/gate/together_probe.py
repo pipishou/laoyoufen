@@ -3,11 +3,11 @@
 十件事：
 1. 店铺页里有「店里」「街上的门路」「杂货铺」三段；
 2. 门路八条各一行、杂货九件各一行；
-3. 「店里」段写出成套进度「成套 0 / 2」，两条成套各一行；
-4. 成套的两条奖励写法在页面上：「座位 +1（一次性）」「进店 +4%」；
+3. 「店里」段写出成套进度「成套 0 / 6」，六条成套各一行；
+4. 成套的奖励写法在页面上：「耐心 +12%」「进店 +4%」（六条只走耐心/进店两个出口）；
 5. 买「门口多亮一盏灯」：人情 −5、`goods.lamp` 记上日戳、行变「今天在用」；
 6. 杂货抬头跟着变成「今天买了：门口多亮一盏灯」；
-7. 把座位调到 6 再重开店铺页：成套段变「成套 1 / 2」，那条写「已凑齐」；
+7. 把座位调到 6 再重开店铺页：成套段变「成套 1 / 6」，那条写「已凑齐」；
 8. 成套一条真给座位前，`flow.slotSeatPrize` 还是空的（打烊才发，单元测试另行覆盖）；
 9. 存档版本还是 36（这一批全是可选字段，不升版本）；
 10. 控制台干净。
@@ -136,11 +136,11 @@ def main() -> int:
         )
         checks["eight_invest_rows"] = len(base["invest"]["rows"]) >= 8
         checks["nine_good_rows"] = len(base["goods"]["rows"]) >= 9
-        checks["set_section"] = "成套 0 / 2" in base["shop"]["hint"]
+        checks["set_section"] = "成套 0 / 6" in base["shop"]["hint"]
         setrows = " ".join(base["shop"]["rows"])
         checks["set_two_rows"] = "店里坐得下了" in setrows and "门面齐了" in setrows
-        checks["set_rewards_shown"] = "座位 +1" in setrows and "进店 +4%" in setrows
-        checks["save_version"] = base["saveVersion"] == 36
+        checks["set_rewards_shown"] = "耐心 +12%" in setrows and "进店 +4%" in setrows
+        checks["save_version"] = base["saveVersion"] == 37
         page.screenshot(path=f"{OUT}/01-together-default.png")
 
         # 买一盏灯：人情 −5，日戳记上，行变今天在用
@@ -163,7 +163,7 @@ def main() -> int:
         page.wait_for_timeout(250)
         reopen_shop(page)
         seated = page.evaluate(READ)
-        checks["set_done_after_seats"] = "成套 1 / 2" in seated["shop"]["hint"]
+        checks["set_done_after_seats"] = "成套 1 / 6" in seated["shop"]["hint"]
         checks["set_row_says_done"] = any("店里坐得下了" in r and "已凑齐" in r for r in seated["shop"]["rows"])
         checks["prize_not_granted_yet"] = seated["seatPrize"] is None and seated["seats"] == 6
         page.screenshot(path=f"{OUT}/03-together-set.png")

@@ -87,22 +87,35 @@ export function perkFavorCapBonus(state: GameState): number {
 export interface PerkView {
   def: PerkDef;
   owned: boolean;
+  /** 还没点前置（批 X′） */
+  blocked: boolean;
   affordable: boolean;
   reason: string;
   /** 这一条现在值多少（含封顶后的实际值） */
   effectWords: string;
 }
 
+/** 前置那项的名字（没有前置或前置已点时返回空串） */
+export function perkPrevName(state: GameState, def: PerkDef): string {
+  if (!def.prev) return "";
+  if (perkOwned(state, def.prev)) return "";
+  return PERK_BY_ID.get(def.prev)?.name ?? "上一项";
+}
+
 export function perkViews(state: GameState): PerkView[] {
   const pts = perkPoints(state);
   return PERKS.map((def) => {
     const owned = perkOwned(state, def.id);
+    const prevName = perkPrevName(state, def);
+    const blocked = !owned && prevName !== "";
     let reason = "";
     if (owned) reason = "已经点过";
+    else if (blocked) reason = `先点「${prevName}」`;
     else if (pts < def.cost) reason = `还差 ${def.cost - pts} 点手艺`;
     return {
       def,
       owned,
+      blocked,
       affordable: reason === "",
       reason,
       effectWords: perkEffectWords(def.effect),
@@ -120,6 +133,8 @@ export function buyPerk(state: GameState, id: string): BuyPerkResult {
   const def = PERK_BY_ID.get(id);
   if (!def) return { ok: false, line: "", reason: "没有这一项" };
   if (perkOwned(state, id)) return { ok: false, line: "", reason: "已经点过" };
+  const prevName = perkPrevName(state, def);
+  if (prevName !== "") return { ok: false, line: "", reason: `先点「${prevName}」` };
   const pts = perkPoints(state);
   if (pts < def.cost) return { ok: false, line: "", reason: `还差 ${def.cost - pts} 点手艺` };
   state.perks = { ...(state.perks ?? {}), [id]: 1 };
@@ -145,9 +160,10 @@ export function perkFamilies(state: GameState): PerkFamilyView[] {
   const all = perkViews(state);
   return (Object.keys(PERK_FAMILY_NAMES) as PerkFamily[]).map((family) => {
     const rows = all.filter((v) => v.def.family === family);
-    const next = rows
-      .filter((r) => !r.owned)
-      .sort((a, b) => a.def.cost - b.def.cost || a.def.id.localeCompare(b.def.id))[0];
+    const open = rows.filter((r) => !r.owned && !r.blocked);
+    const next = (open.length > 0 ? open : rows.filter((r) => !r.owned)).sort(
+      (a, b) => a.def.cost - b.def.cost || a.def.id.localeCompare(b.def.id),
+    )[0];
     return {
       family,
       name: PERK_FAMILY_NAMES[family],
