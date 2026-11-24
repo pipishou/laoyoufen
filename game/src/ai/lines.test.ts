@@ -6,6 +6,8 @@ import {
   lineId,
   localLine,
   LINE_BUDGET,
+  LINE_QUOTA,
+  kindUsed,
   lineBudgetLeft,
   remoteLineCount,
   resetLines,
@@ -36,6 +38,9 @@ const KINDS = [
   "menu_advice",
   "appetite_voice",
   "pointer_voice",
+  "staff_grow_voice",
+  "perk_voice",
+  "item_voice",
 ] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {
@@ -246,11 +251,28 @@ describe("打烊单副行按用途分池", () => {
   });
 });
 
-describe("在线预算（批 C′ / F′）：一局最多换 260 个不同的键", () => {
-  it("预算是 260，剩余就是 260 减已换到的条数", () => {
+describe("分项配额（批 O′，解 P243）", () => {
+  it("guest_talk 有自己的顶，别的落点不受它影响", () => {
+    expect(LINE_QUOTA.guest_talk).toBe(40);
+    expect(LINE_QUOTA.hook_voice).toBeUndefined();
+  });
+
+  it("计数按落点分开记", () => {
+    expect(kindUsed("guest_talk")).toBe(0);
+    expect(kindUsed("perk_voice")).toBe(0);
+  });
+
+  it("预算从两百六提到三百二（新增三个落点）", () => {
+    expect(LINE_BUDGET).toBe(320);
+    expect(lineBudgetLeft()).toBe(320);
+  });
+});
+
+describe("在线预算（批 C′ / F′ / O′）：一局最多换三百二十个不同的键", () => {
+  it("预算是三百二，剩余就是三百二减已换到的条数", () => {
     resetLines();
-    expect(LINE_BUDGET).toBe(260);
-    expect(lineBudgetLeft()).toBe(260);
+    expect(LINE_BUDGET).toBe(320);
+    expect(lineBudgetLeft()).toBe(320);
     expect(remoteLineCount()).toBe(0);
     expect(lineBudgetLeft()).toBe(LINE_BUDGET - remoteLineCount());
   });

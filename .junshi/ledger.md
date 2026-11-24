@@ -909,3 +909,21 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P324** 长对白按「场面」分，不按「谁在说」分；开罗 `talk.txt` 是「谁 + 处境」两维，同一个场面里学生和出租车司机说的话一样。
 - **P325** 事件与对白不共享上下文：事件里刚「送粉师傅迟到」，客人的对白不会提；要连起来得给 `CustomerFlow` 加一条「今天街上发生了什么」。
 - 文档 `docs/八十三件事与二十四张地名N′-2026-11-24.md`。
+
+### 行 117 · 2026-11-24 · 批 O′：在线口子收到一处（预算三百二 + 分项配额 + 三新落点）
+
+- **预算 260 → 320**：`game/src/ai/lines.ts` 的 `export const LINE_BUDGET = 320;`。二十二个落点的键空间实测约两百，新增三个落点再加四十九个，三百二留余量。超了静默走本地句，不报错、不降级界面。
+- **分项配额（解 P243）**：`export const LINE_QUOTA: Partial<Record<LineKind, number>> = { guest_talk: 40 };` + `KIND_USED` 计数 + `quotaLeft()` 在 `fetchLine` 里先于网络判断 + `countKind()` 在写缓存时计数 + `resetLines()` 一并清空。用超了只影响那一类。
+- **三个新落点（22 → 25）**：`staff_grow_voice`（店员学会一手，键是 uid，上下文 `{谁, 会}`）/ `perk_voice`（点下一门手艺，键是手艺 id，`{族, 事}`）/ `item_voice`（买门路或杂货，键 `invest:…`/`good:…`，`{事, 在哪}`）。本地池各四句。
+- **接线**：`game/src/main.ts` 新增 `speakStaffGrow()`（读 `state.staff.lastEvent`，只在这一行变化时说，没长进的日子是空串）、`speakPerk(id)`、`speakItem(where, id, line)`；`buyPerk` / `buyInvest` / `buyGood` 三处调用；import `PERKS`。
+- **服务端**：`server/app.py` 的 `LINE_SCENES` 补三个场景，纪律一致 —— 不报数字、不提「技能 / 属性 / 升级」、不劝老板接着买什么（`ast.parse` 通过）。
+- **审计**：`tools/gate/audit_ai.py` 落点 22 → **25**，新增 `staff_grow_voice`（阿强·看火）、`perk_voice`（`heat_taste_1` 镬气·爆得透）、`item_voice`（`invest:supplier` 跟料商多留一筐）。
+- **测试**：`game/src/ai/lines.test.ts` 的 `KINDS` 补三项、新增 `describe("分项配额（批 O′，解 P243）")` 三例（配额值、计数按落点分开、预算 320）；原有「预算是二百六」的断言与标题按新数改。`vitest` **79 文件 882 用例**。
+- **验收**：`tsc` 0；`copy_gate` ok；`eye_gate --slug voice` 五视口 **722 · 778 · 584 · 1246 · 1505** 色 stamp **164**；`ai_gate` ok；产物 `index-CGzkWeaO.js` 1,705,510 B / css 52.85 kB。
+- **替身四种子与 N′ 逐位一致**：¥104,239 / ¥93,598 / ¥106,862 / ¥91,095 → 均值 **¥98,949 · 192.9 碗 · 39% · 期末 ¥315,748**（只改说话，不动数值）。
+- **P326** 配额的「四十」是拍的：长局常客多时可能不够，短局根本用不到。
+- **P327** `speakItem` 每次买都问一次，买九件杂货就问九次（键不同，缓存不合并）。
+- **P328** `staff_grow_voice` 的键是运行期 uid，重开同一份存档会再问一次。
+- **P329** 预算与配额只写在代码里，前端不报，玩家与服务端都看不见「快到顶了」。
+- **P330** 三个新落点的本地池各四句，同一件事重复三次就开始重复。
+- 文档 `docs/在线口子O′-2026-11-24.md`。

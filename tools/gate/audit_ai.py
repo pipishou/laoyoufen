@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""验收用：把线上 /laoyou-api/line 二十一个落点各打一次，看谁是真在线、谁是回落。"""
+"""验收用：把线上 /laoyou-api/line 二十五个落点各打一次，看谁是真在线、谁是回落。"""
 import json
 import urllib.request
 
@@ -27,6 +27,9 @@ CASES = [
     ("menu_advice", "老友粉>猪杂粉", {"走的": "老友粉", "冷的": "猪杂粉", "事": "一款卖得动，一款没人点"}),
     ("appetite_voice", "dull", {"事": "这一片最近点得少了", "缘故": "住久了，胃口淡"}),
     ("pointer_voice", "capacity:seat", {"事": "先把凳子搬进来", "在": "店里的家当"}),
+    ("staff_grow_voice", "probe-1", {"谁": "阿强", "会": "看火"}),
+    ("perk_voice", "heat_taste_1", {"族": "镬气", "事": "爆得透"}),
+    ("item_voice", "invest:supplier", {"事": "跟料商多留一筐", "在哪": "街上的门路"}),
 ]
 
 ok = 0

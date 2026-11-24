@@ -34,6 +34,7 @@ import { applyMaster as applyMasterImpl } from "./sim/master";
 import { buyPack as buyPackImpl } from "./sim/pack";
 import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channelOf, firstRetailMilestone, markRetailVoice } from "./sim/retail";
 import { buyGood as buyGoodImpl } from "./sim/goods";
+import { PERKS } from "./data/perk";
 import { buyPerk as buyPerkImpl } from "./sim/perk";
 import { buyInvest as buyInvestImpl } from "./sim/invest";
 import { renameDish as renameDishImpl } from "./sim/dish";
@@ -400,9 +401,10 @@ panels = mountPanels(hudRoot, {
     }
     hud.showToast(r.line, "like");
     playSfx("upgrade");
+    speakItem("invest", String(id), r.line);
     refresh();
   },
-  /** 杂货铺（批 B′）：花人情，买一天的方便 */
+  /** 手艺点树（批 K′）：花段位给的份量，点一门手上的功夫 */
   buyPerk(id) {
     const r = buyPerkImpl(state, String(id));
     if (!r.ok) {
@@ -412,6 +414,7 @@ panels = mountPanels(hudRoot, {
     }
     hud.showToast(r.line, "like");
     playSfx("upgrade");
+    speakPerk(String(id));
     refresh();
   },
 
@@ -424,6 +427,7 @@ panels = mountPanels(hudRoot, {
     }
     hud.showToast(r.line, "like");
     playSfx("upgrade");
+    speakItem("good", String(id), r.line);
     refresh();
   },
   applyMaster(index, id) {
@@ -1075,6 +1079,7 @@ function refresh(): void {
   speakToday();
   // 胃口这句跟着打烊走：一个月最多一次，白天不打扰
   if (state.dayReport) speakAppetite();
+  speakStaffGrow();
   scheduleSave();
 }
 
@@ -1209,6 +1214,61 @@ function speakToday(): void {
     for (const node of Array.from(document.querySelectorAll<HTMLElement>("[data-todaybox-voice]"))) {
       node.textContent = `街坊：「${got}」`;
     }
+  });
+}
+
+let lastGrowLine = "";
+
+/**
+ * 店员长进（落点 20）：日结时谁学会了一手，街坊看见会说一句。
+ *
+ * 只用 `state.staff.lastEvent` 这一行当触发 —— 它由 `settleStaffDay` 写，
+ * 没长进的日子是空串，所以这里天然不会天天响。
+ */
+function speakStaffGrow(): void {
+  const said = state.staff?.lastEvent ?? "";
+  if (!said || said === lastGrowLine) return;
+  lastGrowLine = said;
+  const first = state.staff.roster[0];
+  if (!first) return;
+  const ask: LineAsk = {
+    kind: "staff_grow_voice",
+    key: first.uid,
+    context: { 谁: first.name, 会: said.split("·")[0]?.trim() ?? said },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((line) => {
+    if (line) hud.showToast(`街坊说：「${line}」`, "info");
+  });
+}
+
+/** 点了一门手艺（落点 21）：老手艺人看见会搭一句 */
+function speakPerk(id: string): void {
+  const def = PERKS.find((p) => p.id === id);
+  const ask: LineAsk = {
+    kind: "perk_voice",
+    key: id,
+    context: { 族: def?.name ?? "手上的功夫", 事: def?.why ?? "" },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((line) => {
+    if (line) hud.showToast(`老师傅说：「${line}」`, "info");
+  });
+}
+
+/** 买了门路或杂货（落点 22）：旁边有人看见会讲一句 */
+function speakItem(where: "invest" | "good", id: string, line: string): void {
+  const ask: LineAsk = {
+    kind: "item_voice",
+    key: `${where}:${id}`,
+    context: { 事: line.split("，")[0] ?? line, 在哪: where === "invest" ? "街上的门路" : "店里的杂货" },
+    month: state.month,
+    day: state.day,
+  };
+  void fetchLine(ask).then((got) => {
+    if (got) hud.showToast(`有人讲：「${got}」`, "info");
   });
 }
 

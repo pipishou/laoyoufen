@@ -37,7 +37,11 @@ export type LineKind =
   | "district_voice"
   | "loss_explain"
   | "menu_advice"
-  | "appetite_voice" | "pointer_voice";
+  | "appetite_voice"
+  | "pointer_voice"
+  | "staff_grow_voice"
+  | "perk_voice"
+  | "item_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -445,6 +449,34 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "巷尾那家也是这么添的，添完才腾得开手。",
     "钱花在这上头，你自己最清楚值不值。",
   ],
+  /**
+   * 20. 店员长进（批 O′）：谁又学会了一手，街坊怎么说。
+   * 一次只提一个人、一件事，不提等级数字（那是面板的事）。
+   */
+  staff_grow_voice: [
+    "阿妹这几日手脚快了不少，你看她拎那两碗都不晃。",
+    "后生仔肯学，火候看一锅准一锅。",
+    "老人家话，做生意最要紧是有人肯留下。",
+    "他刚来时连葱花都切不齐，现在一个人守得住灶。",
+  ],
+  /**
+   * 21. 点了手艺之后（批 O′）：老手艺人知道你在练什么。
+   */
+  perk_voice: [
+    "手上这点功夫，练一次不显，练一年就分得出来。",
+    "会走路的先学站，粉要煮好，先把手上的活做熟。",
+    "你这手是练出来了，街坊吃一口就晓得。",
+    "别嫌慢，慢出来的味道才留得住人。",
+  ],
+  /**
+   * 22. 买了门路或杂货之后（批 O′）：钱与情用在什么地方，别人怎么讲。
+   */
+  item_voice: [
+    "钱花在能生钱的地方，就不叫花钱。",
+    "这些东西看着不起眼，忙起来才知道有用。",
+    "街坊之间讲的是人情，不是账本。",
+    "东西买回来要会用，用不上就是占地方。",
+  ],
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */
@@ -486,7 +518,33 @@ const INFLIGHT = new Map<string, Promise<string | null>>();
  *
  * 超了不是报错，是**静默改走本地句** —— 玩家不该因为预算用完而看见界面变样。
  */
-export const LINE_BUDGET = 260;
+export const LINE_BUDGET = 320;
+
+/**
+ * 分项配额（批 O′，解 P243）。
+ *
+ * `guest_talk` 的键是「客型 × 场面」，长局里能吃掉两百个里的几十个 ——
+ * 它一多，别的落点就挤不进去。所以单独给它封一个顶：
+ * 超了只影响它自己，别的落点照旧。
+ */
+export const LINE_QUOTA: Partial<Record<LineKind, number>> = { guest_talk: 40 };
+
+const KIND_USED = new Map<LineKind, number>();
+
+function quotaLeft(kind: LineKind): boolean {
+  const quota = LINE_QUOTA[kind];
+  if (quota == null) return true;
+  return (KIND_USED.get(kind) ?? 0) < quota;
+}
+
+function countKind(kind: LineKind): void {
+  KIND_USED.set(kind, (KIND_USED.get(kind) ?? 0) + 1);
+}
+
+/** 某类落点已经用掉几个键（给测试与探针看） */
+export function kindUsed(kind: LineKind): number {
+  return KIND_USED.get(kind) ?? 0;
+}
 
 /** 已换到的在线句；没换到就用调用处给的本地句 */
 export function getLine(ask: LineAsk, fallback: string): string {
@@ -497,6 +555,7 @@ export function getLine(ask: LineAsk, fallback: string): string {
 export function resetLines(): void {
   CACHE.clear();
   INFLIGHT.clear();
+  KIND_USED.clear();
 }
 
 /** 调试/测试用：看这一局到底有几条是线上来的 */
@@ -558,6 +617,8 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
   if (hit) return hit;
   // 预算用完了就到此为止：后面的键一律本地句，不记日志、不报错
   if (CACHE.size >= LINE_BUDGET) return null;
+  // 分项配额（见 LINE_QUOTA）：某一类用超了，只它自己退回本地句
+  if (!quotaLeft(ask.kind)) return null;
   const url = proxyUrl();
   if (!url) return null;
   const running = INFLIGHT.get(id);
@@ -589,6 +650,7 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
       if (!isCleanLine(body)) return null;
       const line = body.slice(0, 160);
       CACHE.set(id, line);
+      countKind(ask.kind);
       return line;
     } catch {
       return null;
