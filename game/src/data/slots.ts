@@ -136,6 +136,78 @@ export const SLOT_SETS: readonly SlotSetDef[] = [
   },
 ];
 
+/**
+ * 铺面面积（批 T′，解「店没变大」）。
+ *
+ * 开罗 `store_data` 的主店 Lv1–4 是 50 / 150 / 270 / 420 的座位容量阶梯 ——
+ * 玩家最能感觉到的那次跃迁不是「多买一件设备」，而是「这家店变大了」。
+ * 本作的扩建四档（`data/expansion.ts`）早就在，座位/灶位/日上限也都给了，
+ * 但**界面上一句话都没有**：96 格永远是同一张全亮的图。
+ *
+ * 这一层只补「看得见」，三个纪律：
+ *   1. **一格数值都不改**：座位、灶位、日上限、产能仍然由 `venue` / `equipment` / `expansion` 决定。
+ *   2. **槽位永远照画**：后墙那条灶位（y=0）在画上是固定墙位，不算铺面格，
+ *      所以 `floor` 的矩形从 y=2 起 —— 不会出现「灶摆在没铺开的地上」。
+ *   3. **二楼另计**：12×8 画不下二楼，第四档只把数字加上去（+24 格），
+ *      在抬头里写「另有楼上」。
+ *
+ * 阶梯（与 `EXPANSION_ORDER` 同序，四档 + 起点）：
+ *   L0 街边摊  x 2–9  · y 2–7  → 48 格
+ *   L1 打通隔墙 x 1–10 · y 2–7  → 60 格
+ *   L2 后厨扩容 x 0–11 · y 2–7  → 72 格
+ *   L3 后巷雨棚 x 0–11 · y 0–7  → 96 格
+ *   L4 二楼清出 96 + 楼上 24    → 120 格
+ */
+export interface StoreArea {
+  /** 对应 `venue.expansion` 的档位（0 = 还没扩建） */
+  level: number;
+  /** 这一档店铺的样子（与 `EXPANSIONS[n].name` 对齐） */
+  name: string;
+  /** 铺面矩形（闭区间，含端点） */
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+  /** 这一档另有的「楼上」格数（画不进来的部分） */
+  upstairs: number;
+}
+
+export const STORE_AREAS: readonly StoreArea[] = [
+  { level: 0, name: "街边摊", x0: 2, x1: 9, y0: 2, y1: 7, upstairs: 0 },
+  { level: 1, name: "打通隔墙", x0: 1, x1: 10, y0: 2, y1: 7, upstairs: 0 },
+  { level: 2, name: "后厨扩容", x0: 0, x1: 11, y0: 2, y1: 7, upstairs: 0 },
+  { level: 3, name: "后巷雨棚", x0: 0, x1: 11, y0: 0, y1: 7, upstairs: 0 },
+  { level: 4, name: "二楼清出", x0: 0, x1: 11, y0: 0, y1: 7, upstairs: 24 },
+] as const;
+
+/** 档位夹到 0–4；多买不到第五档，老档也不会越界 */
+export function storeAreaOf(level: number): StoreArea {
+  const i = Math.max(0, Math.min(STORE_AREAS.length - 1, Math.floor(level || 0)));
+  return STORE_AREAS[i]!;
+}
+
+/** 这一格的铺面是否属于这家店（只问矩形，不问槽位） */
+export function isFloorCleared(x: number, y: number, level: number): boolean {
+  const a = storeAreaOf(level);
+  return x >= a.x0 && x <= a.x1 && y >= a.y0 && y <= a.y1;
+}
+
+/** 这一档总共能用多少格（含画不进画面的楼上） */
+export function floorCellsOf(level: number): number {
+  const a = storeAreaOf(level);
+  const w = a.x1 - a.x0 + 1;
+  const h = a.y1 - a.y0 + 1;
+  return w * h + a.upstairs;
+}
+
+/** 画面里那 96 格里，有多少格属于这家店（不含楼上） */
+export function floorVisibleCellsOf(level: number): number {
+  const a = storeAreaOf(level);
+  const w = a.x1 - a.x0 + 1;
+  const h = a.y1 - a.y0 + 1;
+  return w * h;
+}
+
 export const SLOT_SET_TOTAL = SLOT_SETS.length;
 
 export function slotSetById(id: string): SlotSetDef | undefined {

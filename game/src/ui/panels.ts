@@ -20,6 +20,7 @@ import { hasGear } from "../sim/gear";
 import { GEARS } from "../data/gear";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
+import { EXPANSIONS, EXPANSION_ORDER } from "../data/expansion";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
 import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from "../sim/sides";
@@ -698,17 +699,37 @@ let lastGradeKey = "";
       : "";
 
 
-    // 扩建：四档，按顺序买（data/expansion.ts），后两档挂段位门槛（开罗 rank）
+    // 扩建：四档阶梯（data/expansion.ts + 开罗 store_data 的容量阶梯）。
+    // 批 T′ 把它从「只写下一步」改成「四步都写出来」——玩家要看得到自己走到第几步、
+    // 后面还有几步、每一步换到什么；数值仍然只由 buyExpansion 给。
     const nextExp = nextExpansion(s);
     const expLv = expansionLevel(s);
     const expLock = expansionLockReason(s);
-    const expRow = nextExp
-      ? `<div class="lrow${expLock ? " locked" : ""}">
-          <div class="lname">${nextExp.name}<span class="tag2">第 ${expLv + 1}/4 步</span>${nextExp.minGrade > 0 ? `<span class="tag2">需第 ${nextExp.minGrade} 段</span>` : ""}</div>
-          <div class="lmeta">${nextExp.desc} · 座位 +${nextExp.seats}${nextExp.stoves ? ` · 灶 +${nextExp.stoves}` : ""}</div>
-          <div class="lbtns"><button type="button" data-act="buildexpand" ${s.cash < nextExp.costYuan || expLock ? "disabled" : ""}>${expLock ? "段位不够" : money(nextExp.costYuan)}</button></div>
-        </div>`
-      : `<div class="lrow"><div class="lname">已经扩到顶了<span class="tag2">座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</span></div><div class="lmeta">下一步是换区开分店（S6）。</div></div>`;
+    const expSteps = EXPANSION_ORDER.map((id) => EXPANSIONS.find((e) => e.id === id)!)
+      .map((def, idx) => {
+        const done = idx < expLv;
+        const isNext = idx === expLv;
+        const lockText = def.minGrade > 0 ? `需第 ${def.minGrade} 段` : "";
+        const gain = `座位 +${def.seats}${def.stoves ? ` · 灶 +${def.stoves}` : ""} · 日上限 +${def.capacity}`;
+        if (done) {
+          return `<div class="lrow expdone"><div class="lname">${def.name}<span class="tag2">已扩建</span></div><div class="lmeta">${gain}</div></div>`;
+        }
+        if (isNext) {
+          return `<div class="lrow${expLock ? " locked" : ""}">
+          <div class="lname">${def.name}<span class="tag2">第 ${idx + 1}/4 步</span>${lockText ? `<span class="tag2">${lockText}</span>` : ""}</div>
+          <div class="lmeta">${def.desc}</div>
+          <div class="lmeta">${gain}</div>
+          <div class="lbtns"><button type="button" data-act="buildexpand" ${s.cash < def.costYuan || expLock ? "disabled" : ""}>${expLock ? "段位不够" : money(def.costYuan)}</button></div>
+        </div>`;
+        }
+        return `<div class="lrow locked"><div class="lname">${def.name}<span class="tag2">第 ${idx + 1}/4 步</span></div><div class="lmeta">先买上面那一步 · ${gain}</div></div>`;
+      })
+      .join("");
+    const expRow =
+      expSteps +
+      (nextExp
+        ? ""
+        : `<div class="lmeta" data-exp-top>已经扩到顶了 —— 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}。下一步是换区开分店。</div>`);
 
     // 加料台与饮料柜（P41 客单价结构）：照开罗 Toppings「可单独卖」+ Customers 1「钱包是上限」
     const sv = sideViews(s);
@@ -1086,15 +1107,23 @@ let lastGradeKey = "";
   const layoutSec = `
   <div class="sec">
     <div class="sechd">${icon("shop")}店里 · ${layoutSummary(s)}</div>
-    <div class="sechint">${filledCount(s)} / ${stageCells()} 格摆了东西；空槽是自己买得还不够，不是坏了。</div>
+    <div class="sechint" data-floor>铺开了 ${lyt.floor} / ${lyt.floorTotal} 格（第 ${lyt.level} 档 · ${lyt.storeName}）${lyt.upstairs > 0 ? `，另有楼上 ${lyt.upstairs} 格` : ""}</div>
+    <div class="sechint">${filledCount(s)} / ${stageCells()} 格摆了东西；空槽是自己买得还不够，不是坏了。灰着的那几格还没铺开 —— 把隔墙打通就多一片。</div>
     <div class="g96" style="--gw:${lyt.w};--gh:${lyt.h}">${lyt.cells
-      .map((c) =>
-        c.filled
-          ? `<span class="gc on ${c.kind}" style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.label}">${c.label}</span>`
-          : c.kind
-            ? `<span class="gc slot ${c.kind}" style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="空槽位"></span>`
-            : `<span class="gc" style="grid-column:${c.x + 1};grid-row:${c.y + 1}"></span>`,
-      )
+      .map((c) => {
+        const pos = `grid-column:${c.x + 1};grid-row:${c.y + 1}`;
+        if (c.filled) {
+          return `<span class="gc on ${c.kind}" style="${pos}" data-out="${c.floor ? "0" : "1"}" title="${c.label}">${c.label}</span>`;
+        }
+        if (c.kind) {
+          return `<span class="gc slot ${c.kind}" style="${pos}" data-out="${c.floor ? "0" : "1"}" title="${c.floor ? "空槽位" : "空槽位（这一片还没铺开）"}"></span>`;
+        }
+        if (!c.floor) {
+          const nextName = nextExpansion(s)?.name ?? "换区开分店";
+          return `<span class="gc bare" style="${pos}" data-bare="1" title="还没铺开 —— 下一步「${nextName}」"></span>`;
+        }
+        return `<span class="gc" style="${pos}"></span>`;
+      })
       .join("")}</div>
     <div class="sechint">成套 · ${slotSetSummary(s)}（配齐一类，坐着更松、门口更显眼；多坐一个人还是得另买凳子）</div>
     ${slotSets

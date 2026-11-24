@@ -1052,3 +1052,16 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **不照搬四条**：`clerk` 114 人（无立绘产线，12 个够）、`fixevent` 500 行（缺的是顺序不是数量）、`itemdata` 44 件道具（无出处的不加）、`soupaffinity` 28 条相性（会推翻 `score.ts`）。
 - **工具**：新增 `tools/gate/count_entries.py`（清点 data/ 与 sim/ 条目数，路径按脚本位置推，任何目录可跑），文档复现段引用它。
 - **总判**：骨架齐了，缺的是「长大的那一段」——店没变大、没人在旁边教、店员要走时没有说话的机会、货只能卖在店里。
+
+### 行 125 · 2026-11-25 · 批 T′：店铺四档与铺面面积
+
+第三轮 GAP 的第一条 ——「店没变大」。扩建四档（`data/expansion.ts`，¥12,000 / ¥35,000 / ¥60,000 / ¥110,000）早就在，座位/灶位/日上限也一直给，但界面上一句话都没有，96 格永远全亮。
+
+- **`game/src/data/slots.ts`**：新增 `StoreArea` 与 `STORE_AREAS` 五档（街边摊 48 / 打通隔墙 60 / 后厨扩容 72 / 后巷雨棚 96 / 二楼清出 96+楼上 24 = 120）、`storeAreaOf(level)`、`isFloorCleared(x, y, level)`、`floorCellsOf(level)`、`floorVisibleCellsOf(level)`。四条纪律写在文件头：一格数值都不改 / 槽位永远照画（灶沿后墙那条 y=0 不算铺面格，所以矩形从 y=2 起）/ 二楼另计 / 单调且嵌套。
+- **`game/src/sim/slots.ts`**：`Layout` 加 `level / storeName / floor / floorTotal / upstairs`，`LayoutCell` 加 `floor: boolean`；`layoutOf` 用 `state.venue.expansion` 算档位。
+- **`game/src/ui/panels.ts`**：96 格抬头改「铺开了 N / M 格（第 K 档 · 名字）」，没铺开的格斜纹灰掉、`title` 写「还没铺开 —— 下一步「打通隔墙」」，落在没铺开那片的槽位与已摆件都带 `data-out="1"`；扩建段从「只写下一步」改成**四步全列**（已买的打绿勾并写当初给什么、下一步带价钱按钮、后面写「先买上面那一步」）。
+- **`game/src/ui/hud.css`**：`.pane .g96 .gc.bare`（45° 斜纹 + 半透明）、`.pane .lrow.expdone`（绿勾 + 略暗）。只用 token，`audit_pixel` 仍是字面色值 0。
+- **测试**：新建 `game/src/sim/store-area.test.ts` **7 例**（五档 48/60/72/96/120 单调、画面里前四档 48/60/72/96 且楼上不计入、档位越界夹住、嵌套逐格验、`layoutOf` 的 floor 与灰格数跟着扩建走、灶位 y=0 在前三档不铺开但槽位照画、这一层不改座位/灶位/产能）。
+- **验收**：`tsc` 0；`vitest` **85 文件 923 用例**；`copy_gate` ok；`eye_gate --slug store` **584 · 1242 · 1505** 色、stamp **164**；`ai_gate` ok；`tools/gate/store_probe.py`（preview 4235）**16 / 16 true**（`floor_label / floor_starts_48 / grid_96 / bare_48 / bare_title_names_next / no_exp_done_yet / ladder_lists_four / ladder_grows / ladder_total_120 / ladder_visible_caps_at_96 / upstairs_named / bare_shrinks / expanded_rows_marked / seats_grew_by_expansion / save_version / console_clean`）；构建 `index-CV65VhUG.js` 1,714.84 kB / `index-DbjO8M7N.css` 53.60 kB。
+- **替身四种子**：¥115,938 / ¥100,452 / ¥109,109 / ¥110,380 → 均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**，与批 S′ **逐位一致** —— 改的是「看得见」，不是「更强」，这正是这一批的判据。
+- **新缺口**：**P359** 铺面面积只是画法、格子仍不参与玩法（P304 还在）/ **P360** 第四档「楼上 24 格」只在抬头里、画面看不到二楼 / **P361** 阶梯把价钱与收益并排写了但没说值不值，与「今天」那条的回本天数没有互相引用 / **P362** `STORE_AREAS` 的矩形是手量的、与 `SLOTS` 槽位坐标没有互相校验。

@@ -12,6 +12,9 @@ import {
   STAGE_CELLS,
   STAGE_H,
   STAGE_W,
+  floorCellsOf,
+  isFloorCleared,
+  storeAreaOf,
   type SlotKind,
   type SlotSetDef,
 } from "../data/slots";
@@ -26,6 +29,8 @@ export interface LayoutCell {
   filled: boolean;
   /** 摆了什么（「灶 2」这类短标签） */
   label: string;
+  /** 这一格是不是这家店真正铺开的铺面（批 T′，只影响画法） */
+  floor: boolean;
 }
 
 export interface Layout {
@@ -35,12 +40,21 @@ export interface Layout {
   /** 各类已用 / 可用 */
   used: Record<SlotKind, number>;
   cap: Record<SlotKind, number>;
+  /** 扩建档位与这一档的样子（批 T′） */
+  level: number;
+  storeName: string;
+  /** 画面里属于这家店的格数 / 这一档总共能用的格数（含楼上） */
+  floor: number;
+  floorTotal: number;
+  /** 楼上另有几格（画不进 12×8） */
+  upstairs: number;
 }
 
 /** 门面件的件数：锦旗、招牌、灯箱这类，按已买的家当里挑 */
 const FRONT_GEAR = new Set(["banner", "lucky_statue", "aroma_fan", "wall_fan"]);
 
 export function layoutOf(state: GameState): Layout {
+  const level = Math.max(0, Math.floor(state.venue?.expansion ?? 0));
   const stoves = Math.max(0, stationCount(state, "wok"));
   const tables = Math.max(1, Math.min(12, state.venue?.seats ?? 2));
   const preps = Math.max(0, state.equipment?.bench ?? 0);
@@ -75,11 +89,25 @@ export function layoutOf(state: GameState): Layout {
         kind: slot ? slot.kind : null,
         filled: !!hit,
         label: hit ? hit.label : "",
+        floor: isFloorCleared(x, y, level),
       });
     }
   }
   const cap: Record<SlotKind, number> = { stove: 4, table: 12, prep: 6, front: 4 };
-  return { w: STAGE_W, h: STAGE_H, cells, used: usedIndex, cap };
+  const area = storeAreaOf(level);
+  const floor = cells.filter((c) => c.floor).length;
+  return {
+    w: STAGE_W,
+    h: STAGE_H,
+    cells,
+    used: usedIndex,
+    cap,
+    level,
+    storeName: area.name,
+    floor,
+    floorTotal: floorCellsOf(level),
+    upstairs: area.upstairs,
+  };
 }
 
 function labelOf(kind: SlotKind, n: number): string {

@@ -2531,3 +2531,8 @@ html.prefs-big #hud .clock{font-size:17px}
   border:2px solid var(--ink);
   box-shadow:2px 2px 0 var(--shadow);
 }
+
+/* 批 T′：店铺四档 —— 还没铺开的那一片，与已扩建的阶梯行 */
+.pane .g96 .gc.bare{background:repeating-linear-gradient(45deg, var(--sand) 0 1px, transparent 1px 3px);opacity:.5}
+.pane .lrow.expdone .lname::before{content:"✔ ";color:var(--green)}
+.pane .lrow.expdone{opacity:.85}
