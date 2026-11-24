@@ -1116,3 +1116,13 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 验收：`tsc` 0 / `vitest` **89 文件 970 用例** / `copy_gate` ok / `eye_gate --slug shopname` 五视口 **723 · 778 · 584 · 1247 · 1506** 色、stamp **168** / `ai_gate` ok / 新建 `tools/gate/shopname_probe.py`（preview **4240**）**16 / 16**（`shopname_box / shopname_hint_says_no_numbers / shopname_renamed / shopname_hud_follows / shopname_input_keeps / shopname_short_rejected / shopname_short_reason / prefhelp_present / prefhelp_four_rows / prefhelp_points_to_manual / prefhelp_says_tabs / manual_sixteen / manual_five_groups / manual_has_how_group / save_version_37 / console_clean`）—— 实测改成「阿婆老友粉」状态与顶栏同步、填一个字被退回并 toast「店名要 2–12 个字」。构建 `index-CEB8cgTJ.js` 1,730.13 kB（gzip 519.27）/ `index-BHu7gZCS.css` 54.52 kB。
 - 替身四种子与批 X′ **逐位一致**（¥106,354 / ¥86,621 / ¥102,987 / ¥106,124 → 均值 **¥100,522 · 191.2 碗 · 42.8% · 期末 ¥357,293**）—— 本批判据就是「不加数值」。
 - 缺口：**P384** 招牌只有字、没有门脸可换 / **P385** 改名后旧报道跟着改口（`news.ts:58` 与 `:98` 拿 `state.shopName` 现算）/ **P386** 设置里的操作一览是手册的副本，与 P344 同型 / **P387** 十六页手册没有「读没读过」的标记 / **P388** 改名不进存档摘要与试玩回执。
+
+### 行 131 · 2026-11-25 · 三维度整体验收（批 J′ → Y′）
+
+- 十批清单与提交号落表：J′ `86ce8d0` / K′ `a3dfbec` / L′ `735ef7e` / M′ `3d97b3a` / N′ `1198a02` / O′ `5cb93da` / A″–C″ `2fa86af` `550e03c` / Q′–Y′ `ff77894` `3c7038a` `7354697` `419f139` `28e8adb` `011c3d8` `03878c1` `028ccbd` `ba465fc`。
+- 本土化：`audit_counts` **53 文件 665 条 id**（上一轮 50 / 635）；浇头 21 / 加菜 13 / 搭配 20 / 杂货 10 / 门路 8 / 行情 16 / 大会 24 / 同行 16 / 事件 83 / 长对白 60 / 地名 24 / 手册 16 / 店员手艺 21+6，每条带出处或开罗行号；查不到出处的条目一律不进表（理由写文件头）。
+- AI：落点 **28 个**，`audit_ai` 线上 **28 / 28 remote** 全 OK；`LINE_BUDGET 330` + `guest_talk` 配额 40 + `CN_QUANTITY` 红线；服务端场景提示词 28 条、`server/events.json` 83 条与游戏对齐（P344 是手工重导，无自动对账）。
+- 像素风：`audit_pixel` 字面色值 **0**、`:root` **12** token、图标 **21**、`@keyframes` **14**、`steps(` **8**、`prefers-reduced-motion` **2**、`sechd` **58**、`icon(` **54**、`data-act` **45**；`eye_gate --slug shopname` 五视口 **723 · 778 · 584 · 1247 · 1506** 色、stamp **168**。
+- 数值：替身四种子 Y′ 与 X′ 逐位一致（均值 **¥100,522 · 191.2 碗 · 42.8% · 期末 ¥357,293**）；U′ 的 −11.6% 归因 P364，X′ 的 +4.3% 全部来自六套内装。
+- 决定：**Z′ 汤底三底不做**。`soupaffinity` 28 条会推翻 `score.ts`，开工时二次确认（R-11）已撤过一次，风险最高、收益最不确定。
+- 文档 `docs/三维度整体验收-2026-11-25.md`（六节：十批清单 / 本土化 / AI / 像素风 / 四种子 / 还欠什么）。
