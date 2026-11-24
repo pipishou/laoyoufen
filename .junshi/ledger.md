@@ -927,3 +927,14 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P329** 预算与配额只写在代码里，前端不报，玩家与服务端都看不见「快到顶了」。
 - **P330** 三个新落点的本地池各四句，同一件事重复三次就开始重复。
 - 文档 `docs/在线口子O′-2026-11-24.md`。
+
+### 行 118 · 2026-11-24 · 三维度整体验收：本土化 / AI / 像素风一起对账
+
+- **这一轮的总账**：J′–O′ 六批（行 112–117，提交 `86ce8d0` / `a3dfbec` / `735ef7e` / `3d97b3a` / `1198a02` / `5cb93da`）全部上线，本文做的是三条线的合并验收。
+- **像素风补到尺子上**：`game/src/ui/icons.ts` 的 `IconName` 16 → **21**，补 `bean`（绿豆沙）、`tea`（凉茶）、`lamp`（灯）、`chalk`（价牌）、`pencil`（铅笔），全是 24×24 网格 rect 拼块、`crispEdges`、单 sprite 内联零请求；`game/src/ui/panels.ts` 的杂货铺每行按货挂图标（`GOOD_ICON`：noodle_pile→bowl / fan→clock / dough→pan / soymilk→cup / mung_bean→bean / lamp→lamp / stool_row→shop / chalkboard→chalk / helper→staff），改名输入框前挂铅笔，杂货铺提示从「三件都是当天的」改成「买了只管当天，第二天自动没了」（九件之后「三件」是错话）。
+- **五门**：`tsc` 0；`vitest` **79 文件 882 用例**；`copy_gate` ok（玩家可见文案 0 处别的作品名）；`eye_gate --slug accept` 五视口 **583 · 1248 · 1511** 色、stamp **164**；`ai_gate` `ok: true`（跑完已 `npm run -s build`）；产物 `index-qFHEK83c.js` **1,706.07 kB**（gzip 510.24）/ `index-QYVqkD2F.css` 52.85 kB。
+- **三个审计**：`audit_counts` **50 文件 635 条 id**；`audit_pixel` 字面色值 **0** / 12 token / **21 图标** / 14 keyframes / `steps(` 8 / `prefers-reduced-motion` 2 / `sechd` 57 / `icon(` 52 / `data-act` 44；`audit_ai` 线上 **25 / 25 remote**。
+- **替身四种子**：¥104,239 / ¥93,598 / ¥106,862 / ¥91,095 → 均值 **¥98,949 · 192.9 碗 · 39% · 期末 ¥315,748**，与 O′ 逐位一致（这轮只动图标不动数值）。
+- **纵向**：这一整轮从 M′ 的 ¥104,185 走到 N′ 的 ¥98,949，中间两批是我们自己往里加东西（内容收租、店员成长、同行翻倍），注释一起记在 P311 / P316 / P321。
+- **对照开罗 47 张表**：齐 15 / 浅 13 / 半 4 / 无 **0** —— 这一轮把最后一块「无」填了：`rank` 的十七项点数树换成本作的手艺四线十六项。不照搬的四条仍是：四流派热潮（改本地三种粉）、`charisma → aura`（已有 `frenzyAura` +4 满意）、拉面馆的地块道路买楼（只做一条街的门面）、`review`/`master`（开罗自己也是空表）。
+- 文档 `docs/三维度整体验收-2026-11-24.md`（九节：六批表 / 本土化 / AI / 像素风 / 五门与三审计 / 四种子 / 开罗对照 / P301–P325 / 复现）。

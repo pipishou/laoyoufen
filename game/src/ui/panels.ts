@@ -71,7 +71,7 @@ import { bowlSummary, bowlViews, currentBowl, nextBowl } from "../sim/bowl";
 import { levelProgressOf, tourneySummary, tourneyViews } from "../sim/tourneys";
 import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
-import { icon } from "./icons";
+import { icon, type IconName } from "./icons";
 import { specialtiesOfRole } from "../data/specialty";
 import { FINISH_SKILL_TOTAL, STAFF_SKILL_TOTAL } from "../data/staff-skill";
 import { specialtySummary } from "../sim/specialty";
@@ -1048,10 +1048,21 @@ let lastGradeKey = "";
    * 三件都是「身边就能办到」的事 —— 多备一筐粉、借三台电扇、现炸一筐油条。
    * 没有库存（P205），所以买的不是货，是**今天的那个状态**，第二天自动失效。
    */
+  const GOOD_ICON: Record<string, string> = {
+    noodle_pile: "bowl",
+    fan: "clock",
+    dough: "pan",
+    soymilk: "cup",
+    mung_bean: "bean",
+    lamp: "lamp",
+    stool_row: "shop",
+    chalkboard: "chalk",
+    helper: "staff",
+  };
   const goodsSec = `
   <div class="sec">
     <div class="sechd">${icon("shop")}杂货铺 · ${goodsSummary(s)}</div>
-    <div class="hint2">这里花的是人情，不是钱。三件都是当天的，第二天自动没了。</div>
+    <div class="hint2">这里花的是人情，不是钱。买了只管当天，第二天自动没了。</div>
     ${goodsViews(s)
       .map(
         (v) => `<div class="lrow${v.affordable || v.active ? "" : " locked"}">
@@ -1062,7 +1073,7 @@ let lastGradeKey = "";
             ? `<button type="button" class="pickbtn" data-act="buygood" data-id="${v.def.id}">用 ${v.def.favorCost} 点人情</button>`
             : `<span class="tag2">${v.reason}</span>`
       }</div>
-      <span class="lname">${v.def.name}</span>
+      <span class="lname">${icon((GOOD_ICON[v.def.id] ?? "shop") as IconName)}${v.def.name}</span>
       <div class="lmeta">${v.def.what}｜${goodWords(v.def)}</div>
       <div class="lmeta" title="${v.def.source.map((x) => `${x.label}（${x.url}）：${x.quote}`).join("  ／  ")}">${v.def.why}</div>
     </div>`,
