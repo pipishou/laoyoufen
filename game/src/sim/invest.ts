@@ -105,6 +105,18 @@ export function buyInvest(state: GameState, id: string): BuyResult {
 }
 
 /** 当天产能 +N 碗（料商留货） */
+/**
+ * 今天是用它的最后一天（解 P303：跨零点失效没有任何提示）。
+ *
+ * `investUntil` 存的是「到期那天」，`investToday` 是 `> dayIndexOf`，
+ * 所以它的最后一天是 `dayIndexOf + 1 === until`。打烊时正好说一句「走完了」，
+ * 玩家第二天早上看到门路没了，不会以为界面出错。
+ */
+export function investDoneToday(state: GameState): InvestDef[] {
+  const last = dayIndexOf(state) + 1;
+  return INVESTS.filter((def) => state.investments?.[def.id] === last);
+}
+
 export function investCapacityBonus(state: GameState): number {
   return activeInvests(state).reduce((n, d) => n + (d.capacity ?? 0), 0);
 }

@@ -1,0 +1,37 @@
+{
+  "url": "http://localhost:4233/",
+  "checks": {
+    "tomorrow_present": true,
+    "tomorrow_no_digits": true,
+    "tomorrow_says_pairs": true,
+    "rec_one_per_family": true,
+    "rec_title_says_first": true,
+    "invest_line_present": true,
+    "invest_line_prefix_css": true,
+    "save_version": true,
+    "console_clean": true
+  },
+  "tomorrow": "停水 · 进店 −16% · 料钱 +5%（好在今天还发薪日） · 明天：猪肉起价",
+  "badTomorrow": "创城检查 · 进店 −8% · 耐心 +4% · 料钱 −5% · 明天：气价上调（配赶圩日）",
+  "tomorrowDay": [
+    1,
+    2
+  ],
+  "rec": {
+    "count": 4,
+    "titles": [
+      "先点这个 · 爆得透｜味道末段 +2｜还差 3 点手艺",
+      "先点这个 · 切得薄｜浇头位 +1｜还差 3 点手艺",
+      "先点这个 · 记得住脸｜人情日上限 +2｜还差 3 点手艺",
+      "先点这个 · 门口有张熟脸｜人情日上限 +2｜还差 4 点手艺"
+    ],
+    "names": [
+      "爆得透",
+      "切得薄",
+      "记得住脸",
+      "门口有张熟脸"
+    ]
+  },
+  "investLine": "到点：跟料商多留一筐 走完了",
+  "errors": []
+}

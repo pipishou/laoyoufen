@@ -980,3 +980,26 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - P342 `PRESSURE_GAP = 21` 正好三个抽取周期，抽取周期一改要重算。
 - P343 `⚠` 用的是字符而不是图标，与「页签与面板行首一律用图标」的纪律不一致。
 - **P344**（已修数据、未修流程）：服务端 `server/events.json` 与游戏 `EVENTS` 会走散（部署后 health 的 `events` 还是 32，实际已 83）；本次用一次性脚本重导，下次加事件仍要记得重导。
+---
+
+### 行 121 · 2026-11-25 · 批 Q′：三句提示（明天的行情 / 门路到点 / 手艺先点哪格）
+
+**做了什么**
+- `game/src/sim/market.ts`：抽出 `hasMarketAt` / `pickMarketAt`（哈希串不变，不碰 `state.rng`），加 `marketOnDay` / `tomorrowMarketOf` / `tomorrowPairOf` / `tomorrowMarketWords`。HUD 行情行尾追一句「· 明天：停水（配发薪日）」，只给名字，不给钱和数字（对齐开罗 `economy.txt` 只给月份窗口不给量）。解 P339。
+- `game/src/sim/invest.ts`：`investDoneToday(state)` —— **`dayIndexOf(state)` 是 `state.days.length`（记账天数），不是日历日**，门路「最后一天」是 `dayIndexOf + 1 === until`。`DayRecord.investDone` 记名字，打烊单 `.daywhy` 第三行写「到点 · X 走完了」。解 P303。
+- `game/src/sim/perk.ts`：`PerkFamilyView.rec` 指同族未点里最便宜那条；`game/src/ui/panels.ts` 那格加 `data-rec="1"` 与 `title` 前缀「先点这个 · 」，`hud.css` 加 `.pc.rec` 红虚线。解 P306。
+- 新测试 `game/src/sim/hints-q.test.ts` 10 例；新探针 `tools/gate/hint_probe.py`（preview 4233）9 项全 true。
+
+**验收**
+- `npx tsc --noEmit` 0；`npx vitest run` **82 文件 907 用例**；`copy_gate` ok；`eye_gate --slug hint` 五视口 **581 · 1236 · 1510** 色、stamp **164**；`ai_gate` `"ok": true`。
+- 产物 `game/dist/assets/index-BGlMSHFr.js` **1,710,491 B**（gzip 511.80）/ `index-C9TPNgyl.css` 53.18 kB。
+- 替身四种子与批 C″ **逐位一致**：¥115,938 / ¥100,452 / ¥109,109 / ¥110,380 → 均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**（只改说法不改数）。
+
+**新缺口**
+- **P345** 预告只给名字不给量（要不要让玩家算账，与开罗一样选择不给）。
+- **P346** `rec` 只按价钱挑，挑不到「贵一点但正打在瓶颈上」的那条。
+- **P347** `investDone` 只记名字不记效果，打烊单说不出「值不值」。
+- **P348** 预告只覆盖行情，不覆盖段位评定与赛事开赛。
+- **P349** `.pc.rec` 红虚线与「现在最缺」红标同色，同一面板两种红，将来要收成「推荐虚线 / 紧急实心」。
+
+**文档**：`docs/三句提示Q′-2026-11-25.md`

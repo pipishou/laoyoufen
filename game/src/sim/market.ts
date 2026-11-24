@@ -51,6 +51,23 @@ const PAIR_WEIGHT = 0.6;
 /** 配对的兜底：开学有月份限制，别的月份撞上修路就配赶圩 */
 const PAIR_FALLBACK: MarketId = "marketRush";
 
+function hasMarketAt(month: number, day: number, seed: string): boolean {
+  return hashString(`${seed}:market:${month}:${day}:has`) / 4294967296 <= MARKET_CHANCE;
+}
+
+function pickMarketAt(month: number, day: number, seed: string): MarketDef | null {
+  const pool = MARKETS.filter((m) => SEASON[m.id].includes(month));
+  if (pool.length === 0) return null;
+  const r = hashString(`${seed}:market:${month}:${day}:pick`) / 4294967296;
+  return pool[Math.floor(r * pool.length) % pool.length] ?? null;
+}
+
+/** 某一天（不一定是今天）的行情：给「明天」的预告用，不碰 state.rng */
+export function marketOnDay(state: GameState, month: number, day: number): MarketDef | null {
+  if (!hasMarketAt(month, day, state.playerId)) return null;
+  return pickMarketAt(month, day, state.playerId);
+}
+
 export function todayMarket(state: GameState): MarketDef | null {
   if (roll(state, "has") > MARKET_CHANCE) return null;
   const pool = MARKETS.filter((m) => SEASON[m.id].includes(state.month));
@@ -76,6 +93,37 @@ export function pairedMarketOf(state: GameState): MarketDef | null {
   const def = MARKET_BY_ID.get(m.pair);
   if (def && SEASON[def.id]?.includes(state.month)) return def;
   return MARKET_BY_ID.get(PAIR_FALLBACK) ?? null;
+}
+
+/**
+ * 明天的行情（解 P339：配对是当天的，玩家昨天看不出「明天会配哪条」）。
+ *
+ * 南宁人天天看天气预报，所以「预告一条」不是作弊；预告只给名字，
+ * 不给乘数，也不保证玩家能拿它做什么。
+ */
+export function tomorrowMarketOf(state: GameState): MarketDef | null {
+  const day = state.day + 1;
+  const month = day > 30 ? state.month + 1 : state.month;
+  return marketOnDay(state, month, day > 30 ? 1 : day);
+}
+
+/** 明天那条行情配的好事（配对那条不在季就按兜底走） */
+export function tomorrowPairOf(state: GameState): MarketDef | null {
+  const day = state.day + 1;
+  const month = day > 30 ? state.month + 1 : state.month;
+  const m = tomorrowMarketOf(state);
+  if (!m || !m.pair) return null;
+  const def = MARKET_BY_ID.get(m.pair);
+  if (def && SEASON[def.id]?.includes(month)) return def;
+  return MARKET_BY_ID.get(PAIR_FALLBACK) ?? null;
+}
+
+/** 「明天：停水（配发薪日）」—— 没有就返回空串 */
+export function tomorrowMarketWords(state: GameState): string {
+  const m = tomorrowMarketOf(state);
+  if (!m) return "";
+  const pair = tomorrowPairOf(state);
+  return pair ? `明天：${m.name}（配${pair.name}）` : `明天：${m.name}`;
 }
 
 export interface MarketTotals {

@@ -23,6 +23,7 @@ import { settlePack } from "./pack";
 import { noteTick } from "./notebook";
 import { defaultRetail, settleRetail } from "./retail";
 import { announceSlotSets } from "./slots";
+import { investDoneToday } from "./invest";
 import { DEFAULT_QUALITY } from "../data/quality";
 
 import type { ArenaRun } from "./arena";
@@ -437,6 +438,8 @@ export interface DayRecord {
    * 有了它，打烊单才说得出「哪款今天一碗没动」，而不是拿累计数吓人。
    */
   menuSold?: Record<string, number>;
+  /** 今天到点（到期）的门路名字（批 Q′，解 P303：跨零点失效没提示） */
+  investDone?: string[];
 }
 
 export interface Tally {
@@ -1099,7 +1102,9 @@ function recordDay(state: GameState, taste: number): void {
    * 成套凑齐只在打烊时报一声（`flow.slotsAnnounced` 记着），不动 `venue.seats`。
    */
   {
-    const fresh = announceSlotSets(state);
+    const doneInvest = investDoneToday(state);
+  if (doneInvest.length > 0) rec.investDone = doneInvest.map((d) => d.name);
+  const fresh = announceSlotSets(state);
     if (fresh.length > 0) rec.slotSet = fresh.map((d) => d.name).join("、");
   }
 

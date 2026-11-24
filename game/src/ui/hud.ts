@@ -35,7 +35,12 @@ import type { RecipeScore } from "../sim/score";
 import { bowlMinutes, serveMultiplier } from "../sim/staff";
 import { equipServeMultiplier, slowestStation, stageMinutes } from "../sim/equipment";
 import { STATION_NAMES } from "../data/equipment";
-import { marketOf, marketPairWords, marketWords } from "../sim/market";
+import {
+  marketOf,
+  marketPairWords,
+  marketWords,
+  tomorrowMarketWords,
+} from "../sim/market";
 import { levelOf, nextStep, toppingXpOf, xpWords } from "../sim/topping-xp";
 import { icon } from "./icons";
 
@@ -260,7 +265,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
-      <div class="daywhy"><span data-loss-line></span><span data-menu-line></span></div>
+      <div class="daywhy"><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -283,6 +288,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const hookLine = dayWrap.querySelector("[data-hook-line]") as HTMLElement;
   const lossLine = dayWrap.querySelector("[data-loss-line]") as HTMLElement;
   const menuLine = dayWrap.querySelector("[data-menu-line]") as HTMLElement;
+  const investLine = dayWrap.querySelector("[data-invest-line]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
@@ -633,6 +639,9 @@ const render = (s: GameState, score: RecipeScore): void => {
       } else {
         menuLine.textContent = "";
       }
+      // 门路到点（批 Q′，解 P303）：昨天买的那条今天走完了，得有一声
+      const done = s.dayReport?.investDone ?? [];
+      investLine.textContent = done.length > 0 ? `到点：${done.join("、")} 走完了` : "";
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);
@@ -779,12 +788,13 @@ const render = (s: GameState, score: RecipeScore): void => {
       if (mKey !== lastMarketKey) {
         lastMarketKey = mKey;
         const mp = mk ? marketPairWords(s) : "";
+        const tmr = mk ? tomorrowMarketWords(s) : "";
       el.market.textContent = mk
-        ? mp
-          ? `${mk.name} · ${marketWords(mk)}（${mp}）`
-          : `${mk.name} · ${marketWords(mk)}`
+        ? (mp
+            ? `${mk.name} · ${marketWords(mk)}（${mp}）`
+            : `${mk.name} · ${marketWords(mk)}`) + (tmr ? ` · ${tmr}` : "")
         : "";
-        el.market.title = mk ? `${mk.when}｜${mk.line}` : "";
+        el.market.title = mk ? `${mk.when}｜${mk.line}${tmr ? `｜${tmr}` : ""}` : "";
         el.market.className = mk ? "mktrow on" : "mktrow";
       }
     }

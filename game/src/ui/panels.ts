@@ -1706,9 +1706,10 @@ function collectionHtml(s: GameState): string {
       .map((fam) => {
         const cells = fam.rows
           .map((v) => {
+            const rec = fam.rec === v.def.id;
             const cls = v.owned ? "pc on" : v.affordable ? "pc can" : "pc";
-            const title = `${v.def.name}｜${v.effectWords}｜${v.reason || "点一下就用掉手艺点"}`;
-            return `<button type="button" class="${cls} ${familyColor[fam.family] ?? "ink"}" data-act="buyperk" data-id="${v.def.id}" title="${title}">${v.def.name}</button>`;
+            const title = `${rec ? "先点这个 · " : ""}${v.def.name}｜${v.effectWords}｜${v.reason || "点一下就用掉手艺点"}`;
+            return `<button type="button" class="${cls}${rec ? " rec" : ""} ${familyColor[fam.family] ?? "ink"}" data-act="buyperk" data-id="${v.def.id}"${rec ? ' data-rec="1"' : ""} title="${title}">${v.def.name}</button>`;
           })
           .join("");
         return `<div class="pblock"><div class="phead">${fam.name}<span class="tag2">${fam.owned} / ${fam.total}</span></div><div class="ptree">${cells}</div></div>`;

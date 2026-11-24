@@ -132,18 +132,29 @@ export interface PerkFamilyView {
   rows: PerkView[];
   owned: number;
   total: number;
+  /**
+   * 这一族里「先点这个」的那一项（解 P306：十六项同质，第一次打开不知点哪条）。
+   *
+   * 规矩简单到能解释：同族里还没点的、最便宜的那一项。便宜不等于差，
+   * 它只是最早能用上一项；贵的留到点数宽松时再说。
+   */
+  rec?: string;
 }
 
 export function perkFamilies(state: GameState): PerkFamilyView[] {
   const all = perkViews(state);
   return (Object.keys(PERK_FAMILY_NAMES) as PerkFamily[]).map((family) => {
     const rows = all.filter((v) => v.def.family === family);
+    const next = rows
+      .filter((r) => !r.owned)
+      .sort((a, b) => a.def.cost - b.def.cost || a.def.id.localeCompare(b.def.id))[0];
     return {
       family,
       name: PERK_FAMILY_NAMES[family],
       rows,
       owned: rows.filter((r) => r.owned).length,
       total: perksOfFamily(family).length,
+      rec: next?.def.id,
     };
   });
 }

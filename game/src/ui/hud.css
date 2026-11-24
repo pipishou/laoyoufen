@@ -2514,3 +2514,7 @@ html.prefs-big #hud .clock{font-size:17px}
 /* 压迫型事件（每条选项都要掏钱）的记号，批 C″ */
 .pane .eventtitle.pressure::before,
 .eventtitle.pressure::before{content:"⚠ ";color:var(--red)}
+
+/* 手艺：每族标一条「先点这个」（批 Q′，解 P306） */
+.pane .pc.rec{outline:2px dashed var(--red);outline-offset:1px}
+.daywhy [data-invest-line]::before{content:"到点 · "}
