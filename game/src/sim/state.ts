@@ -10,6 +10,7 @@ import { nextFloat, seedRng, type RngState } from "./rng";
 import { refreshCandidates, settleStaffDay } from "./staff";
 import { DEFAULT_PRICE, scoreRecipe } from "./score";
 import { noodleKindOf } from "./noodles";
+import { perkTasteCap } from "./perk";
 import { START_NOODLE, type NoodleId } from "../data/noodles";
 import { START_SIDES, type DrinkTemp } from "../data/sides";
 import { DEFAULT_PORTION, START_MAIN } from "../data/mains";
@@ -27,7 +28,7 @@ import { DEFAULT_QUALITY } from "../data/quality";
 import type { ArenaRun } from "./arena";
 import type { TourneyRecord } from "./tourneys";
 
-export const SAVE_VERSION = 36;
+export const SAVE_VERSION = 37;
 /** 3 年 × 12 月 */
 export const TOTAL_MONTHS = 36;
 export { DAYS_PER_MONTH };
@@ -605,6 +606,8 @@ export interface GameState {
   retail: { channel: string; prices: Record<string, number>; sold: Record<string, number> };
   /** 手上的功夫（批次 6）：支 id → 练到第几级，0/1/2/3 */
   skills: Record<string, number>;
+  /** 手艺点（批 K′）：点过哪几项，值恒为 1。老档缺省按没点过 */
+  perks?: Record<string, number>;
   /** 街坊报：最近几天的头版（A11，见 `sim/news.ts`） */
   news: NewsItem[];
   /**
@@ -875,6 +878,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     investments: {},
     goods: {},
     skills: {},
+    perks: {},
     retail: defaultRetail(),
     news: [],
     styles: [],
@@ -983,6 +987,7 @@ function bestTaste(state: GameState): number {
       bone: state.bone,
       quality: state.quality,
     xp: state.ingredientXp,
+    perkTaste: perkTasteCap(state),
     });
     if (sc.total > best) best = sc.total;
   }
@@ -994,6 +999,7 @@ function bestTaste(state: GameState): number {
     bone: state.bone,
     quality: state.quality,
     xp: state.ingredientXp,
+    perkTaste: perkTasteCap(state),
   }).total;
 }
 

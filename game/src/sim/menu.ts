@@ -1,4 +1,5 @@
 import { districtAppetite } from "./district";
+import { perkTasteCap } from "./perk";
 import { MAINS, portionOf } from "../data/mains";
 import { menuCapOf } from "../data/menu";
 import { priceTolerance, scoreRecipe, type RecipeScore } from "./score";
@@ -67,6 +68,7 @@ export function scoreDish(item: MenuItem, state?: GameState): RecipeScore {
     lockedTotal: item.lockedTaste ?? null,
     quality: state?.quality,
     xp: state?.ingredientXp,
+    perkTaste: state ? perkTasteCap(state) : 0,
   });
   /**
    * 料钱定死（A6）：师傅教你拿秤称，这款每碗料钱 −8%。

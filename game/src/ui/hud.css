@@ -2462,3 +2462,29 @@ html.prefs-big #hud .clock{font-size:17px}
 .modal.dayreport{z-index:90}
 /* 反过来，打烊单开着时把 toast 往上挪，免得挡住「明天继续」这个按钮 */
 .dayreport:not([hidden]) ~ #toasts{bottom:auto;top:16px}
+
+/* ── 手艺点数树（批 K′）──────────────────────────────────────
+   四条线各用已有色（镬气红 / 刀工金 / 记性绿 / 人情蓝），不新增色板；
+   一格 28px，正好是 PX(4) 的七倍，边框 2px 也是像素整数。 */
+.pane .pblock{margin:6px 0 8px}
+.pane .phead{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;gap:6px;align-items:baseline}
+.pane .phead .tag2{font-size:10px;color:var(--wood)}
+.pane .ptree{display:grid;grid-template-columns:repeat(4,28px);gap:4px}
+.pane .pc{
+  width:28px;height:28px;font-family:inherit;font-size:9px;line-height:1.05;
+  padding:0;border:2px dashed var(--sand);background:var(--paper);color:var(--wood);
+  cursor:default;image-rendering:pixelated;letter-spacing:0;
+}
+.pane .pc.can{cursor:pointer;border-style:solid;border-color:var(--red);color:var(--ink);background:var(--paper2)}
+.pane .pc.on{cursor:default;border-style:solid;border-color:var(--ink);background:var(--gold);color:var(--ink)}
+.pane .pc.gold.can{border-color:var(--gold)}
+.pane .pc.green.can{border-color:var(--green)}
+.pane .pc.blue.can{border-color:var(--blue)}
+.pane .pc.on{animation:perkpop .18s steps(2)}
+@keyframes perkpop{from{transform:translateY(2px)}to{transform:translateY(0)}}
+.pane .ppoints{font-size:11px;color:var(--ink2);margin:2px 0 4px}
+.pane .ppoints b{color:var(--red)}
+.mtabs{overflow-x:auto;scrollbar-width:none}
+.mtabs::-webkit-scrollbar{display:none}
+.mtabs button{flex:0 0 auto}
+@media (prefers-reduced-motion: reduce){.pane .pc.on{animation:none}}

@@ -10,6 +10,7 @@ import { dishName, dishNoteOf, methodOfNoodle, type DishParts, type DishNote } f
 import { DEFAULT_PORTION, mainById, portionOf, type MainId, type Portion } from "../data/mains";
 import { noodleById } from "../data/noodles";
 import { noodleKindOf } from "./noodles";
+import { perkTasteCap } from "./perk";
 import { scoreRecipe, type RecipeScore } from "./score";
 import { activeSides } from "./sides";
 import type { GameState, MenuItem } from "./state";
@@ -56,6 +57,7 @@ export function scoreOf(state: GameState): RecipeScore {
     bone: state.bone,
     quality: state.quality,
     xp: state.ingredientXp,
+    perkTaste: perkTasteCap(state),
   });
 }
 

@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "checks": {
+    "tab_present": true,
+    "tabs_scroll": true,
+    "four_blocks": true,
+    "sixteen_cells": true,
+    "points_shown": true,
+    "cannot_buy_at_zero": true,
+    "buy_one": true,
+    "owned_style": true,
+    "save_version": true,
+    "cannot_buy_twice": true,
+    "console_clean": true
+  },
+  "base": {
+    "tab": true,
+    "blocks": 4,
+    "cells": 16,
+    "ownedCells": 0,
+    "points": "还剩 0 点手艺",
+    "perks": [],
+    "grade": 0,
+    "overflowX": "auto",
+    "saveVersion": 37
+  },
+  "before": {
+    "tab": true,
+    "blocks": 4,
+    "cells": 16,
+    "ownedCells": 0,
+    "points": "还剩 28 点手艺",
+    "perks": [],
+    "grade": 5,
+    "overflowX": "auto",
+    "saveVersion": 37
+  },
+  "after": {
+    "tab": true,
+    "blocks": 4,
+    "cells": 16,
+    "ownedCells": 1,
+    "points": "还剩 25 点手艺",
+    "perks": [
+      "heat_taste_1"
+    ],
+    "grade": 5,
+    "overflowX": "auto",
+    "saveVersion": 37
+  },
+  "toasts": [
+    "邕江老友粉铺 开张了，先调好一碗粉的味道",
+    "还差 3 点手艺",
+    "还差 3 点手艺",
+    "爆得透 —— 蒜末豆豉在锅里多爆半分钟，味道的末段抬一点",
+    "还差 3 点手艺",
+    "爆得透 —— 蒜末豆豉在锅里多爆半分钟，味道的末段抬一点",
+    "已经点过"
+  ],
+  "first_id": "heat_taste_1",
+  "errors": []
+}

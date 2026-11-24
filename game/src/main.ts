@@ -34,6 +34,7 @@ import { applyMaster as applyMasterImpl } from "./sim/master";
 import { buyPack as buyPackImpl } from "./sim/pack";
 import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channelOf, firstRetailMilestone, markRetailVoice } from "./sim/retail";
 import { buyGood as buyGoodImpl } from "./sim/goods";
+import { buyPerk as buyPerkImpl } from "./sim/perk";
 import { buyInvest as buyInvestImpl } from "./sim/invest";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
@@ -391,6 +392,18 @@ panels = mountPanels(hudRoot, {
     refresh();
   },
   /** 杂货铺（批 B′）：花人情，买一天的方便 */
+  buyPerk(id) {
+    const r = buyPerkImpl(state, String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    hud.showToast(r.line, "like");
+    playSfx("upgrade");
+    refresh();
+  },
+
   buyGood(id) {
     const r = buyGoodImpl(state, String(id));
     if (!r.ok) {

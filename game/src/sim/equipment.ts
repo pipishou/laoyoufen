@@ -14,6 +14,7 @@ import {
 } from "../data/equipment";
 import type { GameState } from "./state";
 import { investSlowestDelta } from "./invest";
+import { perkServeDelta } from "./perk";
 
 export interface BuyResult {
   ok: boolean;
@@ -54,6 +55,18 @@ export function stageMinutes(state: GameState): Record<StationId, number> & { to
     if (pot > parts[slow]) slow = "pot";
     if (basket > parts[slow]) slow = "basket";
     parts[slow] = Math.max(0.6, parts[slow] - delta);
+  }
+  /**
+   * 手艺点（批 K′）：三段**各**减一点（与老师傅那条不同 —— 老师傅只治最慢一段，
+   * 手艺是自己的手，三段都受益），同样守 0.6 分的下限，总量已由 `PERK_CAP.serve` 封顶。
+   */
+  {
+    const perk = perkServeDelta(state);
+    if (perk > 0) {
+      parts.wok = Math.max(0.6, parts.wok - perk);
+      parts.pot = Math.max(0.6, parts.pot - perk);
+      parts.basket = Math.max(0.6, parts.basket - perk);
+    }
   }
   return { wok: parts.wok, pot: parts.pot, basket: parts.basket, total: parts.wok + parts.pot + parts.basket };
 }

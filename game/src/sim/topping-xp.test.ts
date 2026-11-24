@@ -126,7 +126,7 @@ describe("浇头熟练度（批 A′）", () => {
   });
 
   it("存档 36：熟练度存得住，老档（没有这个字段）按「一手都没练」起算", () => {
-    expect(SAVE_VERSION).toBe(36);
+    expect(SAVE_VERSION).toBe(37);
     const s = fresh();
     rememberToppings(s, THREE);
     const back = deserialize(serialize(s));

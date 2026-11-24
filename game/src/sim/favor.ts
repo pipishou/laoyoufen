@@ -17,6 +17,7 @@ import {
   type FavorUseDef,
 } from "../data/favor";
 import { syncEditing } from "./menu";
+import { perkFavorCapBonus } from "./perk";
 import type { GameState } from "./state";
 
 /** 当前人情点数 */
@@ -38,8 +39,10 @@ export function addFavor(state: GameState, amount: number, why?: string): number
   if (n <= 0) return 0;
   const before = favorOf(state);
   let gained = n;
-  if (state.flow.favorToday + gained > FAVOR_GAIN.dailyCapByBowls) {
-    gained = Math.max(0, FAVOR_GAIN.dailyCapByBowls - state.flow.favorToday);
+  // 手艺点（批 K′）：「记性 / 人情」两族的奖励落在日上限上（封顶 +8，见 PERK_CAP）
+  const cap = FAVOR_GAIN.dailyCapByBowls + perkFavorCapBonus(state);
+  if (state.flow.favorToday + gained > cap) {
+    gained = Math.max(0, cap - state.flow.favorToday);
   }
   if (gained <= 0) return 0;
   state.flow.favorToday += gained;

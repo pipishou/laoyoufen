@@ -108,6 +108,7 @@ function isGameState(v: unknown): v is GameState {
   // ——玩家练了三年的店不该因为一次改版清零。
   if (
     v.saveVersion !== SAVE_VERSION &&
+    v.saveVersion !== 36 &&
     v.saveVersion !== 35 &&
     v.saveVersion !== 34 &&
     v.saveVersion !== 33 &&
@@ -648,6 +649,16 @@ export function deserialize(raw: string): GameState | null {
     }
   }
   parsed.ingredientXp = xpMap;
+  // v36 → v37（批 K′）：手艺点。老档没有这个字段，一律按「一项都没点」起算。
+  // 值恒为 1（点过/没点过两态），别的脏值一律丢掉 —— 树上没有等级。
+  const rawPerks = (parsed as { perks?: unknown }).perks;
+  const perkMap: Record<string, number> = {};
+  if (rawPerks && typeof rawPerks === "object") {
+    for (const [id, v] of Object.entries(rawPerks as Record<string, unknown>)) {
+      if (v === 1 || v === true) perkMap[id] = 1;
+    }
+  }
+  parsed.perks = perkMap;
   return parsed;
 }
 

@@ -1,6 +1,7 @@
 import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, CONTEST_TYPE_BY_ID, tierOf } from "../data/contest";
 import { retailLines, retailSummary, channelOf, retailThroughput, retailBowlLoad } from "../sim/retail";
 import { goodsSummary, goodsViews, goodWords } from "../sim/goods";
+import { perkFamilies, perkPoints, perkSummary, perkViews } from "../sim/perk";
 import { investSummary, investViews, investWords } from "../sim/invest";
 import { CHANNELS, PRICE_FLOOR, PRICE_CEIL } from "../data/retail";
 import { BOWL } from "../data/anchors";
@@ -81,12 +82,20 @@ import { SERVE_MINUTES } from "../sim/customer";
 import { equipServeMultiplier } from "../sim/equipment";
 import type { GameState, MenuItem } from "../sim/state";
 
-export type PanelTab = "recipe" | "staff" | "shop" | "contest" | "collection" | "ledger";
+export type PanelTab =
+  | "recipe"
+  | "staff"
+  | "shop"
+  | "perk"
+  | "contest"
+  | "collection"
+  | "ledger";
 
 const TAB_TITLE: Record<PanelTab, string> = {
   recipe: "配方研发 · 汤 / 粉 / 浇头",
   staff: "员工 · 招募与疲劳",
   shop: "店铺 · 门面与手艺",
+  perk: "手艺 · 点数树",
   contest: "全国老友粉大赛",
   collection: "图鉴 · 收集进度",
   ledger: "账本 · 月度与年度结算",
@@ -96,6 +105,7 @@ const TABS: readonly { id: PanelTab; label: string }[] = [
   { id: "recipe", label: "配方" },
   { id: "staff", label: "员工" },
   { id: "shop", label: "店铺" },
+  { id: "perk", label: "手艺" },
   { id: "contest", label: "比赛" },
   { id: "collection", label: "图鉴" },
   { id: "ledger", label: "账本" },
@@ -160,6 +170,7 @@ export interface PanelActions {
   buyInvest(id: string): void;
   /** 杂货铺（批 B′）：花人情买一天的方便 */
   buyGood(id: string): void;
+  buyPerk(id: string): void;
   /** M3b：花人情 */
   useFavor(id: string): void;
   toggleDish(index: number): void;
@@ -271,6 +282,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
         </section>
         <section class="pane" data-pane="staff" hidden><div data-body="staff"></div></section>
         <section class="pane" data-pane="shop" hidden><div data-body="shop"></div></section>
+        <section class="pane" data-pane="perk" hidden><div data-body="perk"></div></section>
         <section class="pane" data-pane="contest" hidden><div data-body="contest"></div></section>
         <section class="pane" data-pane="collection" hidden><div data-body="collection"></div></section>
         <section class="pane" data-pane="ledger" hidden><div data-body="ledger"></div></section>
@@ -452,6 +464,9 @@ let lastGradeKey = "";
         break;
       case "buygood":
         actions.buyGood(String(id));
+        break;
+      case "buyperk":
+        actions.buyPerk(String(id));
         break;
       case "rtprice": {
         const [goods, dir] = String(id).split("|");
@@ -1609,6 +1624,45 @@ function collectionHtml(s: GameState): string {
       ${bowlSec}`;
   }
 
+  /**
+   * 手艺页（批 K′）：四条线 × 四格 = 十六项。
+   *
+   * 为什么是一格一格的树而不是一列长列表：这是「点」的动作，开罗的点数树也是
+   * 一格一格往上点。四条线各用一个已有色（镬气红 / 刀工金 / 记性绿 / 人情蓝），
+   * **不新增颜色** —— 色板只有十二个（`game/src/render/palette.ts`）。
+   */
+  function perkHtml(s: GameState): string {
+    const views = perkViews(s);
+    const pts = perkPoints(s);
+    const fams = perkFamilies(s);
+    const familyColor: Record<string, string> = {
+      heat: "red",
+      knife: "gold",
+      memory: "green",
+      human: "blue",
+    };
+    const blocks = fams
+      .map((fam) => {
+        const cells = fam.rows
+          .map((v) => {
+            const cls = v.owned ? "pc on" : v.affordable ? "pc can" : "pc";
+            const title = `${v.def.name}｜${v.effectWords}｜${v.reason || "点一下就用掉手艺点"}`;
+            return `<button type="button" class="${cls} ${familyColor[fam.family] ?? "ink"}" data-act="buyperk" data-id="${v.def.id}" title="${title}">${v.def.name}</button>`;
+          })
+          .join("");
+        return `<div class="pblock"><div class="phead">${fam.name}<span class="tag2">${fam.owned} / ${fam.total}</span></div><div class="ptree">${cells}</div></div>`;
+      })
+      .join("");
+    return `
+  <div class="sec">
+    <div class="sechd">${icon("star")}${perkSummary(s)}</div>
+    <div class="sechint">段位每升一级发手艺点，一共 ${perkPoints(s)} 点在手。<b>点了就退不回来</b>，四条线各管一头：镬气管味道、刀工管浇头、记性管出碗、人情管人情。</div>
+    <div class="ppoints">还剩 <b>${pts}</b> 点手艺</div>
+    ${blocks}
+    <div class="lmeta">${views.filter((v) => v.owned).length} / ${views.length} 项已经点上</div>
+  </div>`;
+  }
+
   function ledgerHtml(s: GameState): string {
     const report = s.pendingReport;
     const reportHtml = report
@@ -1885,6 +1939,9 @@ function collectionHtml(s: GameState): string {
     } else if (current === "shop") {
       key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}`;
       html = shopHtml(s);
+    } else if (current === "perk") {
+      key = `${Object.keys(s.perks ?? {}).sort().join(",")}|${s.gradeLevel}`;
+      html = perkHtml(s);
     } else if (current === "contest") {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;
       html = contestHtml(s, score);

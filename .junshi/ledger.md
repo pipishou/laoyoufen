@@ -853,3 +853,16 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - 替身四种子（36 月）：¥113,348 / ¥122,978 / ¥136,773 / ¥105,548 → 均值 **¥119,662 · 215.8 碗 · 36% · 期末 ¥629,963**；对照批 I′（¥98,420 / 188.8 / 43% / ¥287,303）营收 +21.6%、碗数 +14.3%。**原因不是杂货（替身不花人情），而是成套那条「座位 +1」白送在真正的瓶颈口上** → P301。
 - 新缺口：**P301**（成套座位 +1 免费落在瓶颈，替身营收 +21.6%）/ **P302**（门路 voice 五条同质，只差价与天数）/ **P303**（跨零点失效无提示）/ **P304**（成套只看数量不看摆放位置）/ **P305**（两个测试的价格区间断言是表级的，每加条目都撞）。
 - 产物：`docs/成套与门路J′-2026-11-24.md`；`game/src/data/{goods,invest,slots}.ts`、`game/src/sim/{goods,slots,state,customer}.ts`、`game/src/ui/panels.ts`、`tools/gate/together_probe.py`。
+
+### 行 113 · 2026-11-24 · 批 K′：手艺点数树（第七个页签）
+
+- 解 P0-3「没有点数树」（开罗 `rank` 17 项）。点数从段位来：`PERK_AWARD_BY_LEVEL = [2,4,6,8,8,8,8,8,7,5]` 共 **64 点**，`perkEarned(state)` 按 `gradeLevel` 现算，不存冗余数。
+- 16 项四条线（`game/src/data/perk.ts`）：镬气 4（味道末段共 +6）/ 刀工 4（浇头位共 +2）/ 记性 4（出碗三段共 −0.3 分）/ 人情 4（人情日上限共 +8）；花费合计 64，正好点满。封顶 `PERK_CAP = { taste: 6, topping: 2, serve: 0.3, favor: 8 }`，与 `SKILL_CAP`、`XP_TASTE_CAP` 同一纪律。**R-11 撤回「汤料位 +1」**（`Recipe.soup` 定长、`soupSlot` 命中 0），改成人情日上限。
+- 接线全是已有出口：`game/src/sim/score.ts` 的 `totalFinal = totalOut + xpTaste + perkTaste`（夹 0–6，`ScoreExtra` 加 `perkTaste?`）；`sides.ts` 的 `toppingCap` 加 `perkToppingBonus(state)`；`equipment.ts` 的 `stageMinutes` 三段各减 `perkServeDelta(state)`（下限 0.6）；`favor.ts` 的 `cap = FAVOR_GAIN.dailyCapByBowls + perkFavorCapBonus(state)`；调用点 `dish.ts` / `menu.ts` / `state.ts` 两处都传 `perkTaste: perkTasteCap(state)`。
+- 存档 `SAVE_VERSION 36 → 37`；`GameState.perks?: Record<string, number>`（挂在 `skills` 之后）、`createInitialState` 写 `perks: {}`；`game/src/sim/save.ts` 白名单放行 36 + v36→v37 迁移只收 `1`/`true`。
+- 界面：`PanelTab` 加 `"perk"`、`TABS` 加「手艺」、面板 shell 补 `<section class="pane" data-pane="perk">`（**漏这一步会白屏不报错** —— 探针首跑 `four_blocks` 全红就是它）、`perkHtml` 四块十六格（28px，`PX` 七倍）、`.mtabs` 改横向滚动。四色用 `--red/--gold/--green/--blue`，不新增 token。
+- 验收：`tsc` 0；`vitest` **74 文件 847 用例**（新增 `perk.test.ts` 9 例）；`copy_gate` ok；`eye_gate --slug perk` 五视口 722 · 778 · 584 · 1245 · 1511 色、stamp 159；`ai_gate` ok；`tools/gate/perk_probe.py`（preview 4226）**11 / 11 true**。
+- **批量改数字的误伤（第二次）**：`.tmp_k9_bump.py` 把 `toBe(36)` 全改 37 时，顺手改了 `skill.test.ts` 的技法节点 36 与 `tier.test.ts` 的四维九档 36 句 → `.tmp_k11_fix.py` 改回。教训：全局批量改数字前先看命中行是不是同一语义。
+- 替身四种子与批 J′ **逐位一致**：¥113,348 / ¥122,978 / ¥136,773 / ¥105,548 → 均值 **¥119,662 · 215.8 碗 · 36% · 期末 ¥629,963**（替身不点树，点数树对朴素策略中性 —— 正是想要的形状）。
+- 新缺口 **P306**（16 项同质，第一次打开不知道点哪条）/ **P307**（缺少「点下去省多少碗」的因果句）/ **P308**（无洗点，但界面写「退不回来」，需要确认）/ **P309**（`.mtabs` 横滑与纵向滚动抢手势，P299 实测版）/ **P310**（点数合计与花费合计都是 64，改一边就得改另一边）。
+- 产物：`docs/手艺点树K′-2026-11-24.md`；`game/src/data/perk.ts`、`game/src/sim/perk.ts`、`game/src/sim/perk.test.ts`、`game/src/ui/panels.ts`、`game/src/ui/hud.css`、`game/src/main.ts`、`tools/gate/perk_probe.py`。

@@ -114,7 +114,7 @@ describe("进货档只动「相」与料钱", () => {
 
 describe("存档", () => {
   it("版本是 32，老档没有 quality 时按平常货", () => {
-    expect(SAVE_VERSION).toBe(36);
+    expect(SAVE_VERSION).toBe(37);
     const s = fresh();
     expect(s.quality).toBe(DEFAULT_QUALITY);
   });

@@ -162,6 +162,11 @@ export interface ScoreExtra {
    * 出口只有两个（味道末段、这一份料的损耗），第三条「识食客少扣分」在 `sim/customer.ts` 里。
    */
   xp?: Readonly<Record<string, number>>;
+  /**
+   * 手艺点（批 K′）：味道末段 +N，由 `perkTasteCap(state)` 传进来（已过 `PERK_CAP.taste`）。
+   * 与浇头熟练度落在同一处 `min(100, …)`，不另开出口。
+   */
+  perkTaste?: number;
 }
 
 /**
@@ -228,7 +233,8 @@ export function scoreRecipe(
    * 挂在哪一维上都会把那一维的读数搅浑。
    */
   const xpTaste = xpTasteBonus(extra.xp, recipe.toppings);
-  const totalFinal = totalOut + xpTaste;
+  const perkTaste = Math.max(0, Math.min(6, extra.perkTaste ?? 0));
+  const totalFinal = totalOut + xpTaste + perkTaste;
 
   const safePrice = Math.max(0, price);
   /**

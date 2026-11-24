@@ -24,6 +24,7 @@ import { nextFloat } from "./rng";
 import type { GameState } from "./state";
 import { districtAppetite } from "./district";
 import { goodsSideMult } from "./goods";
+import { perkToppingBonus } from "./perk";
 
 export interface SideView {
   def: SideDef;
@@ -191,7 +192,7 @@ export function pickSides(
    * 手艺树点了 topping4（第 4 段「浇头台加一格」）再 +1，对齐开罗 More Toppings。
    */
   const rich = arch ? arch.budget >= 11 : false;
-  const toppingCap = maxToppingAdds(state) + (rich ? 1 : 0);
+  const toppingCap = maxToppingAdds(state) + perkToppingBonus(state) + (rich ? 1 : 0);
 
   for (const def of toppings) {
     if (items.filter((i) => i.kind === "topping").length >= toppingCap) break;

@@ -178,7 +178,7 @@ describe("存档", () => {
   it("v26：凑成过的味道记进图鉴，读档还在", () => {
     const s = fresh();
     s.collection.flavors.push("classic");
-    expect(SAVE_VERSION).toBe(36);
+    expect(SAVE_VERSION).toBe(37);
     const back = deserialize(serialize(s))!;
     expect(back.collection.flavors).toEqual(["classic"]);
   });
