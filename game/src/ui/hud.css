@@ -2493,3 +2493,16 @@ html.prefs-big #hud .clock{font-size:17px}
 .pane .dcard .drename{display:flex;align-items:center;gap:3px;margin:2px 0 1px;font-size:10px;color:var(--wood)}
 .pane .dcard .drename input{flex:1 1 auto;min-width:0;font-family:inherit;font-size:11px;padding:1px 4px;color:var(--ink);background:var(--cream);border:2px solid var(--sand);border-radius:0}
 .pane .dcard .drename input:focus{outline:none;border-color:var(--red)}
+
+/* ── 批 N′：一格一个地名（地图）与手册十二页 ── */
+.pane .mcell .mplace{display:block;font-size:8px;line-height:1.15;color:var(--wood);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pane .mcell.lock .mplace{display:none}
+.pane .mgroup{margin:6px 0 2px}
+.pane .mghd{font-size:9px;letter-spacing:1px;color:var(--wood);margin:6px 0 3px}
+.pane .mpage{border-top:1px dashed var(--sand);padding:3px 0}
+.pane .mpage summary{font-size:11px;font-weight:700;color:var(--ink);cursor:pointer;list-style:none}
+.pane .mpage summary::-webkit-details-marker{display:none}
+.pane .mpage summary::before{content:"▸ ";color:var(--red)}
+.pane .mpage[open] summary::before{content:"▾ "}
+.pane .mpage .mgist{font-size:9px;color:var(--wood);margin:2px 0 3px}
+.pane .mpage .mbody{font-size:10px;line-height:1.6;color:var(--ink2);margin-bottom:4px}

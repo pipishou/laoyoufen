@@ -32,10 +32,12 @@ describe("客人说的话（A12）", () => {
     expect(TALK_TOTAL).toBe(6);
     const ids = TALKS.map((t) => t.id).sort();
     expect(ids).toEqual(["complain", "gift", "plain", "praise", "queue", "regular"]);
+    // 批 N′：六种场面各十句，一共六十句（开罗 talk.txt 是 244 行，我们取其形）
+    expect(TALKS.reduce((n, t) => n + t.lines.length, 0)).toBe(60);
     for (const t of TALKS) {
-      expect(t.lines.length).toBeGreaterThanOrEqual(3);
-      // 长对白：不能是一句口号，至少 20 个字
-      for (const line of t.lines) expect(line.length).toBeGreaterThanOrEqual(20);
+      expect(t.lines.length).toBe(10);
+      // 长对白：不能是一句口号，至少 12 个字（粤语短句也算一句）
+      for (const line of t.lines) expect(line.length).toBeGreaterThanOrEqual(12);
     }
   });
 

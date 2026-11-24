@@ -36,6 +36,8 @@ import { NOTE_GROUPS } from "../data/notebook";
 import { PACK_SETUP } from "../data/pack";
 import { packOwned, packRateWords, packSummary } from "../sim/pack";
 import { newsDate, newsList, newsSummary } from "../sim/news";
+import { MANUAL_TOTAL, manualSections } from "../data/manual";
+import { placeLineOf, placeShortsOf } from "../data/places";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
 import { MAX_BRANCHES, MANAGER_MONTHLY } from "../data/branches";
@@ -1545,6 +1547,13 @@ function collectionHtml(s: GameState): string {
    * 南宁轻地图（A10）：十二个区摆在 6×4 格子上，上北下南。
    * 一格一句话 —— 你在哪、有没有分店、还有几家在抢。不做可走地图。
    */
+  /** 地图下方那一行：这一片常去的地方（批 N′，只写名字不落数值） */
+  function mapPlaceLine(s: GameState): string {
+    const here = placeLineOf(s.district);
+    if (!here) return "";
+    return `这一片常去的地方：${here}。`;
+  }
+
   function mapHtml(s: GameState): string {
     const cells = mapCells(s);
     const size = mapSize();
@@ -1558,8 +1567,9 @@ function collectionHtml(s: GameState): string {
           ? `<div class="mcell lock" style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="第 ${c.gate} 段能看到这一片">` +
             `<b>?</b><span class="mlock">第 ${c.gate} 段</span></div>`
           : `<div class="mcell${c.here ? " here" : ""}${c.branch ? " br" : ""}${c.rivals > 1 ? " hot" : ""}" ` +
-            `style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.name}｜每天约 ${c.traffic} 人｜${districtPitchOf(c.id)}${c.local ? `｜这一片产${c.local}` : ""}">` +
+            `style="grid-column:${c.x + 1};grid-row:${c.y + 1}" title="${c.name}｜每天约 ${c.traffic} 人｜${districtPitchOf(c.id)}${placeLineOf(c.id) ? `｜常去：${placeLineOf(c.id)}` : ""}${c.local ? `｜这一片产${c.local}` : ""}">` +
             `<b>${c.short}</b>` +
+            (placeShortsOf(c.id).length > 0 ? `<span class="mplace">${placeShortsOf(c.id)[0]}</span>` : "") +
             (c.local ? `<em class="mprod">${c.local.slice(-2)}</em>` : "") +
             (c.rivals > 0 ? `<i>${c.rivals}</i>` : "") +
             (c.here ? `<span class="mhere">在这</span>` : c.branch ? `<span class="mbr">分店</span>` : "") +
@@ -1570,6 +1580,7 @@ function collectionHtml(s: GameState): string {
         <div class="sechd">${icon("street")}南宁 · ${mapSummary(s)}</div>
         <div class="mmap" style="--mw:${size.w};--mh:${size.h}">${grid}</div>
         <div class="hint">${localSummary(s)}。格子里的小数字是同一条街上还在营业的同行；红框是竞争最挤的区；空框写着要几段才看得见。想搬区去「街面 · 换区」。</div>
+        <div class="lmeta" data-places>${mapPlaceLine(s)}</div>
       </div>`;
   }
 
@@ -1595,6 +1606,29 @@ function collectionHtml(s: GameState): string {
             .join("")}
         </div>`;
       }).join("")}
+    </div>`;
+
+  /**
+   * 店里的手册（批 N′）：十二页，一页一件事。
+   *
+   * 用 `<details>` 而不是弹窗：手册是拿来翻的，玩家常常只想扫标题。
+   * 默认全收起 —— 打开图鉴就看到一大段说明书，反而不想读。
+   */
+  const manualSec = `<div class="sec">
+      <div class="sechd">${icon("book")}店里的手册 · ${MANUAL_TOTAL} 页</div>
+      <div class="sechint">一页一件事，点开看。手册只讲这间店真有的规矩。</div>
+      ${manualSections()
+        .map(
+          (grp) => `<div class="mgroup"><div class="mghd">${grp.section}</div>
+          ${grp.pages
+            .map(
+              (pg) => `<details class="mpage" data-manual="${pg.id}"><summary>${pg.title}</summary>
+            <div class="mgist">${pg.gist}</div><div class="mbody">${pg.body}</div></details>`,
+            )
+            .join("")}
+        </div>`,
+        )
+        .join("")}
     </div>`;
 
   const newsSec = `<div class="sec">
@@ -1635,7 +1669,7 @@ function collectionHtml(s: GameState): string {
       <div class="sec"><div class="sechd">赢过的省 ${p.provinces}/${CONTEST_RIVALS.length}</div><div class="cgrid">${provinceChips}</div></div>
       ${tierSec}
       ${trophySec}
-      ${flavorSec}${mapSec}${newsSec}${noteSec}
+      ${flavorSec}${mapSec}${newsSec}${noteSec}${manualSec}
       ${bowlSec}`;
   }
 

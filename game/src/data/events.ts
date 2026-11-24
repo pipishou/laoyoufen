@@ -12,6 +12,8 @@
  * 趣味优先，不为史实准确度让路；也不写具体政策文号、机构全称、价格数据。
  */
 
+import { EVENTS_MORE } from "./events-more";
+
 export type TrendKey = "sourBamboo" | "douchi" | "porkOffal" | "broth";
 
 export type EventEffect =
@@ -57,7 +59,7 @@ export interface GameEventDef {
   choices: readonly EventChoice[];
 }
 
-export const EVENTS: readonly GameEventDef[] = [
+const EVENTS_BASE: readonly GameEventDef[] = [
   {
     id: "bamboo_press",
     title: "酸笋坊阿婆",
@@ -963,5 +965,11 @@ export const EVENTS: readonly GameEventDef[] = [
     ],
   },
 ];
+
+/**
+ * 八十条事件（批 N′）：原来的三十二条 + `events-more.ts` 里的四十八条。
+ * 拆文件是为了让原来那三十二条的权重与冷却还能一眼看完。
+ */
+export const EVENTS: readonly GameEventDef[] = [...EVENTS_BASE, ...EVENTS_MORE];
 
 export const EVENTS_BY_ID: ReadonlyMap<string, GameEventDef> = new Map(EVENTS.map((e) => [e.id, e]));
