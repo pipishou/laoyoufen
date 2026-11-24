@@ -20,6 +20,14 @@ const SEASON: Record<MarketId, readonly number[]> = {
   inspection: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   porkUp: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   schoolOpen: [3, 9],
+  qingming: [4],
+  dragonBoat: [5, 6],
+  summerBreak: [7, 8],
+  payday: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  waterCut: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  gasUp: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  roadWork: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  expoSeason: [9],
 };
 
 /** 每天有行情的概率：太平凡了就不叫「行情」（每三天来一天左右） */

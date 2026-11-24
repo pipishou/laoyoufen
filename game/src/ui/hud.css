@@ -2488,3 +2488,8 @@ html.prefs-big #hud .clock{font-size:17px}
 .mtabs::-webkit-scrollbar{display:none}
 .mtabs button{flex:0 0 auto}
 @media (prefers-reduced-motion: reduce){.pane .pc.on{animation:none}}
+
+/* 菜单改名（批 M'）：卡片里一行小输入框，改了才生效 */
+.pane .dcard .drename{display:flex;align-items:center;gap:3px;margin:2px 0 1px;font-size:10px;color:var(--wood)}
+.pane .dcard .drename input{flex:1 1 auto;min-width:0;font-family:inherit;font-size:11px;padding:1px 4px;color:var(--ink);background:var(--cream);border:2px solid var(--sand);border-radius:0}
+.pane .dcard .drename input:focus{outline:none;border-color:var(--red)}

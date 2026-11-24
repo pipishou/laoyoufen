@@ -8,7 +8,7 @@ import { PRICE_WAR_CAP, TASTE_SHIELD, priceWarMult, priceWarWords, rivalPrices, 
  * 「压价」才是一个有对手的决策，而不是唯一解。
  *
  * 这组测试锁四件事：
- *   ① 八家同行都有第二款，价格落在真南宁的 ¥5–20；
+ *   ① 十六家同行都有第二款，价格落在真南宁的 ¥5–20；
  *   ② 比价只看「他家最便宜那碗」，而且只算还在开的；
  *   ③ 贵了扣、便宜了加，两边都有上限；
  *   ④ 味道领先一大截时，价牌不再算数（不然压价又变成唯一解）。
@@ -26,8 +26,8 @@ function setPrice(s: ReturnType<typeof fresh>, price: number) {
 }
 
 describe("同行菜单：每家有第二款", () => {
-  it("八家都有第二款，名字与价格都在真南宁的价位上", () => {
-    expect(RIVALS).toHaveLength(8);
+  it("十六家都有第二款，名字与价格都在真南宁的价位上", () => {
+    expect(RIVALS).toHaveLength(16);
     for (const r of RIVALS) {
       expect(r.signature.name.length).toBeGreaterThan(1);
       expect(r.second.name.length).toBeGreaterThan(1);
@@ -35,11 +35,12 @@ describe("同行菜单：每家有第二款", () => {
       expect(r.second.price).toBeGreaterThanOrEqual(5);
       expect(r.second.price).toBeLessThanOrEqual(20);
       expect(r.second.taste).toBeGreaterThan(30);
-      expect(["flat", "round", "wetchow", "claypot", "yifu"]).toContain(r.second.noodle);
+      // 干榨（生榨米粉）也是南宁本地粉型，第二批同行里有三家卖它
+      expect(["flat", "round", "wetchow", "claypot", "yifu", "dry"]).toContain(r.second.noodle);
     }
   });
 
-  it("第二款不是主打的复制品：八家里至少六家的主料不同", () => {
+  it("第二款不是主打的复制品：十六家里至少十二家的主料不同", () => {
     const diff = RIVALS.filter((r) => r.second.main !== r.signature.main).length;
     expect(diff).toBeGreaterThanOrEqual(6);
   });

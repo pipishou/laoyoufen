@@ -1,0 +1,80 @@
+{
+  "ok": true,
+  "checks": {
+    "rename_input": true,
+    "rename_applied": true,
+    "rename_isolated": true,
+    "rename_cleared": true,
+    "tourneys_24": true,
+    "tourney_head_24": true,
+    "save_version": true,
+    "console_clean": true
+  },
+  "base": {
+    "hasInput": true,
+    "inputValue": "老友粉",
+    "itemId": "1",
+    "cards": [
+      "老友粉"
+    ],
+    "alias": {},
+    "items": [
+      1
+    ],
+    "tourneys": 0,
+    "tourneyHead": "",
+    "market": null,
+    "saveVersion": 37
+  },
+  "renamed": {
+    "hasInput": true,
+    "inputValue": "阿婆那碗",
+    "itemId": "1",
+    "cards": [
+      "阿婆那碗"
+    ],
+    "alias": {
+      "1": "阿婆那碗"
+    },
+    "items": [
+      1
+    ],
+    "tourneys": 0,
+    "tourneyHead": "",
+    "market": null,
+    "saveVersion": 37
+  },
+  "back": {
+    "hasInput": true,
+    "inputValue": "老友粉",
+    "itemId": "1",
+    "cards": [
+      "老友粉"
+    ],
+    "alias": {},
+    "items": [
+      1
+    ],
+    "tourneys": 0,
+    "tourneyHead": "",
+    "market": null,
+    "saveVersion": 37
+  },
+  "contest": {
+    "hasInput": true,
+    "inputValue": "老友粉",
+    "itemId": "1",
+    "cards": [
+      "老友粉"
+    ],
+    "alias": {},
+    "items": [
+      1
+    ],
+    "tourneys": 24,
+    "tourneyHead": "赛事阶梯 · 打过 0 / 24 场 · 还没进过名次",
+    "market": null,
+    "saveVersion": 37
+  },
+  "errors": []
+}

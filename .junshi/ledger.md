@@ -879,3 +879,15 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - 替身四种子（36 月）：¥114,910 / ¥106,905 / ¥110,401 / ¥113,364 → 均值 **¥111,395 · 208.0 碗 · 36% · 期末 ¥543,329**（对照 K′ ¥119,662 · 215.8 · 36% · ¥629,963：营收 **−6.9%**、期末 −13.7%）。形状：人不容易累走 → 工资成常驻成本 → 扩建晚一步（**P311**）。
 - 新缺口 **P311**（成长让员工耐用，替身少换人少腾钱扩建，营收 −6.9%）/ **P312**（四属性只有一行字，两个人不好比）/ **P313**（手艺自动学，玩家没有选择权，开罗可分配）/ **P314**（`XP_STEPS` 与四属性阈值两张表要同步改）/ **P315**（六门毕业技只有「多下一份」被感觉得到）。
 - 产物：`docs/店员成长L′-2026-11-24.md`；`game/src/data/staff-skill.ts`、`game/src/sim/staff-grow.ts`、`game/src/sim/staff-grow.test.ts`、`game/src/sim/staff.ts`、`game/src/sim/state.ts`、`game/src/ui/panels.ts`、`tools/gate/staff_probe.py`。
+
+### 行 115 · 2026-11-24 · 批 M′：行情十六条、大会二十四场、同行十六家、菜单改名
+
+- 行情 `game/src/data/market.ts` 8 → **16**：新增清明 / 端午 / 放暑假 / 发薪日 / 停水 / 气价上调 / 修路围挡 / 东博会；`game/src/sim/market.ts` 的 `SEASON` 补齐月份。四条纪律照旧：只落 `attractPct/patiencePct/walletPct/costPct`、每条至少一个负出口、季节要真、`MARKET_CAP ±35%` 不动。
+- 大会 `game/src/data/tourneys.ts` 14 → **24**，五级 3/3/3/3/2 → **5/5/5/5/4**，每级三种比法（练人 / 养客 / 立招牌）都有人办；主办方全部照现实单位写，报名费与奖金仍引用 `CONTEST_TIERS`。
+- 同行 `game/src/data/rivals.ts` 8 → **16**，补齐西乡塘 / 邕宁 / 武鸣 / 隆安 / 横州 / 马山 / 宾阳；比价公式按 R-5 改成「全街均价七成 + 最近三家三成」（`game/src/sim/price-war.ts`），否则家数翻倍会把每家影响摊薄一半。
+- 菜单改名（对应开罗 `ramen_name`）：`GameState.menuAlias?: Record<string, string>`（键是 `item.id`，不升存档版本，仍 37）、`game/src/sim/dish.ts` 的 `dishNameOfItem` 先读别名、`renameDish()` 去空格去尖括号最多八字、留空改回系统名；菜单卡片里一行 `[data-rename]` 输入框走 `change` 事件（`input` 会吞光标）。
+- 验收：`tsc` 0；`vitest` **76 文件 865 用例**（新增 `game/src/sim/dish-alias.test.ts` 6 例）；`copy_gate` ok；`eye_gate --slug quarter` 五视口 **724 · 778 · 588 · 1250 · 1511** 色 stamp **161**；`ai_gate` ok；新探针 `tools/gate/quarter_probe.py`（preview 4228）**8 / 8**；构建 `index-Bn23f4Y.js` 1,663.96 kB / `index-BDjRA_83.css` 52.06 kB。
+- 替身四种子：¥104,932 / ¥119,577 / ¥98,130 / ¥94,102 → 均值 **¥104,185 · 191.9 碗 · 38% · 期末 ¥407,319**（对照 L′ ¥111,395 / 208.0 / 36% / ¥543,329：营收 −6.5%、碗数 −7.7%）。
+- 新缺口：**P316**（世界变厚的成本落在玩家身上：同行与行情翻倍让替身营收 −6.5%）/ **P317**（第二圈以外的同行只贡献人气数字、不参与比价，界面没说）/ **P318**（改名不进打烊单；`menu_advice` 缓存键没带名字，改完旧句可能还在）/ **P319**（五级 5/5/5/5/4 不整除，全国级少一场）/ **P320**（停水与气价是纯减益，没有对冲手段）。
+- 文档 `docs/行情大会同行与改名M′-2026-11-24.md`。
+

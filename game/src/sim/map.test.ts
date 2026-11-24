@@ -61,12 +61,13 @@ describe("南宁轻地图（A10）", () => {
     expect(left.length).toBe(10);
   });
 
-  it("同行数字只落在当前区（RivalState 没有区字段）", () => {
+  it("同行数字按各自的区落格，看不见的圈不显示（M′ 之后一条街不止一家）", () => {
     const s = fresh();
     const cells = mapCells(s);
     const withRivals = cells.filter((c) => c.rivals > 0);
-    expect(withRivals.length).toBe(1);
-    expect(withRivals[0]!.id).toBe(s.district);
+    // 第一圈（兴宁 · 邕宁 · 马山 · 上林）里，M′ 之前只有兴宁的同行，之后三条街都有
+    expect(withRivals.map((c) => c.id).sort()).toEqual(["mashan", "xingning", "yongning"]);
+    expect(withRivals.some((c) => c.id === s.district)).toBe(true);
     s.rivals = (s.rivals ?? []).map((r) => ({ ...r, closed: true }));
     expect(mapCells(s).filter((c) => c.rivals > 0).length).toBe(0);
   });

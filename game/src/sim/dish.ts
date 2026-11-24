@@ -79,6 +79,34 @@ export function dishSummary(state: GameState, total: number): string {
   return `${dishNameOf(state)} · ${def?.name ?? "切粉"} · ${note.word}`;
 }
 
+/** 自己起的名字最多几个字（屏幕上菜单卡片那行放得下八个） */
+export const DISH_ALIAS_MAX = 8;
+
+export interface RenameResult {
+  ok: boolean;
+  line: string;
+  reason: string;
+}
+
+/**
+ * 给菜单上某一款改名（批 M′，对应开罗 `ramen_name`）。
+ *
+ * 规则只有三条：去掉首尾空格与换行、最多八个字、留空就是改回系统名。
+ * **不检查重名** —— 街边店真会有人把两款都叫「老友粉」，客人自己会认价牌。
+ */
+export function renameDish(state: GameState, itemId: number, raw: string): RenameResult {
+  const item = state.menu?.find((it) => it.id === itemId);
+  if (!item) return { ok: false, line: "", reason: "菜单上没有这一款" };
+  const clean = raw.replace(/[\r\n\t]+/g, " ").replace(/[<>]/g, "").trim().slice(0, DISH_ALIAS_MAX);
+  if (!state.menuAlias) state.menuAlias = {};
+  if (clean.length === 0) {
+    delete state.menuAlias[String(itemId)];
+    return { ok: true, line: `改回「${dishNameOfItem(state, item)}」`, reason: "" };
+  }
+  state.menuAlias[String(itemId)] = clean;
+  return { ok: true, line: `这一款以后叫「${clean}」`, reason: "" };
+}
+
 /**
  * 菜单里某一款叫什么（P47）。
  *
@@ -86,6 +114,8 @@ export function dishSummary(state: GameState, total: number): string {
  * 这个读某一款的存档值 —— 菜单卡片上要同时看到五六款各自的品名。
  */
 export function dishNameOfItem(state: GameState, item: MenuItem): string {
+  const alias = state.menuAlias?.[String(item.id)];
+  if (alias) return alias;
   const noodle = item.noodle as Parameters<typeof methodOfNoodle>[0];
   return dishName({
     method: methodOfNoodle(noodle),

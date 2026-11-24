@@ -36,6 +36,7 @@ import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channe
 import { buyGood as buyGoodImpl } from "./sim/goods";
 import { buyPerk as buyPerkImpl } from "./sim/perk";
 import { buyInvest as buyInvestImpl } from "./sim/invest";
+import { renameDish as renameDishImpl } from "./sim/dish";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
 import { styleById } from "./data/style";
@@ -380,6 +381,16 @@ panels = mountPanels(hudRoot, {
     refresh();
   },
   /** 街上的门路（批 B′）：花一次钱，买一天的量 */
+  renameDish(itemId, name) {
+    const r = renameDishImpl(state, Number(itemId), String(name ?? ""));
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+      return;
+    }
+    playSfx(r.line.includes("改回") ? "ui" : "upgrade");
+    hud.showToast(r.line, r.line.includes("改回") ? "info" : "like");
+    refresh();
+  },
   buyInvest(id) {
     const r = buyInvestImpl(state, String(id));
     if (!r.ok) {

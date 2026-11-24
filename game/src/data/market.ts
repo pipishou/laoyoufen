@@ -6,7 +6,15 @@ export type MarketId =
   | "marketRush"
   | "inspection"
   | "porkUp"
-  | "schoolOpen";
+  | "schoolOpen"
+  | "qingming"
+  | "dragonBoat"
+  | "summerBreak"
+  | "payday"
+  | "waterCut"
+  | "gasUp"
+  | "roadWork"
+  | "expoSeason";
 
 /**
  * 南宁的天气与街面（批次三）。
@@ -122,6 +130,78 @@ export const MARKETS: readonly MarketDef[] = [
     effect: { attractPct: 0.18, walletPct: -0.1, patiencePct: -0.06 },
     why: "学生客流回来得猛，但他们只点二两、不加料、还爱催 —— 人数涨、客单价掉。",
     kairo: "对应 `economy` 的「客流 +、钱包 −」",
+  },
+  {
+    id: "qingming",
+    name: "清明",
+    when: "四月初那几天，出城扫墓的人多",
+    line: "早上巷子里静得不像话，中午一波人回来，先吃碗粉再进门。",
+    effect: { attractPct: -0.06, walletPct: 0.06, patiencePct: 0.04 },
+    why: "清明当天街上人少；但从墓园回来的人又累又饿，愿意点得实在，也坐得住。",
+    kairo: "对应 `economy` 的节日类（客流 −、钱包 +）",
+  },
+  {
+    id: "dragonBoat",
+    name: "端午",
+    when: "五六月，江边赛龙舟那天",
+    line: "江边锣鼓一响，回来的人一身的汗，坐下就要冰的。",
+    effect: { attractPct: 0.12, walletPct: -0.08 },
+    why: "看龙舟的人流回来，但家家都吃了粽子，点得少 —— 人数涨、客单价掉。",
+    kairo: "对应 `economy` 的节日类（客流 +、钱包 −）",
+  },
+  {
+    id: "summerBreak",
+    name: "放暑假",
+    when: "七八月，学校空了，学生回了老家",
+    line: "学生走了，游客来了，问路的比点单的多。",
+    effect: { attractPct: 0.14, patiencePct: -0.1, walletPct: 0.05 },
+    why: "暑假外地游客多、本地学生回家，总客流涨；游客急着赶下一站，等不起。",
+    kairo: "对应 `economy` 的夏季「客流 +、耐心 −」",
+  },
+  {
+    id: "payday",
+    name: "发薪日",
+    when: "每月十号前后，厂里和公司都在这几天发钱",
+    line: "发钱那两天，桌上多出来的都是加菜，问价的少了。",
+    effect: { walletPct: 0.16, patiencePct: -0.08 },
+    why: "刚发钱的人舍得点，但也急 —— 拿了钱要去办别的事，等不了三分钟。",
+    kairo: "对应 `economy` 的「钱包 +、耐心 −」",
+  },
+  {
+    id: "waterCut",
+    name: "停水",
+    when: "说不准，老城区管网一修就停半天",
+    line: "水龙头只有气声，洗碗的水要去隔壁借。",
+    effect: { attractPct: -0.16, costPct: 0.05 },
+    why: "没水洗不了碗、烫不了粉，出碗被卡死；临时买桶装水、借水，料钱也上去。",
+    kairo: "对应 `economy` 的「营业受阻」类",
+  },
+  {
+    id: "gasUp",
+    name: "气价上调",
+    when: "说不准，一调就是整个季度",
+    line: "灌气的三轮车来了，说这个月涨了，往后还得涨。",
+    effect: { costPct: 0.1, patiencePct: -0.04 },
+    why: "老友粉全靠猛火，气贵了就得上成本；火小了出碗慢，客人等得心烦。",
+    kairo: "对应 `economy` 的「材料费 +」",
+  },
+  {
+    id: "roadWork",
+    name: "修路围挡",
+    when: "常年都有，家门口那条路说挖就挖",
+    line: "蓝铁皮把路口围掉一半，老客要绕两条巷子才看得见招牌。",
+    effect: { attractPct: -0.18, patiencePct: 0.06 },
+    why: "围挡挡掉路过的客流；能绕进来的都是认门的老客，不催不赶。",
+    kairo: "对应 `economy` 的「位置受阻」（客流 −）",
+  },
+  {
+    id: "expoSeason",
+    name: "东博会",
+    when: "九月，会展中心那边一开就是几天",
+    line: "讲普通话和讲外语的都来了，一桌人拿着手机拍碗。",
+    effect: { attractPct: 0.2, walletPct: 0.1, patiencePct: -0.08 },
+    why: "会展期间外地客商涌进来，出手大方；但他们按日程走，等久了直接走人。",
+    kairo: "对应 `economy` 的「全场客流 +、钱包 +」",
   },
 ];
 

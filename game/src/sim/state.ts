@@ -613,6 +613,13 @@ export interface GameState {
   skills: Record<string, number>;
   /** 手艺点（批 K′）：点过哪几项，值恒为 1。老档缺省按没点过 */
   perks?: Record<string, number>;
+  /**
+   * 自己给菜单上的粉起的名（批 M′，对应开罗 `ramen_name`）。
+   *
+   * 键是菜单款的 `item.id`，不是 `index` —— 菜单里删一款、换顺序，名字不能跟着乱。
+   * 空字符串等于「改回系统名」，写进存档前会被清掉。
+   */
+  menuAlias?: Record<string, string>;
   /** 街坊报：最近几天的头版（A11，见 `sim/news.ts`） */
   news: NewsItem[];
   /**
@@ -884,6 +891,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     goods: {},
     skills: {},
     perks: {},
+    menuAlias: {},
     retail: defaultRetail(),
     news: [],
     styles: [],

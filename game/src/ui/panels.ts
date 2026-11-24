@@ -139,6 +139,10 @@ const NOODLE_DEFS: readonly ParamDef[] = [
   { label: "汤水比", min: 20, max: 50, step: 1 },
 ];
 
+function escAttr(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export interface PanelActions {
   setParam(group: "soup" | "noodle", index: number, value: number): void;
   setPrice(value: number): void;
@@ -163,6 +167,8 @@ export interface PanelActions {
   sellRecipe(index: number): void;
   /** 老师傅的方子（A6）：给第 index 款定一条方子 */
   applyMaster(index: number, id: string): void;
+  /** 菜单改名（批 M′）：itemId 是菜单款的 id，不是 index */
+  renameDish(itemId: number, name: string): void;
   /** 袋装线（A7）：置办包装机 */
   buyPack(): void;
   /** 批次七：货架换渠道 / 调价 */
@@ -539,6 +545,12 @@ let lastGradeKey = "";
       default:
         break;
     }
+  });
+
+  // 改名用 change（离开输入框或按回车才生效）：input 每敲一个字就重渲染，光标会丢
+  wrap.addEventListener("change", (e) => {
+    const el = e.target as HTMLInputElement;
+    if (el.dataset.rename) actions.renameDish(Number(el.dataset.rename), el.value);
   });
 
   wrap.addEventListener("input", (e) => {
@@ -1813,7 +1825,7 @@ function collectionHtml(s: GameState): string {
 
   function renderMenu(s: GameState): void {
     const views = menuViews(s);
-    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.portion}:${v.item.recipe.toppings.join("-")}`).join(",")}`;
+    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${views.map((v) => s.menuAlias?.[String(v.item.id)] ?? "").join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.portion}:${v.item.recipe.toppings.join("-")}`).join(",")}`;
     menuSumEl.textContent = ` ${menuSummary(s)}`;
     if (key === menuKey) return;
     menuKey = key;
@@ -1828,6 +1840,7 @@ function collectionHtml(s: GameState): string {
             <span class="nname">${dishNameOfItem(s, v.item)}</span>
             <b class="dprice">¥${v.price}</b>
           </button>
+          <label class="drename" title="自己起个名，八个字以内；留空改回系统名"><span>叫</span><input type="text" maxlength="8" data-rename="${v.item.id}" value="${escAttr(dishNameOfItem(s, v.item))}"></label>
           <span class="nfit">味道 ${Math.round(v.score.total)} · ${v.score.grade} · ${sold}</span>
           <span class="ntier" title="四维九档：客人怎么评价这一碗">${tierLine(v.item, v.score)}</span>
           <div class="dacts">

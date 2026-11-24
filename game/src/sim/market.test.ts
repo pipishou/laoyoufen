@@ -35,11 +35,11 @@ function scan(): Array<{ month: number; day: number; id: string }> {
   return out;
 }
 
-describe("data/market 八条南宁行情", () => {
-  it("八条、id 唯一、说明齐、能被 marketById 查到", () => {
-    expect(MARKET_TOTAL).toBe(8);
-    expect(MARKETS).toHaveLength(8);
-    expect(new Set(MARKETS.map((m) => m.id)).size).toBe(8);
+describe("data/market 十六条南宁行情", () => {
+  it("十六条、id 唯一、说明齐、能被 marketById 查到", () => {
+    expect(MARKET_TOTAL).toBe(16);
+    expect(MARKETS).toHaveLength(16);
+    expect(new Set(MARKETS.map((m) => m.id)).size).toBe(16);
     for (const m of MARKETS) {
       expect(m.name.length).toBeGreaterThan(1);
       expect(m.when.length).toBeGreaterThan(4);

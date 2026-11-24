@@ -27,11 +27,11 @@ function fresh(): GameState {
   return s;
 }
 
-describe("同条街（M1）：8 家同行", () => {
-  it("八家、四区、id 唯一、tier 1—3、district 合法", () => {
-    expect(RIVALS.length).toBe(8);
+describe("同条街（M1/M′）：16 家同行", () => {
+  it("十六家、十二区、id 唯一、tier 1—3、district 合法", () => {
+    expect(RIVALS.length).toBe(16);
     const ids = new Set(RIVALS.map((r) => r.id));
-    expect(ids.size).toBe(8);
+    expect(ids.size).toBe(16);
     const districtIds = new Set(DISTRICTS.map((d) => d.id));
     for (const r of RIVALS) {
       expect(districtIds.has(r.district as never)).toBe(true);
@@ -41,7 +41,7 @@ describe("同条街（M1）：8 家同行", () => {
       expect(r.takeoverFeeYuan).toBeGreaterThan(0);
       expect(r.lines.length).toBeGreaterThan(0);
     }
-    expect(RIVAL_BY_ID.size).toBe(8);
+    expect(RIVAL_BY_ID.size).toBe(16);
   });
 
   it("新局每家名气都是初始值，兴宁这条街份额 > 0 且不超过上限", () => {
@@ -226,7 +226,7 @@ describe("同条街（M1）：存档", () => {
     delete raw.takenOver;
     raw.saveVersion = 18;
     const back = deserialize(JSON.stringify(raw))!;
-    expect(back.rivals.length).toBe(8);
+    expect(back.rivals.length).toBe(16);
     expect(back.takenOver).toEqual([]);
     expect(back.flow.lastStreet).toBeNull();
   });

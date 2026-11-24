@@ -82,13 +82,23 @@ export function rivalPrices(state: GameState): PriceRow[] {
 export function priceWarMult(state: GameState): number {
   const rows = rivalPrices(state);
   if (rows.length === 0) return 1;
+  // R-5（二次确认）：家数从 8 涨到 16 之后，原来「按条数摊薄」的写法会让
+  // 多出来的八家把每家的影响摊成一半 —— 街上一半的店换人，比价乘数几乎不动。
+  // 改成两层：① 全街平均（份量不变，按家数取均）；② 最近三家（街坊真会走的那几家）
+  // 各给一点权重。两层相加再夹住上限。
   let sum = 0;
   for (const r of rows) {
     const weight = r.shielded ? 0.25 : 1;
-    // 贵 ¥1 → −2%；便宜 ¥1 → +2%，两边都按条数摊薄后夹住
-    sum += (r.gap * 0.02 * weight) / rows.length;
+    sum += r.gap * weight;
   }
-  const mult = 1 - sum;
+  const avg = sum / rows.length;
+  // 最近三家：`rivalPrices` 已按 gap 从大到小排好，取前三就是「比你便宜最多的三家」
+  const near = rows.slice(0, 3);
+  let nearSum = 0;
+  for (const r of near) nearSum += r.gap * (r.shielded ? 0.25 : 1);
+  const nearAvg = near.length > 0 ? nearSum / near.length : 0;
+  // 贵 ¥1 → −2%；全街占七成、最近三家占三成
+  const mult = 1 - (avg * 0.7 + nearAvg * 0.3) * 0.02;
   return Math.max(1 - PRICE_WAR_CAP, Math.min(1 + PRICE_WAR_CAP / 2, mult));
 }
 

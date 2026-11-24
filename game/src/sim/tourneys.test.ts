@@ -41,12 +41,12 @@ function freshPassed(): GameState {
   return s;
 }
 
-describe("赛事阶梯：14 场具名赛事", () => {
-  it("14 场，五级 3/3/3/3/2，id 唯一", () => {
-    expect(TOURNEYS.length).toBe(14);
-    expect(([1, 2, 3, 4, 5] as const).map((l) => tourneysOfLevel(l).length)).toEqual([3, 3, 3, 3, 2]);
-    expect(new Set(TOURNEYS.map((t) => t.id)).size).toBe(14);
-    expect(TOURNEY_BY_ID.size).toBe(14);
+describe("赛事阶梯：24 场具名赛事", () => {
+  it("24 场，五级 5/5/5/5/4，id 唯一", () => {
+    expect(TOURNEYS.length).toBe(24);
+    expect(([1, 2, 3, 4, 5] as const).map((l) => tourneysOfLevel(l).length)).toEqual([5, 5, 5, 5, 4]);
+    expect(new Set(TOURNEYS.map((t) => t.id)).size).toBe(24);
+    expect(TOURNEY_BY_ID.size).toBe(24);
   });
 
   it("每场都有主办方、一句南宁话，tier 落在已有 5 档里", () => {
@@ -207,10 +207,10 @@ describe("报名与成绩", () => {
 describe("展示", () => {
   it("summary 说清「打过几场 / 共几场 / 最好名次」", () => {
     const s = fresh();
-    expect(tourneySummary(s)).toContain("打过 0 / 14 场");
+    expect(tourneySummary(s)).toContain("打过 0 / 24 场");
     expect(tourneySummary(s)).toContain("还没进过名次");
     enterTourney(s, "chaoyang_street");
-    expect(tourneySummary(s)).toContain("打过 1 / 14 场");
+    expect(tourneySummary(s)).toContain("打过 1 / 24 场");
   });
 
   it("levelProgressOf 五级、每级 total 对得上、best 从记录算", () => {
@@ -218,7 +218,7 @@ describe("展示", () => {
     seedRank(s, "xingning_skill", 2);
     const rows = levelProgressOf(s);
     expect(rows.map((r) => r.level)).toEqual([1, 2, 3, 4, 5]);
-    expect(rows.map((r) => r.total)).toEqual([3, 3, 3, 3, 2]);
+    expect(rows.map((r) => r.total)).toEqual([5, 5, 5, 5, 4]);
     const district = rows.find((r) => r.level === 2)!;
     expect(district.played).toBe(1);
     expect(district.best).toBe(2);
@@ -229,7 +229,7 @@ describe("展示", () => {
     const s = fresh();
     s.month = 0;
     const views = tourneyViews(s);
-    expect(views.length).toBe(14);
+    expect(views.length).toBe(24);
     const juneOnly = views.find((v) => v.def.when === "june")!;
     expect(juneOnly.gate.ok).toBe(false);
     expect(juneOnly.feeYuan).toBeGreaterThan(0);
