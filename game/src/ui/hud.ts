@@ -645,7 +645,8 @@ const render = (s: GameState, score: RecipeScore): void => {
       const said = done
         .map((name, i) => (gain[i] ? `${name} 走完了（${gain[i]}）` : `${name} 走完了`))
         .join("；");
-      investLine.textContent = done.length > 0 ? `到点：${said}` : "";
+      // CSS 的 `[data-invest-line]::before` 已经写了「到点 · 」，正文别再重复一次
+      investLine.textContent = done.length > 0 ? said : "";
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);

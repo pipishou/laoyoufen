@@ -126,7 +126,7 @@ def main() -> int:
               const s = api.state;
               s.dayReport = Object.assign({}, s.dayReport || {}, {
                 month: s.month, day: s.day, served: 36, lost: 9,
-                revenue: 360, cost: 200, sat: 62,
+                revenue: 360, cost: 200, avgSat: 62,
                 investDone: ['跟料商多留一筐'],
                 investGain: ['多做 20 碗'],
               });

@@ -2,7 +2,7 @@
   "slug": "gain",
   "url": "http://127.0.0.1:4173/",
   "browser": "bundled-chromium",
-  "head": "ff7789474c1681a9e3876e6b0995383e15e223bd",
+  "head": "3c7038a59a8efda210520f928d8312a1b25a869f",
   "stamped": [
     "game/.tmp/raf-probe.html",
     "game/index.html",
@@ -174,7 +174,7 @@
       "viewport": "375x667",
       "png": "01-375x667.png",
       "blank": false,
-      "note": "725 色"
+      "note": "724 色"
     },
     {
       "viewport": "667x375",
@@ -192,13 +192,13 @@
       "viewport": "768x1024",
       "png": "04-768x1024.png",
       "blank": false,
-      "note": "1240 色"
+      "note": "1242 色"
     },
     {
       "viewport": "1440x900",
       "png": "05-1440x900.png",
       "blank": false,
-      "note": "1505 色"
+      "note": "1507 色"
     }
   ],
   "console_errors": [
