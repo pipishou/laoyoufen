@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "checks": {
+    "act_line_present": true,
+    "act_says_title": true,
+    "act_says_body": true,
+    "act_prefix_css": true,
+    "act_follows_day": true,
+    "act_empty_when_none": true,
+    "act_empty_hidden": true,
+    "save_version_37": true,
+    "console_clean": true
+  },
+  "release": "3.9.7 (default, Sep 16 2021, 16:59:28) [MSC v.1916 64 bit (AMD64)]"
+}

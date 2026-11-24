@@ -1065,3 +1065,15 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **验收**：`tsc` 0；`vitest` **85 文件 923 用例**；`copy_gate` ok；`eye_gate --slug store` **584 · 1242 · 1505** 色、stamp **164**；`ai_gate` ok；`tools/gate/store_probe.py`（preview 4235）**16 / 16 true**（`floor_label / floor_starts_48 / grid_96 / bare_48 / bare_title_names_next / no_exp_done_yet / ladder_lists_four / ladder_grows / ladder_total_120 / ladder_visible_caps_at_96 / upstairs_named / bare_shrinks / expanded_rows_marked / seats_grew_by_expansion / save_version / console_clean`）；构建 `index-CV65VhUG.js` 1,714.84 kB / `index-DbjO8M7N.css` 53.60 kB。
 - **替身四种子**：¥115,938 / ¥100,452 / ¥109,109 / ¥110,380 → 均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**，与批 S′ **逐位一致** —— 改的是「看得见」，不是「更强」，这正是这一批的判据。
 - **新缺口**：**P359** 铺面面积只是画法、格子仍不参与玩法（P304 还在）/ **P360** 第四档「楼上 24 格」只在抬头里、画面看不到二楼 / **P361** 阶梯把价钱与收益并排写了但没说值不值，与「今天」那条的回本天数没有互相引用 / **P362** `STORE_AREAS` 的矩形是手量的、与 `SLOTS` 槽位坐标没有互相校验。
+
+### 行 126 · 2026-11-25 · 批 U′：前三十天十二幕
+
+GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前段当教程）。我们一直每七天随机抽一件，前一个月看到什么全凭运气——试玩报告里「第三天还在问座位怎么加」就是这么来的。这一批补的是**顺序**，不是数量。
+
+- **十二幕**（`game/src/data/script-days.ts`，落在第 1/2/3/5/7/9/12/15/18/21/25/28 天）：先把锅烧热 / 一碗要有人等 / 酸笋先下锅 / 粉的粗细 / 坐得下才算店 / 街坊会认人 / 雨天 / 别家也在做 / 钱要留着 / 夜里也有人 / 记一笔 / 满月。其中五幕顺手指一件同名街头事（酸笋坊阿婆、老客送豆豉、回南天、隔壁开螺蛳粉、夜市招商），剩下七幕只有一句话。
+- **两个出口**：① 打烊单第四行「功课 · 」（`[data-act-line]`，CSS `::before` 给前缀）；② `tickEvents` 在七天节奏判断**之前**读 `state.flow.actToday`，指到的事过 `eventEligible` 就挂起（门槛不破：第九天那一幕要求有熟客，新局就真的不来）。
+- **三条纪律**：不写阿拉伯数字（阿婆在讲，不是系统在报账）／一格数值都不改（客流已叠五层，见 P301）／做完就忘（`state.script.seen`，同一幕不讲第二次，三十天后纯自由局）。
+- **两个真坑**：① 第一版用 `scriptActOn(state)` 在 `events.ts` 里判断，可那幕在零点已被 `tickScriptAct` 标成「讲过了」，再问必然 `null` → 五件指到的事一件都不来；改用 `flow.actToday`。② `advanceMinute` 开头 `if (state.events.pending) return;` 会把这一幕一起吞掉 → `tickScriptAct` 必须排在闸门前面。连带：`events.test.ts` 的「间隔不少于 7 天」被剧本日打破（剧本本来不看七天节奏），测试改成剔除剧本日再验间隔。
+- **验收**：`tsc` 0；`vitest` **86 文件 938 用例**（新增 `game/src/sim/script-days.test.ts` 15 例）；`copy_gate` ok；`eye_gate --slug script` 五视口 **722 · 778 · 583 · 1248 · 1512** 色、stamp **166**；`ai_gate` ok；`tools/gate/script_probe.py`（preview 4236）**9 / 9 true**；构建 `index-DN3papFc.js` 1,717,783 B / `index-BsIKtktG.css` 53,661 B。
+- **替身四种子**：¥108,111 / ¥82,162 / ¥97,905 / ¥97,174 → 均值 **¥96,338 · 187.7 碗 · 41.5% · 期末 ¥328,321**（对照 T′ ¥108,970 / 198.5 / 41.5% / ¥511,545：营收 **−11.6%**）。这不是毛病，是顺序提前的代价——头一个月多出五件本来要等两三个月的事，替身在新手期就挨了（回南天、隔壁开螺蛳粉、夜市招商）。
+- **新缺口**：**P363** 十二幕没分支、不跟玩家当时的选择挂钩 / **P364** 顺序提前让新手期压力上升（−11.6%），头一个月那五件需要一档「新手强度」/ **P365** `SCRIPT_LAST_DAY = 30` 是拍的、之后一股脑放开没有过渡 / **P366** 打烊单已经五行（明天/为什么/菜单/到点/功课），窄屏会挤（与 P286 同型）/ **P367** 十二幕没有 AI 口气（这批故意不加落点，避免预算再涨）。

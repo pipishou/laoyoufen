@@ -23,6 +23,7 @@ import { settlePack } from "./pack";
 import { noteTick } from "./notebook";
 import { defaultRetail, settleRetail } from "./retail";
 import { announceSlotSets } from "./slots";
+import { tickScriptAct } from "./script-days";
 import { investEndingToday } from "./invest";
 import { DEFAULT_QUALITY } from "../data/quality";
 
@@ -190,6 +191,8 @@ export interface CustomerFlow {
   serveInterval?: number;
   /** 成套度（批 J′）：已经报过一声的成套 id（同一套只报一次） */
   slotsAnnounced?: string[];
+  /** 今天这一幕剧本（批 U′，`data/script-days.ts` 的 id；没有就是空串） */
+  actToday?: string;
 
   /** 今日满意度累加 / 计数，日结单用（月底另有 monthSatSum） */
   satSumToday: number;
@@ -442,6 +445,8 @@ export interface DayRecord {
   investDone?: string[];
   /** 与 investDone 一一对应：它今天到底给了多少（批 R′，解 P347） */
   investGain?: string[];
+  /** 今天的功课（批 U′）：前三十天十二幕里落今天的那一幕 id */
+  act?: string;
 }
 
 export interface Tally {
@@ -618,6 +623,8 @@ export interface GameState {
   quality: string;
   /** 浇头熟练度（批 A′）：每份料做过的碗数。等级与出口见 `sim/topping-xp.ts` */
   ingredientXp: Record<string, number>;
+  /** 前三十天十二幕：已经讲过哪几幕（批 U′；可选，老档没有就当空表） */
+  script?: { seen: string[] };
   /** 街上的门路（批 B′）：id → 到期那天（打烊天数）；可选，老档缺省当没买过 */
   investments?: Record<string, number>;
   /** 杂货铺（批 B′）：id → 日戳 month*100+day；只当天有效 */
@@ -902,6 +909,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     pack: false,
     quality: DEFAULT_QUALITY,
     ingredientXp: {},
+    script: { seen: [] },
     investments: {},
     goods: {},
     skills: {},
@@ -986,6 +994,12 @@ function endDay(state: GameState): void {
  */
 export function advanceMinute(state: GameState): void {
   if (state.finished) return;
+  /**
+   * 前三十天十二幕（批 U′）：先把今天这一幕记下来，再看有没有事要弹。
+   * 必须排在 `events.pending` 那道闸门**前面** —— 昨天的事还没选完，
+   * 今天这一幕也不能丢（它只是一句话，不占玩家的注意力）。
+   */
+  tickScriptAct(state);
   if (state.events.pending) return;
   // 菜单（P47）：一天里每款粉各有自己的价与分，客人进门时再挑；
   // 所以这里不再有「一个全局评分」，评分在顾客循环里按款算。
@@ -1089,6 +1103,7 @@ function recordDay(state: GameState, taste: number): void {
     state.flow.menuSoldSeen = seen;
     if (state.menu && state.menu.length > 0) rec.menuSold = today;
   }
+  if (f.actToday) rec.act = f.actToday;
   state.days.push(rec);
   if (state.days.length > 120) state.days.shift();
   /**

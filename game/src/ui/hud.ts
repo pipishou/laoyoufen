@@ -16,6 +16,7 @@ import { checkGrade } from "../sim/grade";
 import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
 import { lossWhyOf, menuLineOf } from "../sim/advice";
+import { actTodayLine } from "../sim/script-days";
 import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
 import { favoriteArchetypes } from "../sim/regulars";
@@ -265,7 +266,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
-      <div class="daywhy"><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span></div>
+      <div class="daywhy"><span data-act-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -289,6 +290,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const lossLine = dayWrap.querySelector("[data-loss-line]") as HTMLElement;
   const menuLine = dayWrap.querySelector("[data-menu-line]") as HTMLElement;
   const investLine = dayWrap.querySelector("[data-invest-line]") as HTMLElement;
+  const actLineEl = dayWrap.querySelector("[data-act-line]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
@@ -647,6 +649,8 @@ const render = (s: GameState, score: RecipeScore): void => {
         .join("；");
       // CSS 的 `[data-invest-line]::before` 已经写了「到点 · 」，正文别再重复一次
       investLine.textContent = done.length > 0 ? said : "";
+      // 前三十天十二幕（批 U′）：今天这一幕念一遍。CSS 的 ::before 已经写了「功课 · 」
+      actLineEl.textContent = actTodayLine(s);
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);

@@ -1,4 +1,5 @@
 import { EVENTS, EVENTS_BY_ID, type EventEffect, type EventView, type GameEventDef } from "../data/events";
+import { scriptActById } from "../data/script-days";
 import { dayIndex } from "./calendar";
 import { favoriteArchetypes } from "./regulars";
 import { nextFloat } from "./rng";
@@ -98,6 +99,26 @@ export function tickEvents(state: GameState): void {
 
   const today = dayIndex(state.month, state.day);
   if (today < EVENT_START_ABS_DAY) return;
+  /**
+   * 剧本那一幕指到的事，今天就让它来（批 U′）。
+   *
+   * 读的是 `state.flow.actToday`（今天零点 `tickScriptAct` 记下的那一幕），
+   * 不是 `scriptActOn` —— 那一幕在记下来的同时就已经标记「讲过了」，
+   * 再问一次必然是 null。门槛仍照 `eventEligible` 走：权利没到、月份不对就不强塞。
+   */
+  const act = scriptActById(state.flow.actToday ?? "");
+  if (act?.eventId) {
+    const def = EVENTS_BY_ID.get(act.eventId);
+    if (def && eventEligible(state, def, today)) {
+      ev.pending = { id: def.id, absDay: today };
+      const pressure = isPressureEvent(def);
+      ev.lastKind = pressure ? "pressure" : "plain";
+      ev.lastKindDay = today;
+      if (pressure) ev.lastPressureDay = today;
+      ev.rolledDay = today;
+      return;
+    }
+  }
   if ((today - EVENT_START_ABS_DAY) % EVENT_ROLL_INTERVAL_DAYS !== 0) return;
   if (ev.rolledDay === today) return;
   ev.rolledDay = today;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EVENTS, EVENTS_BY_ID } from "../data/events";
+import { SCRIPT_ACTS } from "../data/script-days";
 import { DAY_MINUTES } from "./customer";
 import { dayIndex } from "./calendar";
 import { eventEligible, resolveEvent } from "./events";
@@ -80,7 +81,13 @@ describe("事件脚本", () => {
     expect(back?.events).toEqual(s.events);
   });
 
-  it("每周最多一件：两次事件间隔不少于 7 天", () => {
+  it("每周最多一件：抽取日的事件间隔不少于 7 天（剧本那几幕另算）", () => {
+    /**
+     * 批 U′ 之后，带 `eventId` 的那几幕会在自己那天把事挂起来，
+     * 不看七天节奏（开罗的 `fixevent` 也是「行号即顺序」）。
+     * 所以这里只核**随机抽取**那部分：把剧本日剔掉再验间隔。
+     */
+    const actAbsDays = new Set(SCRIPT_ACTS.filter((a) => a.eventId).map((a) => a.day - 1));
     for (let seed = 0; seed < 8; seed++) {
       const s = createInitialState("player-weekly", seed);
       const days: number[] = [];
@@ -90,12 +97,14 @@ describe("事件脚本", () => {
         days.push(dayIndex(s.month, s.day));
         resolveEvent(s, 0);
       }
-      for (let i = 1; i < days.length; i++) {
-        expect(days[i]! - days[i - 1]!, `第 ${i} 次间隔不足 7 天`).toBeGreaterThanOrEqual(7);
+      const rolled = days.filter((d) => !actAbsDays.has(d));
+      for (let i = 1; i < rolled.length; i++) {
+        expect(rolled[i]! - rolled[i - 1]!, `第 ${i} 次间隔不足 7 天`).toBeGreaterThanOrEqual(7);
       }
-      // 60 天里有 9 个抽取点（第 1/8/15/…/57 天），池子够用就该基本全中
+      // 60 天里有 9 个抽取点（第 1/8/15/…/57 天），池子够用就该基本全中；
+      // 剧本那几幕加起来最多再多五件
       expect(days.length).toBeGreaterThanOrEqual(7);
-      expect(days.length).toBeLessThanOrEqual(10);
+      expect(days.length).toBeLessThanOrEqual(15);
     }
   }, 20000);
 
