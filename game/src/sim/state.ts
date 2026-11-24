@@ -241,6 +241,11 @@ export interface StaffMember {
    * 可选字段 —— 老档里的员工没有这一格，读回来当没学。
    */
   specialty?: string;
+  /**
+   * 干活攒下的「手上的活」（批 L'）：每天 +1，见 `sim/staff-grow.ts`。
+   * 四属性、学会的手艺、毕业技全部由它现算，不另存 —— 老档缺这一格就当 0。
+   */
+  xp?: number;
 }
 
 export interface StaffState {

@@ -12,6 +12,7 @@ import { equipLevel } from "./equipment";
 import { gearFatigueMult } from "./gear";
 import { shuffled } from "./rng";
 import { specialtyCostFactor, specialtyPatienceMult, specialtyServeFactor } from "./specialty";
+import { growDay, staffEffects } from "./staff-grow";
 import type { GameState, StaffMember } from "./state";
 
 /**
@@ -98,7 +99,9 @@ const SETOUT_CUT_PER_SKILL = 0.05;
  * ＋厨师总技能每 50 点 +1（封顶 +2）。
  */
 export function inNoodlesNum(state: GameState): number {
-  return 3 + equipLevel(state, "strainer") + Math.min(2, Math.floor(sumSkill(state, "cook") / 50));
+  // 批 L'：学出来的手艺（看火/捞面/一锅下…）也在同一个封顶里，不会越学越离谱
+  const grown = staffEffects(state).noodle;
+  return 3 + equipLevel(state, "strainer") + Math.min(2, Math.floor(sumSkill(state, "cook") / 50) + grown);
 }
 
 /**
@@ -165,7 +168,7 @@ export function patienceMultiplier(state: GameState): number {
 const SURVEY_BASE_RATE = 5;
 const SURVEY_RATE_PER_SKILL = 7;
 export function surveyRate(state: GameState): number {
-  return SURVEY_BASE_RATE + sumSkill(state, "server") * SURVEY_RATE_PER_SKILL;
+  return SURVEY_BASE_RATE + sumSkill(state, "server") * SURVEY_RATE_PER_SKILL + staffEffects(state).survey;
 }
 
 /** 备料工压低食材成本，最低七折 */
@@ -223,27 +226,32 @@ export function toggleRest(state: GameState, uid: string): HireResult {
  * 休息的人半薪、恢复体力，第二天自动回到岗位。
  */
 export function settleStaffDay(state: GameState): number {
+  // 批 L'：熬得住 / 不喊累 / 不误工 都落在「累得慢」这一格；不新开乘数层
+  const grown = staffEffects(state);
+  const fatigueMult = (1 - grown.fatigue) * gearFatigueMult(state);
+  // 今天歇的人不长进 —— 旗子在这一轮里会被清掉，所以先记名字
+  const restedToday = new Set(state.staff.roster.filter((m) => m.resting).map((m) => m.uid));
   let wages = 0;
   for (const m of state.staff.roster) {
     wages += Math.round(m.wage * (m.resting ? 0.5 : 1));
     if (m.resting) {
-      m.fatigue = Math.max(0, m.fatigue - REST_RECOVERY);
+      m.fatigue = Math.max(0, m.fatigue - (REST_RECOVERY + grown.rest));
       m.resting = false;
     } else {
-      // 家当（M3）壁扇：墙上一台老风扇，后厨的人能多撑两个钟
-    m.fatigue = Math.min(
-      QUIT_FATIGUE + 20,
-      m.fatigue + FATIGUE_PER_DAY[m.role] * gearFatigueMult(state),
-    );
+      m.fatigue = Math.min(QUIT_FATIGUE + 20, m.fatigue + FATIGUE_PER_DAY[m.role] * fatigueMult);
     }
   }
   state.cash -= wages;
 
-  const quitters = state.staff.roster.filter((m) => m.fatigue >= QUIT_FATIGUE);
+  const quitAt = QUIT_FATIGUE + grown.keep;
+  const quitters = state.staff.roster.filter((m) => m.fatigue >= quitAt);
   if (quitters.length > 0) {
-    state.staff.roster = state.staff.roster.filter((m) => m.fatigue < QUIT_FATIGUE);
+    state.staff.roster = state.staff.roster.filter((m) => m.fatigue < quitAt);
     state.staff.lastEvent = `${quitters.map((q) => q.name).join("、")} 体力透支，辞职了`;
   }
+  // 收市以后才长进：今天干了活的人 +1 点
+  const lines = growDay(state, restedToday);
+  if (lines.length > 0) state.staff.lastEvent = lines.join(" · ");
   return wages;
 }
 

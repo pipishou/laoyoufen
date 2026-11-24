@@ -71,7 +71,9 @@ import { devNote } from "./dev";
 import { getLine, remoteLineCount } from "../ai/lines";
 import { icon } from "./icons";
 import { specialtiesOfRole } from "../data/specialty";
+import { FINISH_SKILL_TOTAL, STAFF_SKILL_TOTAL } from "../data/staff-skill";
 import { specialtySummary } from "../sim/specialty";
+import { growWords } from "../sim/staff-grow";
 import { mapCells, mapSize, mapSummary, districtPitchOf } from "../sim/map";
 import { localSummary } from "../sim/local";
 import { filledCount, layoutOf, layoutSummary, slotSetSummary, slotSetViews, slotSetWords, stageCells } from "../sim/slots";
@@ -561,6 +563,7 @@ let lastGradeKey = "";
           <div class="lmeta">日薪 ¥${m.wage}${m.resting ? " · 今天休息（半薪）" : ""}${
             m.specialty ? "" : ` · 能学：${specialtiesOfRole(m.role).map((d) => `${d.name}（${d.what}）`).join(" / ")}`
           }</div>
+          <div class="lmeta grow" data-grow="${m.uid}">${growWords(m)}</div>
           <div class="fat"><i class="${fatigueClass}" style="width:${Math.min(100, m.fatigue)}%"></i></div>
           <div class="lbtns">${
             m.specialty
@@ -597,7 +600,7 @@ let lastGradeKey = "";
     return `<div class="sec">
         <div class="sechd">${icon("staff")}在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))} · ${specialtySummary(s)}</div>
         ${roster || `<div class="empty2">还没雇人。你自己一个人炒锅，出碗 6 分钟。</div>`}
-        <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"} 一个人只学一门手艺，学成了钉死，不用再管。</div>
+        <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"} 人是一天一天熟起来的：四属性到门槛就自动学会手艺，不用点。${STAFF_SKILL_TOTAL} 项手艺、${FINISH_SKILL_TOTAL} 门毕业技（四属性都到 3 级才有）。</div>
       </div>
       <div class="sec">
         <div class="sechd">${icon("staff")}今日候选 · 每天换一批</div>
@@ -1934,7 +1937,7 @@ function collectionHtml(s: GameState): string {
     let html = "";
     let key = "";
     if (current === "staff") {
-      key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
+      key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}:${m.xp ?? 0}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
       key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}`;

@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "checks": {
+    "staff_tab": true,
+    "grow_row": true,
+    "four_attrs": true,
+    "next_level": true,
+    "learns_at_3": true,
+    "attr_up": true,
+    "finish_shows": true,
+    "save_version": true,
+    "console_clean": true
+  },
+  "base": {
+    "staffTab": true,
+    "rows": [
+      "火候 1 · 待客 1 · 脚力 1 · 耐磨 1 · 再干 3 天升一级"
+    ],
+    "xp": 0,
+    "roster": 1,
+    "saveVersion": 37
+  },
+  "three": {
+    "staffTab": true,
+    "rows": [
+      "火候 2 · 待客 1 · 脚力 1 · 耐磨 1 · 再干 5 天升一级 · 会：看火"
+    ],
+    "xp": 3,
+    "roster": 1,
+    "saveVersion": 37
+  },
+  "mid": {
+    "staffTab": true,
+    "rows": [
+      "火候 3 · 待客 2 · 脚力 2 · 耐磨 1 · 再干 11 天升一级 · 会：看火、爆香、招呼、腿脚快"
+    ],
+    "xp": 24,
+    "roster": 1,
+    "saveVersion": 37
+  },
+  "vet": {
+    "staffTab": true,
+    "rows": [
+      "火候 7 · 待客 3 · 脚力 3 · 耐磨 3 · 到头了 · 会：看火、爆香、捞面、一锅下、控汤、招呼、听口音、腿脚快、不歇脚、熬得住、早起 · 毕业技：多下一份"
+    ],
+    "xp": 168,
+    "roster": 1,
+    "saveVersion": 37
+  },
+  "errors": []
+}
