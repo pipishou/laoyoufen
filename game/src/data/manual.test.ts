@@ -2,13 +2,19 @@ import { describe, expect, it } from "vitest";
 import { MANUAL_PAGES, MANUAL_TOTAL, manualPageById, manualSections } from "../data/manual";
 
 describe("店里的手册（批 N′）", () => {
-  it("十二页、四个分章，一页一件事", () => {
-    expect(MANUAL_TOTAL).toBe(12);
-    expect(MANUAL_PAGES).toHaveLength(12);
-    expect(new Set(MANUAL_PAGES.map((p) => p.id)).size).toBe(12);
+  it("十六页、五个分章，一页一件事", () => {
+    expect(MANUAL_TOTAL).toBe(16);
+    expect(MANUAL_PAGES).toHaveLength(16);
+    expect(new Set(MANUAL_PAGES.map((p) => p.id)).size).toBe(16);
     const secs = manualSections();
-    expect(secs.map((g) => g.section)).toEqual(["一天的生意", "这一碗", "这条街", "手里的牌"]);
-    expect(secs.reduce((n, g) => n + g.pages.length, 0)).toBe(12);
+    expect(secs.map((g) => g.section)).toEqual([
+      "一天的生意",
+      "这一碗",
+      "这条街",
+      "手里的牌",
+      "怎么操作",
+    ]);
+    expect(secs.reduce((n, g) => n + g.pages.length, 0)).toBe(16);
   });
 
   it("每页都指得到一张真表或一个真函数", () => {

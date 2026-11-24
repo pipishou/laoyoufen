@@ -79,7 +79,7 @@ import { addDish, removeDish, selectDish, sellRecipe, syncEditing, toggleDish } 
 import { rallyMember, resolveRally } from "./sim/rally";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
-import { openForBusiness } from "./sim/setup";
+import { openForBusiness, renameShop as renameShopImpl } from "./sim/setup";
 import { mountSetup, type SetupScreen } from "./ui/setup";
 import { mountArena, type ArenaUi } from "./ui/arena";
 import { COMMAND_BY_ID, COMMAND_KEY_MAP, arenaById } from "./data/arena";
@@ -389,6 +389,16 @@ panels = mountPanels(hudRoot, {
     refresh();
   },
   /** 街上的门路（批 B′）：花一次钱，买一天的量 */
+  renameShop(name) {
+    const r = renameShopImpl(state, name);
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+    } else {
+      hud.showToast(r.line, "like");
+      playSfx("ui");
+    }
+    refresh();
+  },
   renameDish(itemId, name) {
     const r = renameDishImpl(state, Number(itemId), String(name ?? ""));
     if (!r.ok) {

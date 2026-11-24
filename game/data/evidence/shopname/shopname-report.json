@@ -1,0 +1,22 @@
+{
+  "url": "http://localhost:4240/",
+  "checks": {
+    "shopname_box": true,
+    "shopname_hint_says_no_numbers": true,
+    "shopname_renamed": true,
+    "shopname_hud_follows": true,
+    "shopname_input_keeps": true,
+    "shopname_short_rejected": true,
+    "shopname_short_reason": true,
+    "prefhelp_present": true,
+    "prefhelp_four_rows": true,
+    "prefhelp_points_to_manual": true,
+    "prefhelp_says_tabs": true,
+    "manual_sixteen": true,
+    "manual_five_groups": true,
+    "manual_has_how_group": true,
+    "save_version_37": true,
+    "console_clean": true
+  },
+  "console_errors": []
+}

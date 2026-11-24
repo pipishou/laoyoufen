@@ -2516,6 +2516,15 @@ html.prefs-big #hud .clock{font-size:17px}
 .eventtitle.pressure::before{content:"⚠ ";color:var(--red)}
 
 /* 手艺：每族标一条「先点这个」（批 Q′，解 P306） */
+.pane .prefhelp{border-top:1px dashed var(--sand);margin-top:6px;padding:6px 10px 10px}
+.pane .prefhelp .prefhd2{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.pane .prefhelp .prefrow{padding:3px 0}
+.pane .prefhelp .prefhint{font-size:9px;color:var(--wood)}
+.pane .shopname{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0 0 6px}
+.pane .shopname label{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--ink)}
+.pane .shopname input{font-family:inherit;font-size:11px;padding:2px 4px;width:118px;color:var(--ink);background:var(--cream);border:2px solid var(--sand)}
+.pane .shopname input:focus{outline:none;border-color:var(--red)}
+.pane .shopname .tag2{font-size:9px;color:var(--wood)}
 .pane .pc.blk{opacity:.62;border-style:dotted;cursor:default}
 .pane .pc.rec{outline:2px dashed var(--wood);outline-offset:1px}
 .daywhy [data-invest-line]::before{content:"到点 · "}

@@ -174,6 +174,8 @@ export interface PanelActions {
   applyMaster(index: number, id: string): void;
   /** 菜单改名（批 M′）：itemId 是菜单款的 id，不是 index */
   renameDish(itemId: number, name: string): void;
+  /** 换招牌（批 Y′）：清洗规则与开张一致，不改任何数值 */
+  renameShop(name: string): void;
   /** 袋装线（A7）：置办包装机 */
   buyPack(): void;
   /** 批次七：货架换渠道 / 调价 */
@@ -560,6 +562,7 @@ let lastGradeKey = "";
   wrap.addEventListener("change", (e) => {
     const el = e.target as HTMLInputElement;
     if (el.dataset.rename) actions.renameDish(Number(el.dataset.rename), el.value);
+    else if (el.hasAttribute("data-rename-shop")) actions.renameShop(el.value);
   });
 
   wrap.addEventListener("input", (e) => {
@@ -683,6 +686,12 @@ let lastGradeKey = "";
      * 主句照钩子，副句由 `sim/today.ts` 算回本与位置 —— 开罗把「这件东西在哪一段」
      * 写进帮助（`Construction (Other)`），我们没有帮助页，就把它写在这一行里。
      */
+    // 换招牌（批 Y′）：开张时填过名字，之后就没地方改了 —— 这一行补上
+    const nameBox = `<div class="shopname" data-shopname-box>
+      <label title="开张之后也能改，两个字到十二个字"><span>招牌</span><input type="text" maxlength="12" data-rename-shop value="${escAttr(s.shopName)}"></label>
+      <span class="tag2">换名字不改任何数，只是街坊改口</span>
+    </div>`;
+
     const today = todayLine(s);
     const todayBox = today
       ? `<div class="todaybox" data-todaybox>
@@ -1294,7 +1303,7 @@ let lastGradeKey = "";
         <div class="lbtns"><button type="button" data-act="buy" data-id="${u.id}" ${maxed ? "disabled" : ""}>${maxed ? "已满级" : money(cost)}</button></div>
       </div>`;
     }).join("");
-    return `${todayBox}${gc.ready ? "" : ""}<div class="sec">
+    return `${nameBox}${todayBox}${gc.ready ? "" : ""}<div class="sec">
         <div class="sechd${hotSeat}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
         <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
         ${expRow}

@@ -61,6 +61,30 @@ export function openForBusiness(
   return { ok: true, site };
 }
 
+export interface RenameResult {
+  ok: boolean;
+  line: string;
+  reason: string;
+}
+
+/**
+ * 换招牌（批 Y′，照开罗 `custom` 的「店名与招牌」）。
+ *
+ * 开罗的 `custom` 是 4 类 × 5 级，玩家能买样式、改名字；我们此前店名只在开张那一次
+ * 填得进去，之后界面上一行字都改不了（`state.shopName` 只有 `openForBusiness` 写过）。
+ *
+ * 规矩与开张一致：清洗规则复用 `validShopName`（2–12 字、去换行与尖括号），
+ * 不改任何数值、不花钱 —— 换个名字不该动经营，只该让街坊报、打烊单与顶栏一起换口。
+ */
+export function renameShop(state: GameState, raw: string): RenameResult {
+  if (state.phase === "setup") return { ok: false, line: "", reason: "还没开张" };
+  const name = raw.trim();
+  if (name === state.shopName) return { ok: false, line: "", reason: "还叫这个" };
+  if (!validShopName(name)) return { ok: false, line: "", reason: "店名要 2–12 个字" };
+  state.shopName = name;
+  return { ok: true, line: `招牌换了：${name}`, reason: "" };
+}
+
 /**
  * 当月房租（元）：铺位的固定月租 × 每满一年 3% 的续约涨幅。
  *

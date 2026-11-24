@@ -16,6 +16,7 @@ import { checkGrade } from "../sim/grade";
 import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
 import { lossWhyOf, menuLineOf } from "../sim/advice";
+import { manualSections } from "../data/manual";
 import { actTodayLine } from "../sim/script-days";
 import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
@@ -436,11 +437,26 @@ let lastMarketKey = "";
   const prefsWrap = document.createElement("div");
   prefsWrap.className = "modal prefmodal";
   prefsWrap.hidden = true;
+  // 操作一览（批 Y′）：把手册「怎么操作」那一章搬到设置里 ——
+  // 开罗的说明在菜单里随手能翻（`help.txt` 57 节），我们原来只有图鉴页深处那本书。
+  const howPages = manualSections().find((g) => g.section === "怎么操作")?.pages ?? [];
+  const howHtml = howPages
+    .map(
+      (p) => `<div class="prefrow wide">
+        <div class="preftext"><div class="prefname">${p.title}</div><div class="prefhint">${p.gist}</div></div>
+      </div>`,
+    )
+    .join("");
   prefsWrap.innerHTML = `
     <div class="prefbox card">
       <div class="prefhd"><span class="dttl">设置</span><button type="button" class="mclose" data-prefs-close title="关闭">×</button></div>
       <div class="prefbody" data-prefs-body></div>
       <div class="preffoot">改了立刻生效。这份设置只记在这台机器上，不进存档；换台设备、清了缓存就回到默认。</div>
+      <div class="prefhelp" data-pref-help>
+        <div class="prefhd2">操作一览</div>
+        ${howHtml}
+        <div class="prefhint">完整十六页在图鉴页的手册里。</div>
+      </div>
     </div>`;
   root.appendChild(prefsWrap);
 

@@ -1106,3 +1106,13 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 替身四种子：¥106,354 / ¥86,621 / ¥102,987 / ¥106,124 → 均值 **¥100,522 · 191.2 碗 · 42.8% · 期末 ¥357,293**（对照 W′ ¥96,338 / 187.7 / 42% / ¥328,321：营收 **+4.3%**、现金 +8.8%，全部来自六套内装；替身不吃手艺点）。
 - 缺口：**P379** 链条按「便宜到贵」排而不是按「有什么用」/ **P380** 六条百分比是拍的 / **P381** 打烊单不报「今天凑齐了一套」/ **P382** 虚线在 375 宽只剩 1px / **P383** `prev` 写死，成环只靠测试兜。
 
+### 行 130 · 2026-11-25 · 店名招牌与操作一览（批 Y′）
+
+- 开罗的定制是外观层级（`custom.txt` 四类五级），我只取「店名」这一类：名字是认领感最强、又不烧美术产线的那一个；招牌贴图与门脸层级砍掉（记 P384）。说明那一侧照 `softkey.txt`（63 行逐键）与 `help.txt`（57 节随手能翻）的结构 —— 摊在设置弹窗里，而不是让人先进图鉴再翻手册。
+- `game/src/sim/setup.ts` 新增 `renameShop(state, raw): RenameResult`：复用建店仪式那条**同一个** `validShopName`（两个字到十二个字、只收汉字字母数字与 `· - （ ）`），`phase === "setup"` 拒、同名拒（「还叫这个」），成功写 `state.shopName` 并回「招牌换了：X」。**不升 `SAVE_VERSION`**（`shopName` 本来就在存档里，见 `state.ts:606`），改的只是「写一次」变「随时可写」。
+- `game/src/ui/panels.ts`：`shopHtml` 顶部加 `nameBox`（`<div class="shopname" data-shopname-box>` + `input[data-rename-shop]` + 「换名字不改任何数，只是街坊改口」），走已有的 `change` 监听（同菜单改名：用 `input` 会吞光标）。容器特意叫 `data-shopname-box` —— 顶栏那个名字是 `hud.ts` 的 `[data-shopname]`，第一版抢了同一个选择器，探针取到的是顶栏 div。`game/src/ui/hud.css` 加 `.pane .shopname` 系列；`game/src/main.ts` 加 `renameShop(name)` action（假的 toast `r.reason`，真的 `r.line` + `playSfx("ui")`）。
+- 手册十二页 → **十六页、五个分章**：`game/src/data/manual.ts` 加「怎么操作」四页（`m.how-order` 怎么点一碗 / `m.how-serve` 怎么把碗端出去 / `m.how-tabs` 面板上那七个页签 / `m.how-prefs` 设置与存档），正文与 gist 仍不写阿拉伯数字，`where` 必须以 `data/` 或 `sim/` 开头（第一版两条写成 `ui/…`，被 `manual.test.ts` 拦下）。正文里那句「这十二页手册」跟着改成十六页。
+- 设置弹窗加「操作一览」：`game/src/ui/hud.ts` 直接取 `manualSections().find((g) => g.section === "怎么操作")?.pages`，不另写一份数据；四行标题 + gist，末句「完整十六页在图鉴页的手册里。」。样式 `.prefhelp / .prefhd2 / .prefrow / .prefhint` 追加在 `hud.css`。
+- 验收：`tsc` 0 / `vitest` **89 文件 970 用例** / `copy_gate` ok / `eye_gate --slug shopname` 五视口 **723 · 778 · 584 · 1247 · 1506** 色、stamp **168** / `ai_gate` ok / 新建 `tools/gate/shopname_probe.py`（preview **4240**）**16 / 16**（`shopname_box / shopname_hint_says_no_numbers / shopname_renamed / shopname_hud_follows / shopname_input_keeps / shopname_short_rejected / shopname_short_reason / prefhelp_present / prefhelp_four_rows / prefhelp_points_to_manual / prefhelp_says_tabs / manual_sixteen / manual_five_groups / manual_has_how_group / save_version_37 / console_clean`）—— 实测改成「阿婆老友粉」状态与顶栏同步、填一个字被退回并 toast「店名要 2–12 个字」。构建 `index-CEB8cgTJ.js` 1,730.13 kB（gzip 519.27）/ `index-BHu7gZCS.css` 54.52 kB。
+- 替身四种子与批 X′ **逐位一致**（¥106,354 / ¥86,621 / ¥102,987 / ¥106,124 → 均值 **¥100,522 · 191.2 碗 · 42.8% · 期末 ¥357,293**）—— 本批判据就是「不加数值」。
+- 缺口：**P384** 招牌只有字、没有门脸可换 / **P385** 改名后旧报道跟着改口（`news.ts:58` 与 `:98` 拿 `state.shopName` 现算）/ **P386** 设置里的操作一览是手册的副本，与 P344 同型 / **P387** 十六页手册没有「读没读过」的标记 / **P388** 改名不进存档摘要与试玩回执。
