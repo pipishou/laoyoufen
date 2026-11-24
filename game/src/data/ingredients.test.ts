@@ -4,8 +4,8 @@ import { BASE_COST, NOODLE_MATERIALS, SOUP_MATERIALS, TOPPINGS } from "./ingredi
 
 describe("配料/原料表", () => {
   it("20 种浇头，id 唯一，成本为正，荤素都有", () => {
-    expect(TOPPINGS).toHaveLength(20);
-    expect(new Set(TOPPINGS.map((t) => t.id)).size).toBe(20);
+    expect(TOPPINGS).toHaveLength(21);
+    expect(new Set(TOPPINGS.map((t) => t.id)).size).toBe(21);
     for (const t of TOPPINGS) {
       expect(t.cost).toBeGreaterThan(0);
       expect(t.price).toBeGreaterThanOrEqual(0);

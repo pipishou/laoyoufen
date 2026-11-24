@@ -25,6 +25,7 @@ export type SideId =
   | "douchi"
   | "lazhi"
   | "ludan"
+  | "shengdan"
   | "zhuzai"
   | "youtiao"
   | "fuzhu"
@@ -50,6 +51,14 @@ export interface SideDef {
   kairo: string;
   /** 一句南宁话 */
   line: string;
+  /** 出处（没有出处的不进这张表） */
+  source?: readonly SideSource[];
+}
+
+export interface SideSource {
+  label: string;
+  url: string;
+  quote: string;
 }
 
 export const SIDES: SideDef[] = [
@@ -96,6 +105,29 @@ export const SIDES: SideDef[] = [
     needCustomers: 60,
     kairo: "Boiled Eggs",
     line: "卤了一夜的蛋，切开还是溏心。",
+  },
+  {
+    id: "shengdan",
+    name: "加生蛋",
+    kind: "topping",
+    costYuan: 1,
+    priceYuan: 2,
+    satBonus: 2,
+    needCustomers: 0,
+    kairo: "Boiled Eggs",
+    line: "生蛋打散下锅，汤一滚就起花——老友粉最省事的一件加菜。",
+    source: [
+      {
+        label: "下厨房《老友猪杂伊面》",
+        url: "https://mip.xiachufang.com/recipe/104389389/",
+        quote: "豆芽熟了就加入伊面煮……加蛋完全是我个人口味啦，打散后搅匀就可以出锅了",
+      },
+      {
+        label: "16fan 食客点评《南宁老友粉》",
+        url: "http://live.16fan.com/info/482981.html",
+        quote: "新鲜的牛肉和猪杂直接生汆，所以会把鲜味溶到汤里，加上鸡蛋的厚度，伊面是细的炸过的",
+      },
+    ],
   },
   {
     id: "zhuzai",

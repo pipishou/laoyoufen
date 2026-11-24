@@ -302,6 +302,19 @@ export const TOPPINGS: readonly Ingredient[] = [
     ],
   },
   {
+    id: "top.egg", name: "生鸡蛋", reaRef: "Boiled Eggs", kind: "egg", tier: 1,
+    cost: 0.9, price: 2, charm: 10, tags: ["鲜"],
+    source: [
+      { label: "下厨房《老友猪杂伊面》",
+        url: "https://mip.xiachufang.com/recipe/104389389/",
+        quote: "豆芽熟了就加入伊面煮……加蛋完全是我个人口味啦，打散后搅匀就可以出锅了" },
+      { label: "16fan 食客点评《南宁老友粉》",
+        url: "http://live.16fan.com/info/482981.html",
+        quote: "新鲜的牛肉和猪杂直接生汆，所以会把鲜味溶到汤里，加上鸡蛋的厚度" },
+    ],
+    note: "打散进锅、汤一滚起花，不是煎的——所以它和「煎蛋」在表里各占一条。",
+  },
+  {
     id: "top.quail", name: "鹌鹑蛋", reaRef: "Quail Egg", kind: "egg", tier: 1,
     cost: 1.2, price: 3, charm: 10, tags: ["鲜"],
     source: [

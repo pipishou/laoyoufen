@@ -33,7 +33,8 @@ describe("加料台与饮料柜（P41 客单价结构）", () => {
     expect(s.sides.active).toEqual(START_SIDES);
     const views = sideViews(s);
     expect(views.length).toBe(SIDES.length);
-    expect(views.filter((v) => v.unlocked).map((v) => v.def.id)).toEqual(START_SIDES);
+    // 批 S′：加生蛋一开始就能点（老板那碗的标配），其余仍要累计接待
+    expect(views.filter((v) => v.unlocked).map((v) => v.def.id)).toEqual([...START_SIDES, "shengdan"]);
     // 卤蛋要 60 位、猪杂 150 位
     const ludan = views.find((v) => v.def.id === "ludan")!;
     expect(ludan.unlocked).toBe(false);

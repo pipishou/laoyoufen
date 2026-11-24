@@ -1,0 +1,17 @@
+{
+  "url": "http://localhost:4234/",
+  "checks": {
+    "tray_has_egg": true,
+    "tray_egg_says_raw": true,
+    "tray_egg_has_source": true,
+    "tray_chips_21": true,
+    "sides_has_shengdan": true,
+    "sides_shengdan_unlocked": true,
+    "dish_name_house_bowl": true,
+    "house_badge": true,
+    "house_badge_follows_noodle": true,
+    "save_version_37": true,
+    "console_clean": true
+  },
+  "console_errors": []
+}

@@ -124,10 +124,31 @@ const SRC = {
     url: "https://www.sohu.com/a/627255384_121609000",
     quote: "辣椒和酸菜可以随便加，吃起来又香又酸又甜……店里的免费酸辣椒可是很抢手。",
   },
+  yifuRecipe: {
+    label: "下厨房《老友猪杂伊面》",
+    url: "https://mip.xiachufang.com/recipe/104389389/",
+    quote:
+      "豆芽熟了就加入伊面煮……加蛋完全是我个人口味啦，打散后搅匀就可以出锅了；「伊面则可按照个人喜好换成米粉」",
+  },
+  yifuReview: {
+    label: "16fan 食客点评《南宁老友粉》",
+    url: "http://live.16fan.com/info/482981.html",
+    quote: "新鲜的牛肉和猪杂直接生汆，所以会把鲜味溶到汤里，加上鸡蛋的厚度，伊面是细的炸过的",
+  },
 } as const;
 
 export const PAIRINGS: readonly PairingDef[] = [
-  // ── 猪杂组（8 条）──
+  // ── 猪杂组（9 条）──
+  {
+    id: "offal_egg",
+    name: "猪杂打蛋",
+    pair: ["top.offal", "top.egg"],
+    effect: { sat: 2, charm: 1 },
+    line: "猪杂下锅先烫一烫，蛋液跟着一浇，汤就厚了。",
+    why: "生蛋打散下锅会在汤面起一层花，把猪杂的鲜兜住——老友猪杂伊面最家常的一种吃法。",
+    kairo: "topping_combo 的 38 条按食材分类，没有「蛋＋内脏」这一对；我们补一条按「吃法」配的。",
+    source: [SRC.yifuRecipe, SRC.yifuReview],
+  },
   {
     id: "liver_chitterling",
     name: "猪肝粉肠",

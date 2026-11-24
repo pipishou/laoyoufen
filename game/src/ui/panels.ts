@@ -26,7 +26,7 @@ import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from
 import { noodleSummary, noodleViews } from "../sim/noodles";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
 import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
-import { dishNameOf, dishNameOfItem } from "../sim/dish";
+import { dishNameOf, dishNameOfItem, isHouseBowl } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
 import { tierLine } from "../sim/tier";
@@ -1872,7 +1872,7 @@ function collectionHtml(s: GameState): string {
 
   function renderMenu(s: GameState): void {
     const views = menuViews(s);
-    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${views.map((v) => s.menuAlias?.[String(v.item.id)] ?? "").join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.portion}:${v.item.recipe.toppings.join("-")}`).join(",")}`;
+    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${views.map((v) => s.menuAlias?.[String(v.item.id)] ?? "").join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.noodle}${v.item.portion}:${v.item.recipe.toppings.join("-")}`).join(",")}`;
     menuSumEl.textContent = ` ${menuSummary(s)}`;
     if (key === menuKey) return;
     menuKey = key;
@@ -1888,6 +1888,7 @@ function collectionHtml(s: GameState): string {
             <b class="dprice">¥${v.price}</b>
           </button>
           <label class="drename" title="自己起个名，八个字以内；留空改回系统名"><span>叫</span><input type="text" maxlength="8" data-rename="${v.item.id}" value="${escAttr(dishNameOfItem(s, v.item))}"></label>
+          ${isHouseBowl(v.item) ? '<span class="dmine" title="老友猪杂伊面 —— 南宁最家常的一碗，也是老板自己想吃的那碗">老板那碗</span>' : ""}
           <span class="nfit">味道 ${Math.round(v.score.total)} · ${v.score.grade} · ${sold}</span>
           <span class="ntier" title="四维九档：客人怎么评价这一碗">${tierLine(v.item, v.score)}</span>
           <div class="dacts">

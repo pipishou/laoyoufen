@@ -16,8 +16,8 @@ import { walletFloor } from "./customer";
 const BOWL_PRICE = 10;
 
 describe("配料价目：加价不过半碗，料钱不过半价", () => {
-  it("三十七条加价都在 ¥0.5–5.0（一碗 ¥10 的一半以内）", () => {
-    expect(TOPPINGS.length).toBe(20);
+  it("二十一条加价都在 ¥0.5–5.0（一碗 ¥10 的一半以内）", () => {
+    expect(TOPPINGS.length).toBe(21);
     for (const t of TOPPINGS) {
       expect(t.price).toBeGreaterThanOrEqual(0.5);
       expect(t.price).toBeLessThanOrEqual(BOWL_PRICE / 2);

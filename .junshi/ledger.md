@@ -1027,3 +1027,17 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P353** 三种单位（碗 / 分 / %）没有统一口径，玩家得自己换算出「0.5 分值多少碗」。
 
 **文档**：`docs/门路值不值R′-2026-11-25.md`
+
+### 行 123 · 2026-11-25 · 批 S′：老友猪杂伊面 ＋ 生鸡蛋
+
+玩家点名要的那一碗做进游戏里。伊面（`yifu`）与猪杂（`offal`）本来就在，缺的是生鸡蛋，以及「这碗被认出来」。
+
+- **四件东西**：
+  - `game/src/data/ingredients.ts` 加 `top.egg` 生鸡蛋（kind `egg`、tier 1、cost 0.9、price 2、charm 10、tags `["鲜"]`），`note` 写明「打散进锅、汤一滚起花，不是煎的」。
+  - `game/src/data/sides.ts` 加 `shengdan`「加生蛋」（cost 1、price 2、satBonus 2、needCustomers **0**），`SideDef` 新加可选 `source?: readonly SideSource[]`，与浇头同一条「没有出处不进表」的纪律。
+  - `game/src/data/pairing.ts` 加 `offal_egg`「猪杂打蛋」（`pair: ["top.offal","top.egg"]`、`effect { sat: 2, charm: 1 }`），`PAIRINGS` 19 → 20；`SRC` 表补 `yifuRecipe` / `yifuReview` 两条出处。
+  - `game/src/sim/dish.ts` 加 `isHouseBowl(item)`（主料 `offal` ＋ 粉型 `yifu`），`game/src/ui/panels.ts` 菜单卡片打红印「老板那碗」（`.pane .dcard .dmine`）——**不给任何数值差别**。菜单缓存键补 `v.item.noodle`（第十一次「键漏字段」预防）。
+- **出处**：下厨房《老友猪杂伊面》`https://mip.xiachufang.com/recipe/104389389/`（「加蛋完全是我个人口味啦，打散后搅匀就可以出锅了」＝生蛋打散下锅）；16fan 食客点评 `http://live.16fan.com/info/482981.html`（「猪杂直接生汆……加上鸡蛋的厚度，伊面是细的炸过的」）；今日头条 `https://www.toutiao.com/article/7688239828944650790/`（煎蛋 ¥2 价钱锚）；大众点评 `https://www.dianping.com/discovery/1184209109`（伊面可选）。
+- **验收**：`tsc` 0；`vitest` **84 文件 916 用例**（新增 `game/src/sim/house-bowl.test.ts` 5 例）；`copy_gate` ok；`eye_gate --slug egg` **584 · 1244 · 1511** 色、stamp **164**；`ai_gate` ok；`tools/gate/egg_probe.py`（preview 4234）**11 / 11 true**；构建 `index-D4y-oZ9Z.js` 1,713.28 kB / `index-Daz4x9NV.css` 53.39 kB。
+- **替身四种子**：¥115,938 / ¥100,452 / ¥109,109 / ¥110,380 → 均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**，与批 R′ 逐位一致（加生蛋是新上架的可选项，替身不主动开——玩家最爱那碗不该由替身代决定）。
+- **新缺口**：**P354** 镬里的「生鸡蛋」与加菜台的「加生蛋」名字不同、价钱不同、界面没说清两者关系 / **P355** 伊面要 300 位客人解锁，而这是玩家最爱那一碗 / **P356** `offal_egg` 两条出处同属一份菜谱 / **P357**「老板那碗」只是印，没有招牌菜体系 / **P358** `dishName()` 写「＋生蛋」、加菜台写「加生蛋」，同一个东西两种叫法。

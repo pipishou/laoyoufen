@@ -29,6 +29,16 @@ export function portionSizeOf(state: GameState): Portion {
   return portionOf(state.portion ?? DEFAULT_PORTION).size;
 }
 
+/**
+ * 老板那碗 —— 老友猪杂伊面。
+ *
+ * 这不是新数值，只是一个「认出来」的标记：菜单上这一款会打一枚「老板那碗」的印，
+ * 让玩家点得出来自己最想吃的那碗。名子照 `dishName()` 自动生成（老友猪杂伊面＋生蛋）。
+ */
+export function isHouseBowl(item: MenuItem): boolean {
+  return (item.main ?? "") === "offal" && (item.noodle ?? "") === "yifu";
+}
+
 /** 除基础味型之外、还挂在架上的加料（写成名尾的「＋」） */
 export function extrasOf(state: GameState): string[] {
   return activeSides(state)

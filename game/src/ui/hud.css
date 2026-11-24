@@ -2518,3 +2518,16 @@ html.prefs-big #hud .clock{font-size:17px}
 /* 手艺：每族标一条「先点这个」（批 Q′，解 P306） */
 .pane .pc.rec{outline:2px dashed var(--wood);outline-offset:1px}
 .daywhy [data-invest-line]::before{content:"到点 · "}
+
+/* 老板那碗：老友猪杂伊面（批 S′）—— 只是认出来，不是新数值 */
+.pane .dcard .dmine{
+  display:inline-block;
+  margin:0 0 2px;
+  padding:1px 5px 0;
+  font-size:9px;
+  letter-spacing:1px;
+  color:var(--cream);
+  background:var(--red);
+  border:2px solid var(--ink);
+  box-shadow:2px 2px 0 var(--shadow);
+}

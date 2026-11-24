@@ -21,10 +21,10 @@ const pairOf = (id: string) => PAIRINGS.find((p) => p.id === id)!.pair;
 
 describe("配料组合（A2）", () => {
   it("19 搭：id 与名字不重样，每搭两件不同的真浇头", () => {
-    expect(PAIRINGS).toHaveLength(19);
-    expect(PAIRING_TOTAL).toBe(19);
-    expect(new Set(PAIRINGS.map((p) => p.id)).size).toBe(19);
-    expect(new Set(PAIRINGS.map((p) => p.name)).size).toBe(19);
+    expect(PAIRINGS).toHaveLength(20);
+    expect(PAIRING_TOTAL).toBe(20);
+    expect(new Set(PAIRINGS.map((p) => p.id)).size).toBe(20);
+    expect(new Set(PAIRINGS.map((p) => p.name)).size).toBe(20);
     for (const p of PAIRINGS) {
       expect(p.pair).toHaveLength(2);
       expect(p.pair[0]).not.toBe(p.pair[1]);
@@ -110,10 +110,10 @@ describe("配料组合（A2）", () => {
     expect(pairServeFactor(q)).toBeCloseTo(1 - Math.min(PAIR_CAP.servePct, 0.02), 6);
   });
 
-  it("抬头写「凑成 N / 19 搭」", () => {
-    expect(pairingSummary([])).toBe("凑成 0 / 19 搭");
+  it("抬头写「凑成 N / 20 搭」", () => {
+    expect(pairingSummary([])).toBe("凑成 0 / 20 搭");
     const pair = pairOf("beef_mince");
-    expect(pairingSummary(pair)).toBe("凑成 1 / 19 搭");
+    expect(pairingSummary(pair)).toBe("凑成 1 / 20 搭");
   });
 
   it("差一件提示：只放一件时指向那一搭，凑齐后换下一条", () => {

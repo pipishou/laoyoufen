@@ -87,7 +87,7 @@ def main() -> int:
         detail["chips_n"] = len(chips)
         detail["chips_sample"] = chips[:6]
         detail["money0"] = m0.groups() if m0 else None
-        checks["chips_20"] = len(chips) == 20
+        checks["chips_21"] = len(chips) == 21
         checks["chips_no_price"] = bool(chips) and all("¥" not in c for c in chips)
         checks["money_shown"] = bool(m0)
         page.screenshot(path=f"{OUT}/01-calib-recipe.png")
