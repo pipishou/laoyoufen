@@ -113,8 +113,30 @@ export function buyInvest(state: GameState, id: string): BuyResult {
  * 玩家第二天早上看到门路没了，不会以为界面出错。
  */
 export function investDoneToday(state: GameState): InvestDef[] {
+  return investEndingToday(state).map((e) => e.def);
+}
+
+/** 一条门路「今天到底给了多少」（解 P347：只记名字说不出值不值） */
+export function investGainOf(def: InvestDef): string {
+  if (def.capacity) return `多做 ${def.capacity} 碗`;
+  if (def.slowestMinutes) return `出碗快 ${def.slowestMinutes} 分`;
+  if (def.attractPct) return `进店多 ${Math.round(def.attractPct * 100)}%`;
+  return "";
+}
+
+export interface InvestEnd {
+  def: InvestDef;
+  /** 「多做 20 碗」这种人话，直接进打烊单 */
+  gain: string;
+}
+
+/** 今天是用它的最后一天的那几条，带各自的效果量 */
+export function investEndingToday(state: GameState): InvestEnd[] {
   const last = dayIndexOf(state) + 1;
-  return INVESTS.filter((def) => state.investments?.[def.id] === last);
+  return INVESTS.filter((def) => state.investments?.[def.id] === last).map((def) => ({
+    def,
+    gain: investGainOf(def),
+  }));
 }
 
 export function investCapacityBonus(state: GameState): number {

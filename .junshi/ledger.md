@@ -1003,3 +1003,26 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 - **P349** `.pc.rec` 红虚线与「现在最缺」红标同色，同一面板两种红，将来要收成「推荐虚线 / 紧急实心」。
 
 **文档**：`docs/三句提示Q′-2026-11-25.md`
+---
+
+### 行 122 · 2026-11-25 · 批 R′：门路值不值、推荐不抢红
+
+**做了什么**
+- `game/src/sim/invest.ts`：`investGainOf(def)`（`多做 20 碗` / `出碗快 0.5 分` / `进店多 30%`）、`InvestEnd`、`investEndingToday(state)`；`investDoneToday` 改薄成 `.map((e) => e.def)`，老调用点不动。解 P347。
+- `game/src/sim/state.ts`：`DayRecord.investGain?: string[]` 与 `investDone` **同一次 filter、同一个顺序**，不会错位；`recordDay` 两条一起写。
+- `game/src/ui/hud.ts`：打烊单那行改成「到点：跟料商多留一筐 走完了（多做 20 碗）」，多条用「；」。
+- `game/src/ui/hud.css`：`.pane .pc.rec` 的 `outline` 从 `var(--red)` 换 `var(--wood)` —— 红只留给「现在最缺」（`.lrow.hotrow`、压迫型事件标题 ⚠）。解 P349。
+- 新测试 `game/src/sim/invest-gain.test.ts` 4 例；`tools/gate/hint_probe.py` 扩到 **11 项**（新增 `invest_line_says_gain` / `rec_outline_dashed` / `rec_not_red`，后者用临时 span 取 `var(--wood)` 与 `var(--red)` 的计算色比对，换色板也能跟上）。
+
+**验收**
+- `npx tsc --noEmit` 0；`npx vitest run` **83 文件 911 用例**；`copy_gate` ok；`eye_gate --slug gain` 五视口 ok（1440×900 **1505** 色）、stamp **164**；`ai_gate` `"ok": true`；`hint_probe` **11 / 11 true**。
+- 产物 `game/dist/assets/index-OkzOKmMt.js` **1,710.81 kB**（gzip 511.92）/ `index-C9TPNgyl.css`。
+- 替身四种子与批 Q′ **逐位一致**：均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**。
+
+**新缺口**
+- **P350** 效果量是理论上限，不是当天实际（门口没人时那 20 碗白给）；要说真结果，得跑影子模拟。
+- **P351** `investGain` 只在最后一天记，中间工作日打烊单不说话。
+- **P352** 木色虚线在 375 宽的小屏只有 2px，跟默认边框差别不大。
+- **P353** 三种单位（碗 / 分 / %）没有统一口径，玩家得自己换算出「0.5 分值多少碗」。
+
+**文档**：`docs/门路值不值R′-2026-11-25.md`

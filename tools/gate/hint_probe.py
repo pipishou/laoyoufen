@@ -128,6 +128,7 @@ def main() -> int:
                 month: s.month, day: s.day, served: 36, lost: 9,
                 revenue: 360, cost: 200, sat: 62,
                 investDone: ['跟料商多留一筐'],
+                investGain: ['多做 20 碗'],
               });
               api.refresh();
               const el = document.querySelector('[data-invest-line]');
@@ -135,9 +136,28 @@ def main() -> int:
             }"""
         )
         checks["invest_line_present"] = "走完了" in invested and "跟料商多留一筐" in invested
-        checks["invest_line_prefix_css"] = invested != ""
+        checks["invest_line_says_gain"] = "多做 20 碗" in invested
 
         pg.screenshot(path=os.path.join(EVID, "03-hint-dayreport.png"), full_page=False)
+
+        style = pg.evaluate(
+            """() => {
+              const recs = Array.from(document.querySelectorAll('.pane .pc[data-rec="1"]'));
+              const el = recs[0];
+              if (!el) return null;
+              const cs = getComputedStyle(el);
+              const probe = document.createElement('span');
+              probe.style.color = 'var(--wood)';
+              document.body.appendChild(probe);
+              const wood = getComputedStyle(probe).color;
+              probe.style.color = 'var(--red)';
+              const red = getComputedStyle(probe).color;
+              probe.remove();
+              return { style: cs.outlineStyle, color: cs.outlineColor, wood, red };
+            }"""
+        )
+        checks["rec_outline_dashed"] = bool(style) and style["style"] == "dashed"
+        checks["rec_not_red"] = bool(style) and style["color"] == style["wood"] and style["red"] != style["wood"]
 
         checks["save_version"] = pg.evaluate("() => window.__laoyou.state.saveVersion") == 37
 
@@ -155,6 +175,7 @@ def main() -> int:
         "badTomorrow": bad_tomorrow,
             "tomorrowDay": tomorrow_day,
             "rec": perk,
+        "recStyle": style,
             "investLine": invested,
             "errors": bad[:8],
         }

@@ -7,15 +7,17 @@
     "rec_one_per_family": true,
     "rec_title_says_first": true,
     "invest_line_present": true,
-    "invest_line_prefix_css": true,
+    "invest_line_says_gain": true,
+    "rec_outline_dashed": true,
+    "rec_not_red": true,
     "save_version": true,
     "console_clean": true
   },
-  "tomorrow": "停水 · 进店 −16% · 料钱 +5%（好在今天还发薪日） · 明天：猪肉起价",
-  "badTomorrow": "创城检查 · 进店 −8% · 耐心 +4% · 料钱 −5% · 明天：气价上调（配赶圩日）",
+  "tomorrow": "回南天 · 进店 −12% · 耐心 +10% · 料钱 +6% · 明天：停水（配发薪日）",
+  "badTomorrow": "回南天 · 进店 −12% · 耐心 +10% · 料钱 +6% · 明天：停水（配发薪日）",
   "tomorrowDay": [
-    1,
-    2
+    2,
+    24
   ],
   "rec": {
     "count": 4,
@@ -32,6 +34,12 @@
       "门口有张熟脸"
     ]
   },
-  "investLine": "到点：跟料商多留一筐 走完了",
+  "recStyle": {
+    "style": "dashed",
+    "color": "rgb(138, 111, 82)",
+    "wood": "rgb(138, 111, 82)",
+    "red": "rgb(181, 73, 58)"
+  },
+  "investLine": "到点：跟料商多留一筐 走完了（多做 20 碗）",
   "errors": []
 }

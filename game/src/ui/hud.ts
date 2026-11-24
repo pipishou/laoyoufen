@@ -641,7 +641,11 @@ const render = (s: GameState, score: RecipeScore): void => {
       }
       // 门路到点（批 Q′，解 P303）：昨天买的那条今天走完了，得有一声
       const done = s.dayReport?.investDone ?? [];
-      investLine.textContent = done.length > 0 ? `到点：${done.join("、")} 走完了` : "";
+      const gain = s.dayReport?.investGain ?? [];
+      const said = done
+        .map((name, i) => (gain[i] ? `${name} 走完了（${gain[i]}）` : `${name} 走完了`))
+        .join("；");
+      investLine.textContent = done.length > 0 ? `到点：${said}` : "";
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);
