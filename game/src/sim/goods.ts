@@ -91,10 +91,23 @@ export function goodsSideMult(state: GameState): number {
   return todayGoods(state).reduce((n, d) => n * (d.sideMult ?? 1), 1);
 }
 
+/**
+ * 当天进店乘数（批 J′ 新加的那一条出口）。
+ *
+ * 只有「门口多亮一盏灯」「门口挂块价牌」两件用它；进店率本身已经叠了
+ * 行情、物产、技法、门路、抢客五层，所以这里只做**加法累加**（+8%、+5%），
+ * 不再乘出第六层（P154 / R-1 的同一条纪律）。
+ */
+export function goodsAttractMult(state: GameState): number {
+  const pct = todayGoods(state).reduce((n, d) => n + (d.attractPct ?? 0), 0);
+  return 1 + pct;
+}
+
 /** 面板上的一行 */
 export function goodWords(def: GoodDef): string {
   const bits: string[] = [];
   if (def.capacity) bits.push(`当天产能 +${def.capacity} 碗`);
+  if (def.attractPct) bits.push(`进店 +${Math.round(def.attractPct * 100)}%`);
   if (def.patiencePct) bits.push(`耐心 +${Math.round(def.patiencePct * 100)}%`);
   if (def.sideMult) bits.push(`加购 ×${def.sideMult}`);
   return bits.join(" · ");

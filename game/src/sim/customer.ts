@@ -29,7 +29,8 @@ import { stageMinutes } from "./equipment";
 import { gearAttractMult, gearCostFactor, gearPatienceMult, gearSatBonus, gearServeFactor } from "./gear";
 import { marketAttractMult, marketCostFactor, marketPatienceMult, marketWalletMult } from "./market";
 import { investAttractMult } from "./invest";
-import { goodsPatienceMult } from "./goods";
+import { goodsAttractMult, goodsPatienceMult } from "./goods";
+import { slotAttractMult } from "./slots";
 import { priceWarMult } from "./price-war";
 import { localCostFactor, localPatienceMult, localSideCostFactor } from "./local";
 import { styleAttractMult, stylePatienceMult, styleSatBonus } from "./style";
@@ -243,6 +244,10 @@ function spawnChance(state: GameState): number {
     marketAttractMult(state) *
     // 比价（批次 4.5）：同行的便宜粉摆在那里，你的价牌贵一点人就少一点
     priceWarMult(state) *
+    // 杂货铺（批次 J′）：门口多亮一盏灯、挂块价牌，路过的人多看一眼
+    goodsAttractMult(state) *
+    // 成套度（批 J′）：门面齐了，巷口一眼看得见这家
+    slotAttractMult(state) *
     FLOW.spawnScale *
     // 开局分流（P67）：前七天别把产能压垮
     spawnScaleByDay(state)

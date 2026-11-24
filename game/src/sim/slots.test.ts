@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { SLOTS, SLOT_COUNT, STAGE_CELLS, STAGE_H, STAGE_W } from "../data/slots";
 import { createInitialState } from "./state";
-import { filledCount, layoutOf, layoutSummary, stageCells } from "./slots";
+import {
+  claimSlotPrizes,
+  filledCount,
+  layoutOf,
+  layoutSummary,
+  slotAttractMult,
+  slotSeatTaken,
+  slotSetSummary,
+  slotSetViews,
+  slotSetWords,
+  stageCells,
+} from "./slots";
 
 const fresh = () => createInitialState("p1", 7);
 
@@ -97,5 +108,51 @@ describe("店里九十六格（批次十）", () => {
     const a = filledCount(s);
     s.style = "yeshi";
     expect(filledCount(s)).toBe(a);
+  });
+});
+
+describe("成套度（批 J′，解 P290）", () => {
+  it("新局两条都没凑齐，进度从 0 起", () => {
+    const s = fresh();
+    const vs = slotSetViews(s);
+    expect(vs).toHaveLength(2);
+    expect(vs.every((v) => !v.done)).toBe(true);
+    expect(vs[0]!.progress).toContain("/ 6");
+    expect(slotSetSummary(s)).toBe("成套 0 / 2");
+  });
+
+  it("桌子六张 → 补一张座位，只补一次", () => {
+    const s = fresh();
+    s.venue.seats = 6;
+    expect(slotSeatTaken(s)).toBe(false);
+    expect(claimSlotPrizes(s)).toBe(1);
+    expect(s.venue.seats).toBe(7);
+    expect(slotSeatTaken(s)).toBe(true);
+    // 第二次调不再发
+    expect(claimSlotPrizes(s)).toBe(0);
+    expect(s.venue.seats).toBe(7);
+  });
+
+  it("桌子不够就不发，也不写标记", () => {
+    const s = fresh();
+    s.venue.seats = 5;
+    expect(claimSlotPrizes(s)).toBe(0);
+    expect(s.venue.seats).toBe(5);
+    expect(slotSeatTaken(s)).toBe(false);
+  });
+
+  it("门面四件齐了：进店 +4%，且是常驻", () => {
+    const s = fresh();
+    expect(slotAttractMult(s)).toBe(1);
+    s.gear = ["banner", "lucky_statue", "aroma_fan", "wall_fan"];
+    expect(slotAttractMult(s)).toBeCloseTo(1.04, 5);
+    expect(slotSetSummary(s)).toContain("1 / 2");
+  });
+
+  it("两条的奖励写法不重样，句子都带因果", () => {
+    const vs = slotSetViews(fresh());
+    expect(slotSetWords(vs[0]!)).toContain("座位 +1");
+    expect(slotSetWords(vs[1]!)).toContain("进店 +4%");
+    for (const v of vs) expect(v.def.line.length).toBeGreaterThan(8);
   });
 });

@@ -6,7 +6,15 @@
  * **不改任何数值** —— 这一层是画，不是玩。
  */
 
-import { SLOTS, STAGE_CELLS, STAGE_H, STAGE_W, type SlotKind } from "../data/slots";
+import {
+  SLOTS,
+  SLOT_SETS,
+  STAGE_CELLS,
+  STAGE_H,
+  STAGE_W,
+  type SlotKind,
+  type SlotSetDef,
+} from "../data/slots";
 import { stationCount } from "./equipment";
 import type { GameState } from "./state";
 
@@ -93,4 +101,85 @@ export function filledCount(state: GameState): number {
 
 export function stageCells(): number {
   return STAGE_CELLS;
+}
+
+// ── 成套度（批 J′）─────────────────────────────────────────────
+
+export interface SlotSetView {
+  def: SlotSetDef;
+  done: boolean;
+  /** 「桌 4 / 6」这种进度短语 */
+  progress: string;
+}
+
+function setProgress(l: Layout, def: SlotSetDef): { done: boolean; progress: string } {
+  const parts: string[] = [];
+  let done = true;
+  for (const kind of Object.keys(def.need) as SlotKind[]) {
+    const need = Math.max(0, def.need[kind] ?? 0);
+    const have = Math.min(l.used[kind] ?? 0, need);
+    if (have < need) done = false;
+    parts.push(`${SLOT_SHORT[kind]} ${have} / ${need}`);
+  }
+  return { done, progress: parts.join(" · ") };
+}
+
+const SLOT_SHORT: Readonly<Record<SlotKind, string>> = {
+  stove: "灶",
+  table: "桌",
+  prep: "备料",
+  front: "门面",
+};
+
+export function slotSetViews(state: GameState): SlotSetView[] {
+  const l = layoutOf(state);
+  return SLOT_SETS.map((def) => {
+    const { done, progress } = setProgress(l, def);
+    return { def, done, progress };
+  });
+}
+
+/** 已经收过的那一份座位奖励（老档没有 = 没领过） */
+export function slotSeatTaken(state: GameState): boolean {
+  return (state.flow?.slotSeatPrize ?? 0) > 0;
+}
+
+/**
+ * 把凑齐的座位奖励发下去 —— 由 `recordDay` 每天调一次。
+ *
+ * 为什么在打烊时发、而不是买的那一刻发：格子是画，「坐得下」要看**当天**的
+ * 座位与家当；而且发座位要动 `venue.seats`，那是别处也在改的字段（家当、
+ * 事件、分店），集中在打烊一处改，回滚与存档都简单。
+ */
+export function claimSlotPrizes(state: GameState): number {
+  if (slotSeatTaken(state)) return 0;
+  const room = slotSetViews(state).find((v) => v.def.id === "room_done");
+  if (!room || !room.done) return 0;
+  const seats = Math.max(0, room.def.seats ?? 0);
+  if (seats <= 0) return 0;
+  state.venue.seats = Math.max(1, (state.venue.seats ?? 2) + seats);
+  state.flow = { ...(state.flow as object), slotSeatPrize: seats } as GameState["flow"];
+  return seats;
+}
+
+/** 常驻的进店加成（门面齐了那一条） */
+export function slotAttractMult(state: GameState): number {
+  const pct = slotSetViews(state)
+    .filter((v) => v.done)
+    .reduce((n, v) => n + (v.def.attractPct ?? 0), 0);
+  return 1 + pct;
+}
+
+/** 面板抬头：「成套 1 / 2」 */
+export function slotSetSummary(state: GameState): string {
+  const vs = slotSetViews(state);
+  const done = vs.filter((v) => v.done).length;
+  return `成套 ${done} / ${vs.length}`;
+}
+
+export function slotSetWords(v: SlotSetView): string {
+  const bits: string[] = [];
+  if (v.def.seats) bits.push(`座位 +${v.def.seats}（一次性）`);
+  if (v.def.attractPct) bits.push(`进店 +${Math.round(v.def.attractPct * 100)}%`);
+  return bits.join(" · ");
 }

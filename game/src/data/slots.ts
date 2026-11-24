@@ -79,3 +79,58 @@ export const SLOT_COUNT: Readonly<Record<SlotKind, number>> = {
   prep: BASE_SLOTS.filter((s) => s.kind === "prep").length,
   front: BASE_SLOTS.filter((s) => s.kind === "front").length,
 };
+
+/**
+ * 成套度（批 J′，解 P290「96 格只画不玩」）。
+ *
+ * 开罗 `storepattern` 是「成套内装」：一套配齐了有整套加成，散着买没有。
+ * 本作的格子此前纯装饰，这一批只给**两个**出口 —— 二次确认时把
+ * 「每格 0.5%、满格 +48%」这一版撤掉了（`capacityOf` / `stageMinutes` 各自
+ * 已经叠了四五层，再加一层就是第六层，P154 的上限没人验过）。
+ *
+ * 所以只剩：
+ *   - `room_done`（店里坐得下）→ **座位永久 +1，一次性**（记在 `flow.slotSeatPrize`）；
+ *   - `front_done`（门面齐了）→ 进店率 +4%，**常驻**（门面件不会被卖掉）。
+ *
+ * 两个都不改料钱、不改出碗时间 —— 那是别的批已经占了的位置。
+ */
+export interface SlotSetDef {
+  id: "room_done" | "front_done";
+  name: string;
+  /** 凑齐条件：各类槽位至少摆满几个 */
+  need: Readonly<Partial<Record<SlotKind, number>>>;
+  /** 凑齐当场给一次座位（永久，只给一次） */
+  seats?: number;
+  /** 凑齐之后常驻的进店加成 */
+  attractPct?: number;
+  line: string;
+  why: string;
+  kairo: string;
+}
+
+export const SLOT_SETS: readonly SlotSetDef[] = [
+  {
+    id: "room_done",
+    name: "店里坐得下了",
+    need: { table: 6 },
+    seats: 1,
+    line: "桌子摆开六张，墙边还能再塞一张小方桌 —— 座位多一个。",
+    why: "散着买只是好看，配齐了才真的多坐一个人 —— 桌与桌之间让出的那条过道，才是多出来的那一位。",
+    kairo: "storepattern：成套内装给成套效果",
+  },
+  {
+    id: "front_done",
+    name: "门面齐了",
+    need: { front: 4 },
+    attractPct: 0.04,
+    line: "招牌、锦旗、灯箱、风扇都到位了，巷口一眼就看得见这家。",
+    why: "招牌管远看、灯箱管夜里、锦旗管抬头、风扇管路过的人肯不肯停 —— 四样各管一头，齐了才成个门面。",
+    kairo: "storeparts / 招牌类：成套的门面",
+  },
+];
+
+export const SLOT_SET_TOTAL = SLOT_SETS.length;
+
+export function slotSetById(id: string): SlotSetDef | undefined {
+  return SLOT_SETS.find((s) => s.id === id);
+}

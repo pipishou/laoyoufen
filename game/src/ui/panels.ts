@@ -73,7 +73,7 @@ import { specialtiesOfRole } from "../data/specialty";
 import { specialtySummary } from "../sim/specialty";
 import { mapCells, mapSize, mapSummary, districtPitchOf } from "../sim/map";
 import { localSummary } from "../sim/local";
-import { filledCount, layoutOf, layoutSummary, stageCells } from "../sim/slots";
+import { filledCount, layoutOf, layoutSummary, slotSetSummary, slotSetViews, slotSetWords, stageCells } from "../sim/slots";
 import type { RecipeScore } from "../sim/score";
 import { upgradeCost, upgradeLevel } from "../sim/shop";
 import { bowlMinutes, dailyWage } from "../sim/staff";
@@ -1038,6 +1038,7 @@ let lastGradeKey = "";
       .join("")}
   </div>`;
   const lyt = layoutOf(s);
+  const slotSets = slotSetViews(s);
   const layoutSec = `
   <div class="sec">
     <div class="sechd">${icon("shop")}店里 · ${layoutSummary(s)}</div>
@@ -1051,6 +1052,13 @@ let lastGradeKey = "";
             : `<span class="gc" style="grid-column:${c.x + 1};grid-row:${c.y + 1}"></span>`,
       )
       .join("")}</div>
+    <div class="sechint">成套 · ${slotSetSummary(s)}（配齐一类，才真的多坐一位、多几个人看见）</div>
+    ${slotSets
+      .map(
+        (v) =>
+          `<div class="lrow${v.done ? "" : " locked"}"><div class="lname">${v.def.name}<span class="tag2">${v.done ? "已凑齐" : v.progress}</span></div><div class="lmeta">${slotSetWords(v)}｜${v.def.line}</div></div>`,
+      )
+      .join("")}
   </div>`;
   const retailSec = `
   <div class="sec">

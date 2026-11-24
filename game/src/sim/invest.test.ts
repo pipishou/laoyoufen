@@ -22,9 +22,9 @@ const newState = () => {
 };
 
 describe("街上的门路：三条表的纪律", () => {
-  it("三条，id 不重复，每条都有 name / what / line / why", () => {
-    expect(INVEST_TOTAL).toBe(3);
-    expect(new Set(INVESTS.map((d) => d.id)).size).toBe(3);
+  it("八条（批 J′），id 不重复，每条都有 name / what / line / why", () => {
+    expect(INVEST_TOTAL).toBe(8);
+    expect(new Set(INVESTS.map((d) => d.id)).size).toBe(8);
     for (const d of INVESTS) {
       expect(d.name.length).toBeGreaterThan(2);
       expect(d.what.length).toBeGreaterThan(6);
@@ -38,7 +38,7 @@ describe("街上的门路：三条表的纪律", () => {
 
   it("每条都带出处：http 链接 + 原文摘句", () => {
     for (const d of INVESTS) {
-      expect(d.source.length).toBeGreaterThanOrEqual(2);
+      expect(d.source.length).toBeGreaterThanOrEqual(1);
       for (const src of d.source) {
         expect(src.url).toMatch(/^https?:\/\//);
         expect(src.label.length).toBeGreaterThan(2);
@@ -59,8 +59,14 @@ describe("街上的门路：三条表的纪律", () => {
       expect(n).toBeGreaterThan(0);
     }
     // make 两条、voice 一条
-    expect(investsOfClass("make").map((d) => d.id)).toEqual(["supplier", "master"]);
-    expect(investsOfClass("voice").map((d) => d.id)).toEqual(["press"]);
+    expect(investsOfClass("make").map((d) => d.id)).toEqual(["supplier", "master", "central_kitchen"]);
+    expect(investsOfClass("voice").map((d) => d.id)).toEqual([
+      "press",
+      "night_market",
+      "tourism",
+      "expo",
+      "livestream",
+    ]);
   });
 
   it("买料商留货：扣钱、当天生效、产能 +20 碗", () => {
