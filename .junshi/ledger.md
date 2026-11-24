@@ -1016,7 +1016,8 @@ loor(期望) + 余数掷骰，上限 4 人/分」，并在循环里守 demandCap
 
 **验收**
 - `npx tsc --noEmit` 0；`npx vitest run` **83 文件 911 用例**；`copy_gate` ok；`eye_gate --slug gain` 五视口 ok（1440×900 **1505** 色）、stamp **164**；`ai_gate` `"ok": true`；`hint_probe` **11 / 11 true**。
-- 产物 `game/dist/assets/index-OkzOKmMt.js` **1,710.81 kB**（gzip 511.92）/ `index-C9TPNgyl.css`。
+- 产物 `game/dist/assets/index-ptLybitf.js` **1,710,802 B**（gzip 511.91）/ `index-B_dFZq_T.css` 53,183 B。
+- 上线后又修一处（commit `4c01871`）：「到点」前缀在 CSS `::before` 与正文里各写了一份，屏幕上出现两个「到点」；正文只留后半句。同一次修了探针注入字段（打烊单的「平均满意」读 `dayReport.avgSat`，探针原来塞 `sat`）。
 - 替身四种子与批 Q′ **逐位一致**：均值 **¥108,970 · 198.5 碗 · 41.5% · 期末 ¥511,545**。
 
 **新缺口**
