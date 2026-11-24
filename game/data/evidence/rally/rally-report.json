@@ -1,0 +1,21 @@
+{
+  "staff_injected": true,
+  "no_rally_when_calm": true,
+  "rally_opened": true,
+  "fatigue_capped": true,
+  "still_employed": true,
+  "rally_block_shown": true,
+  "three_paths": true,
+  "three_buttons": true,
+  "paths_named": true,
+  "costs_shown": true,
+  "hint_says_today": true,
+  "favor_spent": true,
+  "cash_untouched": true,
+  "fatigue_relieved": true,
+  "rally_cleared": true,
+  "last_event_says_stay": true,
+  "block_gone_after_choice": true,
+  "save_version": true,
+  "console_clean": true
+}

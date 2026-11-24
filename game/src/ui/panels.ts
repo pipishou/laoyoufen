@@ -77,6 +77,7 @@ import { specialtiesOfRole } from "../data/specialty";
 import { FINISH_SKILL_TOTAL, STAFF_SKILL_TOTAL } from "../data/staff-skill";
 import { specialtySummary } from "../sim/specialty";
 import { growWords } from "../sim/staff-grow";
+import { rallyMember, rallyViews, rallyWords } from "../sim/rally";
 import { mapCells, mapSize, mapSummary, districtPitchOf } from "../sim/map";
 import { localSummary } from "../sim/local";
 import { filledCount, layoutOf, layoutSummary, slotSetSummary, slotSetViews, slotSetWords, stageCells } from "../sim/slots";
@@ -153,6 +154,7 @@ export interface PanelActions {
   fire(uid: string): void;
   learnSpecialty(uid: string, id: string): void;
   toggleRest(uid: string): void;
+  rally(id: string): void;
   buy(id: string): void;
   buyEquip(id: string): void;
   buyExpand(): void;
@@ -410,6 +412,10 @@ let lastGradeKey = "";
       case "rest":
         actions.toggleRest(id);
         break;
+      case "rally": {
+        actions.rally(String(id));
+        break;
+      }
       case "buy":
         actions.buy(id);
         break;
@@ -599,6 +605,31 @@ let lastGradeKey = "";
       })
       .join("");
 
+    /**
+     * 批 V′（开罗 rally.txt：店员累了先闹一次）：顶到门槛不是立刻走人，
+     * 先在这儿摆三条路 —— 卖个人情、加点工钱、让他歇两天。
+     * 三条路的代价都写在同一行里，玩家不用去别处算。
+     */
+    const rallyWho = rallyMember(s);
+    const rallyBlock = rallyWho
+      ? `<div class="sec rallybox" data-rally="${rallyWho.uid}">
+        <div class="sechd">${icon("staff")}${rallyWho.name} 想走了</div>
+        <div class="sechint">${rallyWords(s)}</div>
+        ${rallyViews(s)
+          .map(
+            (v) => `<div class="lrow${v.affordable ? "" : " locked"}">
+            <div class="lname">${v.def.name}</div>
+            <div class="lmeta">${v.def.what}｜${v.costText}${v.affordable ? "" : ` · ${v.reason}`}</div>
+            <div class="lbtns"><button type="button" data-act="rally" data-id="${v.def.id}" ${
+              v.affordable ? "" : "disabled"
+            } title="${v.def.why}">${v.def.name}</button></div>
+          </div>`,
+          )
+          .join("")}
+        <div class="hint">今天不答话，人明天就走。</div>
+      </div>`
+      : "";
+
     const slots = staffSlots(s.totalCustomers);
     const nxt = nextStaffNeed(s.totalCustomers);
     const fullStaff = s.staff.roster.length >= slots;
@@ -615,6 +646,7 @@ let lastGradeKey = "";
     return `<div class="sec">
         <div class="sechd">${icon("staff")}在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))} · ${specialtySummary(s)}</div>
         ${roster || `<div class="empty2">还没雇人。你自己一个人炒锅，出碗 6 分钟。</div>`}
+        ${rallyBlock}
         <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"} 人是一天一天熟起来的：四属性到门槛就自动学会手艺，不用点。${STAFF_SKILL_TOTAL} 项手艺、${FINISH_SKILL_TOTAL} 门毕业技（四属性都到 3 级才有）。</div>
       </div>
       <div class="sec">

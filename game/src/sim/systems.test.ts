@@ -83,7 +83,7 @@ describe("员工", () => {
     expect(surveyRate(s)).toBe(base);
   });
 
-  it("疲劳累积到 100 会辞职；休息一天恢复", () => {
+  it("疲劳累积到 100 先闹一次，没人答话第二天才辞职；休息一天恢复", () => {
     const s = createInitialState("staff-2", 7);
     s.cash = 5000;
     s.staff.roster = [cook(3), { ...cook(2), uid: "u2", name: "二厨" }];
@@ -91,9 +91,15 @@ describe("员工", () => {
     s.staff.roster[1]!.fatigue = 50;
     toggleRest(s, "u2");
     settleStaffDay(s);
+    // 批 V′：第一次顶到门槛不立刻走人，先挂「要不要留」
+    expect(s.staff.roster).toHaveLength(2);
+    expect(s.staff.rally?.uid).toBe(s.staff.roster[0]!.uid);
+    s.day += 1;
+    settleStaffDay(s);
     expect(s.staff.roster).toHaveLength(1);
     expect(s.staff.roster[0]!.uid).toBe("u2");
-    expect(s.staff.roster[0]!.fatigue).toBe(0);
+    // 第二天他复工了，所以疲劳是「干活涨回来的那点」，不是零
+    expect(s.staff.roster[0]!.fatigue).toBeLessThan(20);
     expect(s.staff.roster[0]!.resting).toBe(false);
   });
 });

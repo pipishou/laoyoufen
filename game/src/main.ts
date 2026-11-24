@@ -1,4 +1,4 @@
-﻿import Phaser from "phaser";
+import Phaser from "phaser";
 import { fetchEventNarrative, localNarrative, localReaction } from "./ai/director";
 import { fetchLine, getLine, localLine, type LineAsk } from "./ai/lines";
 import { TOURNEY_BY_ID } from "./data/tourneys";
@@ -76,6 +76,7 @@ import { dishNameOfItem, scoreOf } from "./sim/dish";
 import { addFavorFree, useFavor as useFavorImpl } from "./sim/favor";
 import { mainSummary, portionSummary, setMain, setPortion } from "./sim/mains";
 import { addDish, removeDish, selectDish, sellRecipe, syncEditing, toggleDish } from "./sim/menu";
+import { rallyMember, resolveRally } from "./sim/rally";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness } from "./sim/setup";
@@ -265,6 +266,12 @@ panels = mountPanels(hudRoot, {
   toggleRest(uid) {
     toggleRest(state, uid);
     playSfx("ui");
+    refresh();
+  },
+  rally(id) {
+    const r = resolveRally(state, id);
+    hud.showToast(r.ok ? r.line : r.reason, r.ok ? "like" : "info");
+    if (r.ok) playSfx("upgrade");
     refresh();
   },
   buy(id) {
@@ -1081,6 +1088,7 @@ function refresh(): void {
   if (state.dayReport) speakAppetite();
   speakStaffGrow();
   speakSet();
+  speakRally();
   speakMarket();
   scheduleSave();
 }
@@ -1253,6 +1261,29 @@ let lastSetLine = "";
  * 触发只认 `state.dayReport.slotSet` —— 打烊时 `announceSlotSets` 写的，
  * 同一套只写一次，所以这条不会天天响。
  */
+let lastRallyKey = "";
+
+/**
+ * 批 V′：店员想走那天，街坊在门口说一句。
+ * 同一个人同一天只说一次 —— 挂在 `rally.uid + day` 上。
+ */
+function speakRally(): void {
+  const who = rallyMember(state);
+  if (!who) return;
+  const key = `rally:${who.uid}:${state.month}:${state.day}`;
+  if (key === lastRallyKey) return;
+  lastRallyKey = key;
+  void fetchLine({
+    kind: "rally_voice",
+    key,
+    context: { 人: who.name, 事: "连着几天没歇" },
+    month: state.month,
+    day: state.day,
+  }).then((got) => {
+    if (got) hud.showToast(`街坊说：「${got}」`, "info");
+  });
+}
+
 function speakSet(): void {
   const said = state.dayReport?.slotSet ?? "";
   if (!said || said === lastSetLine) return;

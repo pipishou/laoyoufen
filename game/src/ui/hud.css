@@ -2537,3 +2537,5 @@ html.prefs-big #hud .clock{font-size:17px}
 .pane .g96 .gc.bare{background:repeating-linear-gradient(45deg, var(--sand) 0 1px, transparent 1px 3px);opacity:.5}
 .pane .lrow.expdone .lname::before{content:"✔ ";color:var(--green)}
 .pane .lrow.expdone{opacity:.85}
+
+.pane .rallybox{border:2px dashed var(--red);padding:5px 8px 4px;margin:6px 0}

@@ -13,6 +13,7 @@ import { gearFatigueMult } from "./gear";
 import { shuffled } from "./rng";
 import { specialtyCostFactor, specialtyPatienceMult, specialtyServeFactor } from "./specialty";
 import { growDay, staffEffects } from "./staff-grow";
+import { rallyCheck } from "./rally";
 import type { GameState, StaffMember } from "./state";
 
 /**
@@ -244,7 +245,12 @@ export function settleStaffDay(state: GameState): number {
   state.cash -= wages;
 
   const quitAt = QUIT_FATIGUE + grown.keep;
-  const quitters = state.staff.roster.filter((m) => m.fatigue >= quitAt);
+  /**
+   * 批 V′：第一次顶到门槛不立刻走人，先挂一次「要不要留」。
+   * 判据在 `sim/rally.ts` —— 劝过一次还顶着，第二天才走。
+   */
+  const today = dayIndex(state.month, state.day);
+  const quitters = rallyCheck(state, quitAt, today);
   if (quitters.length > 0) {
     state.staff.roster = state.staff.roster.filter((m) => m.fatigue < quitAt);
     state.staff.lastEvent = `${quitters.map((q) => q.name).join("、")} 体力透支，辞职了`;

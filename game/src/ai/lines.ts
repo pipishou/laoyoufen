@@ -43,7 +43,8 @@ export type LineKind =
   | "perk_voice"
   | "item_voice"
   | "set_voice"
-  | "market_answer_voice";
+  | "market_answer_voice"
+  | "rally_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -501,6 +502,17 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "街上是不顺，可老客认门，绕两条巷也照来。",
     "天不帮忙，人还得吃粉，锅别停。",
   ],
+  /**
+   * 25. 店员想走那天（批 V′）：街坊看见人蹲在门口抽烟，说的话。
+   *
+   * 不提工钱、不提数字、不劝老板怎么谈 —— 只把「人是要留的」这层意思递过去。
+   */
+  rally_voice: [
+    "那小子蹲在门口抽了半天烟，脸色不对，你去说句话吧。",
+    "人不是铁打的，锅再旺，也得让人喘口气。",
+    "肯留下来跟你干的，都是认你这个人的。",
+    "走了再找一个，又要从头教起，划不来。",
+  ],
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */
@@ -542,7 +554,7 @@ const INFLIGHT = new Map<string, Promise<string | null>>();
  *
  * 超了不是报错，是**静默改走本地句** —— 玩家不该因为预算用完而看见界面变样。
  */
-export const LINE_BUDGET = 340;
+export const LINE_BUDGET = 350;
 
 /**
  * 分项配额（批 O′，解 P243）。

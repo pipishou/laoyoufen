@@ -250,6 +250,11 @@ export interface StaffMember {
    * 四属性、学会的手艺、毕业技全部由它现算，不另存 —— 老档缺这一格就当 0。
    */
   xp?: number;
+  /**
+   * 上一次被劝留的绝对日（批 V′）。劝过一次还顶在门槛上，就真的留不住了。
+   * 可选字段 —— 老档没有就当没劝过。
+   */
+  ralliedAt?: number;
 }
 
 export interface StaffState {
@@ -258,6 +263,11 @@ export interface StaffState {
   /** 候选池生成时的绝对日；换天就重掷 */
   candidateDay: number;
   lastEvent: string;
+  /**
+   * 正在闹情绪的那位（批 V′）：日结挂上，玩家在人手页选一条路。
+   * 可选字段，老档没有就是没人闹。
+   */
+  rally?: { uid: string; at: number };
 }
 
 export interface VenueState {
