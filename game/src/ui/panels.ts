@@ -1884,13 +1884,13 @@ function collectionHtml(s: GameState): string {
    * 只改汤底分与料钱，不改任何乘数 —— 卡上也不写乘数。
    */
   /**
-   * 菜单卡上标出「这一款不是拿默认底煮的」（批 Z″，解 P394）。
-   * 默认底（骨汤 + 酸笋）不印，免得每张卡都挂一条。
+   * 菜单卡上标出「这一款拿什么打底」（批 Z″ 加，批 AA′ 解 P399）。
+   * 默认底（骨汤 + 酸笋）也印，只是淡一档 —— 不印的话，「默认底」与「没有打底」在界面上是同一个样子。
    */
   function baseBadge(item: MenuItem): string {
     const def = soupBaseById(item.recipe?.base);
-    if (def.id === DEFAULT_SOUP_BASE) return "";
-    return `<span class="dbase" title="这一款打底：骨汤 + ${def.extra}">骨汤+${def.extra}</span>`;
+    const cls = def.id === DEFAULT_SOUP_BASE ? "dbase muted" : "dbase";
+    return `<span class="${cls}" title="这一款打底：骨汤 + ${def.extra}">骨汤+${def.extra}</span>`;
   }
 
   function renderBases(s: GameState): void {    const views = soupBaseViews(s);

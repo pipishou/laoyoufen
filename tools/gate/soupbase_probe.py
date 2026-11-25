@@ -120,6 +120,18 @@ def main():
         )
         note("dish_card_badge", "骨汤+番茄" in badge, badge)
 
+        # 每款都印打底（批 AA′，解 P399）；默认底只是淡一档，不是不印
+        has_badge = pg.evaluate(
+            """() => {
+              const cards = [...document.querySelectorAll('[data-menu] .dcard')].filter((c) => !!c.querySelector('.nname'));
+              if (cards.length === 0) return { cards: 0, printed: 0 };
+              const printed = cards.filter((c) => !!c.querySelector('.dbase')).length;
+              return { cards: cards.length, printed };
+            }"""
+        )
+        note("badge_on_every_card", has_badge.get("cards", 0) > 0
+             and has_badge.get("printed") == has_badge.get("cards"), has_badge)
+
         after = pg.evaluate(READ)
         # 汤底分那一格在面板里是分组合成值，不随底变；判据改成「总分没掉、成本涨了五毛」
         # —— 底的汤底分确实进了 scoreRecipe 的 soup，只是 subs 行显示的是八参合成值。

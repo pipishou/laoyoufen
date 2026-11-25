@@ -98,14 +98,19 @@ function pickNoodle(s: GameState): void {
 }
 
 /**
- * 选打底（批 Z″，解 P389「替身从不选底，收益侧零验证」）。
+ * 选打底（批 Z″，解 P389「替身从不选底，收益侧零验证」；批 AA′ 修 P400）。
  *
  * 量尺：一分的汤底值多少料钱 —— `soupDelta * 1.0 - costDelta * 3`。
- * 只有手里过了五千才肯多掏这份料钱（新手期把现金留着保命）。
- * 猪脚底要卖出四百碗才开，比番茄底更难卖动，所以只有开得够久才会换过去。
+ * P400 的修法：不是「现金过五千就换」，而是**先把该留的钱留下** ——
+ * 下一件能给座/给灶的家当与下一档扩建里便宜的那件，再加三千周转，剩下的钱才拿来换底。
+ * 这样替身才不会为了多三分汤底，把当年买灶的钱吃掉。
  */
 function pickSoupBase(s: GameState): void {
-  if (s.cash < 5000) return;
+  const gear = nextGear(s);
+  const exp = nextExpansion(s);
+  const reserve = Math.min(gear?.costYuan ?? Infinity, exp?.costYuan ?? Infinity);
+  const keep = Number.isFinite(reserve) ? reserve + 3000 : 8000;
+  if (s.cash < keep) return;
   const cur = soupBaseOf(s).id;
   let bestId = cur;
   let best = 0;

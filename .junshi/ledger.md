@@ -1161,3 +1161,15 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 验收：`tsc` 0；`vitest --no-file-parallelism` **90 文件 983 用例**；`copy_gate` ok；`eye_gate --slug broth2` 五视口 725 · 778 · 584 · 1242 · 1510 色、stamp 170；`ai_gate` ok；`soupbase_probe`（4242）**23 / 23**；构建 `index-BJ0qQyqa.js` 1,735,992 B / `index-CLAo0FHZ.css` 55,066 B。
 - 文档 `docs/骨汤打底与三处补齐Z″-2026-11-25.md` 补第七节（两次实验对着看）。
 
+
+
+### 行 135 · 2026-11-25 · 批 AA′：每款都印打底、替身先留该留的钱、两张决策地图
+
+- 起因：上一批留下的两条「说不清」—— P395（三分汤底分换不回它该值的钱）与 P397（猪脚卤水的胶质只是一句文案）。这两条不是改个数能定的，所以先出图再动手。
+- 新文档 `docs/决策地图-汤底与工序-2026-11-25.md`：地图 A（汤底分怎么变成钱）三选项 → **选 A 认下「换底是口味」**，理由 B 动九档阈值要赔上三十七句验收与全局回归锁、C 会与 `favor.ts` 的回头系统打架；地图 B（胶质要不要新出口）三选项 → **选 B 窄出口（打烊单一行 + AI 落点），C 不做**。
+- `game/src/ui/panels.ts` + `game/src/ui/hud.css`：菜单卡每款都印打底（`baseBadge`），默认底走 `.dbase.muted` 淡一档 —— 解 **P399**（默认底与「没打底」在界面上一样）。顺手补了 `renderMenu` 缓存键缺 `recipe.base` 的真 bug（第十二次「键漏字段」）。
+- `game/src/sim/standin.probe.ts`：`pickSoupBase` 先算 `reserve = Math.min(nextGear?.costYuan, nextExpansion?.costYuan)`，`cash < reserve + 3000` 就不换底 —— 解 **P400**。实测四种子 ¥108,911 / ¥95,352 / ¥114,563 / ¥107,308（**逐位不变**），说明这条守卫在替身身上从不触发，那 −1.1% 是口味成本本身，不是换底太早。
+- 探针 `tools/gate/soupbase_probe.py` 加 `badge_on_every_card`（数真菜单卡 `.nname` 是否每张都有 `.dbase`）→ **24 / 24 true**（4242）。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **90 文件 983 用例**；`copy_gate` ok；`eye_gate --slug badge` 五视口 725 · 778 · 584 · 1247 · 1511 色、stamp 170；`ai_gate` ok；构建 `index-zYibGbIQ.js` 1,736.00 kB（gzip 521.16）。
+- 新缺口 P401（`soupPipelineWords` 只在面板出现，打烊单与 AI 都不提工序）/ P402（归因只留「有/无」两档，单条实验结论不可复用）/ P403（`.dbase.muted` 在 375 宽与沙底色贴太近，对比低）。
+
