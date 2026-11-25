@@ -72,6 +72,29 @@ READ_JS = """() => {
   };
 }"""
 
+# 批 AP′（P448）：造一张「八座 + 昨天走了四十位」的日结单，看打烊单说哪一句
+SET_REPORT = """(seats) => {
+  const s = window.__laoyou.state;
+  s.venue.seats = seats;
+  s.dayReport = {
+    month: s.month, day: s.day, revenue: 200, served: 20, lost: 40,
+    avgSat: 62, price: 10, taste: 60, cash: s.cash,
+    lostQueue: 40, lostPrice: 0, lostWait: 0,
+  };
+  window.__laoyou.refresh();
+}"""
+
+READ_DAY = """() => {
+  const line = document.querySelector('[data-demand-line]');
+  const hook = document.querySelector('[data-hook-main]');
+  const panel = document.querySelector('.pane [data-demand-blocked]');
+  return {
+    line: line ? (line.textContent || '').trim() : '',
+    hook: hook ? (hook.textContent || '').trim() : '',
+    panel: panel ? (panel.textContent || '').trim() : '',
+  };
+}"""
+
 
 with sync_playwright() as p:
     browser = p.chromium.launch()
@@ -113,6 +136,25 @@ with sync_playwright() as p:
     back = page.evaluate(READ_JS)
     note("back_to_normal", back["blockedText"] == "", back["blockedText"])
     note("back_says_pick_slowest", "哪一段最慢就添哪一段" in back["hint"], back["hint"])
+
+    # ④ 打烊单也说同一句（批 AP′，解 P448）：八座 + 昨天走了一半
+    page.evaluate(SET_REPORT, 8)
+    page.wait_for_timeout(500)
+    day = page.evaluate(READ_DAY)
+    note("day_line_shows", "卖不动" in day["line"] or "街上" in day["line"], day["line"])
+    note("day_line_no_price", "¥" not in day["line"], day["line"])
+    note("day_line_matches_panel", day["panel"] != "" and "街上" in day["panel"], day["panel"])
+    note("day_hook_says_demand", "街" in day["hook"], day["hook"])
+    page.screenshot(path=os.path.join(OUT, "03-demand-day.png"))
+
+    # ⑤ 四座同样流失：打烊单不许出这句（座位是真闸，添凳有用）
+    page.evaluate(SET_REPORT, 4)
+    page.wait_for_timeout(500)
+    day4 = page.evaluate(READ_DAY)
+    note("day_line_quiet_at_four", "卖不动" not in day4["line"], day4["line"])
+    # 关掉日结，后面还要读存档
+    page.evaluate("() => { window.__laoyou.state.dayReport = null; window.__laoyou.refresh(); }")
+    page.wait_for_timeout(300)
 
     st = page.evaluate("() => ({ v: window.__laoyou.state.saveVersion, n: window.__laoyou.state.shopName })")
     note("save_version_37", st.get("v") == 37, st)

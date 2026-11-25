@@ -116,6 +116,17 @@ export function todayLine(state: GameState): TodayLine | null {
     }
   }
 
+  // 批 AP′（P448）：来客天花板是闸 —— 副句不许再提设备，只把人往街上指。
+  // 这一句和店铺页设备段那句（`[data-demand-blocked]`）说的是同一件事。
+  if (plan.key === "capacity:demand") {
+    return {
+      main: plan.text,
+      detail: `店里再抬也卖不出去 · 想多卖，得让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区`,
+      key: plan.key,
+      blocked: tightWords(state),
+    };
+  }
+
   if (plan.kind === "price") {
     return {
       main: plan.text,

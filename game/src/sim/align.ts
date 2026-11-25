@@ -24,12 +24,24 @@ import { nextHook, type HookKind } from "./hook";
 import { todayLine } from "./today";
 import { checkGrade } from "./grade";
 import { slowestStation } from "./equipment";
+import { capacityGain, tightWords } from "./bottleneck";
 import { gearViews } from "./gear";
 import { expansionLevel, expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
 import { STATION_EQUIP, type StationId } from "../data/equipment";
 
 /** 今天那一件落在哪一段（面板里的段名，界面据此标红） */
-export type FocusSec = "seat" | "equip" | "expand" | "gear" | "grade" | "price" | "street" | "arena" | "none";
+export type FocusSec =
+  | "seat"
+  | "equip"
+  | "expand"
+  /** 批 AP′（P448）：卡在街上进来的人 —— 不是店里任何一段，四处都不该红 */
+  | "demand"
+  | "gear"
+  | "grade"
+  | "price"
+  | "street"
+  | "arena"
+  | "none";
 
 export interface Focus {
   kind: HookKind;
@@ -79,6 +91,7 @@ const SEC_WORD: Record<FocusSec, string> = {
   seat: "多坐几个人",
   equip: "厨房设备",
   expand: "扩店",
+  demand: "街上的人",
   gear: "家当",
   grade: "评定段位",
   price: "价签",
@@ -105,6 +118,11 @@ export function todayFocus(state: GameState): Focus {
     }
     if (plan.ref?.equipId) {
       return { ...head, sec: "equip", equipId: String(plan.ref.equipId) };
+    }
+    // 批 AP′（P448）：卡在街上进来的人 —— 它不属于店里任何一段，
+    // 不能像旧版那样落到扩建（那会指着「打通隔墙」喊红，而墙本来够用）。
+    if (plan.key === "capacity:demand") {
+      return { ...head, sec: "demand" };
     }
     // 名额落在扩建上时，钩子句子里说的是「打通隔墙」这类整件，指到扩建阶梯那一段
     return { ...head, sec: "expand" };
@@ -146,6 +164,12 @@ export function alignMarks(state: GameState): AlignMarks {
   const gear = gearViews(state).filter((v) => !v.owned && v.affordable);
   if (gear.length > 0 && focus.sec !== "gear" && focus.sec !== "seat") {
     demoted.push(`家当里还有买得起的小件，今天先不买`);
+  }
+
+  // 批 AP′（P448）：来客封顶时，别的段一律降级成「今天别动」——
+  // 这一句和打烊单、店铺页设备段说的是同一件事，别让第三处再喊「厨房还能抬」。
+  if (focus.sec !== "demand" && capacityGain(state).demandBlocked) {
+    demoted.push(`店里再添也卖不动（${tightWords(state)}），今天先不添`);
   }
 
   const ex = nextExpansion(state);

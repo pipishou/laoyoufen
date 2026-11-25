@@ -2530,6 +2530,9 @@ html.prefs-big #hud .clock{font-size:17px}
 .daywhy [data-invest-line]::before{content:"到点 · "}
 .daywhy [data-thick-line]::before{content:"挂汤 · "}
 .daywhy [data-act-line]::before{content:"功课 · "}
+/* 来客天花板（批 AP′，解 P448）：和店铺页设备段那句说的是同一件事 */
+.daywhy [data-demand-line]::before{content:"卖不动 · "}
+.daywhy [data-demand-line]{color:var(--red)}
 /* 打烊单折行（批 AD′，解 P406）：375 宽一屏只放三条，多的收起来 */
 .daywhy [data-why-fold]{
   margin-top:2px;

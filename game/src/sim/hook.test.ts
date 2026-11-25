@@ -334,11 +334,14 @@ describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () =>
     expect(plan.kind).toBe("capacity");
     expect(plan.ref?.gearId).toBeTruthy();
 
-    // 八座往后实测已经到 72.3 碗（来客天花板）：这时一个字都不该再提产能
+    // 八座往后实测已经到 72.3 碗（来客天花板）：这时一个字都不该再劝人添设备，
+    // 改成一档专门的话（批 AP′，P448），不点名任何一件东西
     s.venue.seats = 8;
     const plan8 = nextHook(s);
-    expect(plan8.kind).not.toBe("capacity");
+    expect(plan8.key).toBe("capacity:demand");
+    expect(plan8.ref).toBeUndefined();
     expect(plan8.text).not.toContain("猛火灶");
+    expect(plan8.text).not.toContain("凳");
   });
 });
 

@@ -189,6 +189,7 @@ describe("打烊单副行按用途分池", () => {
     "capacity:stove",
     "capacity:seat",
     "capacity:cap",
+    "capacity:demand",
     "grade",
     "gear",
     "street",
@@ -207,7 +208,7 @@ describe("打烊单副行按用途分池", () => {
    * 批 F′（开罗 `balloon.txt` 102 条按处境分的池子）：一处境八句起步。
    * 原来九档共 34 句，同一条副行连说两天就被认出来了。
    */
-  it("九档合起来 68 句，且每句都过数字红线", () => {
+  it("十档合起来 76 句，且每句都过数字红线", () => {
     const all = new Set<string>();
     for (const k of HOOK_KINDS) {
       for (let d = 1; d <= 30; d++) {
@@ -216,7 +217,7 @@ describe("打烊单副行按用途分池", () => {
         all.add(line);
       }
     }
-    expect(all.size).toBe(68);
+    expect(all.size).toBe(76);
     // 每一档自己也不许少于八句（`none` 四句）—— 少了就退回「一句模板」
     for (const k of HOOK_KINDS) {
       const mine = new Set<string>();

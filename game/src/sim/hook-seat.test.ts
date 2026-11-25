@@ -69,9 +69,12 @@ describe("钩子先添凳（批 AM′，P70 的建议侧）", () => {
     // 8 座实测 72.3 碗 = 街上就这么多人：买凳、买灶一碗都不多，
     // 所以钩子不再往产能上引（旧版这时会推零增益的凳子，等于劝人白花钱）
     const plan = nextHook(s);
-    expect(plan.kind).not.toBe("capacity");
+    // 批 AP′（P448）：这时改成专门那一档「抬了也卖不动」，不点名任何一件东西
+    expect(plan.key).toBe("capacity:demand");
+    expect(plan.ref).toBeUndefined();
     expect(plan.text).not.toContain("凳");
     expect(plan.text).not.toContain("猛火灶");
+    expect(plan.text).not.toContain("¥");
   });
 
   it("凳子买不起也照样提它，只是话换成「卖了钱先添」", () => {

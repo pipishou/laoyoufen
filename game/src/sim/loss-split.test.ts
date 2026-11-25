@@ -135,7 +135,11 @@ describe("钩子先看「为什么走」（试玩 11-21）", () => {
 
     // 批 AN′：这一局来客天花板只有 58.7 碗，而四座能坐 65.5 碗 —— 产能已经不是闸，
     // 钩子这时**不该**劝人添凳买灶（8 座实测 72.3 碗已到顶），改说家当那类话才诚实。
-    expect(plan.kind).toBe("gear");
+    // 批 AP′（P448）：这时更准确的说法是「街上就这么多人」，既不点名也不带价钱 ——
+    // 与 `gear` 同属「别在店里花钱」那一类，判据改成不劝产能。
+    expect(plan.ref).toBeUndefined();
+    expect(plan.kind === "gear" || plan.key === "capacity:demand").toBe(true);
+    expect(plan.text).not.toContain("¥");
 
     // 街上人再多一点（来客抬到座位的两倍），退回产能才对：
     const busy = fresh();

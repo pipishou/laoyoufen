@@ -294,13 +294,13 @@ export function nextHook(state: GameState): HookPlan {
       }
     }
     // 批 AM′：座位没有富余时也先添凳 —— `cap.seats <= cap.stove` 就是「坐着能吃下的人
-    // 不比灶一天能出的碗多」，这时候灶再快也只是让菜等着凳子。
+    // 不比灶一天能出的碗多」，这时候灶再快也只是让凳子等着菜。
     const cap = capacityOf(state);
     const seatTight = cap.seats <= cap.stove;
     const pick = capacityPick(state, split.dominant === "queue" || seatTight);
+    const dayWord = sample.live ? "今天" : "昨天";
     if (pick) {
       const head = state.cash >= pick.cost ? `先把「${pick.what}」加上` : `卖了钱先添「${pick.what}」`;
-      const dayWord = sample.live ? "今天" : "昨天";
       // 「今天走了 N 位」单独一行：主句只留该做的事，
       // 一句里塞两个信息会被挤到换行（试玩 11-20 第 ① 条）
       return {
@@ -317,6 +317,29 @@ export function nextHook(state: GameState): HookPlan {
               : stationKeyOf(pick),
         urgency: "high",
         ref: { gearId: pick.gearId, equipId: pick.equipId, cost: pick.cost, gain: pick.gain },
+      };
+    }
+    /**
+     * 批 AP′（解 P448）：来客天花板本身就是闸的时候，三处说同一句话。
+     *
+     * AO′ 只在店铺页的设备段加了一句「今天这三段再添也卖不动」，打烊单那一行还在
+     * 劝人添灶 —— 同一天两个说法（P448）。
+     *
+     * 为什么排在上面那段之后：`tight === "demand"` 就意味着灶、座位、备料三道的日碗量
+     * 都高过来客量，抬哪一道都抬不动（`capacityGain` 的增益必然是 0），`capacityPick`
+     * 到这一步一定已经返回 null。所以这个分支在顺序上等价，但写在这里能保证
+     * 「有真能接客的件」时永远先推那一件。
+     *
+     * 这一句**不带价钱、不给 `ref`**：不劝人买任何东西，只把闸指出来（街面 / 同行 /
+     * 口碑 / 换区）。`kind` 仍是 capacity，红标与副行池按 `capacity:demand` 这一档走。
+     */
+    if (capacityGain(state).demandBlocked) {
+      return {
+        text: "街上就这么多人 —— 店里再添什么也卖不动",
+        why: sample.lost > 0 ? `${dayWord}走了 ${sample.lost} 位` : "",
+        kind: "capacity",
+        key: "capacity:demand",
+        urgency: "high",
       };
     }
   }
@@ -407,6 +430,7 @@ const VOICE_HINT: Record<string, string> = {
   "capacity:stove": "那口灶",
   "capacity:seat": "店里的桌子",
   "capacity:cap": "案台上的备料",
+  "capacity:demand": "街上的人",
   price: "价牌上那个数",
   grade: "门口的招牌",
   gear: "店里的旧家当",

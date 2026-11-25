@@ -271,7 +271,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
-      <div class="daywhy"><span data-act-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span><span data-why-fold></span></div>
+      <div class="daywhy"><span data-act-line></span><span data-demand-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span><span data-why-fold></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -296,6 +296,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const menuLine = dayWrap.querySelector("[data-menu-line]") as HTMLElement;
   const investLine = dayWrap.querySelector("[data-invest-line]") as HTMLElement;
   const thickLine = dayWrap.querySelector("[data-thick-line]") as HTMLElement;
+  /** 批 AP′（P448）：来客天花板是闸的那天，打烊单也得说同一句话 */
+  const demandLine = dayWrap.querySelector("[data-demand-line]") as HTMLElement;
   const actLineEl = dayWrap.querySelector("[data-act-line]") as HTMLElement;
   /** 打烊单折行（批 AD′，解 P406）：窄屏上七行太长，默认只留前三条 */
   // 设置对象要先声明在这儿：下面折行要不要展开，读的就是它（别再踩 `let` 的 TDZ，见批 AG′）
@@ -315,7 +317,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
    * 为什么是三条 —— 375 宽一屏正好放下三条十一号字，再多就要滑两屏（P406）。
    */
   function foldWhyLines(): void {
-    const lines = [actLineEl, lossLine, menuLine, investLine, thickLine].filter(
+    const lines = [actLineEl, demandLine, lossLine, menuLine, investLine, thickLine].filter(
       (el) => (el.textContent ?? "").trim() !== "",
     );
     // 三条是 375 宽量出来的；再窄一档（360 以下）屏上只放得下两条（P411）
@@ -717,6 +719,11 @@ const render = (s: GameState, score: RecipeScore): void => {
       // 挂汤（批 AB′，解 P397）：猪脚卤水的胶质没有格子可落，但今天卖了几碗挂汤说得清。
       const thick = Math.max(0, Math.round(s.dayReport?.thick ?? 0));
       thickLine.textContent = thick > 0 ? `${thick} 碗走的是猪脚卤水，客人说汤挂在粉上` : "";
+      // 来客天花板（批 AP′，解 P448）：店里三段都还够用，就别在打烊单里再劝人添设备
+      demandLine.textContent =
+        plan.key === "capacity:demand"
+          ? "店里这三段再添也卖不动 —— 卡在街上进来的人，得去把街面、名声、同行那几件事办一办"
+          : "";
       // 前三十天十二幕（批 U′）：今天这一幕念一遍。CSS 的 ::before 已经写了「功课 · 」
       actLineEl.textContent = actTodayLine(s);
       foldWhyLines();

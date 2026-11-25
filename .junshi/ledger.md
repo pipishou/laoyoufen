@@ -1366,3 +1366,17 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 替身四种子：¥130,961 / ¥117,013 / ¥134,230 / ¥135,802 → 均值 **¥129,501 · 221.2 碗 · 37.3% · 期末 ¥1,004,186** —— 与 AN′ **逐位相同**。这是本批的判据：只换说法 + 只在测试里压慢厨房，`capacityGain` 的数值一格没动。
 - 文档 `docs/厨房口径与天花板提示AO′-2026-11-26.md`（七节）；`docs/ACCEPTANCE.md` 改五处（当期 / 数字表 / 探针表加 demand_probe / P446·P447 划掉 / 新增「五·六」P448–P450）。
 - 新缺口 **P448**（`demandBlocked` 只用在设备段一句，打烊单与钩子副行还是两条口径）/ **P449**（「厨房真卡」的配平只活在测试里，玩家永远遇不到，P445 的收益对玩家是零）/ **P450**（`+0.5` 半碗容差是拍的）。
+
+### 行 152 · 2026-11-26 · 批 AP′：一处说清楚「卖不动」（P448）
+
+- 病灶：批 AO′ 只在店铺页设备段说了「今天这三段再添也卖不动」，而打烊单底下还写着「先把「猛火灶」加上（¥1,200）」—— 同一天两处说反话，玩家照买，第二天一碗都不多。
+- `game/src/sim/hook.ts`：产能段末尾新增一档—— `capacityGain(state).demandBlocked` 为真时返回 `{ text: "街上就这么多人 —— 店里再添什么也卖不动", kind: "capacity", key: "capacity:demand", urgency: "high" }`，**不带价钱、不给 `ref`、不点名任何一件东西**。排在「推某一件」那段之后：`tight === "demand"` 时增益必为 0、`capacityPick` 必返 null，顺序上等价。`VOICE_HINT` 加 `"capacity:demand": "街上的人"`。
+- `game/src/sim/today.ts`：`todayLine` 在 `price` 之前拦一段，副句写「店里再抬也卖不出去 · 想多卖，得让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区」（旧版会落到兜底 `detail: ""`，面板红标就指着扩建）。
+- `game/src/sim/align.ts`：`FocusSec` 加 `"demand"`、`SEC_WORD.demand = "街上的人"`、`todayFocus` 里 `capacity:demand` → `sec: "demand"`（排在落到 `expand` 的兜底之前）；`alignMarks` 的 `demoted` 多一条「店里再添也卖不动（街上就这么多人），今天先不添」—— 第三处「同一件事」。
+- `game/src/ai/lines.ts`：`HOOK_VOICE` 加 `"capacity:demand"` **8 句**（只谈街上的人 / 口碑 / 别添设备，一个数字都不出），`lines.test.ts` 从九档 68 句改成**十档 76 句**。
+- `game/src/ui/hud.ts` + `hud.css`：`.daywhy` 加 `<span data-demand-line></span>`，渲染时写「店里这三段再添也卖不动 —— 卡在街上进来的人…」，收进 `foldWhyLines()` 的 `lines`；CSS 加 `.daywhy [data-demand-line]::before{content:"卖不动 · "}` 与 `color:var(--red)`。
+- 旧期望改五条：`hook-seat.test.ts:72` 与 `hook.test.ts:340` 从「不是 capacity」改成「`capacity:demand` 且 `ref` 空、不含蹬/灶/¥」；`loss-split.test.ts:138` 从「`gear`」改成「`gear` 或 `capacity:demand`」；主句文案从「再添灶添蹬也卖不动」改成「店里再添什么也卖不动」（原文点名了灶与蹬，与「不点名」自相矛盾，首跑就这么红的）。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **102 文件 1042 用例**（新增 `hook-demand.test.ts` 6 例）；`copy_gate` ok；`eye_gate --slug demand2` 五视口 **722 · 778 · 583 · 1241 · 1512** 色、stamp **177**；`ai_gate` ok；`demand_probe.py` **19 / 19**；长跑门 **9 / 9**（第 37 天、fps 58/60、堆增长 0.0、一句话接口 7 次）；帧差重存基准后 **0 px**；调试出口 **4 / 4**。
+- 三个新门实测都绿；替身四种子 **逐位不变**（¥130,961 / ¥117,013 / ¥134,230 / ¥135,802 → 均值 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**）—— 这就是「只改说法」的凭据。
+- 构建 `index-GrODrBtv.js` **1,743,761 B**（gzip 524.35）/ `index-CyXxqRnG.css` 56.31 kB。
+- 新缺口 **P451**（两处仍是各自硬编码的字符串，与 P344 同型）/ **P452**（`capacity:demand` 标红但不是马上能做的事）/ **P453**（`why` 仍是「昨天走了 N 位」，来客封顶时没指导意义，与 P435 同型）/ **P454**（`VOICE_HINT` 只给三个字，服务端拿不到区与同行）。
