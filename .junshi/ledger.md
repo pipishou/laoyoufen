@@ -1221,3 +1221,13 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 替身四种子与批 AD′ 逐位一致：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（这一批全在界面层，替身读不到）。
 - 三维度收口：`audit_counts` **54 文件 668 条 id**；`audit_pixel` 字面色值 **0** / 12 色 token / **21** 图标 / 14 组 `@keyframes`（`steps(` 8）/ `prefers-reduced-motion` 2 / `sechd` 59 / `icon(` 55 / `data-act` 46；`audit_ai` 线上 **29 / 29 remote**。文档 `docs/三维度整体验收-终版-2026-11-25.md`（批次表 J′–AE′ 二十一批、三维度自查、四个审计、四种子、开罗仍有而这里没有的四条、P379–P414 摘要）。
 - 新缺口 **P415**（三维度验收每跑一次就多一份文档，没有「当期唯一」的指针）/ **P416**（`fold_probe` 现在同时管折叠与手册两件事，与 P344 同型）/ **P417**（替身四种子在界面层批次里恒定，回归锁对这批不敏感）。
+
+### 行 140 · 2026-11-25 · 批 AF′：P408 + P409 合成一件 —— 三段工序一句话，两页同源
+
+- **解 P408**（只指最慢那一段）：`game/src/sim/soupbase.ts` 新增 `SoupStage{station, step, name, minutes, count, slow}` 与 `soupStages(state)`（读 `stageMinutes` + `slowestStation` + `stationCount`，不新增系统）、`soupStagesWords(state)`。实测：「爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」」。`STAGE_UNIT`：灶与汤锅论口，粉篓论筒。
+- **解 P409**（设备页与配方页各说一半）：设备段原来的 `stageLine = STATION_ORDER.map(...)` 删掉，改 `const stageLine = soupStagesWords(s);`；配方页 `stepHeldEl` 也换 `soupStagesWords(s)`。原 `soupStepHeldWords` 删除（一个信息只留一个说法），`soupStepHeld` 留着给 AC′ 的回归锁。顺手删掉 panels 里不再用的 `STATION_ORDER` import（否则 `TS6133`）。
+- 测试 `game/src/sim/soup-step.test.ts` 重写 **7 例**（三段顺序 / 开局卡爆香且 `slow` 恰一位 / 灶满轮到汤锅 / 汤锅满轮到粉篓 / 一句里三段都在且不劝买 / 粉篓论筒灶论口 / 同状态问两次一字不差）。**坑**：`Set-Content -Encoding utf8` 又给测试文件加了 BOM，用 python 打掉（第三次踩同一条）。
+- 探针 `tools/gate/soupbase_probe.py` 扩到 **32 / 32**：`step_held_line` 改判「卡在 + 分」、`step_held_names_step` 改成三层名字 `all(...)`，新增 `step_lists_three`（` · ` 两次、`卡在` 一次）、`step_units_ok`（口与筒）、`step_same_on_shop`（切店面页，从「一碗分成三段：」截到第一个句号，与配方页**字面相等**）—— 这条是 P409 的真判据，病根不是句子写错而是两页各写一套。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **93 文件 999 用例**；`copy_gate` ok；`eye_gate --slug stage` stamp **171**（控制台 10 条为预览环境 404）；`ai_gate` ok；构建 `index-BbFQW5wj.js` **1,738,537 B** / `index-BREpkhCi.css` 55,638 B。
+- 替身四种子与批 AE′ 逐位一致：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（界面层，回归锁对这类改动不敏感 → P417 已记）。
+- 文档 `docs/三段工序一句话AF′-2026-11-25.md`（八节）。新缺口 **P415**（验收文档越攒越多没有当期指针）/ **P416**（`fold_probe` 一探针两件事）/ **P417**（界面批次替身恒定，判据只能靠探针）。

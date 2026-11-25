@@ -6,8 +6,8 @@
  */
 
 import type { GameState } from "./state";
-import { slowestStation, stationCount } from "./equipment";
-import { STATION_NAMES, type StationId } from "../data/equipment";
+import { slowestStation, stageMinutes, stationCount } from "./equipment";
+import { STATION_NAMES, STATION_ORDER, type StationId } from "../data/equipment";
 import {
   DEFAULT_SOUP_BASE,
   SOUP_BASES,
@@ -120,10 +120,50 @@ export function soupStepHeld(state: GameState): SoupStepHeld {
   };
 }
 
-/** 一句人话；面板抬头用，不劝买什么 */
-export function soupStepHeldWords(state: GameState): string {
-  const h = soupStepHeld(state);
-  return `眼下最吃手的是${h.step} —— ${h.station} ${h.count} 口，一段 ${h.minutes.toFixed(1)} 分钟`;
+export interface SoupStage {
+  station: StationId;
+  /** 工序名（爆香 / 吊骨汤 / 冲汤下粉） */
+  step: string;
+  /** 站名（炒锅 / 汤锅 / 粉篓） */
+  name: string;
+  /** 这一段一碗要几分钟 */
+  minutes: number;
+  /** 这一站有几口（粉篓论筒） */
+  count: number;
+  /** 是不是眼下最慢的那一段 */
+  slow: boolean;
+}
+
+/**
+ * 三段全列（解 P408：AC′ 只指了最慢那一段，另外两段卡了也看不出来）。
+ *
+ * 顺带解 P409：配方页与设备页原来各说一半 —— 配方页说「最吃手的是爆香」，
+ * 设备页说「炒锅 1.6 分/1」，两张嘴。现在两页都调 `soupStagesWords`，
+ * 一处写、两处读，字面一模一样。
+ */
+export function soupStages(state: GameState): SoupStage[] {
+  const st = stageMinutes(state);
+  const slow = slowestStation(state);
+  return STATION_ORDER.map((k) => ({
+    station: k,
+    step: STEP_BY_STATION[k],
+    name: STATION_NAMES[k],
+    minutes: st[k],
+    count: stationCount(state, k),
+    slow: k === slow.station,
+  }));
+}
+
+const STAGE_UNIT: Record<StationId, string> = { wok: "口", pot: "口", basket: "筒" };
+
+/** 一句人话：三段全列 + 末尾点名卡在哪一段；不劝买什么 */
+export function soupStagesWords(state: GameState): string {
+  const rows = soupStages(state);
+  const parts = rows.map(
+    (r) => `${r.step} ${r.count} ${STAGE_UNIT[r.station]} ${r.minutes.toFixed(1)} 分`,
+  );
+  const slow = rows.find((r) => r.slow);
+  return `${parts.join(" · ")} —— 卡在「${slow ? slow.step : "出碗"}」`;
 }
 
 /** 三底里还没解锁的那几档，写一句「还差几位客人」 */

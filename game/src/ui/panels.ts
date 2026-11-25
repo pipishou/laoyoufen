@@ -7,7 +7,7 @@ import { CHANNELS, PRICE_FLOOR, PRICE_CEIL } from "../data/retail";
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
 import { TOPPINGS } from "../data/ingredients";
-import { EQUIPMENT, STATION_EQUIP, STATION_NAMES, STATION_ORDER, type StationId } from "../data/equipment";
+import { EQUIPMENT, STATION_EQUIP, STATION_NAMES, type StationId } from "../data/equipment";
 import { HIRE_FEE_RATE, MAX_STAFF, ROLE_LABEL, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
 import { UPGRADES } from "../data/shop";
 import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
@@ -30,7 +30,7 @@ import {
   soupBaseSummary,
   soupBaseViews,
   soupBrothWords,
-  soupStepHeldWords,
+  soupStagesWords,
   soupDeltaWords,
 } from "../sim/soupbase";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
@@ -718,9 +718,8 @@ let lastGradeKey = "";
       tight === "座位坐不下" && seatFix
         ? `今天卡在座位：${seatFix.name} ${money(seatFix.costYuan)} 就能多坐 ${seatFix.seats} 位（吃一碗要六分多钟，座位周转不过来）`
         : `今天卡在：${tight}`;
-    const stageLine = STATION_ORDER.map(
-      (k) => `${STATION_NAMES[k]} ${st[k].toFixed(1)} 分/${stationCount(s, k)}${k === "basket" ? " 筒" : " 口"}`,
-    ).join(" · ");
+    // 批 AF′（解 P409）：这一页与配方页现在读同一条句子，不再各说一半
+    const stageLine = soupStagesWords(s);
     /**
      * 批 F′（试玩 11-22-2109 第 5 条）：这一页只留一条主提示。
      * 主句照钩子，副句由 `sim/today.ts` 算回本与位置 —— 开罗把「这件东西在哪一段」
@@ -1922,7 +1921,7 @@ function collectionHtml(s: GameState): string {
     deltaEl.textContent = deltaWords;
     deltaEl.hidden = deltaWords === "";
     // 工序反馈（批 AC′，解 P398）：三道里谁最慢就是谁卡着，与出碗速度共用同一个事实
-    stepHeldEl.textContent = soupStepHeldWords(s);
+    stepHeldEl.textContent = soupStagesWords(s);
     if (key === lastBaseKey) return;
     lastBaseKey = key;
     basesEl.innerHTML = views

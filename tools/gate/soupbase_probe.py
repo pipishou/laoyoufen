@@ -159,16 +159,36 @@ def main():
         note("thick_line_prefix_css", "挂汤" in (thick.get("prefix") or ""), thick.get("prefix"))
         note("thick_line_empty_when_zero", thick.get("empty", "MISSING") == "", thick.get("empty"))
 
-        # 工序反馈（批 AC′，解 P398）：谁最慢就指谁，句子必须跟着设备走
+        # 工序反馈（批 AC′ 起，批 AF′ 改成三段全列 + 两页同源）
         step = pg.evaluate(
             """() => {
               const el = document.querySelector("[data-stepheld]");
               return el ? (el.textContent || "").trim() : "";
             }"""
         )
-        note("step_held_line", bool(step) and "眼下最吃手的是" in step and "口" in step, step)
+        note("step_held_line", bool(step) and "卡在" in step and "分" in step, step)
         note("step_held_names_step",
-             any(k in step for k in ("爆香", "吊骨汤", "冲汤下粉")), step)
+             all(k in step for k in ("爆香", "吊骨汤", "冲汤下粉")), step)
+        note("step_lists_three",
+             step.count(" · ") == 2 and step.count("卡在") == 1, step)
+        note("step_units_ok", "口" in step and "筒" in step, step)
+        # 解 P409：设备页那一句必须与配方页字面一致
+        shop_step = pg.evaluate(
+            """() => {
+              document.querySelector('[data-tab2="shop"]')?.click();
+              return new Promise((r) => setTimeout(() => {
+                const el = document.querySelector("[data-tight]");
+                const sec = el ? el.closest(".sec") : null;
+                const txt = sec ? (sec.textContent || "") : "";
+                const i = txt.indexOf("一碗分成三段：");
+                r(i >= 0 ? txt.slice(i + 7, txt.indexOf("。", i)).trim() : "");
+              }, 260));
+            }"""
+        )
+        note("step_same_on_shop", bool(shop_step) and shop_step == step,
+             {"recipe": step, "shop": shop_step})
+        pg.evaluate("() => document.querySelector('[data-tab2=\"recipe\"]')?.click()")
+        pg.wait_for_timeout(220)
 
 
         after = pg.evaluate(READ)
