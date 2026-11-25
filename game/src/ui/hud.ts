@@ -267,7 +267,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
-      <div class="daywhy"><span data-act-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span></div>
+      <div class="daywhy"><span data-act-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -291,6 +291,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const lossLine = dayWrap.querySelector("[data-loss-line]") as HTMLElement;
   const menuLine = dayWrap.querySelector("[data-menu-line]") as HTMLElement;
   const investLine = dayWrap.querySelector("[data-invest-line]") as HTMLElement;
+  const thickLine = dayWrap.querySelector("[data-thick-line]") as HTMLElement;
   const actLineEl = dayWrap.querySelector("[data-act-line]") as HTMLElement;
 
   dayWrap.addEventListener("click", (e) => {
@@ -665,6 +666,9 @@ const render = (s: GameState, score: RecipeScore): void => {
         .join("；");
       // CSS 的 `[data-invest-line]::before` 已经写了「到点 · 」，正文别再重复一次
       investLine.textContent = done.length > 0 ? said : "";
+      // 挂汤（批 AB′，解 P397）：猪脚卤水的胶质没有格子可落，但今天卖了几碗挂汤说得清。
+      const thick = Math.max(0, Math.round(s.dayReport?.thick ?? 0));
+      thickLine.textContent = thick > 0 ? `${thick} 碗走的是猪脚卤水，客人说汤挂在粉上` : "";
       // 前三十天十二幕（批 U′）：今天这一幕念一遍。CSS 的 ::before 已经写了「功课 · 」
       actLineEl.textContent = actTodayLine(s);
     }

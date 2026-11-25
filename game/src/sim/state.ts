@@ -151,6 +151,8 @@ export interface CustomerFlow {
   /** 灶台冷却：一人一锅，出碗要时间。0 表示可以接下一单 */
   serveCooldown: number;
   servedToday: number;
+  /** 今天有多少碗用的是猪脚卤水（批 AB′，解 P397：胶质的窄出口，只记账） */
+  thickToday?: number;
   lostToday: number;
   /**
    * 今天走掉的人各自为什么走（试玩 11-21：三家照钩子连买三档猛火灶，流失一动不动）。
@@ -445,6 +447,8 @@ export interface DayRecord {
   packNet?: number;
   /** 批 W′：三档货各几件（汤底包 / 酸笋包 / 礼盒） */
   packSku?: Record<string, number>;
+  /** 批 AB′：今天有几碗用的是猪脚卤水（胶质的窄出口，只有一句播报） */
+  thick?: number;
   /** 零售货架今天卖出几件、净收入多少（批次七） */
   retailSold?: number;
   retailNet?: number;
@@ -850,6 +854,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       customers: [],
       serveCooldown: 0,
       servedToday: 0,
+      thickToday: 0,
       lostToday: 0,
       revenueToday: 0,
       lastSatisfaction: -1,
@@ -978,6 +983,7 @@ function endDay(state: GameState): void {
   state.flow.customers = [];
   state.flow.serveCooldown = 0;
   state.flow.servedToday = 0;
+  state.flow.thickToday = 0;
   state.flow.lostToday = 0;
   state.flow.lostQueue = 0;
   state.flow.lostPrice = 0;
@@ -1146,6 +1152,7 @@ function recordDay(state: GameState, taste: number): void {
     }
     const fresh = announceSlotSets(state);
     if (fresh.length > 0) rec.slotSet = fresh.map((d) => d.name).join("、");
+    if ((f.thickToday ?? 0) > 0) rec.thick = f.thickToday;
   }
 
   state.phase = "closing";

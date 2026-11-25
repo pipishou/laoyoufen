@@ -1173,3 +1173,15 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 验收：`tsc` 0；`vitest --no-file-parallelism` **90 文件 983 用例**；`copy_gate` ok；`eye_gate --slug badge` 五视口 725 · 778 · 584 · 1247 · 1511 色、stamp 170；`ai_gate` ok；构建 `index-zYibGbIQ.js` 1,736.00 kB（gzip 521.16）。
 - 新缺口 P401（`soupPipelineWords` 只在面板出现，打烊单与 AI 都不提工序）/ P402（归因只留「有/无」两档，单条实验结论不可复用）/ P403（`.dbase.muted` 在 375 宽与沙底色贴太近，对比低）。
 
+### 行 136 · 2026-11-25 · 挂汤：猪脚卤水的胶质终于有个出口（批 AB′）
+
+- 落地上一条（行 135）决策地图的 B 案：**不打分、不进乘数，只在打烊那天说一句口感**。
+- `game/src/sim/customer.ts`：出碗时认底 —— `if ((item.recipe.base ?? "") === "piglioo") state.flow.thickToday = (state.flow.thickToday ?? 0) + 1;`。
+- `game/src/sim/state.ts`：`CustomerFlow.thickToday?: number`、`DayRecord.thick?: number`；日结 `if ((f.thickToday ?? 0) > 0) rec.thick = f.thickToday;`，换天清零。**存档仍 37**（两字段皆可选）。
+- `game/src/ui/hud.ts` + `game/src/ui/hud.css`：打烊单多一行 `[data-thick-line]`「N 碗走的是猪脚卤水，客人说汤挂在粉上」，CSS 前缀「挂汤 · 」。
+- AI 落点 `broth_thick_voice`：`game/src/ai/lines.ts` 本地四句（不带数量词）、`LINE_BUDGET` 350 → **360**；`server/app.py` 加场景（不报价钱、不报碗数、不提「猪脚卤水」「汤底分」这类系统名）；`tools/gate/audit_ai.py` 28 → **29**；`game/src/main.ts` 加 `speakThick()`（只在 `dayReport.thick > 0` 时说，同一天一次）。
+- 测试 `game/src/sim/broth-thick.test.ts` **4 例**（猪脚底记 / 别的底不记 / `rec.thick ≤ rec.served` / 工序三道与「爆香点名四样料」）。**坑**：跑完一天后 `flow.thickToday` 已翻篇清零，判据要看 `days.at(-1).thick`。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **91 文件 987 用例**；`copy_gate` ok；`eye_gate --slug thick` 五视口 724 · 778 · 583 · 1243 · 1509 色、stamp **170**；`ai_gate` ok；`soupbase_probe.py`（4242）**27 / 27**（新增 `thick_line_says_braise` / `thick_line_prefix_css` / `thick_line_empty_when_zero`）；构建 `index-C5FoonfZ.js` **1,736,981 B** / `index-Cn-mRMRM.css` **55,214 B**。
+- 替身四种子与 Z″/AA′ **逐位一致**：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（挂汤只记账，不动钱）。
+- 上游：行 135 的批 AA′ 已部署（tar md5 `876c4dbeab81cd9d6fd16a906a2e0b74`、417 块、`events 83 / playtests 97`、外网四项 200）。
+- 文档 `docs/挂汤P397-2026-11-25.md`。新缺口 P404（只记碗数不记谁说的）/ P405（AI 上下文写死「挂得住」「黏」）/ P406（打烊单已七行，375 宽滑两屏）/ P407（工序仍只在配方页）。

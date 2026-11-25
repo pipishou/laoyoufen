@@ -566,6 +566,11 @@ function settle(state: GameState, c: QueueCustomer): void {
   state.totalCustomers += 1;
   state.monthServed += 1;
   state.flow.servedToday += 1;
+  // 挂汤（批 AB′，解 P397）：这一碗用的是什么底。猪脚卤水的胶质没有格子可以落，
+  // 但报得出来 —— 只记账，不动钱、不动乘数。
+  if ((item.recipe.base ?? "") === "piglioo") {
+    state.flow.thickToday = (state.flow.thickToday ?? 0) + 1;
+  }
   state.tally.bowls += 1; // K1 成就计数：累计出碗（只增不减）
   recordDishSale(state, item.id); // 这一款卖出去一碗
   /**

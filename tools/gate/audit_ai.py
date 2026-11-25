@@ -33,6 +33,7 @@ CASES = [
     ("set_voice", "店里坐得下了", {"事": "店里坐得下了", "在": "店里的摆设"}),
     ("market_answer_voice", "waterCut:payday", {"事": "街上停水", "好在": "刚发薪"}),
     ("rally_voice", "rally:r1", {"人": "阿强", "事": "连着几天没歇"}),
+    ("broth_thick_voice", "thick:today", {"汤": "挂得住", "嘴": "黏"}),
 ]
 
 ok = 0

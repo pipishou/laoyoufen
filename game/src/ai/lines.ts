@@ -44,7 +44,8 @@ export type LineKind =
   | "item_voice"
   | "set_voice"
   | "market_answer_voice"
-  | "rally_voice";
+  | "rally_voice"
+  | "broth_thick_voice";
 
 export interface LineAsk {
   kind: LineKind;
@@ -513,6 +514,12 @@ const LOCAL: Record<LineKind, readonly string[]> = {
     "肯留下来跟你干的，都是认你这个人的。",
     "走了再找一个，又要从头教起，划不来。",
   ],
+  broth_thick_voice: [
+    "今天这锅汤挂得住，碗边一圈油亮，喝完还黏嘴。",
+    "有客人说，粉吃完了还想把汤喝干，说这汤有厚头。",
+    "卤过猪脚的那锅汤，凉一点就起冻，老食客最认这个。",
+    "汤寡了就要多下料，厚了反而省，这话是阿婆教的。",
+  ],
 };
 
 /** FNV-1a，和事件导演那边同一套，保证同键同句 */
@@ -554,7 +561,7 @@ const INFLIGHT = new Map<string, Promise<string | null>>();
  *
  * 超了不是报错，是**静默改走本地句** —— 玩家不该因为预算用完而看见界面变样。
  */
-export const LINE_BUDGET = 350;
+export const LINE_BUDGET = 360;
 
 /**
  * 分项配额（批 O′，解 P243）。

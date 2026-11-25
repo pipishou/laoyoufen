@@ -2528,6 +2528,7 @@ html.prefs-big #hud .clock{font-size:17px}
 .pane .pc.blk{opacity:.62;border-style:dotted;cursor:default}
 .pane .pc.rec{outline:2px dashed var(--wood);outline-offset:1px}
 .daywhy [data-invest-line]::before{content:"到点 · "}
+.daywhy [data-thick-line]::before{content:"挂汤 · "}
 .daywhy [data-act-line]::before{content:"功课 · "}
 
 /* 老板那碗：老友猪杂伊面（批 S′）—— 只是认出来，不是新数值 */

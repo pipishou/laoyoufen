@@ -1112,6 +1112,7 @@ function refresh(): void {
   speakSet();
   speakRally();
   speakMarket();
+  speakThick();
   scheduleSave();
 }
 
@@ -1299,6 +1300,31 @@ function speakRally(): void {
     kind: "rally_voice",
     key,
     context: { 人: who.name, 事: "连着几天没歇" },
+    month: state.month,
+    day: state.day,
+  }).then((got) => {
+    if (got) hud.showToast(`街坊说：「${got}」`, "info");
+  });
+}
+
+let lastThickKey = "";
+
+/**
+ * 挂汤（落点 29，批 AB′，解 P397）。
+ *
+ * 猪脚卤水的胶质没有格子可落 —— 不打分、不进乘数，只在打烊那天说一句口感。
+ * 同一天只说一次，挂在「碗数 + 日期」上。
+ */
+function speakThick(): void {
+  const bowls = Math.max(0, Math.round(state.dayReport?.thick ?? 0));
+  if (bowls <= 0) return;
+  const key = `thick:${bowls}:${state.month}:${state.day}`;
+  if (key === lastThickKey) return;
+  lastThickKey = key;
+  void fetchLine({
+    kind: "broth_thick_voice",
+    key,
+    context: { 汤: "挂得住", 嘴: "黏" },
     month: state.month,
     day: state.day,
   }).then((got) => {

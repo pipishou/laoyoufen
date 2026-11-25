@@ -132,6 +132,33 @@ def main():
         note("badge_on_every_card", has_badge.get("cards", 0) > 0
              and has_badge.get("printed") == has_badge.get("cards"), has_badge)
 
+        # 挂汤（批 AB′，解 P397）：打烊单那一行只在猪脚卤水出过碗时才写。
+        # 注意 `dayReport` 的字段名是 `avgSat`，不是 `sat`。
+        thick = pg.evaluate(
+            """() => {
+              const s = window.__laoyou.state;
+              const base = {
+                month: s.month, day: s.day, revenue: 120, served: 10, lost: 2,
+                avgSat: 62, price: 10, cash: 3000, taste: 70,
+              };
+              s.dayReport = Object.assign({}, base, { thick: 4 });
+              window.__laoyou.refresh();
+              const el = document.querySelector("[data-thick-line]");
+              const withThick = el ? (el.textContent || "").trim() : "";
+              const prefix = el ? getComputedStyle(el, "::before").content : "";
+              s.dayReport = Object.assign({}, base, { thick: 0 });
+              window.__laoyou.refresh();
+              const el2 = document.querySelector("[data-thick-line]");
+              const empty = el2 ? (el2.textContent || "").trim() : "MISSING";
+              s.dayReport = null;
+              window.__laoyou.refresh();
+              return { withThick, prefix, empty };
+            }"""
+        )
+        note("thick_line_says_braise", "猪脚卤水" in thick.get("withThick", ""), thick.get("withThick"))
+        note("thick_line_prefix_css", "挂汤" in (thick.get("prefix") or ""), thick.get("prefix"))
+        note("thick_line_empty_when_zero", thick.get("empty", "MISSING") == "", thick.get("empty"))
+
         after = pg.evaluate(READ)
         # 汤底分那一格在面板里是分组合成值，不随底变；判据改成「总分没掉、成本涨了五毛」
         # —— 底的汤底分确实进了 scoreRecipe 的 soup，只是 subs 行显示的是八参合成值。

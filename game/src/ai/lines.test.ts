@@ -44,6 +44,7 @@ const KINDS = [
   "market_answer_voice",
   "set_voice",
   "rally_voice",
+  "broth_thick_voice",
 ] as const;
 
 function ask(kind: LineAsk["kind"] = "street_request", key = "lane_lamp", day = 3): LineAsk {
@@ -266,16 +267,16 @@ describe("分项配额（批 O′，解 P243）", () => {
   });
 
   it("预算从两百六提到三百五（新增三个落点）", () => {
-    expect(LINE_BUDGET).toBe(350);
-    expect(lineBudgetLeft()).toBe(350);
+    expect(LINE_BUDGET).toBe(360);
+    expect(lineBudgetLeft()).toBe(360);
   });
 });
 
 describe("在线预算（批 C′ / F′ / O′）：一局最多换三百五十个不同的键", () => {
   it("预算是三百五，剩余就是三百五减已换到的条数", () => {
     resetLines();
-    expect(LINE_BUDGET).toBe(350);
-    expect(lineBudgetLeft()).toBe(350);
+    expect(LINE_BUDGET).toBe(360);
+    expect(lineBudgetLeft()).toBe(360);
     expect(remoteLineCount()).toBe(0);
     expect(lineBudgetLeft()).toBe(LINE_BUDGET - remoteLineCount());
   });
