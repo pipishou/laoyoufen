@@ -5,6 +5,8 @@ import { ackDayReport, advanceMinute, createInitialState, type GameState } from 
 import { resolveEvent } from "./events";
 import {  } from "./score";
 import { buyExpansion, nextExpansion } from "./expansion";
+import { buyPack, packOwned } from "./pack";
+import { PACK_SETUP } from "../data/pack";
 import { refreshCandidates, hire, dailyWage, toggleRest } from "./staff";
 import { canEnter, contestScore, enterContest, maxTierOf } from "./contest";
 import { takeOverShop } from "./rivals";
@@ -122,7 +124,7 @@ function pickSoupBase(s: GameState): void {
       bestId = v.def.id;
     }
   }
-  if (bestId !== cur) setSoupBase(s, bestId);
+  if (bestId !== cur && setSoupBase(s, bestId).ok) baseSwitches += 1;
 }
 
 /**
@@ -339,6 +341,13 @@ spendFavor(s);
         if (buyGear(s, gearPick.id).ok) gears += 1;
       }
 
+      // 袋装线（批 AI′，解 P374）：¥3,800 一台封口机，之后每天按口碑与段位出几袋。
+      // 替身原来从不开这条线，于是 W′ 的三档货永远没人验 —— 新东西必须让量尺会用（P40）。
+      // 钱先留给该留的：扩建与家当各留八千，这台机器再另算一万二周转。
+      if (!packOwned(s) && s.cash >= PACK_SETUP.costYuan + 12_000) {
+        if (buyPack(s).ok) packsOpened += 1;
+      }
+
       const exp = nextExpansion(s);
       if (exp && s.cash >= exp.costYuan + 8_000) {
         if (buyExpansion(s).ok) expands += 1;
@@ -476,7 +485,7 @@ spendFavor(s);
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 搭配 ${activeCombos(s).length} 组 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 换底 ${baseSwitches} 次 · 袋装线 ${packsOpened} 次 · 搭配 ${activeCombos(s).length} 组 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
   );
   for (const line of log) console.log(line);
 
@@ -515,6 +524,7 @@ describe("替身 36 个月", () => {
           ` · 日均 ${(cust / (months * 30)).toFixed(1)} 碗 · 总流失率 ${((lost / (cust + lost)) * 100).toFixed(0)}%` +
           ` · 热卖 ${s.frenzy.count} 次` +
           ` · 加购 ¥${Math.round(s.tally.sideRevenue).toLocaleString("zh-CN")}（占 ${(s.tally.sideRevenue / Math.max(1, s.tally.sideRevenue + rev) * 100).toFixed(1)}%，组合 ${s.tally.comboHits} 次）` +
+          ` · 换底 ${baseSwitches} 次 · 袋装线 ${packsOpened > 0 ? "开了" : "没开"}` +
           ` · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}`,
       );
     }
@@ -527,4 +537,7 @@ export let favorsUsed = 0;
 export let recipesSold = 0;
 export let tourneysPlayed = 0;
 let lastPruneMonth = -1;
+/** 批 AI′：替身一共换过几次底、开过几次袋装线 —— 报尾要看得见，不然等于没测（P389）。 */
+let baseSwitches = 0;
+let packsOpened = 0;
 

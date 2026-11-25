@@ -64,6 +64,16 @@ if (-not $SkipBuild) {
   Pop-Location
 }
 
+# ---------- 1.5 服务端事件表对账 ----------
+# server/events.json 是喂模型用的副本；游戏里加了事件而忘了重导，线上就会悄悄退回旧表
+# （批 N 之后 health 一直是 events 32 就是这么来的，P420）。每次打包前跑一遍生成器：
+# 一致就不写盘，不一致就当场重写；生成器自己会断言写完的行数与 EVENTS 相同。
+Write-Host "[1.5/5] server table"
+Push-Location $game
+npm run -s gen:server 2>&1 | Select-Object -Last 2
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "server/events.json is out of sync with the game" }
+Pop-Location
+
 # ---------- 2. 打包 ----------
 Write-Host "[2/5] package"
 $stage = Join-Path $env:TEMP "laoyoufen-stage"
