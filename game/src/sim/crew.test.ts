@@ -131,7 +131,7 @@ describe("批 AS′：补一个人要多少", () => {
     expect(f.cost).not.toMatch(/¥/);
   });
 
-  it("人手槽开了：报今天最便宜那个煮粉的日薪、介绍费与月薪", () => {
+  it("人手槽开了：报那个煮粉的日薪、介绍费（一次）与月薪，并且报技能等级", () => {
     const s = withCookCandidate(6, 2, 150);
     s.totalCustomers = 300; // 第 1 个人已开
     const f = crewFacts(s);
@@ -139,9 +139,29 @@ describe("批 AS′：补一个人要多少", () => {
     expect(f.hire?.name).toBe("阿强");
     expect(f.cost).toContain("日薪 ¥150");
     expect(f.cost).toContain("介绍费 ¥300"); // HIRE_FEE_RATE = 2
+    // 批 AT′（P463）：介绍费是按次收的，不是每月 —— 不说清就会被当周薪算
+    expect(f.cost).toContain("介绍费 ¥300（一次）");
     expect(f.cost).toMatch(/月薪约 ¥\d+/);
+    // 批 AT′（P461）：日薪高低不等于值不值，技能才决定这口灶开多快
+    expect(f.hire?.skill).toBe(3);
+    expect(f.cost).toContain("技能 3");
     // 只挑煮粉：备料也在候选里，但它不掌勺
     expect(f.hire?.name).not.toBe("阿珍");
+  });
+
+  it("候选里贵的那个技能更高：挑「每一块钱技能最高」，不是挑最便宜", () => {
+    // 日薪由技能定（WAGE_BY_SKILL 110/130/150/180/220），所以「最便宜」等于「最弱」。
+    // 这里摆一个便宜的弱师傅和一个贵的强师傅，看挑谁。
+    const s = withStoves(6, 2);
+    s.totalCustomers = 300;
+    s.staff.candidates = [
+      { uid: "c1", name: "阿弱", role: "cook", wage: 110, fatigue: 0, skill: 1, xp: 0, resting: false },
+      { uid: "c2", name: "阿强", role: "cook", wage: 220, fatigue: 0, skill: 5, xp: 0, resting: false },
+    ] as StaffMember[];
+    const f = crewFacts(s);
+    expect(f.hire?.name).toBe("阿强");
+    expect(f.hire?.skill).toBe(5);
+    expect(f.cost).toContain("技能 5");
   });
 
   it("灶都有人看：一句价钱都不出（不催人白花钱）", () => {

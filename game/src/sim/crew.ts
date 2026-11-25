@@ -1,4 +1,5 @@
 import { HIRE_FEE_RATE, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
+import { crewFitWords, crewGapWords } from "../data/crew";
 import { capacityOf } from "./bottleneck";
 import { cookSlots } from "./staff";
 import type { GameState } from "./state";
@@ -28,11 +29,13 @@ import type { GameState } from "./state";
  * 价钱那两句只在**真有人手缺口**时给：没缺口时说「招人要 ¥220」等于催人白花钱。
  */
 export interface CrewHire {
-  /** 今天候选人里最便宜的煮粉师傅 */
+  /** 今天候选人里最该看的那个煮粉师傅 */
   name: string;
+  /** 技能等级（1–5）：这才决定这口灶能开多快，日薪只是价钱 */
+  skill: number;
   /** 日薪（元） */
   wage: number;
-  /** 介绍费（元）= 日薪 × 2 */
+  /** 介绍费（元）= 日薪 × 2，**一次性** */
   fee: number;
   /** 一个月约多少（按 21.75 个工作日折算） */
   monthly: number;
@@ -47,7 +50,7 @@ export interface CrewFacts {
   idle: number;
   /** 厨房（灶）今天是不是四道闸里最紧的那一道 */
   kitchenBinds: boolean;
-  /** 今天候选人里最便宜的煮粉师傅；今天没有煮粉候选就是 null */
+  /** 今天候选人里最该看的那个煮粉师傅（每一块钱技能最高的）；今天没有煮粉候选就是 null */
   hire: CrewHire | null;
   /** 人手槽还差多少累计接待量（招不到人时才有值） */
   gate: { need: number; short: number } | null;
@@ -67,10 +70,7 @@ export function crewFacts(state: GameState): CrewFacts {
   const idle = Math.max(0, stoves - slots);
   const kitchenBinds = capacityOf(state).tight === "stove";
 
-  const words =
-    idle === 0
-      ? `灶位 ${stoves} 口，能开火 ${slots} 口 —— 人手够，每一口灶都烧得上`
-      : `灶位 ${stoves} 口，眼下只有 ${slots} 个人掌勺 —— 第 ${slots + 1} 口起没人看，火开不起来`;
+  const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
 
   // 只在「有人手缺口」时说第二句：没有缺口时这句话是废话（而且会把打烊单撑长）
   const why =
@@ -80,13 +80,24 @@ export function crewFacts(state: GameState): CrewFacts {
         ? "今天卡的就是灶 —— 补齐人手这口灶才烧得上。"
         : "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
 
-  // 批 AS′（解 P458）：知道卡在哪之后，下一句一定是「补得起吗」。
-  // 候选池每天重掷，所以这里读今天最便宜的那个煮粉 —— 不给「大概多少」这种虚数。
-  const cand = state.staff.candidates
-    .filter((m) => m.role === "cook")
-    .sort((a, b) => a.wage - b.wage)[0];
+  // 批 AT′（解 P461 / P463）：候选池里挑的不是「最便宜」那个，而是**每一块钱技能最高**那个 ——
+  // 日薪由技能定（`WAGE_BY_SKILL` 110/130/150/180/220），贵的那个技能一定更高，
+  // 而技能才决定这口灶开得多快（`serveMultiplier` 的煮技那一项）。三处口径：
+  //   ① 价钱说清「介绍费」是**一次性**的（周薪式误解是 P463）；
+  //   ② 报技能等级，让玩家看得出贵的那个人强在哪；
+  //   ③ 一个候选都没有就直说，不编一个价钱。
+  const cooks = state.staff.candidates.filter((m) => m.role === "cook");
+  const cand = cooks
+    .slice()
+    .sort((a, b) => b.skill / Math.max(1, b.wage) - a.skill / Math.max(1, a.wage) || a.wage - b.wage)[0];
   const hire: CrewHire | null = cand
-    ? { name: cand.name, wage: cand.wage, fee: cand.wage * HIRE_FEE_RATE, monthly: monthlyWageOf(cand.wage) }
+    ? {
+        name: cand.name,
+        skill: cand.skill,
+        wage: cand.wage,
+        fee: cand.wage * HIRE_FEE_RATE,
+        monthly: monthlyWageOf(cand.wage),
+      }
     : null;
 
   // 「人手槽还差多少位」只在**眼下招不进来**时才说：店里还有空位却说
@@ -101,14 +112,15 @@ export function crewFacts(state: GameState): CrewFacts {
       // 招不到人的时候，价钱不是重点，「还得忙到多少」才是
       cost = `人手槽还差 ${gate.short} 位累计接待（到 ${gate.need} 位才有人肯来）`;
     } else if (hire) {
-      cost = `今天有人来问工：${hire.name} 日薪 ¥${hire.wage} · 介绍费 ¥${hire.fee} · 月薪约 ¥${hire.monthly}`;
+      // 批 AT′：技能跟着报（相同日薪下技能才是差别），介绍费标明「一次」
+      cost = `今天有人来问工：${hire.name}（技能 ${hire.skill}）日薪 ¥${hire.wage} · 介绍费 ¥${hire.fee}（一次）· 月薪约 ¥${hire.monthly}`;
     } else {
       cost = "今天没有煮粉的来问工";
     }
   }
 
   // 打烊单那一行要短的：面板能写长句，打烊单只能占一行（P406 折行）
-  const brief = idle > 0 ? `灶 ${stoves} 口，只有 ${slots} 个人掌勺 —— 第 ${slots + 1} 口起没人看` : "";
+  const brief = idle > 0 ? crewGapWords(stoves, slots, true) : "";
 
   return { stoves, slots, idle, kitchenBinds, hire, gate, words, brief, why, cost };
 }

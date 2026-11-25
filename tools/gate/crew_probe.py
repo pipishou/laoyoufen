@@ -12,6 +12,10 @@
   - 员工页说同一句（两处同源，不是两套说法）；
   - 打烊单也有一行（批 AS′ 解 P460），且四座时不出现；
   - 主句里不许出现价钱与「买 / 推荐」（价钱只许在第三行）。
+
+批 AT′ 加两条（P461 / P463）：
+  - 价钱句要报技能等级（「技能 3」），不然「挑最便宜」等于「挑最弱」看不出来；
+  - 介绍费要标「（一次）」，不然玩家以为按月收。
 """
 import json
 import os
@@ -172,6 +176,9 @@ def main():
         checks["rich_still_warns"] = rich["has"] is True
         checks["rich_costs_money"] = ("日薪" in rich["cost"] and "¥" in rich["cost"]) or "没有煮粉的来问工" in rich["cost"]
         checks["rich_says_fee"] = "介绍费" in rich["cost"] or "没有煮粉的来问工" in rich["cost"]
+        # 批 AT′（P461 / P463）：报技能等级，并且说清介绍费只收一次
+        checks["rich_says_skill"] = bool(re.search(r"技能\s*\d+", rich["cost"])) or "没有煮粉的来问工" in rich["cost"]
+        checks["rich_fee_one_off"] = "（一次）" in rich["cost"] or "没有煮粉的来问工" in rich["cost"]
 
         # 三态三：雇一个煮粉师傅 → 主句跟着变
         page.evaluate(HIRE_COOK)
