@@ -106,13 +106,15 @@ function pickNoodle(s: GameState): void {
  * P400 的修法：不是「现金过五千就换」，而是**先把该留的钱留下** ——
  * 下一件能给座/给灶的家当与下一档扩建里便宜的那件，再加三千周转，剩下的钱才拿来换底。
  * 这样替身才不会为了多三分汤底，把当年买灶的钱吃掉。
+ *
+ * 批 AJ′ 修 P423：守卫挡了几次也要记账（`baseWanted` / `baseBlocked`）——
+ * 只记「成功几次」看不出这台量尺有没有压力，被挡的次数才是守卫真正的成本。
  */
 function pickSoupBase(s: GameState): void {
   const gear = nextGear(s);
   const exp = nextExpansion(s);
   const reserve = Math.min(gear?.costYuan ?? Infinity, exp?.costYuan ?? Infinity);
   const keep = Number.isFinite(reserve) ? reserve + 3000 : 8000;
-  if (s.cash < keep) return;
   const cur = soupBaseOf(s).id;
   let bestId = cur;
   let best = 0;
@@ -124,7 +126,14 @@ function pickSoupBase(s: GameState): void {
       bestId = v.def.id;
     }
   }
-  if (bestId !== cur && setSoupBase(s, bestId).ok) baseSwitches += 1;
+  // 现状本来就最好（或还没解锁更好的）：不是「想换」，不记账
+  if (bestId === cur) return;
+  baseWanted += 1;
+  if (s.cash < keep) {
+    baseBlocked += 1;
+    return;
+  }
+  if (setSoupBase(s, bestId).ok) baseSwitches += 1;
 }
 
 /**
@@ -524,7 +533,7 @@ describe("替身 36 个月", () => {
           ` · 日均 ${(cust / (months * 30)).toFixed(1)} 碗 · 总流失率 ${((lost / (cust + lost)) * 100).toFixed(0)}%` +
           ` · 热卖 ${s.frenzy.count} 次` +
           ` · 加购 ¥${Math.round(s.tally.sideRevenue).toLocaleString("zh-CN")}（占 ${(s.tally.sideRevenue / Math.max(1, s.tally.sideRevenue + rev) * 100).toFixed(1)}%，组合 ${s.tally.comboHits} 次）` +
-          ` · 换底 ${baseSwitches} 次 · 袋装线 ${packsOpened > 0 ? "开了" : "没开"}` +
+          ` · 换底 ${baseSwitches} 次（想换 ${baseWanted} 次，被钱挡 ${baseBlocked} 次）· 袋装线 ${packsOpened > 0 ? "开了" : "没开"}` +
           ` · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}`,
       );
     }
@@ -540,4 +549,7 @@ let lastPruneMonth = -1;
 /** 批 AI′：替身一共换过几次底、开过几次袋装线 —— 报尾要看得见，不然等于没测（P389）。 */
 let baseSwitches = 0;
 let packsOpened = 0;
+/** 批 AJ′（P423）：想过要换几天、被「先留钱」挡住几天 —— 守卫的成本也要看得见。 */
+let baseWanted = 0;
+let baseBlocked = 0;
 
