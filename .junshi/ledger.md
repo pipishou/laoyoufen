@@ -1277,3 +1277,14 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **验收**：`tsc` 0；`vitest --no-file-parallelism` **95 文件 1005 用例**；`gen:server` 1/1 且无 diff；`copy_gate` ok；`eye_gate --slug drift` stamp **174**（控制台 10 条 error 为预览 `/laoyou-api/` 404）；`ai_gate` `"ok": true`；构建 `index-svl58Mrm.js` 1,739,525 B / `index-Cyd0u8tu.css` 55,916 B（不动前端）。
 - **新缺口**：P426（被挡只报总数不报月份）/ P427（`server/` 别的副本没有同型对账）/ P428（生成器缩进约定没有测试盯着）。
 - **文档**：`docs/守卫成本与表走散AJ′-2026-11-25.md`；`docs/ACCEPTANCE.md` 已改到这一批之后（并补一条纪律：只改「看得见 / 抓得住」的批次数字必须不动）。
+
+### 行 145 · 2026-11-25 · 读了 dsh-game-studio，照它的试玩契约给本作写了一条无人值守试玩
+
+- **读了什么**：`https://github.com/ZSeven-W/dsh-game-studio`（`ZSeven-W`，`@zseven-w/dsh-game-studio` **0.1.0-rc.6**、MIT、⭐906、2026-11-21 最后推送、仓库 9.6 MB、`src/` 25 文件约 501 KB），浅克隆到项目外 `D:\项目\REA\_plugins\dsh-game-studio` 只读评估。形态是「DSH 侧栏插件 + 一个 MCP 服务（20 个工具）」，模板两套（2D Canvas 的 `collector` / Three.js 的 `voxel`）。
+- **它的试玩机制**：`src/playtest.ts` 用 `playwright-core` 起本机 Chrome/Edge 无头页，契约是 `window.__gameState()` 吐 `{phase, score, hearts, fps, hero, pickups, enemies, world}`；不是「方向键跑一个人」的类型（原文点名 grid / cards / aiming / rhythm / **building / management**）就再暴露 `window.__autoplay(state)`，**每秒约 10 次**做一个合理动作；循环 `read → 采 fps → autoplay → 每 100ms 一拍`，`phase !== "playing"` 就停，中途一张 mid、结尾一张 end；报告 `phases[{phase,at}] / fps{min,avg} / errors[] / requests[] / shots[]`；导出审计主包 ≤ 4,194,304 B；AI 美术花钱先报账、没人批就不花（`spend.ts` fail closed）。
+- **我拿它干了什么**：照契约写了 `tools/gate/autoplay_probe.py`（注入 `__gameState` / `__autoplay`：phase 用「报账单有没有挂着」推、score=现金、hearts=座位、fps 用 rAF 自算；autoplay 顺序 = 事件点第一项 → `[data-day-next]` → `[data-openpill]`+拉最快倍速 → 等）。
+- **实测三次（1440×900 无头）**：45 s → 第 1 天（第一版把置灰按钮算成功，380 次空转，改成 `usable = 可见 && !disabled` 才有意义）；180 s → **第 23 天**（open 23 · next-day 22 · event 6 · wait 1386）、fps 56/60；300 s → **第 37 天**（open 37 · next-day 36 · event 8）、fps **min 47 / avg 60**、400 条 4xx。这是本作第一次「在真界面上连着推进几十天」。
+- **顺手逮到的 P429**：400 条 4xx 里 `/laoyou-api/line` **389 次 / 37 天 ≈ 10.5 次/天**。根因是 `game/src/ai/lines.ts` 的 `fetchLine` 失败**不进缓存、没有冷却**（只有 `CACHE.size >= LINE_BUDGET` 这道按条数的闸），服务端一挂每句照发、每次吃满 800ms 超时。线上有真接口时不明显，断网或接口抖动时就是「十次/天 × 每台设备」的空转。
+- **结论（不装插件，抄契约）**：产物形态用不上（单 `game.js` + `game.json`、微信导出、GH Pages）；值得借四条 —— ① 长跑试玩门（≥5 分钟、≥20 个游戏日、fps 下限、error 白名单、4xx 必须全在 `/laoyou-api/`）② 报告形状（`phases` / `fps` 补进 `run.json`）③ AI 美术「候选 → 编号挑 → 一键替换 → 可回退 → 事先报账」用于招牌字与包装贴纸 ④ 微信导出清单（若哪天要做扫码玩）。**不照搬**：workspace/project 结构、单 `game.js` 双模板、`rules` 试玩覆盖、publish 到 GH Pages。
+- **交付**：`docs/dsh-game-studio评估-2026-11-25.md`（九节）；`tools/gate/autoplay_probe.py`；证据 `game/data/evidence/autoplay/{run.json,01-title.png,02-mid.png,03-end.png}`。
+- **新缺口**：P429（`fetchLine` 失败无冷却，服务端挂时每句照发）。
