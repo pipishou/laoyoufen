@@ -1267,3 +1267,13 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **验收**：`tsc` 0；`vitest --no-file-parallelism` **94 文件 1004 用例**；`copy_gate` ok；`eye_gate --slug pack2` 1506 色 stamp **173**；`ai_gate` `"ok": true`；构建 `index-svl58Mrm.js` 1,739,525 B / `index-Cyd0u8tu.css` 55,916 B（与本批前端无关，逐位同 AH′）。
 - **新缺口**：P422（替身开袋装线是一步到位，没有回本判据）/ P423（只记换底成功，不记被挡几次）/ P424（`gen:server` 只在部署时跑）/ P425（包装机与扩建阶梯谁先买靠代码顺序）。
 - **文档**：`docs/替身会开袋装线与部署对账AI′-2026-11-25.md`；`docs/ACCEPTANCE.md` 的数字、探针说明与剩余项已改到这一批之后。
+
+### 行 144 · 2026-11-25 · 批 AJ′：守卫的成本要看得见、表走散要在测试里就红
+
+- **P423**：`game/src/sim/standin.probe.ts` 的 `pickSoupBase` 把三件事分开记 —— `baseWanted`（现状不是最好才算）、`baseBlocked`（`s.cash < keep` 被「先留钱」挡住）、`baseSwitches`（真换了）；报尾改「换底 N 次（想换 M 次，被钱挡 K 次）」。**实测四种子 想换 1/2/3/4 次、被钱挡全是 0** —— P400 那道守卫在替身身上一分钱成本都没有，真正缺的是 P422。
+- **P424**：生成器拆三件 —— `game/tools/server-events.rows.ts`（`serverRows()` / `SERVER_EVENTS_PATH` / `stripBom()`，不碰 `fs`，两家共用）、`tools/server-events.gen.ts`（写盘，只在真变时写）、新 `tools/server-events.test.ts`（**只读**对账，`npm test` 里就跑到，红时点名是哪一件并提示 `npm run -s gen:server`）。实测：手动改掉 `bamboo_press` 的标题 → 1 red 且点名；`gen:server` 后转绿、`git status` 干净。
+- **顺手修**：生成器原写 `JSON.stringify(rows, null, 1)`（一空格），仓库那份是两空格 → 第一次真跑会整篇重排 1711 行假 diff；改成 `null, 2` 后 `gen:server` 字节级幂等（`git diff --stat server/events.json` 为空）。
+- **数字（必须不动）**：¥138,602 / ¥121,759 / ¥140,559 / ¥136,879 → 均值 **¥134,450 · 227.9 碗 · 37.3% · 期末 ¥1,028,840**，与 AI′ **逐位相同**。
+- **验收**：`tsc` 0；`vitest --no-file-parallelism` **95 文件 1005 用例**；`gen:server` 1/1 且无 diff；`copy_gate` ok；`eye_gate --slug drift` stamp **174**（控制台 10 条 error 为预览 `/laoyou-api/` 404）；`ai_gate` `"ok": true`；构建 `index-svl58Mrm.js` 1,739,525 B / `index-Cyd0u8tu.css` 55,916 B（不动前端）。
+- **新缺口**：P426（被挡只报总数不报月份）/ P427（`server/` 别的副本没有同型对账）/ P428（生成器缩进约定没有测试盯着）。
+- **文档**：`docs/守卫成本与表走散AJ′-2026-11-25.md`；`docs/ACCEPTANCE.md` 已改到这一批之后（并补一条纪律：只改「看得见 / 抓得住」的批次数字必须不动）。
