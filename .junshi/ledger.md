@@ -1301,3 +1301,13 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **这一批没动 P70**：开局 `venue.seats = 4` 时 `capacityGain().seat(1)` 是 0，钩子永远先点设备；而试玩第 4 天纯灶对照（流失 50% vs 加凳 33.7–36.8%）说明先点座位才有效。改它是改「替身买什么」，四种子必变，要单开一批。
 - **新缺口**：P431（灰字点不动、不能跳段）/ P432（`shopHtml` 与缓存键各调一次 `alignMarks`，一份裁定算两遍）/ P433（评定降级时 HUD 退回比赛日历，玩家看不到「其实够格了」）/ P434（`focusWords` 只有单测与探针在用，界面没接）/ P435（`slowHot`/`gradeHot` 只是被动跟随，没有自己的「为什么不是现在」）。
 - **文案（同一天还做了一个非批次交付）**：`docs/今天只亮一处AK′-2026-11-25.md`；`docs/ACCEPTANCE.md` 的一、三、四、五节已改到这一批之后。
+### 行 147 · 2026-11-25 · 三个「游戏工作室」移植版：一个都别装成主力，抄三条机制
+
+- **问的是三件**：`HYClub/deepseek-harness-game-studios`（DSGS，原生 DSH 插件）、`vekina/dsh-game-studio`（纯 Markdown 转换）、`bullish0x/GameStudio`（跨宿主中立模板）。
+- **取证**（GitHub API，2026-11-25）：DSGS **30★ / 1 fork / 0 issue**，建 2026-10-11、最后推 2026-11-18，v0.3.8，83 skills / 49 agents / 14 rules / **19 hooks**，装到机器级 `~/.dsh/dsgs`；vekina **0★ / 0 fork**，建 2026-11-14 当天推完（一次性搬运），78 skills / 49 agents / 72 脚本；bullish0x **27★ / 9 fork / 2 issue**，建 2026-05-29、最后推 2026-06-13（**已 5 个月没动**），182 skills / 55 agents，专补 Web 三件套（Three/Pixi/Phaser）+ R3F + ECS + TS。
+- **`git clone` 本轮失败**（GitHub 443 `Recv failure`，重试 6 次），改用 `raw.githubusercontent.com` 与 `api.github.com` 取原文 —— 顺带说明「装插件」这一步在本机要碰运气。
+- **结论**：**一个都别装成主力**。理由三条 —— ①不是能力缺口：流程我们有（`AGENTS.md` 三读 + `laoyoufen-batch` 技能 + 五门 + 替身四种子 + 12 个探针 + `gen:server` 对账 + `autoplay_probe` 连跑 37 天），缺口在 ACCEPTANCE 第五节的具体账（P429 真 bug、P70、P422/P425、P417、P431–P435）；②风险不对称：DSGS 的 hooks 是 **profile 级**（装了对该 profile 下任何目录的每个会话生效，且直接执行仓库里的 `.dsh/hooks.json`、用你的账号不过沙箱）；③目录会打架：bullish0x 想接管 `AGENTS.md` / `design/` / `production/` / `src/`，与本仓 `docs/` + `.junshi/ledger.md` + `AGENTS.md` 是两份真相（P344 同型前科）。
+- **只抄六条**：①帧差回归（DSGS `/grow` 的 `replay --as reference|copy`）—— 补 `eye_gate` 只有色数 stamp、挡不住「色数没变但整块挪了」，解 P417 一半；②长跑 soak 协议（bullish0x `/soak-test`）—— 我们的 `autoplay_probe` 只记 fps 与 4xx，**从没量过 30 分钟后的堆增长**；③存档篡改五路（`/security-audit` 判据项）—— localStorage 直改 / 类型翻转 / 超长串 / 负数 / 跨档复制，现在只测过 v36→v37 的 perk 脏值；④flaky 记账（`/test-flakiness`）—— 已为 `--no-file-parallelism` 付过学费；⑤发布包调试出口检查（DSGS `/share`）—— 线上 `window.__laoyou` 是在的，从没断言过允许有哪些；⑥内容条数双向对账（`/content-audit`）—— 把 `count_entries.py` 升级成会红的那种。
+- **不借四条**：`/prototype` 一条龙（我们是存量移植 + 调优，不是从零起项目）、工作室目录（`design/`/`production/` 与既有的 `docs/` + 账本分叉）、49 张角色卡当 subagent（DSGS 自己写明 DSH 无法按 agent 限权，且我们的协作协议已写进 `AGENTS.md`）、slash command 依赖（DSGS 的 `/start` 靠用户级 bootstrap skills，装完是全局生效而非仓库生效）。
+- **真要装的装法**：DSGS 走**独立 profile** `dsh plugin --profile gamestudio add …`，别碰默认 profile；别让它接管 `AGENTS.md`；vekina 那份连装都不用、直接读 SKILL.md；卸载路径 `~/.dsh/dsgs` + `~/.dsh/skills/{dsgs-init,start}`。
+- **交付**：`docs/三方工作室插件评估-2026-11-25.md`（七节：事实表 / 只留六条 / 不该借四条 / 怎么装才不炸 / 下一步三件小时级实验 / 与上一轮的对照 / 证据）。建议下一批（批 AL′）做：帧差回归探针、`save-tamper.test.ts` 五路、`autoplay_probe --minutes 20` 加堆采样。
