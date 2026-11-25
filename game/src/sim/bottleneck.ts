@@ -11,14 +11,26 @@
  * 隔墙 ¥12,000 把座位从 2 提到 4，但灶还是卡在 60（+0 碗）。
  * 所以提示先点灶，扩座排在灶升过一两档之后。
  *
- * 公式与 `flow-probe.probe.ts` 的产能模型一致：
- *   灶   = 一天分钟数 / 每碗分钟
- *   座位 = 座位数 × 一天分钟数 / (每碗分钟 + 吃一碗的分钟)
+ * 公式：
+ *   灶   = 一天分钟数 / 一次出碗的间隔（模拟里那一锅的冷却，含并行槽）
+ *   座位 = 座位数 × 一天分钟数 / 吃一碗的分钟
+ *   来客 = 一天大概会进店多少人（区池子封顶）
  *   上限 = `state.capacity`（案台与扩建设的总闸）
- * 三者取最小 = 今天最多卖几碗。
+ * 取最小 = 今天最多卖几碗。
+ *
+ * **批 AN′（P443/P444）：前三项原来是这么算错的**
+ * - 座位写成 `座位 × 120 / (每碗分钟 + 6)`：出碗 2 分时 4 座算成 60 碗（`4×120/(2+6)`），
+ *   正好与灶的 60 打平，`pack()` 平局又判给灶 —— 钩子于是在 54% 流失时说「加灶」。
+ *   实测（6 天、后 3 天均值、3 种子、默认配平）：2 座 36.3 / 3 座 50.7 / 4 座 **64.0** /
+ *   5 座 70.3 / 6 座 71.7 碗 —— 座位与「每碗几分钟」无关，卡的是**吃一碗占多久**。
+ * - 灶沿用 `SERVE_MINUTES = 6` 当基准，可模拟里出碗冷却的基准是 `FLOW.serveMinutes = 1`
+ *   （一次出一批 `serveParallel` 碗）。于是灶算成 60 碗，而实测 40 座时能卖 120.6 碗。
+ * - 少了一项：**来的人就这么些**。座位加到 12 / 40 座，实测都停在 120–122 碗 ——
+ *   卡的是来客天花板（`demandPerDay`）。
  */
-import { DAY_MINUTES, SERVE_MINUTES } from "./customer";
+import { DAY_MINUTES, SERVE_MINUTES, demandPerDay } from "./customer";
 import { bowlMinutes } from "./staff";
+import { FLOW } from "../data/balance";
 import { stationCount, stationCountAfter, stationServeFactor, stageMinutes } from "./equipment";
 import { BENCH_CAPACITY_STEP, STAGE_MINUTES, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
 import type { GameState } from "./state";
@@ -34,18 +46,33 @@ import { goodsCapacityBonus } from "./goods";
 export // 吃一碗要几分钟：`data/customers.ts` 二十四种客人的 eatSpeed 均值 6.17
 // （最慢 9、最快 3）。旧值写 1，模型于是算「2 座一天能接 80 碗」，
 // 而实测只有 36 碗 —— 模型一直在说「灶最紧」，真正的瓶颈是座位（试玩 11-22）。
-const EAT_MINUTES = 6;
+// 批 AN′：按默认配平下的实测座位曲线回代（6 天、后 3 天均值、3 种子）——
+// 2 座 36.3 / 3 座 50.7 / 4 座 64.0 / 5 座 70.3 / 6 座 71.7，天花板约 72 碗（= 来客量）。
+// 6.6 分最贴：2 座算 36.4、3 座 54.5、4 座起被来客天花板压住。旧值 6 会把 4 座算成 76 碗。
+const EAT_MINUTES = 6.6;
 
-export type TightOn = "stove" | "seats" | "cap";
+/**
+ * 座位的空转系数（批 AN′）。
+ *
+ * 座位不是流水线：人是一拨一拨来的，四个座位总有空着的时候。
+ * 实测（默认配平、6 天后 3 天均值、3 种子）：2 座 36.3（理想 36.4，没有空转）、
+ * 3 座 50.7（理想 54.5）、4 座 **64.0**（理想 72.7）—— 座位一多，空转就压不住了。
+ * 取 0.9 折：4 座算 65.5（实测 64.0）、3 座 49.1（实测 50.7）。
+ */
+const SEAT_IDLE = 0.9;
+
+export type TightOn = "stove" | "seats" | "cap" | "demand";
 
 export interface Capacity {
-  /** 一口灶翻一天的碗数（已含灶位、员工技法与并行度，见 bowlMinutes） */
+  /** 一次出碗的间隔能翻多少碗（已含并行槽与员工技法，见 bowlMinutes） */
   stove: number;
   /** 座位翻台能接的碗数 */
   seats: number;
   /** 日上限总闸 */
   cap: number;
-  /** 三者取最小：今天最多卖几碗 */
+  /** 一天大概会进店多少人（来客天花板，批 AN′） */
+  demand: number;
+  /** 四者取最小：今天最多卖几碗 */
   total: number;
   /** 谁在卡 */
   tight: TightOn;
@@ -53,17 +80,50 @@ export interface Capacity {
   serveNow: number;
 }
 
-function pack(stove: number, seats: number, cap: number, serveNow: number): Capacity {
-  const total = Math.min(stove, seats, cap);
-  const tight: TightOn = total === stove ? "stove" : total === seats ? "seats" : "cap";
-  return { stove, seats, cap, total, tight, serveNow };
+function pack(
+  stove: number,
+  seats: number,
+  cap: number,
+  demand: number,
+  serveNow: number,
+  /**
+   * 增益要用「三道闸」而不是四道：`demand` 是**天花板**，不是「这一件能抬高多少」。
+   *
+   * 4 座实测：今天卖 64 碗、添一张凳卖 70.3 碗 —— 增益是真的（+6.3），
+   * 但来客天花板就 70.6；把天花板也算进增益，凳子会被算成 +0 碗，
+   * 钩子于是又回到「添凳没用」的老路上（P70 白做）。
+   * 所以：`total` / `tight` 用四道（诚实说「今天最多卖几碗」），
+   * `capacityGain` 用三道（回答「买它能不能把那道闸抬高」）。
+   */
+  ceiling = true,
+): Capacity {
+  const gate = Math.min(stove, seats, cap);
+  const total = ceiling ? Math.min(gate, demand) : gate;
+  /**
+   * 平局谁算「卡住」：**座位优先**。
+   *
+   * 平局原来是判给灶（`total === stove ? "stove"`），4 座上灶与座位都是 60，
+   * 于是面板说「灶台出得慢」，钩子去劝人升级灶 —— 实测买灶一碗都不多（P444）。
+   * 座位是**硬上限**（人得坐下才能吃），灶可以靠并行槽超卖一点，所以平局让座位说话。
+   */
+  const tight: TightOn =
+    total === seats ? "seats" : total === demand ? "demand" : total === stove ? "stove" : "cap";
+  return { stove, seats, cap, demand, total, tight, serveNow };
 }
 
 /** 当前产能画像 */
 export function capacityOf(state: GameState): Capacity {
+  // 面板上那句「2.0 分/碗」：一碗要等多久（含并行槽摊薄），给人看的口径
   const serveNow = bowlMinutes(state, SERVE_MINUTES, stationServeFactor(state));
-  const stove = DAY_MINUTES / serveNow;
-  const seats = (state.venue.seats * DAY_MINUTES) / (serveNow + EAT_MINUTES);
+  /**
+   * 出碗能力：模拟里 `flow.serveBank` 每分钟加 1，攒够 `serveCooldown` 就出一批
+   * `serveParallel` 碗 —— 基准是 `FLOW.serveMinutes`（=1），不是面板那个 6。
+   * `bowlMinutes` 对基准是线性的，所以换成 1 就等于「一次出碗的间隔能翻几批」。
+   */
+  const batchMinutes = Math.max(0.2, bowlMinutes(state, FLOW.serveMinutes, stationServeFactor(state)));
+  const stove = DAY_MINUTES / batchMinutes;
+  // 座位只看「吃一碗占多久」：出碗再快，一个座位一天也只能翻 120/EAT 轮
+  const seats = (state.venue.seats * DAY_MINUTES * SEAT_IDLE) / EAT_MINUTES;
   /**
    * 零售货架（批次七）：做货与卖碗抢同一份产能。
    *
@@ -78,7 +138,9 @@ export function capacityOf(state: GameState): Capacity {
       goodsCapacityBonus(state) -
       retailBowlLoad(state),
   );
-  return pack(stove, seats, cap, serveNow);
+  // 来客天花板（批 AN′）：座位加到 40 座也卖不过这个数
+  const demand = Math.max(1, demandPerDay(state));
+  return pack(stove, seats, cap, demand, serveNow);
 }
 
 /**
@@ -98,6 +160,14 @@ export function capacityGain(state: GameState): {
   seat: (n: number) => number;
 } {
   const now = capacityOf(state);
+  /**
+   * 两个基准（批 AN′）：
+   * - `gateBase`：三道闸（灶 / 座位 / 总闸）—— 出碗与案台的增益看这个，回答「厨房这段还卡不卡」。
+   * - `base`：四道闸（含来客天花板）—— 座位与扩建的增益看这个，回答「多卖得出几碗」。
+   * 座位要含天花板：座位一到位、来的人就这么些，再添凳就是白花钱（8 座实测 72.3 碗，已到顶）。
+   */
+  const gateBase = pack(now.stove, now.seats, now.cap, now.demand, now.serveNow, false).total;
+  const base = now.total;
   const m = stageMinutes(state);
 
   const totalAfter = (station: StationId): number => {
@@ -106,13 +176,13 @@ export function capacityGain(state: GameState): {
     return m.total - before + after;
   };
   const gainOfStation = (station: StationId): number => {
-    const next = Math.max(0.1, (now.serveNow * totalAfter(station)) / Math.max(0.1, m.total));
-    return pack(
-      DAY_MINUTES / next,
-      (state.venue.seats * DAY_MINUTES) / (next + EAT_MINUTES),
-      now.cap,
-      next,
-    ).total - now.total;
+    /**
+     * 出碗间隔缩短 `ratio` 倍 → 灶的日上限同比例涨（`now.stove` 已是新口径的 120/batch）。
+     * 别再把 `serveNow` 当分子：那是面板上「一碗要等几分钟」的口径，基准是 6（P443）。
+     */
+    const ratio = totalAfter(station) / Math.max(0.1, m.total);
+    const stoveAfter = now.stove / Math.max(0.1, ratio);
+    return pack(stoveAfter, now.seats, now.cap, now.demand, now.serveNow, false).total - gateBase;
   };
 
   const byEquip = (id: EquipId): number => {
@@ -127,12 +197,19 @@ export function capacityGain(state: GameState): {
 
   // 案台升一档：抬总闸，但抬不过灶与座位 —— 总闸不紧时增益就是 0
   const others = Math.min(now.stove, now.seats);
-  const bench = Math.max(0, Math.min(now.cap + BENCH_CAPACITY_STEP, others) - now.cap);
+  const bench = Math.max(0, Math.min(now.cap + BENCH_CAPACITY_STEP, others) - Math.min(now.cap, others));
 
-  // 扩座 +n：座位产随 n 线性涨，但被灶与总闸卡住
+  // 扩座 +n：座位产随 n 线性涨（打 0.9 的空转折），但被灶、总闸挡住，
+  // 而且**含来客天花板** —— 8 座已到 72 碗，再添凳就是白花钱（批 AN′）
   const seat = (n: number): number =>
-    pack(now.stove, ((state.venue.seats + n) * DAY_MINUTES) / (now.serveNow + EAT_MINUTES), now.cap, now.serveNow).total -
-    now.total;
+    pack(
+      now.stove,
+      ((state.venue.seats + n) * DAY_MINUTES * SEAT_IDLE) / EAT_MINUTES,
+      now.cap,
+      now.demand,
+      now.serveNow,
+      true,
+    ).total - base;
 
   return { stove, pot, basket, bench, seat };}
 
@@ -141,6 +218,8 @@ export function tightWords(state: GameState): string {
   const c = capacityOf(state);
   if (c.tight === "stove") return "灶台出得慢";
   if (c.tight === "seats") return "座位坐不下";
+  // 批 AN′：座位、灶都够，卡的是街上就这么多人 —— 这时候劝人升级灶是骗钱
+  if (c.tight === "demand") return "街上就这么多人";
   return "备料不够卖";
 }
 

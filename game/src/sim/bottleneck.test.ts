@@ -62,7 +62,9 @@ describe("今天最多卖几碗：灶、座位、总闸取最小", () => {
 
   it("批次二：三段各有各的增益，最慢那段的增益最大", () => {
     const s = fresh();
-    s.venue.seats = 12;
+    // 批 AN′：座位要宽到比灶还宽（40 座 ≈ 654 碗），灶（360）才是那三道闸里最矮的一道；
+    // 12 座时座位闸只有 196 碗，三段增益全是 0 —— 那是实测真相（加灶一碗不多），见容量模型那几条。
+    s.venue.seats = 40;
     s.capacity = 999;
     const g = capacityGain(s);
     expect(g.stove).toBeGreaterThan(0);
@@ -75,7 +77,7 @@ describe("今天最多卖几碗：灶、座位、总闸取最小", () => {
 
   it("批次二：把炒锅买满之后，本轮最该添的就变成汤锅或粉篓", () => {
     const s = fresh();
-    s.venue.seats = 12;
+    s.venue.seats = 40;
     s.capacity = 999;
     s.equipment.stove = 4;
     const g = capacityGain(s);

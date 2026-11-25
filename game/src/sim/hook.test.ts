@@ -312,21 +312,33 @@ describe("产能件要真能接客（试玩二轮 F2 / 三轮 D1–D2）", () =>
     report(s, 60, 40);
     // 八座时座位已经不算卡（8 座一天能接一百多碗），但门口站满时钩子仍会先推加座件
     expect(nextHook(s).text).not.toContain("粉篓");
-    // 座位彻底给够（三十座），再把炒锅与汤锅买满 —— 这时最慢的是粉篓那一段，才点名粉篓
-    s.venue.seats = 30;
+    // 座位彻底给够（四十座 ≈ 654 碗，宽过炒锅四档的 600 碗），再把炒锅与汤锅买满 ——
+    // 这时最慢的是粉篓那一段，才点名粉篓
+    s.venue.seats = 40;
+    // 批 AN′：总闸也不能成闸（旧版 200 碗的总闸会先把三段压成 0，粉篓就永远点不到）
+    s.capacity = 999;
     s.equipment.stove = 4;
     s.equipment.pot = 4;
     expect(nextHook(s).text).toContain("粉篓");
   });
 
-  it("扩建被段位锁住时，退回设备里的出碗/上限件", () => {
+  it("扩建被段位锁住时，退回能真正接客的那一件（批 AN′：八座往后就不推产能了）", () => {
     const s = fresh();
     s.cash = 200_000;
-    s.venue.seats = 8;
+    s.venue.seats = 4;
     s.venue.expansion = 1;
     s.gradeLevel = 0;
     report(s, 60, 40);
-    expect(nextHook(s).text).toContain("猛火灶");
+    // 四座还差座位（模型 65.5 碗、实测 64.0），扩建被锁 → 退回座位家当，而不是非得买灶
+    const plan = nextHook(s);
+    expect(plan.kind).toBe("capacity");
+    expect(plan.ref?.gearId).toBeTruthy();
+
+    // 八座往后实测已经到 72.3 碗（来客天花板）：这时一个字都不该再提产能
+    s.venue.seats = 8;
+    const plan8 = nextHook(s);
+    expect(plan8.kind).not.toBe("capacity");
+    expect(plan8.text).not.toContain("猛火灶");
   });
 });
 

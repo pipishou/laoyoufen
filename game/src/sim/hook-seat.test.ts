@@ -57,19 +57,21 @@ describe("钩子先添凳（批 AM′，P70 的建议侧）", () => {
     expect(plan.key).toBe("capacity:seat");
   });
 
-  it("6 座时座位已经有富余，就走回「谁最划算」那条路（设备）", () => {
+  it("6 座时座位已经不是闸：既不劝添凳，也不劝换灶（实测已到来客天花板）", () => {
     const s = createInitialState("p70c", 3);
     s.venue.seats = 6;
     s.cash = 5000;
     withYesterday(s, 20, 40, { wait: 40 });
-    // 前提：6 座时日碗量确实高过灶
+    // 前提：6 座已经顶到来客天花板（座位的日碗量 98 碗，来的人只有 70 碗）
     const cap = capacityOf(s);
-    expect(cap.seats).toBeGreaterThan(cap.stove);
+    expect(cap.tight).toBe("demand");
 
+    // 8 座实测 72.3 碗 = 街上就这么多人：买凳、买灶一碗都不多，
+    // 所以钩子不再往产能上引（旧版这时会推零增益的凳子，等于劝人白花钱）
     const plan = nextHook(s);
-    expect(plan.kind).toBe("capacity");
-    expect(plan.key).not.toBe("capacity:seat");
-    expect(plan.ref?.equipId).toBeTruthy();
+    expect(plan.kind).not.toBe("capacity");
+    expect(plan.text).not.toContain("凳");
+    expect(plan.text).not.toContain("猛火灶");
   });
 
   it("凳子买不起也照样提它，只是话换成「卖了钱先添」", () => {

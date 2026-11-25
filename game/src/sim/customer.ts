@@ -212,7 +212,19 @@ export { priceTolerance };
 /** 口碑越高、门店综合分越高、摆件越多、人气越旺，进店越密 */
 function spawnChance(state: GameState): number {
   const part = Math.min(3, Math.floor(state.flow.minuteOfDay / (DAY_MINUTES / 4)));
-  const base = DAYPART_CHANCE[part] ?? 0.1;
+  return spawnChanceAt(state, part);
+}
+
+/**
+ * 某一段（0–3）里一分钟来人的概率（批 AN′：把它拆出来，是为了算「一天大概来多少人」）。
+ *
+ * 为什么要算这个数：`capacityOf` 一直只比「灶 / 座位 / 总闸」三项取小，
+ * 于是 4 座时说「灶最紧，日上限 60 碗」—— 可实测这一天能卖 76 碗。
+ * 真正卡住的是**来的人就这么些**（开局约 120 人/天），不是灶也不是座位。
+ * 少算这一项，钩子就会把人往「加灶」上带（P443）。
+ */
+export function spawnChanceAt(state: GameState, part: number): number {
+  const base = DAYPART_CHANCE[Math.max(0, Math.min(3, part))] ?? 0.1;
   const repFactor = 0.35 + (state.reputation / 5) * 0.65;
   // 开罗 `Shop Stats`：人气是**菜单里所有款聚合**的。我们取最好的那款，再按款数给一点奖励。
   const scoreFactor = 0.4 + (menuStoreScore(state) + shopCharmBonus(state)) / 160;
@@ -256,6 +268,20 @@ function spawnChance(state: GameState): number {
 }
 
 /**
+ * 一天大概会来多少人（批 AN′）。
+ *
+ * 四段各 `DAY_MINUTES/4` 分钟，乘上该段的每分钟到店概率；再乘「街上门路」那点来访加成。
+ * 上限是 `demandCapOf`（区池子：本区就这么多人）。**这不是精确值**，是给「今天最多做几碗」
+ * 用的天花板：实测开局座位放到 40 也只卖 120 碗，说明真正卡住的是来客量。
+ */
+export function demandPerDay(state: GameState): number {
+  const perPart = DAY_MINUTES / 4;
+  let sum = 0;
+  for (let part = 0; part < 4; part += 1) sum += perPart * spawnChanceAt(state, part);
+  return Math.min(demandCapOf(state), sum * investAttractMult(state));
+}
+
+/**
  * 开局客流分档（P67 / 账本行 50 的方案 A）。
  *
  * 现实里巷口新开的小店，头几天是「街坊来试一口」，不是「半条街的人都来」。
@@ -285,6 +311,14 @@ export function spawnScaleByDay(state: GameState): number {
  * 4 是安全阀：再高就不是嗦粉店，是早高峰地铁站。
  */
 const MAX_ARRIVALS_PER_MINUTE = 4;
+
+/**
+ * 一分钟里最多出几批（批 AN′ / P445）。
+ *
+ * 出碗冷却的地板是 0.2 分（`sim/customer.ts` 的 `Math.max(0.2, serveCooldown)`），
+ * 一分钟理论最多 5 批；留 6 当兜底，防止某天冷却算出 0 变成死循环。
+ */
+const MAX_BATCHES_PER_MINUTE = 6;
 
 /**
  * 一位客人到店：掷「来不来」的骰子在调用方已经掷完，这里只负责
@@ -703,9 +737,14 @@ export function tickCustomers(state: GameState): void {
   // `FLOW.serveMinutes = 1` 之下，任何小于 1 的系数（灶 0.8167、汤锅、粉篓、洗碗池、碗、组合）
   // 用「每分减 1、≤0 出一批」都会被吞成「还是每分钟一碗」——
   // 于是所有「出碗更快」的升级在真实模拟里全部无效（试玩 11-22：买灶后碗数一动不动）。
+  //
+  // **批 AN′（P445）：一分钟里要能出多批，不然 0.8 分的灶永远等于 1.0 分的灶。**
+  // 原来这里是 `if (bank >= interval)`，一分钟只判一次 —— 攒下的分钟明明够两批，也只出一批。
+  // 现在改成循环：把这一分钟攒的时间花完为止（每批按当时的冷却重算，最多 6 批兜底）。
   flow.serveBank = (flow.serveBank ?? 0) + 1;
-  const serveInterval = Math.max(0.2, flow.serveCooldown);
-  if (flow.serveBank + 1e-9 >= serveInterval) {
+  for (let batch = 0; batch < MAX_BATCHES_PER_MINUTE; batch += 1) {
+    const serveInterval = Math.max(0.2, flow.serveCooldown);
+    if (flow.serveBank + 1e-9 < serveInterval) break;
     // 开罗 Staff 2：一锅同时煮 N 份、一趟同时端 N 碗 —— 冷却到点一次出一批。
     // 旧版这里只出一碗，于是 8 座满编实测也只有 63 碗/日，座位与灶位形同装饰（P35）。
     let slots = Math.max(1, Math.floor(serveParallel(state) * frenzyServeBoost(state)));
@@ -729,32 +768,31 @@ export function tickCustomers(state: GameState): void {
       servedAny = true;
     }
     // 空转（没人排队）就不进冷却，否则下一分钟来的客人要多等一轮
-    if (servedAny) {
-      const noodleFactor = serveFactorCount > 0 ? serveFactorSum / serveFactorCount : 1;
-      // 出碗是全店一锅，味道层按「当前在编辑的这一款」算（与 portionOf 同口径）
-      const curDish = currentDish(state);
-      flow.serveCooldown =
-        FLOW.serveMinutes *
-        serveMultiplier(state) *
-        equipServeMultiplier(state) *
-        noodleFactor *
-        // 三两的锅更满，一锅少下几碗（P46）
-        portionOf(state.portion).serveFactor *
-        // 家当（M3）巷口洗碗池：碗当场冲，不用堆到收摊
-        gearServeFactor(state) *
-        // 配料组合（A2）：好熟的那几样起锅快
-        pairServeFactor(curDish.recipe.toppings) *
-        // 碗（A4）：钢碗不用洗，瓦煲要现煮
-        bowlServeFactor(state) *
-        // 出碗定死（A6）：师傅教过「数三十下就起」的那一款最快
-        masterServeFactor(curDish) *
-        flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
-      // HUD 左下的「一碗约 N 分钟」读这个数：写死常量会和右边 HUD 的 2.0/1.6/1.3 打架（试玩 11-22-2109 备注）
-      flow.serveInterval = flow.serveCooldown;
-      // 攒下的分钟扣掉这一轮的间隔，余数留到下一分钟继续攒 ——
-      // 0.8 分/碗 的一天是 150 批，1.0 分/碗 的一天是 120 批，差别终于是真的
-      flow.serveBank = Math.max(0, flow.serveBank - flow.serveCooldown);
-    }
+    if (!servedAny) break;
+    const noodleFactor = serveFactorCount > 0 ? serveFactorSum / serveFactorCount : 1;
+    // 出碗是全店一锅，味道层按「当前在编辑的这一款」算（与 portionOf 同口径）
+    const curDish = currentDish(state);
+    flow.serveCooldown =
+      FLOW.serveMinutes *
+      serveMultiplier(state) *
+      equipServeMultiplier(state) *
+      noodleFactor *
+      // 三两的锅更满，一锅少下几碗（P46）
+      portionOf(state.portion).serveFactor *
+      // 家当（M3）巷口洗碗池：碗当场冲，不用堆到收摊
+      gearServeFactor(state) *
+      // 配料组合（A2）：好熟的那几样起锅快
+      pairServeFactor(curDish.recipe.toppings) *
+      // 碗（A4）：钢碗不用洗，瓦煲要现煮
+      bowlServeFactor(state) *
+      // 出碗定死（A6）：师傅教过「数三十下就起」的那一款最快
+      masterServeFactor(curDish) *
+      flavorServeFactor(curDish.recipe.toppings, curDish.noodle);
+    // HUD 左下的「一碗约 N 分钟」读这个数：写死常量会和右边 HUD 的 2.0/1.6/1.3 打架（试玩 11-22-2109 备注）
+    flow.serveInterval = flow.serveCooldown;
+    // 攒下的分钟扣掉这一轮的间隔，余数接着在这一分钟内用（批 AN′：一分钟可以出多批）——
+    // 0.8 分/碗 的一天是 150 批，1.0 分/碗 的一天是 120 批，差别终于是真的
+    flow.serveBank = Math.max(0, flow.serveBank - Math.max(0.2, flow.serveCooldown));
   }
 
   // 3. 等不及的走人

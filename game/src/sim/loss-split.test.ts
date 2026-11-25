@@ -127,10 +127,24 @@ describe("钩子先看「为什么走」（试玩 11-21）", () => {
 
   it("价牌主因但已经压到成本线时，不硬给一个压不动的目标", () => {
     const s = fresh();
-    // 最便宜那款压到 1 元，低于成本 → pricePick 返回 null，退回产能
+    // 最便宜那款压到 1 元，低于成本 → pricePick 返回 null，退回产能或家当
     for (const item of s.menu) item.price = 1;
     closeDay(s, 50, 10, 0);
     const plan = nextHook(s);
-    expect(plan.kind).toBe("capacity");
+    expect(plan.kind).not.toBe("price");
+
+    // 批 AN′：这一局来客天花板只有 58.7 碗，而四座能坐 65.5 碗 —— 产能已经不是闸，
+    // 钩子这时**不该**劝人添凳买灶（8 座实测 72.3 碗已到顶），改说家当那类话才诚实。
+    expect(plan.kind).toBe("gear");
+
+    // 街上人再多一点（来客抬到座位的两倍），退回产能才对：
+    const busy = fresh();
+    for (const item of busy.menu) item.price = 1;
+    busy.totalCustomers = 900;
+    busy.venue.seats = 4;
+    closeDay(busy, 50, 10, 0);
+    const plan2 = nextHook(busy);
+    expect(plan2.kind).toBe("capacity");
+    expect(plan2.ref?.gearId).toBeTruthy();
   });
 });

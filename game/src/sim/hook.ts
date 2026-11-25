@@ -224,10 +224,13 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
 
   if (picks.length === 0) return null;
 
-  // 省钱件救不了排队；但只要有一件真能接客，就不提它
+  // 省钱件救不了排队；但只要有一件真能接客，就不提它。
+  // 批 AN′：一件真能接客的都没有时**什么都不提** —— 8 座实测已经到 72.3 碗（来客天花板），
+  // 再添凳、再换灶一碗都不多（`docs/座位日碗量与来客天花板AN′-2026-11-25.md`）。
+  // 旧版这时会把零增益的凳子当「最便宜的那件」推出去，等于劝人白花钱。
   const helpful = picks.filter((p) => p.kind !== "cost" && p.gain > 0.05);
-  const pool = helpful.length > 0 ? helpful : picks.filter((p) => p.kind !== "cost");
-  if (pool.length === 0) return picks.sort((a, b) => a.cost - b.cost)[0] ?? null;
+  if (helpful.length === 0) return null;
+  const pool = helpful;
 
   // 门口站满（queue 主因）时先看「能不能多坐几个人」：
   // 排队的本质是坐下的人太少，灶再快也接不住站着的那一队（试玩 11-21：座位 2、排队 12/12）。
@@ -235,7 +238,9 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
   // 实测（`docs/钩子先添凳AM′-2026-11-25.md` 那张四天表）：4 座时买凳第 4 天多卖 18.4 碗，
   // 而买灶一碗都不多（被座位闸卡住）—— 旧版按「每块钱抬高多少碗」排，把平局判给灶，方向是反的。
   if (preferSeat) {
-    const seatPicks = picks.filter((p) => p.kind === "seat");
+    // 批 AN′：只挑**真能多卖几碗**的座位件。8 座往上座位已经不是闸，
+    // 零增益的凳子不该再被「先添凳」这条规则捞出来。
+    const seatPicks = pool.filter((p) => p.kind === "seat");
     if (seatPicks.length > 0) {
       const byCost = seatPicks.sort((a, b) => a.cost - b.cost);
       return byCost.find((p) => state.cash >= p.cost) ?? byCost[0]!;
