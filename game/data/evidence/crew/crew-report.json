@@ -14,6 +14,7 @@
   "rich_says_fee": true,
   "rich_says_skill": true,
   "rich_fee_one_off": true,
+  "rich_says_premise": true,
   "hired_moves_the_line": true,
   "hired_says_third": true,
   "two_stoves_two_cooks_quiet": true,
@@ -25,6 +26,6 @@
   "save_version": true,
   "console_clean": true
  },
- "ok": 24,
- "total": 24
+ "ok": 25,
+ "total": 25
 }

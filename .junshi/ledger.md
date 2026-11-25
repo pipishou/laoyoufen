@@ -1441,3 +1441,17 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 构建 `index-Bp7vNXAg.js` **1,745,956 B**（gzip 525.20）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
 - 文档 `docs/灶位那句话与价钱口径AT′-2026-11-26.md`（九节：三条是一件事 / P461 实证与改法 / P462 一份模板 + 扫源码单测 + 首跑踩坑 / P463 / 探针 24 条 / 验收表 / 没动什么 / 新缺口 / 复现）。
 - 新缺口：**P465**（`crewGapWords` 的头两句仍是两段手写，只共用了核心那一截）/ **P466**（「每一块钱技能最高」是拍的排序，没算雇他到底多卖几碗）/ **P467**（`why` 与 `cost` 两句仍手写，与 P451 同型只是还没抄第二遍）/ **P468**（探针 `rich_*` 四条都留了「没有煮粉的来问工」例外分支，仍弱判据）。
+
+### 行 157 · 2026-11-26 · 批 AU′：换个人也换不来更多的碗（P465 / P466 / P467）
+
+- P465：`crewGapWords` 的两句头（`灶位 N 口` / `灶 N 口`）原是两段手写的数字拼接，只共用了核心「第 N 口起没人看」。抽出 `headWords(stoves, slots, short)`，**数字只在 `game/src/data/crew.ts` 里拼一次**，长短只差两个词。
+- P467：`why`（「不过今天卡的不是灶…」）与 `cost`（「今天有人来问工…」）原写在 `game/src/sim/crew.ts` 里，`crew-literal.test.ts` 只盯主句 —— 与 P451 同型。四句（`crewWhyWords` / `crewCostWords` / `crewGateWords` / `crewNoneWords`）全搬进 `game/src/data/crew.ts`，`sim/crew.ts` 只调模板。
+- P466 取证（`tmp_p466.test.ts`，已删；6 天取后 3 天均值，种子 1/2/3，`capacity=9999` / `rep=500` / `totalCustomers=5000` / 手摆 roster）：**默认配平**座 4 无人 76.4 走 248.7、技能 1/5/5×2 全是 75.4 走 240.8；座 6 无人 112.1 走 295.4、有技能一律 112.7 走 289.2；座 8 无人 111.4 走 184.4、有技能 112.1 走 193.8 ⇒ **换人只多卖 0.6–1.3 碗，座 4 还倒挂半碗**。灶项却随技能拉开：`serveMinutes=1` 无人 360 → 有技能 600（撞 0.2 分下限）；`serveMinutes=3` 120 → 282/303/328/462；`serveMinutes=6` 60 → 141/152/164/231。**厨房真卡时**卖碗数才跟着技能走：座 6 58.6 → 82.7 / 87.0 / 94.1；座 8 58.6 → 106.0 / 112.4 / 114.9；座 12 58.6 → 112.9 / 111.6 / 111.8。
+- P466 解法（**不改经济**）：`crewCostWords(hire, kitchenBinds = true)` 在厨房**不是**最紧那道时自动补一句 `（不过今天厨房不是最紧那道，换个人也换不来更多的碗）`（`crewCostPremiseWords`）。`sim/crew.ts` 只把早就算好的 `kitchenBinds` 传进去。日薪表 `WAGE_BY_SKILL`、`HIRE_FEE_RATE`、`serveMultiplier` 煮技系数、`capacityOf` 灶项、`STAGE_MINUTES` —— 一格没动。
+- 测试：`game/tools/crew-literal.test.ts` 5 → **8 例**（新增「头也同源」判「个人掌勺」只许出现一次且长短两句数字一致；「副句与价钱句也只有一处」扫四句；「价格带前提」判 `binds` 不带、`loose` 以 `binds` 开头且含「厨房不是最紧那道」）。`src/sim/crew.test.ts` 11 例不变（只加尾巴，`toContain` 仍成立）。
+- 探针 `crew_probe.py` 24 → **25 / 25 true**（新增 `rich_says_premise`：累计接待 3000 后价钱句要含「厨房不是最紧」，或落到「没有煮粉的来问工」/「累计接待」两个合法分支 —— 这是 P464/P468 弱判据的回旋）。
+- 五门：`tsc` 0；`vitest --no-file-parallelism` **106 文件 1072 用例**；`copy_gate` ok；`eye_gate --slug crew4` 五视口 **724 · 778 · 582 · 1244 · 1505** 色、stamp **180**、控制台 10 条（预览 `/laoyou-api/` 404 良性）；`ai_gate` 四段 `"ok": true`（跑完已重建）；帧差门重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps 56/60、2346 采样、堆 0.0、一句话接口 7 次 0.19/天、console 18 条全白名单、4xx 全在 `/laoyou-api/`）；`debug_exit_gate` **4 / 4**（扫 1 个 js 共 1,746,234 B，只挂 `__laoyou`）。
+- 替身四种子 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**，与 AT′ **逐位相同**（`crewFacts` 只被界面读，不参与任何模拟分支）。
+- 构建 `index-s6h-nx_K.js` **1,746,234 B**（gzip 525.34）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
+- 文档 `docs/换个人也换不来更多的碗AU′-2026-11-26.md`（七节：这一批要解决什么 / 三张实测表 / 改了什么的代码 / 验收表 / 没动什么 / 新缺口 P469–P471 / 复现命令）。
+- 新缺口：**P469**（`crewCostPremiseWords` 那句「换不来更多的碗」没有守卫，`FLOW.serveMinutes` 一改就变假话）/ **P470**（`kitchenBinds` 只有「灶是最紧那道」一个判据，差一点与差很远说同一句话）/ **P471**（`crewCostWords` 默认 `kitchenBinds = true`，调用方忘传就把前提吞掉）。

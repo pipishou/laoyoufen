@@ -179,6 +179,12 @@ def main():
         # 批 AT′（P461 / P463）：报技能等级，并且说清介绍费只收一次
         checks["rich_says_skill"] = bool(re.search(r"技能\s*\d+", rich["cost"])) or "没有煮粉的来问工" in rich["cost"]
         checks["rich_fee_one_off"] = "（一次）" in rich["cost"] or "没有煮粉的来问工" in rich["cost"]
+        # 批 AU′（P466）：厨房不是最紧那道时，价钱后面得带前提，别让人以为雇了就多卖
+        checks["rich_says_premise"] = (
+            "厨房不是最紧" in rich["cost"]
+            or "没有煮粉的来问工" in rich["cost"]
+            or "累计接待" in rich["cost"]
+        )
 
         # 三态三：雇一个煮粉师傅 → 主句跟着变
         page.evaluate(HIRE_COOK)

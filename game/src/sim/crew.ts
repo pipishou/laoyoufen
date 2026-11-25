@@ -1,5 +1,12 @@
 import { HIRE_FEE_RATE, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
-import { crewFitWords, crewGapWords } from "../data/crew";
+import {
+  crewCostWords,
+  crewFitWords,
+  crewGapWords,
+  crewGateWords,
+  crewNoneWords,
+  crewWhyWords,
+} from "../data/crew";
 import { capacityOf } from "./bottleneck";
 import { cookSlots } from "./staff";
 import type { GameState } from "./state";
@@ -73,12 +80,7 @@ export function crewFacts(state: GameState): CrewFacts {
   const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
 
   // 只在「有人手缺口」时说第二句：没有缺口时这句话是废话（而且会把打烊单撑长）
-  const why =
-    idle === 0
-      ? ""
-      : kitchenBinds
-        ? "今天卡的就是灶 —— 补齐人手这口灶才烧得上。"
-        : "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
+  const why = idle === 0 ? "" : crewWhyWords(kitchenBinds);
 
   // 批 AT′（解 P461 / P463）：候选池里挑的不是「最便宜」那个，而是**每一块钱技能最高**那个 ——
   // 日薪由技能定（`WAGE_BY_SKILL` 110/130/150/180/220），贵的那个技能一定更高，
@@ -110,12 +112,14 @@ export function crewFacts(state: GameState): CrewFacts {
   if (idle > 0) {
     if (gate) {
       // 招不到人的时候，价钱不是重点，「还得忙到多少」才是
-      cost = `人手槽还差 ${gate.short} 位累计接待（到 ${gate.need} 位才有人肯来）`;
+      cost = crewGateWords(gate);
     } else if (hire) {
       // 批 AT′：技能跟着报（相同日薪下技能才是差别），介绍费标明「一次」
-      cost = `今天有人来问工：${hire.name}（技能 ${hire.skill}）日薪 ¥${hire.wage} · 介绍费 ¥${hire.fee}（一次）· 月薪约 ¥${hire.monthly}`;
+      // 批 AU′（解 P466）：厨房不是最紧那道时补一句前提 —— 实测默认配平下
+      // 换谁都只多卖 0.6–1.3 碗，光报价钱等于让人白花钱。
+      cost = crewCostWords(hire, kitchenBinds);
     } else {
-      cost = "今天没有煮粉的来问工";
+      cost = crewNoneWords();
     }
   }
 
