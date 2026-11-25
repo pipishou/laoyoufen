@@ -309,7 +309,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
     const lines = [actLineEl, lossLine, menuLine, investLine, thickLine].filter(
       (el) => (el.textContent ?? "").trim() !== "",
     );
-    const limit = 3;
+    // 三条是 375 宽量出来的；再窄一档（360 以下）屏上只放得下两条（P411）
+    const limit = window.matchMedia("(max-width: 360px)").matches ? 2 : 3;
     lines.forEach((el, i) => {
       el.hidden = !whyOpen && i >= limit;
     });

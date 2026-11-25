@@ -21,21 +21,25 @@
       "ok": true,
       "detail": "收起"
     },
+    "fold_narrow_keeps_two": {
+      "ok": true,
+      "detail": "2"
+    },
     "manual_pages_sixteen": {
       "ok": true,
-      "detail": "{'counter': '0 / 16 读过', 'pages': 16, 'unread': 16}"
+      "detail": "{'counter': '还没翻过', 'pages': 16, 'unread': 16}"
     },
     "manual_counter_zero": {
       "ok": true,
-      "detail": "0 / 16 读过"
+      "detail": "还没翻过"
     },
     "manual_open_marks_read": {
       "ok": true,
-      "detail": "{'counter': '1 / 16 读过', 'read': '1', 'tag': True, 'saved': 1}"
+      "detail": "{'counter': '翻过 1 页，还剩 15 页', 'read': '1', 'tag': True, 'saved': 1}"
     },
     "manual_counter_counts": {
       "ok": true,
-      "detail": "1 / 16 读过"
+      "detail": "翻过 1 页，还剩 15 页"
     },
     "manual_saved_in_state": {
       "ok": true,

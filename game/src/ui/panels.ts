@@ -46,7 +46,7 @@ import { PACK_SETUP } from "../data/pack";
 import { packOwned, packRateWords, packSkuLines, packSkuWords, packSummary } from "../sim/pack";
 import { newsDate, newsList, newsSummary } from "../sim/news";
 import { MANUAL_TOTAL, manualSections } from "../data/manual";
-import { manualRead, manualReadCount } from "../sim/manual";
+import { manualRead, manualReadWords } from "../sim/manual";
 import { placeLineOf, placeShortsOf } from "../data/places";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
@@ -1753,7 +1753,7 @@ function collectionHtml(s: GameState): string {
    * 默认全收起 —— 打开图鉴就看到一大段说明书，反而不想读。
    */
   const manualSec = `<div class="sec">
-      <div class="sechd">${icon("book")}店里的手册 · ${MANUAL_TOTAL} 页<span class="sechint" data-manualread>${manualReadCount(s)} / ${MANUAL_TOTAL} 读过</span></div>
+      <div class="sechd">${icon("book")}店里的手册 · ${MANUAL_TOTAL} 页<span class="sechint" data-manualread>${manualReadWords(s)}</span></div>
       <div class="sechint">一页一件事，点开看。手册只讲这间店真有的规矩。</div>
       ${manualSections()
         .map(

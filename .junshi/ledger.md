@@ -1210,3 +1210,14 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 验收：`tsc` 0；`vitest --no-file-parallelism` **93 文件 996 用例**；`copy_gate` ok；`eye_gate --slug fold` 五视口 **725 · 778 · 584 · 1246 · 1511** 色、stamp **171**；`ai_gate` ok；构建 `index-D46XsLD5.js` **1,738,362 B** / `index-BREpkhCi.css` **55,638 B**。
 - 上游：行 137 的批 AC′ 已部署（tar md5 `a0fb6905104e6c95a7e8ed35288d186f`、417 块、`events 83 / playtests 97`、外网四项 200）。
 - 文档 `docs/打烊单收三条与手册记读过AD′-2026-11-25.md`。新缺口 P411（阈值写死三条）/ P412（收起状态不记忆）/ P413（设置里的操作一览不算读过）/ P414（`manualReadWords` 只有测试在调）。
+
+### 行 139 · 2026-11-25 · 批 AE′：折叠随屏、手册抬头说人话、三维度验收收口
+
+- **P411 折叠阈值随屏宽**（`game/src/ui/hud.ts` 的 `foldWhyLines()`）：`const limit = 3;` → `window.matchMedia("(max-width: 360px)").matches ? 2 : 3`。三条是 375 宽量出来的，再窄一档屏上只放得下两条。
+- **P414 手册抬头说人话**（`game/src/ui/panels.ts`）：`${manualReadCount(s)} / ${MANUAL_TOTAL} 读过` → `${manualReadWords(s)}`（「还没翻过」/「翻过 N 页，还剩 M 页」/「全翻过了」），import 由 `manualReadCount` 换成 `manualReadWords`。那句写了三批没人用的话，现在在抬头。
+- `tools/gate/fold_probe.py`：`manual_counter_zero` 改判「还没翻过」、`manual_counter_counts` 改判「翻过 1 页」；新增 `fold_narrow_keeps_two`（340 宽、先收回再重画、数 `.daywhy span:not([data-why-fold])` 里可见的行），**13 / 13 true**。
+- 探针坑（第二次同型）：`fold_narrow_keeps_two` 首跑读到 4 —— 上一段验证「点开」时 `whyOpen` 已变 true，不先点回收回去就数不准。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **93 文件 996 用例**；`copy_gate` ok；`eye_gate --slug fold2` stamp **171**（控制台 10 条 error 是预览环境 `/laoyou-api/` 404）；`ai_gate` ok；构建 `index-mNuC7jCZ.js` **1,738,516 B** / `index-BREpkhCi.css` **55,638 B**。
+- 替身四种子与批 AD′ 逐位一致：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（这一批全在界面层，替身读不到）。
+- 三维度收口：`audit_counts` **54 文件 668 条 id**；`audit_pixel` 字面色值 **0** / 12 色 token / **21** 图标 / 14 组 `@keyframes`（`steps(` 8）/ `prefers-reduced-motion` 2 / `sechd` 59 / `icon(` 55 / `data-act` 46；`audit_ai` 线上 **29 / 29 remote**。文档 `docs/三维度整体验收-终版-2026-11-25.md`（批次表 J′–AE′ 二十一批、三维度自查、四个审计、四种子、开罗仍有而这里没有的四条、P379–P414 摘要）。
+- 新缺口 **P415**（三维度验收每跑一次就多一份文档，没有「当期唯一」的指针）/ **P416**（`fold_probe` 现在同时管折叠与手册两件事，与 P344 同型）/ **P417**（替身四种子在界面层批次里恒定，回归锁对这批不敏感）。

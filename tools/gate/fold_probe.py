@@ -91,6 +91,24 @@ def main():
 
         pg.screenshot(path=os.path.join(OUT, "01-fold-collapsed.png"))
 
+        # 380 以下的屏再窄一档：只留两条（批 AE′，解 P411）
+        pg.evaluate("() => document.querySelector('[data-why-fold]')?.click()")  # 先收回去
+        pg.wait_for_timeout(150)
+        pg.set_viewport_size({"width": 340, "height": 640})
+        pg.wait_for_timeout(200)
+        pg.evaluate("() => window.__laoyou.refresh()")
+        pg.wait_for_timeout(300)
+        narrow = pg.evaluate(
+            """() => {
+              const spans = [...document.querySelectorAll(".daywhy span:not([data-why-fold])")];
+              return spans.filter((x) => !x.hidden && (x.textContent || "").trim() !== "").length;
+            }"""
+        )
+        note("fold_narrow_keeps_two", narrow == 2, narrow)
+        pg.set_viewport_size({"width": 375, "height": 667})
+        pg.evaluate("() => window.__laoyou.refresh()")
+        pg.wait_for_timeout(300)
+
         # 手册：图鉴页
         pg.evaluate("() => document.querySelector('[data-tab=\"recipe\"]')?.click()")
         pg.wait_for_timeout(400)
@@ -109,7 +127,7 @@ def main():
             }"""
         )
         note("manual_pages_sixteen", base["pages"] == 16, base)
-        note("manual_counter_zero", base["counter"].startswith("0 / 16"), base["counter"])
+        note("manual_counter_zero", "还没翻过" in base["counter"], base["counter"])
 
         pg.evaluate(
             """() => {
@@ -132,7 +150,7 @@ def main():
             }"""
         )
         note("manual_open_marks_read", after["read"] == "1" and after["tag"], after)
-        note("manual_counter_counts", after["counter"].startswith("1 / 16"), after["counter"])
+        note("manual_counter_counts", "翻过 1 页" in after["counter"], after["counter"])
         note("manual_saved_in_state", after["saved"] == 1, after["saved"])
 
         pg.screenshot(path=os.path.join(OUT, "02-manual-read.png"))
