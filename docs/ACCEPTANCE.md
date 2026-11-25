@@ -48,10 +48,10 @@ python -X utf8 tools/gate/ai_gate.py        # 跑完必须 npm run -s build
 | `audit_pixel` | 字面色值 **0**；12 色 token；图标 **21**；`@keyframes` 14（`steps(` 8）；`prefers-reduced-motion` 2；`sechd` 59；`icon(` 55；`data-act` 46 |
 | `audit_ai` | 线上 **29 / 29 remote**（本批不加服务端场景，这句话是事实陈述） |
 | 替身四种子 | **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186** —— 与 AT′ / AU′ **逐位相同**（本批只改说法：日薪表 / `serveMultiplier` / `capacityOf` 的灶项 / `STAGE_MINUTES` 一格没动） |
-| 构建 | `index-BgQOVPO3.js` 1,746,670 B（gzip 525.50）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93） |
+| 构建 | `index-BgQOVPO3.js` 1,746,671 B（gzip 525.50）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93） |
 | 长跑门 | **9 / 9 ok** · 5 分钟到第 37 天 · fps 58/60（采样 2470）· 一句话接口 **7 次**（0.19 次/天）· console 18 条全白名单 · 4xx 全在 `/laoyou-api/` |
 | 帧差门 | 三视口 **逐点相同（0 px）**（文案变了，基准已重存） |
-| 调试出口门 | 4 / 4 ok（产物只挂 `__laoyou`，扫 1 个 js 共 1,746,670 B） |
+| 调试出口门 | 4 / 4 ok（产物只挂 `__laoyou`，扫 1 个 js 共 1,746,671 B） |
 | 条目清单 | `game/data/entry-counts.json` **43 项**，`npm test` 只读对账（**不覆盖文案常量**，见 P456） |
 | 线上 | 部署后核对（见账本行 158） |
 
