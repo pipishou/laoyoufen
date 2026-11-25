@@ -159,6 +159,18 @@ def main():
         note("thick_line_prefix_css", "挂汤" in (thick.get("prefix") or ""), thick.get("prefix"))
         note("thick_line_empty_when_zero", thick.get("empty", "MISSING") == "", thick.get("empty"))
 
+        # 工序反馈（批 AC′，解 P398）：谁最慢就指谁，句子必须跟着设备走
+        step = pg.evaluate(
+            """() => {
+              const el = document.querySelector("[data-stepheld]");
+              return el ? (el.textContent || "").trim() : "";
+            }"""
+        )
+        note("step_held_line", bool(step) and "眼下最吃手的是" in step and "口" in step, step)
+        note("step_held_names_step",
+             any(k in step for k in ("爆香", "吊骨汤", "冲汤下粉")), step)
+
+
         after = pg.evaluate(READ)
         # 汤底分那一格在面板里是分组合成值，不随底变；判据改成「总分没掉、成本涨了五毛」
         # —— 底的汤底分确实进了 scoreRecipe 的 soup，只是 subs 行显示的是八参合成值。

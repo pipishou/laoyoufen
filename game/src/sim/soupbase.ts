@@ -6,6 +6,8 @@
  */
 
 import type { GameState } from "./state";
+import { slowestStation, stationCount } from "./equipment";
+import { STATION_NAMES, type StationId } from "../data/equipment";
 import {
   DEFAULT_SOUP_BASE,
   SOUP_BASES,
@@ -83,6 +85,45 @@ export function soupDeltaWords(state: GameState): string {
   const def = soupBaseOf(state);
   if (def.soupDelta === 0) return "";
   return `汤底 ${def.soupDelta > 0 ? "+" : ""}${def.soupDelta} 来自${def.name}（骨汤之外多加了${def.extra}）`;
+}
+
+/**
+ * 三道工序里眼下最吃手的是哪一步（解 P398：工序要有「哪步卡着」的反馈）。
+ *
+ * 这条不新增任何系统：工序本来就要占灶、占汤锅、占粉篓，谁最慢就是谁卡着 ——
+ * 读的是 `stageMinutes` 里那三段，与出碗速度共用同一个事实。
+ */
+const STEP_BY_STATION: Record<StationId, string> = {
+  wok: "爆香",
+  pot: "吊骨汤",
+  basket: "冲汤下粉",
+};
+
+export interface SoupStepHeld {
+  /** 工序名（爆香 / 吊骨汤 / 冲汤下粉） */
+  step: string;
+  /** 站名（炒锅 / 汤锅 / 粉篓） */
+  station: string;
+  /** 这一段一段要几分钟 */
+  minutes: number;
+  /** 这一站有几口 */
+  count: number;
+}
+
+export function soupStepHeld(state: GameState): SoupStepHeld {
+  const slow = slowestStation(state);
+  return {
+    step: STEP_BY_STATION[slow.station],
+    station: STATION_NAMES[slow.station],
+    minutes: slow.minutes,
+    count: stationCount(state, slow.station),
+  };
+}
+
+/** 一句人话；面板抬头用，不劝买什么 */
+export function soupStepHeldWords(state: GameState): string {
+  const h = soupStepHeld(state);
+  return `眼下最吃手的是${h.step} —— ${h.station} ${h.count} 口，一段 ${h.minutes.toFixed(1)} 分钟`;
 }
 
 /** 三底里还没解锁的那几档，写一句「还差几位客人」 */

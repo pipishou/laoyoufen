@@ -30,6 +30,7 @@ import {
   soupBaseSummary,
   soupBaseViews,
   soupBrothWords,
+  soupStepHeldWords,
   soupDeltaWords,
 } from "../sim/soupbase";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
@@ -280,6 +281,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
               <div class="lmeta" data-broth></div>
               <div class="bases" data-bases></div>
               <div class="lmeta" data-basedelta></div>
+              <div class="lmeta" data-stepheld></div>
               <div class="sechd">${icon("pan")}汤底 · 8 参</div>
               <div class="sliders" data-sliders="soup">${sliderRows("soup", SOUP_DEFS)}</div>
               <div class="sechd">${icon("pan")}主料 · 这碗是什么肉<span class="sechint" data-mainsum></span></div>
@@ -337,6 +339,7 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const baseSumEl = wrap.querySelector("[data-basesum]") as HTMLElement;
   const brothEl = wrap.querySelector("[data-broth]") as HTMLElement;
   const deltaEl = wrap.querySelector("[data-basedelta]") as HTMLElement;
+  const stepHeldEl = wrap.querySelector("[data-stepheld]") as HTMLElement;
   let lastBaseKey = "";
   const mainSumEl = wrap.querySelector("[data-mainsum]") as HTMLElement;
   const menuEl = wrap.querySelector("[data-menu]") as HTMLElement;
@@ -1902,6 +1905,8 @@ function collectionHtml(s: GameState): string {
     const deltaWords = soupDeltaWords(s);
     deltaEl.textContent = deltaWords;
     deltaEl.hidden = deltaWords === "";
+    // 工序反馈（批 AC′，解 P398）：三道里谁最慢就是谁卡着，与出碗速度共用同一个事实
+    stepHeldEl.textContent = soupStepHeldWords(s);
     if (key === lastBaseKey) return;
     lastBaseKey = key;
     basesEl.innerHTML = views

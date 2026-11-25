@@ -1185,3 +1185,15 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 替身四种子与 Z″/AA′ **逐位一致**：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（挂汤只记账，不动钱）。
 - 上游：行 135 的批 AA′ 已部署（tar md5 `876c4dbeab81cd9d6fd16a906a2e0b74`、417 块、`events 83 / playtests 97`、外网四项 200）。
 - 文档 `docs/挂汤P397-2026-11-25.md`。新缺口 P404（只记碗数不记谁说的）/ P405（AI 上下文写死「挂得住」「黏」）/ P406（打烊单已七行，375 宽滑两屏）/ P407（工序仍只在配方页）。
+
+### 行 137 · 2026-11-25 · 哪道工序最吃手：把三道工序接回真账（批 AC′）
+
+- 上批的「骨汤打底 + 三道工序」只是一句抬头，玩家看不出眼下卡在哪一步。这一批把它接到真账：**谁最慢就指谁**，不新增系统、不新增数值。
+- `game/src/sim/soupbase.ts`：新增 `STEP_BY_STATION`（wok→爆香 / pot→吊骨汤 / basket→冲汤下粉）、`SoupStepHeld{step,station,minutes,count}`、`soupStepHeld(state)`（读 `slowestStation` 与 `stationCount`）、`soupStepHeldWords(state)`（「眼下最吃手的是爆香 —— 炒锅 1 口，一段 2.2 分钟」）。
+- `game/src/ui/panels.ts`：配方页汤底段多一行 `[data-stepheld]`，写在 `if (key === lastBaseKey) return;` **之前**（换灶也要重画）。
+- 新建 `game/src/sim/soup-step.test.ts` **4 例**：开局卡爆香（炒锅 1 口）→ 灶加满轮到汤锅 → 汤锅也满轮到粉篓 → 句子有步子名与口数且不劝买（`not.toMatch(/买|升级|加快|更快/)`）。**坑**：把汤锅从 4 档加上去之后最慢会跳到粉篓，别写成「加汤锅后口数变大」。
+- 纪律：只说现状、不劝买（劝买是打烊单底部钩子的活）、不显示价格与升级后效果。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **92 文件 991 用例**；`copy_gate` ok；`eye_gate --slug step` 五视口 723 · 778 · 585 · 1249 · 1510 色、stamp **170**；`ai_gate` ok；`soupbase_probe.py`（4242）**29 / 29**（新增 `step_held_line` / `step_held_names_step`）；`audit_ai` 线上 **29 / 29 remote**；构建 `index-CDic5Frk.js` **1,737,414 B** / `index-Cn-mRMRM.css` **55,214 B**。
+- 替身四种子与 Z″/AA′/AB′ **逐位一致**：均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**。
+- 上游：行 136 的批 AB′ 已部署（tar md5 `4c9c486cd0e3321ab9a565ed0283c727`、417 块、`events 83 / playtests 97`、线上 `index-C5FoonfZ.js` 1,736,981 B / `index-Cn-mRMRM.css` 55,214 B ＝本地）。
+- 文档 `docs/工序反馈AC′-2026-11-25.md`。新缺口 P408（只指最慢那段）/ P409（设备页与配方页各说一半）/ P410（开局靠 `STATION_ORDER` 顺序决定答案）。

@@ -18,6 +18,8 @@
   "thick_line_says_braise": true,
   "thick_line_prefix_css": true,
   "thick_line_empty_when_zero": true,
+  "step_held_line": true,
+  "step_held_names_step": true,
   "soup_capped": true,
   "cost_up_four": true,
   "total_up": true,
