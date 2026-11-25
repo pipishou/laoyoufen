@@ -3,6 +3,7 @@ import { createInitialState } from "./state";
 import { crewFacts } from "./crew";
 import { serveParallel, cookSlots, inNoodlesNum } from "./staff";
 import type { StaffMember } from "./state";
+import { FLOW } from "../data/balance";
 
 /**
  * 批 AR′：灶位只是上限，真正开火的是掌勺的人。
@@ -78,8 +79,101 @@ describe("批 AR′：谁在掌勺", () => {
     ] as const) {
       const s = withStoves(6, stoves);
       for (let i = 0; i < cooks; i += 1) s.staff.roster.push(cook(`c${i}`));
-      const words = crewFacts(s).words;
-      expect(words).not.toMatch(/¥|元|买|推荐|建议|划算/);
+      const f = crewFacts(s);
+      expect(f.words).not.toMatch(/¥|元|买|推荐|建议|划算/);
+    }
+  });
+});
+
+/**
+ * 批 AS′（解 P458）：知道「第 2 口灶没人看」之后，下一句一定是「补得起吗」。
+ *
+ * 三件事分开考：① 人手槽没开的时候先说「还差多少位」，别给价钱；
+ * ② 开了槽就报今天候选里最便宜那个煮粉的日薪 / 介绍费 / 月薪；
+ * ③ 没有缺口（灶都有人看）时一句价钱都不许出 —— 否则等于催人白花钱。
+ */
+describe("批 AS′：补一个人要多少", () => {
+  /** 造一个「今天候选里有煮粉」的店：候选池按天重掷，这里直接摆 */
+  function withCookCandidate(seats: number, stoves: number, wage = 150) {
+    const s = withStoves(seats, stoves);
+    s.staff.candidates = [
+      {
+        uid: "cand-prep",
+        name: "阿珍",
+        role: "prep",
+        wage: 130,
+        fatigue: 0,
+        skill: 2,
+        xp: 0,
+        resting: false,
+      } as StaffMember,
+      {
+        uid: "cand-cook",
+        name: "阿强",
+        role: "cook",
+        wage,
+        fatigue: 0,
+        skill: 3,
+        xp: 0,
+        resting: false,
+      } as StaffMember,
+    ];
+    return s;
+  }
+
+  it("人手槽没开：先说还差多少位累计接待，不给价钱", () => {
+    const s = withCookCandidate(6, 2);
+    s.totalCustomers = 0;
+    const f = crewFacts(s);
+    expect(f.idle).toBe(1);
+    expect(f.cost).toContain("还差 300 位");
+    expect(f.cost).toContain("到 300 位");
+    expect(f.cost).not.toMatch(/¥/);
+  });
+
+  it("人手槽开了：报今天最便宜那个煮粉的日薪、介绍费与月薪", () => {
+    const s = withCookCandidate(6, 2, 150);
+    s.totalCustomers = 300; // 第 1 个人已开
+    const f = crewFacts(s);
+    expect(f.gate).toBeNull();
+    expect(f.hire?.name).toBe("阿强");
+    expect(f.cost).toContain("日薪 ¥150");
+    expect(f.cost).toContain("介绍费 ¥300"); // HIRE_FEE_RATE = 2
+    expect(f.cost).toMatch(/月薪约 ¥\d+/);
+    // 只挑煮粉：备料也在候选里，但它不掌勺
+    expect(f.hire?.name).not.toBe("阿珍");
+  });
+
+  it("灶都有人看：一句价钱都不出（不催人白花钱）", () => {
+    const s = withCookCandidate(6, 1);
+    s.totalCustomers = 300;
+    const f = crewFacts(s);
+    expect(f.idle).toBe(0);
+    expect(f.cost).toBe("");
+    expect(f.why).toBe("");
+  });
+
+  it("有缺口但今天没煮粉来问工：直说，不编一个价钱", () => {
+    const s = withStoves(6, 2);
+    s.staff.candidates = [];
+    s.totalCustomers = 300;
+    const f = crewFacts(s);
+    expect(f.hire).toBeNull();
+    expect(f.cost).toBe("今天没有煮粉的来问工");
+    expect(f.cost).not.toMatch(/¥/);
+  });
+
+  it("厨房真是最紧那一道时，副句说「今天卡的就是灶」", () => {
+    const s = withStoves(4, 2);
+    // 把来客与座位抬走，只留灶：`FLOW.serveMinutes` 压慢到 6 分是唯一能让灶成为闸的办法
+    const before = FLOW.serveMinutes;
+    try {
+      FLOW.serveMinutes = 6;
+      const f = crewFacts(s);
+      expect(f.kitchenBinds).toBe(true);
+      expect(f.why).toContain("今天卡的就是灶");
+    } finally {
+      FLOW.serveMinutes = before;
     }
   });
 });

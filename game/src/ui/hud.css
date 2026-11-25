@@ -2533,6 +2533,9 @@ html.prefs-big #hud .clock{font-size:17px}
 /* 来客天花板（批 AP′，解 P448）：和店铺页设备段那句说的是同一件事 */
 .daywhy [data-demand-line]::before{content:"卖不动 · "}
 .daywhy [data-demand-line]{color:var(--red)}
+/* 批 AS′（解 P460）：灶位没人看 —— 打烊单也要说，前缀与面板那行同义 */
+.daywhy [data-crew-line]::before{content:"灶位 · "}
+.daywhy [data-crew-line]{color:var(--wood)}
 /* 打烊单折行（批 AD′，解 P406）：375 宽一屏只放三条，多的收起来 */
 .daywhy [data-why-fold]{
   margin-top:2px;
@@ -2614,3 +2617,10 @@ html.prefs-big #hud .clock{font-size:17px}
 .pane .todaybox .tdemoted{margin-top:3px;padding-top:3px;border-top:1px dashed var(--sand);font-size:10px;color:var(--wood);line-height:1.55}
 .pane .sechd .tag2.soft{color:var(--wood);opacity:.75;font-weight:400}
 .pane .lbtns button.soft{border-style:dashed;color:var(--wood);background:var(--paper2)}
+
+/* 批 AS′（解 P458）：灶位与掌勺的人 —— 一行事实、一行有没有用、一行多少钱 */
+.pane .crewbox{margin:4px 0 6px;padding:4px 6px;border-left:3px solid var(--sand);background:var(--paper2)}
+.pane .crewbox .lmeta{margin:0}
+.pane .crewbox .crewline{color:var(--ink)}
+.pane .crewbox .crewwhy{color:var(--red)}
+.pane .crewbox .crewcost{color:var(--wood)}

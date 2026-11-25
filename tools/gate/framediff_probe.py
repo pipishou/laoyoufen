@@ -54,6 +54,9 @@ PIN = r"""
   s.flow.customers = [];
   s.dayReport = null;
   s.venue.seats = 6; s.venue.stoves = 2;
+  // 灶 2 口、掌勺 1 个人 → 会多出「灶位」那一块。候选人是开局随机挑的（姓名与日薪都不同），
+  // 不清掉这一块里的价钱句每跑都不一样 —— 清空候选后它固定说「今天没有煮粉的来问工」。
+  s.staff.candidates = [];
   s.gradeLevel = 1;
   s.shopName = "老友粉店";
   window.__laoyou.refresh();

@@ -5,14 +5,24 @@
   "three_stoves_warns": true,
   "three_stoves_says_second": true,
   "three_stoves_counts": true,
-  "three_stoves_no_price": true,
+  "words_no_price": true,
+  "why_says_not_kitchen": true,
+  "gate_says_short": true,
+  "gate_no_price": true,
+  "rich_still_warns": true,
+  "rich_costs_money": true,
+  "rich_says_fee": true,
   "hired_moves_the_line": true,
   "hired_says_third": true,
   "two_stoves_two_cooks_quiet": true,
   "staff_page_same_line": true,
+  "day_line_shows": true,
+  "day_line_says_stoves": true,
+  "day_line_no_price": true,
+  "day_line_quiet_when_fit": true,
   "save_version": true,
   "console_clean": true
  },
- "ok": 12,
- "total": 12
+ "ok": 22,
+ "total": 22
 }

@@ -1409,3 +1409,19 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **替身四种子与 AQ′ 逐位相同**：¥130,961 / ¥117,013 / ¥134,230 / ¥135,802 → 均值 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**（本批只加一句界面事实，`cookSlots` / `serveParallel` / `serveMinutes` / 座位与来客公式一格没动）。
 - **构建** `index-Fug0BXP4.js` 1,744,249 B（gzip 524.56）/ `index-CyXxqRnG.css` 56,317 B；文档 `docs/灶要有人掌勺AR′-2026-11-26.md`（九节）。
 - **新缺口**：**P458**（`crewFacts` 不给工钱与 ROI，玩家知道卡在哪仍不知道贵不贵）/ **P459**（`kitchen-never-binds.test.ts` 只钉现状，红了不知道该改模型还是改配平）/ **P460**（这句只在店面页与店员页，打烊单与钩子副行没有，与 P448 之前同型）。
+
+### 行 155 · 2026-11-26 · 批 AS′：灶位缺口要多少工钱（P458 / P460）
+
+- 先量一遍（临时脚本已删，`totalCustomers = 2600` / `cash = 60000` / 六天取后三天 / 种子 1-2-3）：4 座无人 **77.0 碗 · 走 215.1**，4 座雇一个煮粉 **76.6 · 220.0**；6 座无人 **111.2 · 294.1**，6 座雇人 **111.8 · 286.0**；8 座无人 **111.8 · 189.7**，8 座雇人 **112.1 · 194.1**；灶 1 口与 2 口每一行完全相同。**雇人最多多卖 0.6 碗，加灶一碗不多** —— 最紧的闸一直是座位或来客，所以本批一个数值都不改。
+- `game/src/sim/crew.ts` 从「几个人掌勺」扩成五段事实：`words`（缺口主句）、`why`（今天卡的是不是灶）、`cost`（补一个人多少工钱 / 还差多少位累计接待 / 今天没人来）、`hire`（最便宜那个煮粉的姓名·日薪·介绍费·月薪）、`brief`（打烊单短句）。文件头写三条纪律：只说事实不劝买不算 ROI、主句一个价钱都不许出现、只报最便宜那个不列整张表。
+- 踩坑：`cost` 第一版无条件说「人手槽还差 N 位累计接待」，`crew.test.ts` 首跑红（`expected '人手槽还差 500 位…' to be '今天没有煮粉的来问工'`）—— **槽有空位却说还差 500 位，会把能立刻雇的人挡住**。改成 `const full = roster.length >= staffSlots(totalCustomers); const need = full ? nextStaffNeed(...) : null;`。
+- 界面：店面页与店员页那一块改成 `.crewbox`（主句 + 副句 + 价钱句三层），打烊单 `.daywhy` 加 `<span data-crew-line>`（前缀「灶位 · 」）并进 `foldWhyLines()` 的折叠清单。
+- **第十六次「键漏字段」**：店员页缓存键原来只有 roster 与 `cash/100`，不含灶位与候选日薪 → 买灶 / 换候选后 DOM 不重画，停在旧话。已补 `venue.stoves` + `totalCustomers` + 候选 `uid:wage`；店铺页缓存键也把 `crewFacts(s).cost` 拼进去。
+- 测试：`crew.test.ts` 5 → **10 例**；全量 `vitest --no-file-parallelism` **105 文件 1063 用例全过**；`tsc` 0。
+- 探针 `tools/gate/crew_probe.py` 12 → **22 / 22 true**（新增 `words_no_price` / `why_says_not_kitchen` / `gate_says_short` / `gate_no_price` / `rich_still_warns` / `rich_costs_money` / `rich_says_fee` / `day_line_shows` / `day_line_says_stoves` / `day_line_no_price` / `day_line_quiet_when_fit`）。
+- **帧差门这次逮到一件真事**：加了「灶位」这一块后 1440×900 变 451 px、768 变 284 px、375 变 66 px —— 不是渲染不稳，是**候选人是开局随机挑的**（姓名与日薪每局不同），价钱句跟着变。修法：`PIN` 里 `s.staff.candidates = []`，价钱句固定成「今天没有煮粉的来问工」。与批 AL′「随机店名出现在 toast 上」同一类：随机内容混进了被当成稳定的画面。
+- 五门：`copy_gate` ok；`eye_gate --slug crew2` 五视口 **722 · 778 · 587 · 1245 · 1512** 色、stamp **179**；`ai_gate` 四段 `"ok": true`（跑完已重建）；`framediff_probe` 重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps 51/59.7、堆 0.0、一句话接口 7 次）；`debug_exit_gate` **4 / 4**（只挂 `__laoyou`，1,745,729 B）。
+- 替身四种子 **¥129,501 · 221.2 碗 · 37% · ¥1,004,186**，与 AR′ **逐位相同**（只加说法，`cookSlots` / `serveParallel` / `serveMinutes` / 座位与来客公式一格没动）。
+- 构建 `index--rquaEPU.js` 1,745,729 B / `index-IvOrrQh0.css` 56,677 B；文档 `docs/灶位缺口要多少工钱AS′-2026-11-26.md`。
+- 新缺口：**P461**（只报最便宜的煮粉，不说技能等级差）/ **P462**（打烊单短句与店面页全句同源但不同字，与 P451 同型）/ **P463**（介绍费是一次性还是每月收，看不出）/ **P464**（探针 `rich_*` 三条允许候选池为空也算过）。
+

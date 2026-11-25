@@ -15,6 +15,7 @@ import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
 import { alignMarks } from "../sim/align";
 import { DEMAND_DAY } from "../data/demand";
+import { crewFacts } from "../sim/crew";
 import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
 import { lossWhyOf, menuLineOf } from "../sim/advice";
@@ -272,7 +273,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
-      <div class="daywhy"><span data-act-line></span><span data-demand-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span><span data-why-fold></span></div>
+      <div class="daywhy"><span data-act-line></span><span data-demand-line></span><span data-crew-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span><span data-why-fold></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -299,6 +300,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const thickLine = dayWrap.querySelector("[data-thick-line]") as HTMLElement;
   /** 批 AP′（P448）：来客天花板是闸的那天，打烊单也得说同一句话 */
   const demandLine = dayWrap.querySelector("[data-demand-line]") as HTMLElement;
+  /** 批 AS′（P460）：灶位有人看没有，打烊单也要有（店面页 / 店员页 / 打烊单三处同一句） */
+  const crewDayLine = dayWrap.querySelector("[data-crew-line]") as HTMLElement;
   const actLineEl = dayWrap.querySelector("[data-act-line]") as HTMLElement;
   /** 打烊单折行（批 AD′，解 P406）：窄屏上七行太长，默认只留前三条 */
   // 设置对象要先声明在这儿：下面折行要不要展开，读的就是它（别再踩 `let` 的 TDZ，见批 AG′）
@@ -318,7 +321,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
    * 为什么是三条 —— 375 宽一屏正好放下三条十一号字，再多就要滑两屏（P406）。
    */
   function foldWhyLines(): void {
-    const lines = [actLineEl, demandLine, lossLine, menuLine, investLine, thickLine].filter(
+    const lines = [actLineEl, demandLine, crewDayLine, lossLine, menuLine, investLine, thickLine].filter(
       (el) => (el.textContent ?? "").trim() !== "",
     );
     // 三条是 375 宽量出来的；再窄一档（360 以下）屏上只放得下两条（P411）
@@ -725,6 +728,8 @@ const render = (s: GameState, score: RecipeScore): void => {
         plan.key === "capacity:demand"
           ? DEMAND_DAY
           : "";
+      // 灶位与掌勺的人（批 AS′，解 P460）：只在真有人手缺口时说 —— 没缺口时这行是废话
+      crewDayLine.textContent = crewFacts(s).brief;
       // 前三十天十二幕（批 U′）：今天这一幕念一遍。CSS 的 ::before 已经写了「功课 · 」
       actLineEl.textContent = actTodayLine(s);
       foldWhyLines();
