@@ -158,6 +158,14 @@ export function capacityGain(state: GameState): {
   basket: number;
   bench: number;
   seat: (n: number) => number;
+  /**
+   * 今天是不是「抬哪一件都卖不动」（批 AO′，解 P446）。
+   *
+   * 来客天花板压下来的时候，出碗与案台的增益全是 0（三道闸还富余，四道闸里
+   * `demand` 最小）。面板若还写「哪一段最慢就添哪一段」，玩家会照买，买完一碗不多。
+   * 这里只报一个事实，不产生数值；界面拿它换说法。
+   */
+  demandBlocked: boolean;
 } {
   const now = capacityOf(state);
   /**
@@ -211,7 +219,14 @@ export function capacityGain(state: GameState): {
       true,
     ).total - base;
 
-  return { stove, pot, basket, bench, seat };}
+  /**
+   * 抬哪一件都卖不动：四道闸里 `demand` 最小，而三道闸（灶/座位/总闸）还富余。
+   * 这不是「厨房不卡」，是「卡不在店里」—— 街上一天就进来这么多人。
+   * 严格的 `gateBase > demand` 才置真：如果三道闸恰好等于来客量，抬闸还是能多卖。
+   */
+  const demandBlocked = now.tight === "demand" && gateBase > now.demand + 0.5;
+
+  return { stove, pot, basket, bench, seat, demandBlocked };}
 
 /** 一句话说清谁在卡（打烊单与面板用） */
 export function tightWords(state: GameState): string {

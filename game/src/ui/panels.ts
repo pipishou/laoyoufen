@@ -15,7 +15,7 @@ import { canEnter, contestScore, maxTierOf } from "../sim/contest";
 import { arenaSummary, arenaViews } from "../sim/arena";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
 import { appetiteWords, districtOptions, homeAppetiteOf, homeEnergyOf } from "../sim/district";
-import { tightWords } from "../sim/bottleneck";
+import { capacityGain, tightWords } from "../sim/bottleneck";
 import { hasGear } from "../sim/gear";
 import { GEARS } from "../data/gear";
 import { checkGrade } from "../sim/grade";
@@ -721,6 +721,17 @@ let lastGradeKey = "";
     // 批 AF′（解 P409）：这一页与配方页现在读同一条句子，不再各说一半
     const stageLine = soupStagesWords(s);
     /**
+     * 批 AO′（解 P446）：来客天花板压下来的时候，厨房再快也卖不动。
+     *
+     * 旧文案一律写「哪一段最慢就添哪一段」——玩家在有 70 碗就满街的日子里照买灶，
+     * 买完一碗不多。这里只换说法，不动任何数值：增益为 0 时说清「卡不在店里」，
+     * 并指出真正能抬来客量的几处（街面、同行、口碑、换区、口味）。
+     */
+    const gainBlocked = capacityGain(s).demandBlocked;
+    const equipHint = gainBlocked
+      ? `<span data-demand-blocked>今天这三段再添也卖不动 —— 灶、座位、备料都还有富余，卡在街上进来的人就这么多。想多卖，得让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区。</span>`
+      : `哪一段最慢就添哪一段，添别的会被最慢那段吃掉。`;
+    /**
      * 批 F′（试玩 11-22-2109 第 5 条）：这一页只留一条主提示。
      * 主句照钩子，副句由 `sim/today.ts` 算回本与位置 —— 开罗把「这件东西在哪一段」
      * 写进帮助（`Construction (Other)`），我们没有帮助页，就把它写在这一行里。
@@ -1352,7 +1363,7 @@ let lastGradeKey = "";
             : `<span class="tag2 soft" data-slow-soft>参考：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分最慢</span>`
         }</div>
         <div class="lmeta tightline" data-tight>${tightLine}</div>
-        <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
+        <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。${equipHint} 钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
       <div class="sec">
@@ -2179,7 +2190,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}:${m.xp ?? 0}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
       html = shopHtml(s);
     } else if (current === "perk") {
       key = `${Object.keys(s.perks ?? {}).sort().join(",")}|${s.gradeLevel}`;
