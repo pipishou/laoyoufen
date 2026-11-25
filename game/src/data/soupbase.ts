@@ -111,11 +111,11 @@ export const SOUP_BASES: readonly SoupBaseDef[] = [
     name: "番茄底",
     extra: "番茄",
     look: "骨汤照吊，番茄先炒到出沙再并进汤里，酸笋最后压一勺",
-    costDelta: 0.5,
+    costDelta: 0.4,
     soupDelta: 3,
     needCustomers: 120,
     line: "酸里带一点点甜，天热没胃口的时候，这碗才开得了口。",
-    why: "南宁有些老店在骨汤之外再加番茄：多一道番茄要钱也要火候，换来的是开胃 —— 所以贵五毛、汤底分高三点。",
+    why: "南宁有些老店在骨汤之外再加番茄：多一道番茄要钱也要火候，换来的是开胃 —— 所以贵四毛、汤底分高三点。",
     kairo: "soupaffinity.txt 第 8–14 行（番茄与酸笋同选的组合）",
     source: [
       {
@@ -135,11 +135,11 @@ export const SOUP_BASES: readonly SoupBaseDef[] = [
     name: "猪脚底",
     extra: "猪脚卤水",
     look: "骨汤里再吊一锅猪脚卤水，汤面挂一层胶质，爆香照旧",
-    costDelta: 1.2,
+    costDelta: 0.7,
     soupDelta: 5,
     needCustomers: 400,
     line: "汤稠一点，挂在粉上不散，吃完嘴皮子是黏的 —— 这才叫浓。",
-    why: "有的店拿骨头汤加猪脚卤水吊底，胶质让汤「厚」；代价是猪脚钱比骨头贵得多，所以一碗多一块二、汤底分高五点。",
+    why: "有的店拿骨头汤加猪脚卤水吊底，胶质让汤「厚」；代价是猪脚钱比骨头贵，所以一碗多七毛、汤底分高五点。",
     kairo: "soupaffinity.txt 第 15–21 行（骨 + 胶质同选的组合）",
     source: [
       {

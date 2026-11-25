@@ -15,7 +15,7 @@
   "delta_says_where": true,
   "dish_card_badge": true,
   "soup_capped": true,
-  "cost_up_half": true,
+  "cost_up_four": true,
   "total_up": true,
   "repeat_refused": true,
   "locked_when_short": true,

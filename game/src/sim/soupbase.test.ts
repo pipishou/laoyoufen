@@ -52,7 +52,7 @@ describe("汤底三底（批 Z′）", () => {
     }
   });
 
-  it("换番茄底：汤底分 +3、料钱贵五毛", () => {
+  it("换番茄底：汤底分 +3、料钱贵四毛", () => {
     const s = fresh();
     s.totalCustomers = 500;
     const before = scoreDish(s.menu[0], s);
@@ -110,7 +110,7 @@ describe("汤底三底（批 Z′）", () => {
     const words = soupBaseSummary(s);
     expect(words).toContain("骨头汤 + 猪脚卤水");
     expect(words).toContain("汤底 +5");
-    expect(words).toContain("料钱 +¥1.2");
+    expect(words).toContain("料钱 +¥0.7");
   });
 
   it("骨汤是共同底，三道工序固定不随选哪一底变（批 Z″）", () => {

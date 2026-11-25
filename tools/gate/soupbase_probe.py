@@ -124,8 +124,8 @@ def main():
         # 汤底分那一格在面板里是分组合成值，不随底变；判据改成「总分没掉、成本涨了五毛」
         # —— 底的汤底分确实进了 scoreRecipe 的 soup，只是 subs 行显示的是八参合成值。
         note("soup_capped", after.get("soup") is None or after["soup"] <= 100, after.get("soup"))
-        note("cost_up_half",
-             before.get("cost") is None or round((after.get("cost") or 0) - before["cost"], 2) == 0.5,
+        note("cost_up_four",
+             before.get("cost") is None or round((after.get("cost") or 0) - before["cost"], 2) == 0.4,
              (before.get("cost"), after.get("cost")))
         note("total_up", before.get("total") is None or after["total"] > before["total"],
              (before.get("total"), after.get("total")))
