@@ -13,6 +13,7 @@ import { hookVoiceContext, hookVoiceKeyFor, nextHook } from "../sim/hook";
 import { tierBudgetPct } from "../sim/guest-tier";
 import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
+import { alignMarks } from "../sim/align";
 import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
 import { lossWhyOf, menuLineOf } from "../sim/advice";
@@ -774,10 +775,14 @@ const render = (s: GameState, score: RecipeScore): void => {
     // 够格评段位时，这一枚直接写成「可评定」：评段位的按钮在店铺页最上面，
     // 但玩家不会为了找一个按钮把整页滚一遍（试玩 11-20：三个人都被钩子指着去评，
     // 都说找不到入口 —— 那个按钮其实在加购段下面，滚两屏才到）。
+    // 批 AK′（解 P430）：够格不等于「今天该做」。只有今天这一件就是评定时才喊；
+    // 否则退回比赛日历 —— 试玩 1619 第 15 天就是这颗小牌和钩子各说一件。
     const gc = checkGrade(s);
-    const gradeChip = gc.ready
-      ? `<span class="chip grade hot" title="够格了：去「店铺」页最上面交费评定">${icon("flag")}可评定「${gc.next?.title ?? ""}」</span>`
-      : `<span class="chip grade">${icon("flag")}${contest}</span>`;
+    const marks = alignMarks(s);
+    const gradeChip =
+      gc.ready && marks.hudGradeChip
+        ? `<span class="chip grade hot" title="够格了：去「店铺」页最上面交费评定">${icon("flag")}可评定「${gc.next?.title ?? ""}」</span>`
+        : `<span class="chip grade">${icon("flag")}${contest}</span>`;
     // 五枚胶囊，各带一枚像素图标：数字靠 tabular-nums 对齐，扫一眼就能读出今天的产能与压力
     el.caprow.innerHTML = [
       `<span class="chip people">${icon("people")}座位 ${s.venue.seats} · ${serveNow.toFixed(1)} 分/碗</span>`,

@@ -58,11 +58,11 @@ import { FAMILY_NAMES, type SkillFamily } from "../data/skill";
 import { skillEffectWords, skillLine, skillSummary, skillViews } from "../sim/skill";
 import { qualitySummary, qualityViews, qualityWords } from "../sim/quality";
 import { nextRequest, streetMap, streetSummary as blockSummary, streetViews } from "../sim/streets";
-import { GEAR_EFFICIENCY_IDS, gearEfficiencyLeft, gearSummary, gearViews } from "../sim/gear";
+import { GEAR_EFFICIENCY_IDS, gearSummary, gearViews } from "../sim/gear";
 import { comboSummary, comboViews } from "../sim/combo";
 import { GEAR_BY_ID, GEAR_SPOT_LABEL } from "../data/gear";
 import { shopMap, shopMapSummary } from "../sim/shopmap";
-import { nextHook } from "../sim/hook";
+import { alignMarks } from "../sim/align";
 import { favorSummary, favorViews } from "../sim/favor";
 import { TROPHY_GROUP_LABEL, TROPHY_GROUP_ORDER } from "../data/trophies";
 import { DIMS, TIER_WORDS, tierWord } from "../data/tier";
@@ -731,12 +731,16 @@ let lastGradeKey = "";
       <span class="tag2">换名字不改任何数，只是街坊改口</span>
     </div>`;
 
+    // 批 AK′（解 P430）：这一页上所有会亮的东西都来问这一个裁定 ——
+    // 今天只动一件，其余的写到 todayBox 底部那行灰字里，不许再亮。
+    const marks = alignMarks(s);
     const today = todayLine(s);
     const todayBox = today
       ? `<div class="todaybox" data-todaybox>
         <div class="tmain" data-todaybox-main>${today.main}</div>
         <div class="tvoice" data-todaybox-voice></div>
         ${today.detail ? `<div class="tdetail" data-todaybox-detail>${today.detail}</div>` : ""}
+        ${marks.demoted.length > 0 ? `<div class="tdemoted" data-demoted>今天先不动：${marks.demoted.join("；")}</div>` : ""}
       </div>`
       : "";
 
@@ -770,13 +774,10 @@ let lastGradeKey = "";
    */
   // 红标与打烊单的钩子必须是**同一句**（试玩 11-24 第 2 / 5 条：买完矮凳后红标移到竹躺椅，
   // 打烊钩子却改去评「摆摊仔」，两处各说一件）。旧版这里多一道 `lostRateOf >= 阈值` 的闸，
-  // 而钩子那边用的是打烊样本的阈值 —— 两个口径一错开就分叉。现在两边都只问 `nextHook`。
-  const hotPlan = nextHook(s);
-  const hotSeat = hotPlan?.kind === "capacity" && hotPlan.key === "capacity:seat" ? " hot" : "";
-  const hotEquip =
-    hotPlan?.kind === "capacity" && (hotPlan.key === "capacity:stove" || hotPlan.key === "capacity:cap")
-      ? " hot"
-      : "";
+  // 而钩子那边用的是打烊样本的阈值 —— 两个口径一错开就分叉。现在两边都只问同一个裁定。
+  // 批 AK′：裁定搬到 `sim/align.ts`，这一页只读结果，不再自己算第二遍。
+  const hotSeat = marks.seatHot ? " hot" : "";
+  const hotEquip = marks.equipHot ? " hot" : "";
 
 
     // 扩建：四档阶梯（data/expansion.ts + 开罗 store_data 的容量阶梯）。
@@ -861,7 +862,7 @@ let lastGradeKey = "";
                  <div class="lname">评「${gc.next.title}」<span class="tag2">评定费 ${money(gc.next.feeYuan)}</span></div>
                  <div class="lmeta">${gc.next.note}｜门槛 ${gc.next.minCustomers.toLocaleString("zh-CN")} 位客人（已接待 ${s.totalCustomers.toLocaleString("zh-CN")}）｜通过奖励 ${money(gc.next.rewardYuan)}</div>
                  <div class="lmeta">评委：「${gc.next.remark}」</div>
-                 <div class="lbtns"><button type="button" data-act="grade" ${gc.ready ? "" : "disabled"}>${gc.ready ? "交费评定" : gc.shortCustomers > 0 ? `还差 ${gc.shortCustomers.toLocaleString("zh-CN")} 位` : `还差 ¥${Math.ceil(gc.shortCash).toLocaleString("zh-CN")}`}</button></div>
+                 <div class="lbtns"><button type="button" data-act="grade" class="${marks.gradeHot ? "" : "soft"}" title="${marks.gradeHot ? "" : "够格了，但今天这一件不是评定 —— 想先评也行"}" ${gc.ready ? "" : "disabled"}>${gc.ready ? "交费评定" : gc.shortCustomers > 0 ? `还差 ${gc.shortCustomers.toLocaleString("zh-CN")} 位` : `还差 ¥${Math.ceil(gc.shortCash).toLocaleString("zh-CN")}`}</button></div>
                </div>`
             : `<div class="lrow"><div class="lname">已经是最高段位</div><div class="lmeta">非遗传承人 —— 账本翻到最后一页。</div></div>`
         }
@@ -1051,11 +1052,8 @@ let lastGradeKey = "";
       )
       .join("");
     const gv = gearViews(s);
-    /** 试玩二轮 F7：产能吃紧、而能提产能的家当还没买齐 → 家当这一段也标红 */
-    const gearHot =
-      (hotPlan?.kind === "gear" && gearEfficiencyLeft(s).length > 0) ||
-      // 卡座位时钩子点的是塑料矮凳/竹躺椅，那两件摆在「店里 · 家当」这一段
-      (hotPlan?.kind === "capacity" && hotPlan.key === "capacity:seat");
+    /** 试玩二轮 F7 + 批 AK′：家当这一段只在「今天这一件就在家当里」时标红 */
+    const gearHot = marks.gearHot;
     /**
      * 袋装老友粉（A7）：一次买断的包装机 + 每天按口碑出的货。
      * 没买时只有一行按钮；买了显示「每天出 N 袋 · 约 ¥M/天」和风味还原度 ——
@@ -1348,7 +1346,11 @@ let lastGradeKey = "";
         ${expRow}
       </div>
       <div class="sec">
-        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗<span class="tag2">最慢：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分</span></div>
+        <div class="sechd${hotEquip}">${icon("crate")}设备 · 现在出碗 ${serveNow.toFixed(1)} 分/碗${
+          marks.slowHot
+            ? `<span class="tag2 hot">最慢：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分</span>`
+            : `<span class="tag2 soft" data-slow-soft>参考：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分最慢</span>`
+        }</div>
         <div class="lmeta tightline" data-tight>${tightLine}</div>
         <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。哪一段最慢就添哪一段，添别的会被最慢那段吃掉。钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
@@ -2177,7 +2179,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}:${m.xp ?? 0}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
       html = shopHtml(s);
     } else if (current === "perk") {
       key = `${Object.keys(s.perks ?? {}).sort().join(",")}|${s.gradeLevel}`;

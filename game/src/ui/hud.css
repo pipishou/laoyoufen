@@ -2606,3 +2606,8 @@ html.prefs-big #hud .clock{font-size:17px}
   background:var(--wood);
   border:2px solid var(--sand);
 }
+
+/* 批 AK′（解 P430）：今天只亮一处。其余三处退成灰字 —— 能点，但不喊。 */
+.pane .todaybox .tdemoted{margin-top:3px;padding-top:3px;border-top:1px dashed var(--sand);font-size:10px;color:var(--wood);line-height:1.55}
+.pane .sechd .tag2.soft{color:var(--wood);opacity:.75;font-weight:400}
+.pane .lbtns button.soft{border-style:dashed;color:var(--wood);background:var(--paper2)}

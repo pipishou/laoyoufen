@@ -1288,3 +1288,16 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **结论（不装插件，抄契约）**：产物形态用不上（单 `game.js` + `game.json`、微信导出、GH Pages）；值得借四条 —— ① 长跑试玩门（≥5 分钟、≥20 个游戏日、fps 下限、error 白名单、4xx 必须全在 `/laoyou-api/`）② 报告形状（`phases` / `fps` 补进 `run.json`）③ AI 美术「候选 → 编号挑 → 一键替换 → 可回退 → 事先报账」用于招牌字与包装贴纸 ④ 微信导出清单（若哪天要做扫码玩）。**不照搬**：workspace/project 结构、单 `game.js` 双模板、`rules` 试玩覆盖、publish 到 GH Pages。
 - **交付**：`docs/dsh-game-studio评估-2026-11-25.md`（九节）；`tools/gate/autoplay_probe.py`；证据 `game/data/evidence/autoplay/{run.json,01-title.png,02-mid.png,03-end.png}`。
 - **新缺口**：P429（`fetchLine` 失败无冷却，服务端挂时每句照发）。
+### 行 146 · 2026-11-25 · 批 AK′：同一天只有一处能喊「现在做这个」
+
+- **来源**：1619 包三局两周试玩报告（`docs/试玩-1619包三局两周-2026-11-25.md`）逼出来的 P430 —— 同一天里「打烊单钩子 / 店铺页红标 / 设备区最慢 / 交费评定按钮 + HUD 小牌」各说一件事，玩家跟红按钮就被带走。
+- **一个裁定**：新建 `game/src/sim/align.ts`（189 行，只读既有事实、不产生任何数值）—— `FocusSec` 九类（seat/equip/expand/gear/grade/price/street/arena/none）、`todayFocus(state)` 读 `nextHook` + `todayLine` 得出「今天那一件」、`alignMarks(state)` 给出 `seatHot/equipHot/expandHot/gearHot/gradeHot`（**至多一个 true**）+ `slowHot` + `hudGradeChip` + `demoted[]`；`focusWords` / `demotedWords` 出人话。
+- **界面**：`game/src/ui/panels.ts` 的红标全部改读 `marks`（删掉面板里第二次 `nextHook` 询问与只为旧红标存在的 `gearEfficiencyLeft` import）；`todayBox` 底部加 `[data-demoted]`「今天先不动：…」；设备段「最慢」只在今天就是那一段时是红字，否则 `[data-slow-soft]` 灰字写「参考：X 分最慢」；「交费评定」在不是今天那一件时加 `.soft`（虚线、仍可点、`title` 说明够格了）；扩建「下一步」行按 `expandHot` 加 `hotrow`。`game/src/ui/hud.ts` 的「可评定」小牌只在 `marks.hudGradeChip` 时出现，否则退回比赛日历。`game/src/ui/hud.css` 补 `.tdemoted` / `.tag2.soft` / `button.soft` 三支。
+- **第十四次「键漏字段」**：店铺页渲染缓存键里没有「今天这一件」→ 判定变了 DOM 不重画（探针 `grade_hot_when_focus` 首跑红）。键尾补 `alignMarks` 签名 `kind:sec:gearId:equipId:gradeHot:slowHot:demoted.length`。
+- **单测**：新建 `game/src/sim/align.test.ts` 6 例（开局只亮家当 / 队列主因只亮产能且家当不跟 / 够格但有人走时评定降级且 HUD 不喊 / 够格没人走时评定就是今天那一件 / `slowHot` 只在该段 / 任何状态 `hotCount ≤ 1` 且灰字不带「N 元」）。
+- **探针**：新建 `tools/gate/align_probe.py`（preview 4245）**15 / 15 true** —— 三态注入（排队流失 / 够格且有人走 / 够格没人走），判「段头红标 ≤ 1」（钩子点到设备时段头红 + 该行 `hotrow` 计两个但指同一件）、最慢降级、评定虚化但可点、HUD 小牌跟随、灰字含「今天先不动」与「够格了」、存档 37、控制台干净。
+- **验收**：`tsc` 0；`vitest --no-file-parallelism` **96 文件 1011 用例**；`copy_gate` ok；`eye_gate --slug align` 五视口 **727 · 778 · 585 · 1239 · 1508** 色、stamp **175**；`ai_gate` `"ok": true`；构建 `index-zLl9tKMj.js` **1,741,336 B** / `index-BmPVWE_V.css` **56,215 B**。
+- **四种子必须不动**：¥138,602 / ¥121,759 / ¥140,559 / ¥136,879 → 均值 **¥134,450 · 227.9 碗 · 37.3% · 期末 ¥1,028,840**，与 AJ′ **逐位一致**。
+- **这一批没动 P70**：开局 `venue.seats = 4` 时 `capacityGain().seat(1)` 是 0，钩子永远先点设备；而试玩第 4 天纯灶对照（流失 50% vs 加凳 33.7–36.8%）说明先点座位才有效。改它是改「替身买什么」，四种子必变，要单开一批。
+- **新缺口**：P431（灰字点不动、不能跳段）/ P432（`shopHtml` 与缓存键各调一次 `alignMarks`，一份裁定算两遍）/ P433（评定降级时 HUD 退回比赛日历，玩家看不到「其实够格了」）/ P434（`focusWords` 只有单测与探针在用，界面没接）/ P435（`slowHot`/`gradeHot` 只是被动跟随，没有自己的「为什么不是现在」）。
+- **文案（同一天还做了一个非批次交付）**：`docs/今天只亮一处AK′-2026-11-25.md`；`docs/ACCEPTANCE.md` 的一、三、四、五节已改到这一批之后。
