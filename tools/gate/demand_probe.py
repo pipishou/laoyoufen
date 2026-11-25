@@ -145,6 +145,13 @@ with sync_playwright() as p:
     note("day_line_no_price", "¥" not in day["line"], day["line"])
     note("day_line_matches_panel", day["panel"] != "" and "街上" in day["panel"], day["panel"])
     note("day_hook_says_demand", "街" in day["hook"], day["hook"])
+    # 批 AQ′（解 P451）：两处都从 `data/demand.ts` 的同一份拼出来 —— 四条路必须两边都在
+    roads = ("修街面", "换个人多的区")
+    note(
+        "day_and_panel_share_roads",
+        all(r in day["line"] for r in roads) and all(r in day["panel"] for r in roads),
+        "%s | %s" % (day["line"], day["panel"]),
+    )
     page.screenshot(path=os.path.join(OUT, "03-demand-day.png"))
 
     # ⑤ 四座同样流失：打烊单不许出这句（座位是真闸，添凳有用）

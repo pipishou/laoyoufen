@@ -4,6 +4,7 @@ import { capacityOf, tightWords } from "./bottleneck";
 import { scoreOf } from "./dish";
 import { GEARS } from "../data/gear";
 import { EQUIPMENT, STATION_NAMES, STATION_ORDER, STATION_EQUIP } from "../data/equipment";
+import { DEMAND_DETAIL } from "../data/demand";
 
 /**
  * 「今天这一句」—— 把钩子那一行补成一句能照着做的话（批 F′）。
@@ -121,7 +122,7 @@ export function todayLine(state: GameState): TodayLine | null {
   if (plan.key === "capacity:demand") {
     return {
       main: plan.text,
-      detail: `店里再抬也卖不出去 · 想多卖，得让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区`,
+      detail: DEMAND_DETAIL,
       key: plan.key,
       blocked: tightWords(state),
     };

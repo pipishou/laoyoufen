@@ -34,6 +34,7 @@ import { equipLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
 import { capacityGain, capacityOf, lossSplitOf } from "./bottleneck";
 import { menuViews } from "./menu";
+import { DEMAND_HEAD } from "../data/demand";
 import { dishNameOfItem } from "./dish";
 
 /** 元 → 「¥4,000」（sim 层不 import UI 的格式化函数，避免依赖方向倒过来） */
@@ -335,7 +336,7 @@ export function nextHook(state: GameState): HookPlan {
      */
     if (capacityGain(state).demandBlocked) {
       return {
-        text: "街上就这么多人 —— 店里再添什么也卖不动",
+        text: DEMAND_HEAD,
         why: sample.lost > 0 ? `${dayWord}走了 ${sample.lost} 位` : "",
         kind: "capacity",
         key: "capacity:demand",

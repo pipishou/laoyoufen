@@ -26,6 +26,7 @@ import { checkGrade } from "./grade";
 import { slowestStation } from "./equipment";
 import { capacityGain, tightWords } from "./bottleneck";
 import { gearViews } from "./gear";
+import { DEMAND_SHORT } from "../data/demand";
 import { expansionLevel, expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
 import { STATION_EQUIP, type StationId } from "../data/equipment";
 
@@ -169,7 +170,7 @@ export function alignMarks(state: GameState): AlignMarks {
   // 批 AP′（P448）：来客封顶时，别的段一律降级成「今天别动」——
   // 这一句和打烊单、店铺页设备段说的是同一件事，别让第三处再喊「厨房还能抬」。
   if (focus.sec !== "demand" && capacityGain(state).demandBlocked) {
-    demoted.push(`店里再添也卖不动（${tightWords(state)}），今天先不添`);
+    demoted.push(`${DEMAND_SHORT}（${tightWords(state)}），今天先不添`);
   }
 
   const ex = nextExpansion(state);

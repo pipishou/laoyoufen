@@ -14,6 +14,7 @@ import { tierBudgetPct } from "../sim/guest-tier";
 import { tierById } from "../data/guest-tier";
 import { checkGrade } from "../sim/grade";
 import { alignMarks } from "../sim/align";
+import { DEMAND_DAY } from "../data/demand";
 import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
 import { lossWhyOf, menuLineOf } from "../sim/advice";
@@ -722,7 +723,7 @@ const render = (s: GameState, score: RecipeScore): void => {
       // 来客天花板（批 AP′，解 P448）：店里三段都还够用，就别在打烊单里再劝人添设备
       demandLine.textContent =
         plan.key === "capacity:demand"
-          ? "店里这三段再添也卖不动 —— 卡在街上进来的人，得去把街面、名声、同行那几件事办一办"
+          ? DEMAND_DAY
           : "";
       // 前三十天十二幕（批 U′）：今天这一幕念一遍。CSS 的 ::before 已经写了「功课 · 」
       actLineEl.textContent = actTodayLine(s);

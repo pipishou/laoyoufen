@@ -18,6 +18,7 @@ import { appetiteWords, districtOptions, homeAppetiteOf, homeEnergyOf } from "..
 import { capacityGain, tightWords } from "../sim/bottleneck";
 import { hasGear } from "../sim/gear";
 import { GEARS } from "../data/gear";
+import { DEMAND_PANEL } from "../data/demand";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
 import { EXPANSIONS, EXPANSION_ORDER } from "../data/expansion";
@@ -729,7 +730,7 @@ let lastGradeKey = "";
      */
     const gainBlocked = capacityGain(s).demandBlocked;
     const equipHint = gainBlocked
-      ? `<span data-demand-blocked>今天这三段再添也卖不动 —— 灶、座位、备料都还有富余，卡在街上进来的人就这么多。想多卖，得让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区。</span>`
+      ? `<span data-demand-blocked>${DEMAND_PANEL}</span>`
       : `哪一段最慢就添哪一段，添别的会被最慢那段吃掉。`;
     /**
      * 批 F′（试玩 11-22-2109 第 5 条）：这一页只留一条主提示。

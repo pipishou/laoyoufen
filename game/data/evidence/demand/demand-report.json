@@ -1,7 +1,7 @@
 {
   "url": "http://localhost:4246/",
-  "passed": 19,
-  "total": 19,
+  "passed": 20,
+  "total": 20,
   "checks": {
     "start_no_block": {
       "ok": true,
@@ -53,11 +53,11 @@
     },
     "day_line_shows": {
       "ok": true,
-      "detail": "店里这三段再添也卖不动 —— 卡在街上进来的人，得去把街面、名声、同行那几件事办一办"
+      "detail": "店里这三段再添也卖不动 —— 卡在街上进来的人，想让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区"
     },
     "day_line_no_price": {
       "ok": true,
-      "detail": "店里这三段再添也卖不动 —— 卡在街上进来的人，得去把街面、名声、同行那几件事办一办"
+      "detail": "店里这三段再添也卖不动 —— 卡在街上进来的人，想让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区"
     },
     "day_line_matches_panel": {
       "ok": true,
@@ -67,13 +67,17 @@
       "ok": true,
       "detail": "街上就这么多人 —— 店里再添什么也卖不动"
     },
+    "day_and_panel_share_roads": {
+      "ok": true,
+      "detail": "店里这三段再添也卖不动 —— 卡在街上进来的人，想让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区 | 今天这三段再添也卖不动 —— 灶、座位、备料都还有富余，卡在街上进来的人就这么多。想多卖，得让街上更热闹：修街面、比赛赢过同行、把口碑养起来、换个人多的区。"
+    },
     "day_line_quiet_at_four": {
       "ok": true,
       "detail": ""
     },
     "save_version_37": {
       "ok": true,
-      "detail": "{'v': 37, 'n': '阿婆粉铺'}"
+      "detail": "{'v': 37, 'n': '中山粉店'}"
     },
     "console_clean": {
       "ok": true,

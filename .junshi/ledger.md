@@ -1380,3 +1380,17 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 三个新门实测都绿；替身四种子 **逐位不变**（¥130,961 / ¥117,013 / ¥134,230 / ¥135,802 → 均值 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**）—— 这就是「只改说法」的凭据。
 - 构建 `index-GrODrBtv.js` **1,743,761 B**（gzip 524.35）/ `index-CyXxqRnG.css` 56.31 kB。
 - 新缺口 **P451**（两处仍是各自硬编码的字符串，与 P344 同型）/ **P452**（`capacity:demand` 标红但不是马上能做的事）/ **P453**（`why` 仍是「昨天走了 N 位」，来客封顶时没指导意义，与 P435 同型）/ **P454**（`VOICE_HINT` 只给三个字，服务端拿不到区与同行）。
+
+### 行 153 · 2026-11-26 · 批 AQ′：一句话只有一个出处（P451）
+
+- **问题**：批 AP′ 把「抬了也卖不动」说到四处（打烊单主句 / 打烊单为什么 / 店铺页设备段 / `todayLine` 副句），**每处各抄了一遍字符串**，「那四条路」在两处各列一遍 —— 改一处忘一处就是 P448 复发（同型前科：P344 的 `server/events.json`、P386 的「操作一览是手册副本」）。
+- **做法**：新建 `game/src/data/demand.ts` —— `DEMAND_WHERE = "修街面、比赛赢过同行、把口碑养起来、换个人多的区"` 全项目只列一次，`DEMAND_HEAD`（打烊单主句 / 钩子 text）、`DEMAND_PANEL`（设备段）、`DEMAND_DAY`（打烊单那一行）、`DEMAND_DETAIL`（`todayLine` 副句）、`DEMAND_SHORT`（「今天先不动」）、`DEMAND_TAG`（前缀）全部由它拼出来。五个调用点改成引用：`game/src/sim/hook.ts`、`game/src/sim/today.ts`、`game/src/sim/align.ts`、`game/src/ui/panels.ts`、`game/src/ui/hud.ts`。
+- **防再抄**：新建 `game/tools/demand-literal.test.ts` 6 例**扫源码**（不是比两句字面）—— `DEMAND_WHERE` 全文只许在 `src/data/demand.ts` 出现一次；别处不许硬编码「再添也卖不动」，命中就点名哪个文件；主句不匹配 `/凳|灶|锅|案台|备料|¥|\d/`；`hud.css` 的 `[data-demand-line]::before` 与 `DEMAND_TAG` 对齐；五句都不带阿拉伯数字。
+- **两个坑**：① 测试**必须放 `game/tools/` 不能放 `game/src/`** —— 要 `node:fs`，本仓没装 `@types/node`，`tsc` 盯 `src` 报三条 `TS2591`（与批 AH′ 的 `server-events.gen.ts` 同坑）；② 扫源码**先剥注释** —— `align.ts` 的注释里就有那几个字，注释是给人看的说明、不算玩家可见文案；另排除 `*.test.ts`（它们断言的就是常量）。
+- **探针**：`tools/gate/demand_probe.py` 19 → **20 / 20**，新增 `day_and_panel_share_roads`（打烊单与设备段**都**含「修街面」「换个人多的区」）—— 单测证明源码只有一处出处，探针证明拼出来的两句真的都带上了那四条路（万一有人把 `DEMAND_WHERE` 从某句里删掉，单测仍绿，这条会红）。
+- **验收**：`tsc` 0；`vitest --no-file-parallelism` **103 文件 1048 用例**（AP′ 102/1042）；`copy_gate` ok；`eye_gate --slug demand3` 五视口 **725 · 778 · 583 · 1247 · 1512** 色、stamp **178**（+1）；`ai_gate` ok（跑完已重建）；长跑门 **9/9**（一句话接口 7 次 0.19/天）；帧差重存基准后三视口 **0 px**；调试出口 **4/4**。
+- **构建**：`game/dist/assets/index-CA3OEGp5.js` **1,743,720 B**（gzip 524.36）/ `index-CyXxqRnG.css` 56.31 kB。
+- **替身四种子**：¥130,961 / ¥117,013 / ¥134,230 / ¥135,802 → 均值 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**，与 AP′ **逐位相同**（只把四处字符串收成一个出处，`capacityOf` / `capacityGain` / `demandPerDay` 一格没动）。
+- **唯一的可见文案变化**：打烊单那句的尾巴从「得去把街面、名声、同行那几件事办一办」改成与另外两句同一套四条路。
+- **新缺口**：**P455**（`DEMAND_TAG` 与 CSS `::before` 靠字符串匹配对齐，跨语言同源只有这一个土办法）/ **P456**（`data/demand.ts` 是第一个文案专用数据模块，`entry-counts` 43 项不覆盖文案常量）/ **P457**（「换个人多的区」是文案，游戏里换区＝重开一局，不是搬店）。
+- **文档**：`docs/一句话只有一个出处AQ′-2026-11-26.md`（八节）；`docs/ACCEPTANCE.md` 第五节 P451 划掉、新增「五·八」P455–P457、第三节整块换成 AQ′ 数字、第四节加一条 `game/tools/demand-literal.test.ts`。
