@@ -42,7 +42,7 @@ python -X utf8 tools/gate/ai_gate.py        # 跑完必须 npm run -s build
 | `audit_pixel` | 字面色值 **0**；12 色 token；图标 **21**；`@keyframes` 14（`steps(` 8）；`prefers-reduced-motion` 2；`sechd` 59；`icon(` 55；`data-act` 46 |
 | `audit_ai` | 线上 **29 / 29 remote**（AK′ 不动 AI 落点） |
 | 替身四种子 | **¥134,450 · 227.9 碗 · 37.3% · 期末 ¥1,028,840**（与 AK′ **逐位一致** —— 本批只动「怎么验」与失败退避，不动替身会买什么） |
-| 构建 | `index-BPHCkWuM.js` 1,741,574 B / `index-BmPVWE_V.css` 56,215 B |
+| 构建 | `index-BPHCkWuM.js` 1,741,606 B / `index-BmPVWE_V.css` 56,215 B |
 | 长跑门（新） | **9 / 9 ok** · 5 分钟到第 37 天 · fps 58/60 · 堆增长 0.0 · 一句话接口 **7 次**（0.19 次/天；修 P429 前是 389 次 / 10.5 次每天） |
 | 帧差门（新） | 三视口 **逐点相同（0 px）** |
 | 调试出口门（新） | 4 / 4 ok（产物只挂 `__laoyou`） |

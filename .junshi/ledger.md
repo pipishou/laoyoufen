@@ -1322,7 +1322,7 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 新增 `tools/gate/debug_exit_gate.py`（发布包调试出口）：扫 `dist/assets/*.js`，只允许 `__laoyou` / `__gameState` / `__autoplay` / `__probeReady`，另查 `debugger` 与本机地址。现状只挂 `__laoyou`，4/4 ok。
 - 新增 `game/tools/entry-counts.{rows,gen,test}.ts` + `game/data/entry-counts.json`（43 项）：正则版 `count_entries.py` 早已失真（事件 0 / 手艺 0 / 地名 0 / 手册 12 真值 16 / 长对白 66 真值 60），改成读 `*_TOTAL` 与数组长度；`gen:server` 写清单、`npm test` 只读对账、一处不同就点名。
 - 新增 `docs/FLAKY.md`（飘测试账）：五条已记账 + 三条「会被误当成飘的」（`phase` 契约、`/laoyou-api/` 4xx、四种子逐位相同），规矩写死「不许靠重跑过关」；`AGENTS.md` 加「二·五 另四道新门」与 FLAKY 指针。
-- 验收：`tsc` 0；`vitest --no-file-parallelism` **99 文件 1023 用例**；`gen:server` 2/2；`copy_gate` ok；`eye_gate --slug gate` **722 · 778 · 584 · 1238 · 1506** 色 stamp **177**；`ai_gate` ok；构建 `index-BPHCkWuM.js` **1,741,574 B** / `index-BmPVWE_V.css` 56,215 B。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **99 文件 1023 用例**；`gen:server` 2/2；`copy_gate` ok；`eye_gate --slug gate` **722 · 778 · 584 · 1238 · 1506** 色 stamp **177**；`ai_gate` ok；构建 `index-BPHCkWuM.js` **1,741,606 B** / `index-BmPVWE_V.css` 56,215 B。
 - 替身四种子 ¥138,602 / ¥121,759 / ¥140,559 / ¥136,879 → 均值 **¥134,450 · 227.9 碗 · 37.3% · 期末 ¥1,028,840**，与 AK′ **逐位一致** —— 本批动的是「怎么验」与失败退避，不动替身会买什么。
 - 新缺口 **P438**（帧差只截店铺页一屏）/ **P439**（长跑门只有一条策略）/ **P440**（清单不对文档里手抄的数字）/ **P441**（调试出口门没查 console.log / sourcemap / `__DEV__`）/ **P442**（帧差基准靠人记得重存，与 P412 同型）。
 - 文档 `docs/六道门AL′-2026-11-25.md`（六节：六条机制各落在哪 / 每道门做出来的东西 + 怎么算做完 / 验收表 / 这一批没动的 / 新缺口 / 复现）。
