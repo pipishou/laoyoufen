@@ -17,6 +17,7 @@ import { talkFor, talkVoiceContext } from "../sim/talk";
 import { tierBoard, tierCells } from "../sim/tier";
 import { lossWhyOf, menuLineOf } from "../sim/advice";
 import { manualSections } from "../data/manual";
+import { manualRead } from "../sim/manual";
 import { actTodayLine } from "../sim/script-days";
 import { fetchLine, getLine, localLine } from "../ai/lines";
 import { priceTolerance, SERVE_MINUTES } from "../sim/customer";
@@ -102,6 +103,8 @@ export interface HudOptions {
   onOpenShop?: () => void;
   /** 日结单「明天继续」：清掉日结、进次日准备 */
   onNextDay?: () => void;
+  /** 设置里点开一页操作说明 —— 与图鉴页手册同一本账（批 AG′，解 P413） */
+  onManualRead?: (id: string) => void;
 }
 
 export interface Hud {
@@ -464,14 +467,20 @@ let lastMarketKey = "";
   prefsWrap.hidden = true;
   // 操作一览（批 Y′）：把手册「怎么操作」那一章搬到设置里 ——
   // 开罗的说明在菜单里随手能翻（`help.txt` 57 节），我们原来只有图鉴页深处那本书。
+  // 批 AG′：这一块在 `prefsWrap.innerHTML` 里就要渲染，所以 `lastState` 必须先声明在这儿
+  // （原先它写在下面第 570 行一带，`let` 的 TDZ 会让首屏直接 white screen ——「Cannot access 'G' before initialization」）。
+  let lastState: GameState | null = null;
   const howPages = manualSections().find((g) => g.section === "怎么操作")?.pages ?? [];
-  const howHtml = howPages
-    .map(
-      (p) => `<div class="prefrow wide">
-        <div class="preftext"><div class="prefname">${p.title}</div><div class="prefhint">${p.gist}</div></div>
-      </div>`,
-    )
-    .join("");
+  const howHtml = (): string =>
+    howPages
+      .map((p) => {
+        const read = lastState ? manualRead(lastState).includes(p.id) : false;
+        return `<div class="prefrow wide how" data-how="${p.id}" role="button" tabindex="0">
+        <div class="preftext"><div class="prefname">${p.title}${read ? '<span class="mread">翻过</span>' : ""}</div><div class="prefhint">${p.gist}</div></div>
+        <button type="button" class="prefval step" data-howbtn="${p.id}">${read ? "再看看" : "翻一下"}</button>
+      </div>`;
+      })
+      .join("");
   prefsWrap.innerHTML = `
     <div class="prefbox card">
       <div class="prefhd"><span class="dttl">设置</span><button type="button" class="mclose" data-prefs-close title="关闭">×</button></div>
@@ -479,8 +488,8 @@ let lastMarketKey = "";
       <div class="preffoot">改了立刻生效。这份设置只记在这台机器上，不进存档；换台设备、清了缓存就回到默认。</div>
       <div class="prefhelp" data-pref-help>
         <div class="prefhd2">操作一览</div>
-        ${howHtml}
-        <div class="prefhint">完整十六页在图鉴页的手册里。</div>
+        <div data-how-list>${howHtml()}</div>
+        <div class="prefhint">点开一页就算翻过，与图鉴页那本手册同一本账；完整十六页在图鉴页。</div>
       </div>
     </div>`;
   root.appendChild(prefsWrap);
@@ -496,6 +505,8 @@ let lastMarketKey = "";
       { key: "bigText", name: "大字", hint: "顶栏那几行数字放大" },
     ];
     const words = prefWords(prefs);
+    const howList = prefsWrap.querySelector("[data-how-list]") as HTMLElement | null;
+    if (howList) howList.innerHTML = howHtml();
     prefsBody.innerHTML = rows
       .map((r, i) => {
         const text = r.key === "volume" ? words[i]!.split(" ")[1]! : prefs[r.key] ? "开" : "关";
@@ -531,6 +542,15 @@ let lastMarketKey = "";
       prefsWrap.hidden = true;
       return;
     }
+    const how = target.closest("[data-how]") as HTMLElement | null;
+    if (how) {
+      const id = String(how.dataset.how ?? "");
+      if (id) {
+        opts.onManualRead?.(id);
+        renderPrefs();
+      }
+      return;
+    }
     const btn = target.closest("[data-pref]") as HTMLElement | null;
     if (!btn) return;
     const key = String(btn.dataset.pref ?? "");
@@ -549,8 +569,6 @@ let lastMarketKey = "";
   el.openpill.addEventListener("click", () => {
     opts.onOpenShop?.();
   });
-
-  let lastState: GameState | null = null;
 
   // 点一下排队里的人，他说一句（A12）：本地句立刻上屏，在线句随后替换
   el.custlist.addEventListener("click", (ev) => {

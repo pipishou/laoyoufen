@@ -168,6 +168,10 @@ const hud = mountHud(hudRoot, {
     refresh();
     tickFeedback();
   },
+  // 设置里「操作一览」点开一页也算翻过（批 AG′，解 P413）
+  onManualRead: (id: string) => {
+    if (markManualRead(state, String(id))) refresh();
+  },
   // 日结单「明天继续」：清日结，回到次日准备
   onNextDay: () => {
     if (ackDayReport(state)) {

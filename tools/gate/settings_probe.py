@@ -41,7 +41,7 @@ def main() -> None:
         checks["button_present"] = bool(btn and btn.is_visible())
         btn.click()
         pg.wait_for_timeout(220)
-        rows = pg.query_selector_all(".prefmodal .prefrow")
+        rows = pg.query_selector_all("[data-prefs-body] .prefrow")
         checks["six_rows"] = len(rows) == 6
         names = [r.query_selector(".prefname").inner_text() for r in rows]
         checks["names_cn"] = names == ["音乐", "音效", "音量", "高对比", "大字", "恢复默认"]

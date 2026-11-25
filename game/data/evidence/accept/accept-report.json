@@ -1,0 +1,10 @@
+{
+ "how_rows_four": true,
+ "how_rows_clickable": true,
+ "how_rows_no_mark_yet": true,
+ "how_click_writes_state": true,
+ "how_row_shows_mark": true,
+ "manual_counter_counts": true,
+ "save_version_37": true,
+ "console_clean": true
+}

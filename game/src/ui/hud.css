@@ -2593,3 +2593,16 @@ html.prefs-big #hud .clock{font-size:17px}
 .bases .bcard .btag{display:inline-block;margin:0 0 2px;padding:0 3px;font-size:9px;letter-spacing:1px;color:var(--wood);background:var(--paper2);border:2px solid var(--sand)}
 .pane .dcard .dbase{display:inline-block;margin:0 0 2px 3px;padding:1px 5px 0;font-size:9px;letter-spacing:1px;color:var(--ink);background:var(--sand);border:2px solid var(--ink)}
 .pane .dcard .dbase.muted{color:var(--wood);background:var(--paper2);border-color:var(--sand)}
+
+/* 操作一览可以点开（批 AG′，解 P413）—— 点过的盖一枚「翻过」，与图鉴页手册同一本账 */
+.prefmodal .prefhelp .prefrow.how{cursor:pointer}
+.prefmodal .prefhelp .prefrow.how:hover .prefname{color:var(--red)}
+.prefmodal .prefhelp .mread{
+  margin-left:6px;
+  padding:0 4px;
+  font-size:9px;
+  letter-spacing:1px;
+  color:var(--paper);
+  background:var(--wood);
+  border:2px solid var(--sand);
+}

@@ -1231,3 +1231,17 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 验收：`tsc` 0；`vitest --no-file-parallelism` **93 文件 999 用例**；`copy_gate` ok；`eye_gate --slug stage` stamp **171**（控制台 10 条为预览环境 404）；`ai_gate` ok；构建 `index-BbFQW5wj.js` **1,738,537 B** / `index-BREpkhCi.css` 55,638 B。
 - 替身四种子与批 AE′ 逐位一致：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（界面层，回归锁对这类改动不敏感 → P417 已记）。
 - 文档 `docs/三段工序一句话AF′-2026-11-25.md`（八节）。新缺口 **P415**（验收文档越攒越多没有当期指针）/ **P416**（`fold_probe` 一探针两件事）/ **P417**（界面批次替身恒定，判据只能靠探针）。
+
+### 行 141 · 2026-11-25 · 批 AG′：操作一览算翻过、验收只留一个指针
+
+- 两条「越攒越乱」：**P413** 设置里的操作一览只能看不能记（图鉴页那份算翻过，同一本手册两套账）；**P415** `docs/` 躺着两份「三维度整体验收」，谁也说不清哪份是当期。
+- `game/src/ui/hud.ts`：`HudOptions` 加 `onManualRead?: (id: string) => void;`；四条说明从静态字符串改成 `const howHtml = (): string => …`（`<div class="prefrow wide how" data-how="…" role="button" tabindex="0">`，按钮「翻一下 / 再看看」，已翻过在 `.prefname` 后挂 `<span class="mread">翻过</span>`）；`renderPrefs()` 每次重画 `[data-how-list]`；点击监听先判 `target.closest("[data-how]")`，命中就 `opts.onManualRead?.(id)` + `renderPrefs()` 再 `return`。
+- `game/src/main.ts`：`onManualRead: (id) => { if (markManualRead(state, String(id))) refresh(); }`（复用批 AD′ 的 `markManualRead`）。`game/src/ui/hud.css`：`.prefrow.how` 手型、悬停红、`.mread` 小印章。
+- **白屏级坑（TDZ 第二次）**：第一版 `howHtml` 在 `prefsWrap.innerHTML` 里就被调用，而它读的 `let lastState` 声明在下面第 570 行 → `Cannot access 'G' before initialization`，整页白屏、探针全红（`sitecards: 0`）。修法：把 `let lastState: GameState | null = null;` 挪到 `howPages` 之前，注释写明原因。规矩加一条：**模板字符串里调读闭包变量的函数，先确认那些变量在上面已声明**。
+- `docs/ACCEPTANCE.md`（新）：当期唯一指针 —— 当期是哪一份 / 五门跑法 / 当期数字表 / 探针清单 / 还剩什么 / 维护规矩（不再新增 `三维度整体验收-<日期>.md`，每次只改日期、数字、链接）。
+- 新探针 `tools/gate/accept_probe.py`（preview **4244**）**8 / 8 true**：`how_rows_four / how_rows_clickable / how_rows_no_mark_yet / how_click_writes_state(['m.how-order']) / how_row_shows_mark / manual_counter_counts（「翻过 1 页，还剩 15 页」）/ save_version_37 / console_clean`。坑：`window.__laoyou.state` 是**属性不是函数**；手册抬头要在 `[data-pane="collection"]` 里找（`.pane` 取到的是配方页）。
+- 顺手修 `tools/gate/settings_probe.py`：`.prefmodal .prefrow` 现在会数进四条操作一览（10 行），改 `[data-prefs-body] .prefrow`。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **93 文件 999 用例**（本批不加单测 —— 改动全在 DOM 分支，判据交给探针）；`copy_gate` ok；`eye_gate --slug accept3` 五视口 **721 · 778 · 584 · 1245 · 1506** 色、stamp **171**；`ai_gate` ok；构建 `index-BlGtsi4J.js` **1,739.08 kB**。
+- 替身四种子与批 AF′ **逐位一致**：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（界面层改动不动经济，这正是本批判据）。
+- 文档 `docs/操作一览算翻过与验收指针AG′-2026-11-25.md`（九节）与 `docs/ACCEPTANCE.md`。
+- 剩余：P405（AI 上下文写死）/ P412（折叠开合不记忆）/ P415 与 P413 已解 / P416（探针一管两事）/ P417（界面批次替身恒定）/ P344 / P374 / P389。
