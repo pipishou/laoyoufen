@@ -1,0 +1,20 @@
+{
+ "checks": {
+  "dist_found": true,
+  "window_exits_known": true,
+  "no_debugger": true,
+  "no_localhost": true
+ },
+ "files": [
+  {
+   "file": "index-BPHCkWuM.js",
+   "bytes": 1741606,
+   "window_exits": [
+    "__laoyou"
+   ],
+   "debugger": 0,
+   "localhost": []
+  }
+ ],
+ "problems": []
+}

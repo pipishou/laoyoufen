@@ -18,6 +18,7 @@ import { BOWL_BY_ID, DEFAULT_BOWL_ID } from "../data/bowl";
 import { CHANNEL_BY_ID, RETAILS, type ChannelId } from "../data/retail";
 import { defaultRetail } from "./retail";
 import { RIVAL_BY_ID } from "../data/rivals";
+import { perkById } from "../data/perk";
 
 /** 存档只序列化模拟状态，渲染对象（Phaser 的 Sprite/Scene）一律不进存档。 */
 export function serialize(state: GameState): string {
@@ -651,11 +652,13 @@ export function deserialize(raw: string): GameState | null {
   parsed.ingredientXp = xpMap;
   // v36 → v37（批 K′）：手艺点。老档没有这个字段，一律按「一项都没点」起算。
   // 值恒为 1（点过/没点过两态），别的脏值一律丢掉 —— 树上没有等级。
+  // 认不出来的 id 也丢掉（批 AL′ 补）：只留 `PERKS` 里真有的那十六项，
+  // 否则手改出来的 `{bogus: 1}` 会一路跟着存档走，虽然不生效但越攒越多。
   const rawPerks = (parsed as { perks?: unknown }).perks;
   const perkMap: Record<string, number> = {};
   if (rawPerks && typeof rawPerks === "object") {
     for (const [id, v] of Object.entries(rawPerks as Record<string, unknown>)) {
-      if (v === 1 || v === true) perkMap[id] = 1;
+      if ((v === 1 || v === true) && perkById(id) !== undefined) perkMap[id] = 1;
     }
   }
   parsed.perks = perkMap;

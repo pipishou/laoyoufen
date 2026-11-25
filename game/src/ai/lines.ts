@@ -552,6 +552,44 @@ export function localLine(ask: LineAsk): string {
 const CACHE = new Map<string, string>();
 const INFLIGHT = new Map<string, Promise<string | null>>();
 
+/* ───────────────────── 失败冷却（批 AL′，解 P429） ─────────────────────
+ * 长跑门实测：没有接口时 37 个游戏日打出 389 次 `/laoyou-api/line`（约 10.5 次/天），
+ * 每次都吃满 800ms 超时。原因是失败既不记缓存、也不记「别再试了」。
+ * 现在连败就退避：60s → 120s → 240s … 封顶 10 分钟；成功一次立刻清零。
+ * 退避期内**连请求都不发**，界面照旧走本地句。
+ */
+const FAIL_BASE_MS = 60_000;
+const FAIL_MAX_MS = 10 * 60_000;
+let failStreak = 0;
+let failUntil = 0;
+
+/** 还要静默多少毫秒（0 = 可以再试）。测试与探针读它。 */
+export function lineCooldownLeft(now: number = Date.now()): number {
+  return Math.max(0, failUntil - now);
+}
+
+/** 连败次数（0 = 上次是成功或还没试过）。 */
+export function lineFailStreak(): number {
+  return failStreak;
+}
+
+/** 清掉退避（成功一次、或玩家手动重连时调）。 */
+export function resetLineCooldown(): void {
+  failStreak = 0;
+  failUntil = 0;
+}
+
+function noteLineFailure(now: number = Date.now()): void {
+  failStreak = Math.min(failStreak + 1, 6);
+  const backoff = Math.min(FAIL_MAX_MS, FAIL_BASE_MS * 2 ** (failStreak - 1));
+  failUntil = now + backoff;
+}
+
+function noteLineSuccess(): void {
+  resetLineCooldown();
+}
+
+
 /**
  * 一局里最多换 **200 个不同的键**（批 C′，解 R6）。
  *
@@ -599,6 +637,7 @@ export function resetLines(): void {
   CACHE.clear();
   INFLIGHT.clear();
   KIND_USED.clear();
+  resetLineCooldown();
 }
 
 /** 调试/测试用：看这一局到底有几条是线上来的 */
@@ -653,6 +692,11 @@ export function isCleanLine(text: string): boolean {
 /**
  * 取一条在线文案。任何异常、超时（800ms）、含数字、结构不对 → null，
  * 调用方继续用本地句，界面上不留痕迹。
+ *
+ * 失败冷却（批 AL′，解 P429）：原来失败一次什么也不记 —— 服务端一挂，
+ * 每句都照发、每次都吃满 800ms 超时（`playthrough_gate` 实测：无接口环境下
+ * 37 个游戏日打出 389 次请求，约 10.5 次/天）。现在连败就静默一段时间，
+ * 指数退避 60s → 120s → … 封顶 10 分钟，成功一次清零。
  */
 export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string | null> {
   const id = lineId(ask);
@@ -662,6 +706,8 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
   if (CACHE.size >= LINE_BUDGET) return null;
   // 分项配额（见 LINE_QUOTA）：某一类用超了，只它自己退回本地句
   if (!quotaLeft(ask.kind)) return null;
+  // 冷却期内连请求都不发（这是 P429 的修法）
+  if (Date.now() < failUntil) return null;
   const url = proxyUrl();
   if (!url) return null;
   const running = INFLIGHT.get(id);
@@ -685,17 +731,28 @@ export async function fetchLine(ask: LineAsk, timeoutMs = 800): Promise<string |
         }),
         signal: controller.signal,
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        noteLineFailure();
+        return null;
+      }
       const data = (await res.json()) as { body?: unknown };
-      if (typeof data.body !== "string") return null;
+      if (typeof data.body !== "string") {
+        noteLineFailure();
+        return null;
+      }
       const body = data.body.trim();
       // 红线：含数字（阿拉伯或中文数量词）的句子整句作废（服务端也拦，这里双保险）
-      if (!isCleanLine(body)) return null;
+      if (!isCleanLine(body)) {
+        noteLineFailure();
+        return null;
+      }
       const line = body.slice(0, 160);
       CACHE.set(id, line);
       countKind(ask.kind);
+      noteLineSuccess();
       return line;
     } catch {
+      noteLineFailure();
       return null;
     } finally {
       clearTimeout(timer);

@@ -45,6 +45,18 @@ python -X utf8 tools/gate/ai_gate.py          # 5. AI 落点在线体检 —— 
 - 本批如果动了界面，必须配套一个 `tools/gate/<本批>_probe.py` 探针，**全部 true 才算过**。
 - 探针要连真界面（Playwright + `npx vite preview --port 424x --strictPort`，注意 preview **只听 IPv6**，URL 写 `http://localhost:PORT/`）。
 
+### 二·五、另四道新门（批 AL′ 起，改到了才跑）
+
+```powershell
+python -X utf8 tools/gate/playthrough_gate.py --url http://localhost:4246/ --minutes 5   # 长跑：≥20 天、fps、堆、4xx 全在 /laoyou-api/、一天最多 3 次一句话接口
+python -X utf8 tools/gate/framediff_probe.py --url http://localhost:4246/               # 帧差：同状态逐点比对（先 --save-baseline 存基准）
+python -X utf8 tools/gate/debug_exit_gate.py                                            # 发布包：只许挂白名单里的 window.__ 出口
+cd game; npm run -s gen:server                                                          # 条目清单：代码条数写进 game/data/entry-counts.json
+```
+
+- 跑测试偶发假红先看 `docs/FLAKY.md`，**不许靠重跑过关**。
+- 帧差门只截 `.pane[data-pane='shop']` 且状态钉死；改文案后要重存基准，并在提交信息里写清「画面变了」。
+
 ---
 
 ## 三、数值纪律（最容易犯的错）

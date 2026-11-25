@@ -1,0 +1,50 @@
+{
+ "url": "http://localhost:4246/",
+ "allow": [],
+ "shots": {
+  "375x667.png": {
+   "size_mismatch": false,
+   "now": [
+    329,
+    4501
+   ],
+   "baseline": [
+    329,
+    4501
+   ],
+   "outside": 0,
+   "total": 0,
+   "bbox": null
+  },
+  "768x1024.png": {
+   "size_mismatch": false,
+   "now": [
+    672,
+    9218
+   ],
+   "baseline": [
+    672,
+    9218
+   ],
+   "outside": 0,
+   "total": 0,
+   "bbox": null
+  },
+  "1440x900.png": {
+   "size_mismatch": false,
+   "now": [
+    1048,
+    14403
+   ],
+   "baseline": [
+    1048,
+    14403
+   ],
+   "outside": 0,
+   "total": 0,
+   "bbox": null
+  }
+ },
+ "cheatsheet": "eye_gate 数颜色，这一份比像素",
+ "failed": []
+}

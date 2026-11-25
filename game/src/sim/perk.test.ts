@@ -136,6 +136,7 @@ describe("手艺点树（批 K′）", () => {
     const back2 = deserialize(JSON.stringify(raw2));
     expect(back2!.perks?.[PERKS[0]!.id]).toBe(1);
     expect(back2!.perks?.[PERKS[1]!.id]).toBeUndefined();
-    expect(back2!.perks?.bad).toBe(1);
+    // 认不出来的 id 也丢掉（批 AL′：只留 `PERKS` 里真有的那十六项，手改出来的键不该跟着存档走）
+    expect(back2!.perks?.bad).toBeUndefined();
   });
 });
