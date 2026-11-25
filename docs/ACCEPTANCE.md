@@ -38,7 +38,7 @@ python -X utf8 tools/gate/ai_gate.py        # 跑完必须 npm run -s build
 | `audit_pixel` | 字面色值 **0**；12 色 token；图标 **21**；`@keyframes` 14（`steps(` 8）；`prefers-reduced-motion` 2；`sechd` 59；`icon(` 55；`data-act` 46 |
 | `audit_ai` | 线上 **29 / 29 remote** |
 | 替身四种子 | **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495** |
-| 构建 | `index-BbFQW5wj.js` 1,738,537 B / `index-BREpkhCi.css` 55,638 B |
+| 构建 | `index-BzYmkfTb.js` 1,739,074 B / `index-Cyd0u8tu.css` 55,916 B |
 | 线上 | `http://8.134.86.249/laoyoufen/` 与本地逐位一致；health `events 83 / playtests 97` |
 
 四种子基线口径：`npm run -s probe:standin`，四个月种子各跑 36 个月，取月均营收 / 日均碗数 / 总流失率 / 期末现金的平均。**界面批次（AE′、AF′）四种子恒定，此时判据只能靠探针**（P417）。
