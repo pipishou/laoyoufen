@@ -102,7 +102,7 @@ describe("灶位那句话只有一个出处（P462 / P465 / P467）", () => {
       [],
     );
     // 模板本身还得真的能出这四句
-    expect(crewWhyWords(false)).toContain("今天卡的不是灶");
+    expect(crewWhyWords(false, 0)).toContain("今天卡的不是灶");
     expect(crewGateWords({ need: 800, short: 500 })).toContain("人手槽还差 500 位累计接待");
     expect(crewNoneWords()).toBe("今天没有煮粉的来问工");
   });
@@ -118,6 +118,27 @@ describe("灶位那句话只有一个出处（P462 / P465 / P467）", () => {
     expect(loose).toContain("厨房不是最紧那道");
   });
 
+  it("副句把「这口火值几碗」说出来：差一点与差很远不同一句（P470）", () => {
+    const near = crewWhyWords(true, 5.45);
+    const far = crewWhyWords(true, 30.2);
+    const off = crewWhyWords(false, 0);
+    expect(near).toContain("今天卡的就是灶");
+    expect(near).toContain("约多卖 5 碗");
+    expect(far).toContain("约多卖 30 碗");
+    expect(near).not.toBe(far);
+    expect(off).toContain("多开一口火也不会多卖");
+    // 半碗也算一个人：不许出现「约多卖 0 碗」
+    expect(crewWhyWords(true, 0)).toContain("约多卖 1 碗");
+  });
+
+  it("价钱句的「雇了能多卖吗」必须由调用方算好传进来（P471）", () => {
+    // `Function.length` 只数第一个默认参数之前的形参：带默认值时是 1
+    expect(crewCostWords.length).toBe(2);
+    const hire = { name: "阿强", skill: 3, wage: 150, fee: 300, monthly: 3262 };
+    expect(crewCostWords(hire, true)).not.toContain("换不来更多的碗");
+    expect(crewCostWords(hire, false)).toContain("换不来更多的碗");
+  });
+
   it("数字由调用方给：换一组数字句子跟着变", () => {
     expect(crewGapWords(4, 2, true)).toBe("灶 4 口，只有 2 个人掌勺 —— 第 3 口起没人看");
     expect(crewFitWords(2, 2)).toBe("灶位 2 口，能开火 2 口 —— 人手够，每一口灶都烧得上");
@@ -127,7 +148,7 @@ describe("灶位那句话只有一个出处（P462 / P465 / P467）", () => {
     for (const text of [crewGapWords(3, 1), crewGapWords(3, 1, true), crewFitWords(3, 3)]) {
       expect(text).not.toMatch(/¥|元|买|推荐|建议|划算/);
     }
-    for (const text of [crewWhyWords(true), crewWhyWords(false), crewNoneWords()]) {
+    for (const text of [crewWhyWords(true, 0), crewWhyWords(false, 0), crewWhyWords(false, 20), crewNoneWords()]) {
       expect(text).not.toMatch(/¥|元|买|推荐|建议|划算/);
     }
   });

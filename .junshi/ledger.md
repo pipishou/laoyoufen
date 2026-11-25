@@ -1455,3 +1455,18 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 构建 `index-s6h-nx_K.js` **1,746,234 B**（gzip 525.34）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
 - 文档 `docs/换个人也换不来更多的碗AU′-2026-11-26.md`（七节：这一批要解决什么 / 三张实测表 / 改了什么的代码 / 验收表 / 没动什么 / 新缺口 P469–P471 / 复现命令）。
 - 新缺口：**P469**（`crewCostPremiseWords` 那句「换不来更多的碗」没有守卫，`FLOW.serveMinutes` 一改就变假话）/ **P470**（`kitchenBinds` 只有「灶是最紧那道」一个判据，差一点与差很远说同一句话）/ **P471**（`crewCostWords` 默认 `kitchenBinds = true`，调用方忘传就把前提吞掉）。
+
+### 行 158 · 2026-11-26 · 批 AV′：换个人到底多卖几碗，交给模型算（P469 / P470 / P471）
+
+- 三条是同一条链：那句「换个人也换不来更多的碗」是**量化断言**，判据却只是一个布尔 `capacityOf().tight === "stove"`。
+- P469：新增 `capacityWithCooks(state, extra)`（`game/src/sim/bottleneck.ts`）—— 口径与 `capacityOf` 一致（`bowlMinutes ∝ 1/并行槽`），并行槽 = `min(灶位数, 掌勺人数) × 一锅几份`，所以**一口灶时多雇人不会多开火**（`min` 卡住）。`cookGain = capacityWithCooks(state, 1).total - capacityOf(state).total`，界面那句前提只在 `cookGain <= COOK_GAIN_NOISE`（0.5 碗噪声线）时出现。
+- P470：副句改成 `crewWhyWords(kitchenBinds, cookGain)` —— 真卡时把这口火**值几碗**说出来：「今天卡的就是灶 —— 补齐人手这口灶才烧得上（多一个人约多卖 5 碗）」。差一点（5 碗）与差很远（30 碗）从此不是同一句。
+- P471：`crewCostWords(hire, cookAddsBowls)` 的第二参数**去掉默认值**并改名；`crew-literal.test.ts` 用 `crewCostWords.length === 2` 钉住「没有默认参数」，忘传会被类型系统挡住。
+- 取数：临时网格测试（`tmp_grid.test.ts`，跑完已删）扫 `serveMinutes × 座位 × 灶位 × 掌勺人数`，找到 `serve=6 / 4 座 / 2 灶 / 1 人`：灶项 60、座位 65.5、来客 70.6，`total` 60 → **+5.45 碗**（灶升到 120 被座位压住）—— 这就是「差一点」而不是「差很远」的实物。
+- 测试：`src/sim/crew.test.ts` 11 → **14 例**（新增「默认配平 `cookGain` 是 0 且带前提」「厨房真卡 `cookGain > 5`、副句说 5 碗、价钱句不带前提」「只有一口灶时多雇人 `cookGain` 恒 0」）；`game/tools/crew-literal.test.ts` 8 → **10 例**（「副句把值几碗说出来，5 与 30 不同句」「`crewCostWords.length === 2`」）。
+- **第十七次「键漏字段」**：`why` 现在依赖 `cookGain`（随座位/来客/总闸/出碗节拍变）。店员页缓存键补 `|${crewFacts(s).idle}|${crewFacts(s).cookGain}`、店面页补 `|${crewFacts(s).cookGain}`。不补则换座位后副句该从「卡的就是灶」变成「卡的不是灶」而 DOM 不重画。
+- 五门：`tsc` 0；`vitest --no-file-parallelism` **106 文件 1077 用例**；`copy_gate` ok；`eye_gate --slug crew5` 五视口 **725 · 778 · 584 · 1241 · 1510** 色、stamp **180**、控制台 10 条（预览 `/laoyou-api/` 404 良性）；`ai_gate` 四段 `"ok": true`（跑完已重建）；帧差门重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps 58/60、2470 采样、堆 0.0、一句话接口 7 次 0.19/天、console 18 条全白名单、4xx 全在 `/laoyou-api/`）；`debug_exit_gate` **4 / 4**（扫 1 个 js 共 1,746,670 B，只挂 `__laoyou`）；`crew_probe.py` **25 / 25 true**（本批不加判据，绿即没被改坏）。
+- 替身四种子 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**，与 AU′ **逐位相同**（`crewFacts` 只被界面与测试读，不参与任何模拟分支）。
+- 构建 `index-BgQOVPO3.js` **1,746,670 B**（gzip 525.50）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
+- 文档 `docs/换个人到底多卖几碗AV′-2026-11-26.md`（八节：三条是一件事 / `capacityWithCooks` 与口径 / 三句话跟着改 / 第十七次键漏字段 / 验收表 / 没动什么 / 新缺口 P472–P475 / 复现命令）。
+- 新缺口：**P472**（`cookGain` 只算「多一个人」，不算「这个人的技能」，界面那句话其实跟着技能变）/ **P473**（「约多卖 N 碗」是 `Math.round`，5.4 与 5.45 都写 5）/ **P474**（`COOK_GAIN_NOISE = 0.5` 与 P450 的「+0.5」是同一把拍子写了两处）/ **P475**（`capacityWithCooks` 没进第三节口径表）。

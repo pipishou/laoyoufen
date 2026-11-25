@@ -29,7 +29,7 @@
  *   卡的是来客天花板（`demandPerDay`）。
  */
 import { DAY_MINUTES, SERVE_MINUTES, demandPerDay } from "./customer";
-import { bowlMinutes } from "./staff";
+import { bowlMinutes, cookSlots } from "./staff";
 import { FLOW } from "../data/balance";
 import { stationCount, stationCountAfter, stationServeFactor, stageMinutes } from "./equipment";
 import { BENCH_CAPACITY_STEP, STAGE_MINUTES, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
@@ -141,6 +141,34 @@ export function capacityOf(state: GameState): Capacity {
   // 来客天花板（批 AN′）：座位加到 40 座也卖不过这个数
   const demand = Math.max(1, demandPerDay(state));
   return pack(stove, seats, cap, demand, serveNow);
+}
+
+/**
+ * 再添 N 个人掌勺，当天上限变成多少（批 AV′，解 P469）。
+ *
+ * **为什么需要它**：界面那句「雇了也换不来更多的碗」原来是拿
+ * `capacityOf().tight === "stove"` 反推的 ——「灶不是最紧那道」并不等于
+ * 「补人不多卖」，中间那一档既可能差 0.3 碗也可能差 20 碗。而这句话是一句
+ * **量化断言**，只有让模型自己算一遍才守得住（AGENTS.md 三、数值纪律：
+ * 文案不许发明数字，也不许替模型下结论）。
+ *
+ * 口径与 `capacityOf` 一致：`bowlMinutes ∝ 1 / 并行槽`，所以多一个掌勺的人
+ * 等于把出碗间隔除以 `并行槽比`。并行槽 = `min(灶位数, 能掌勺的人数) × 一锅几份`
+ * —— 一口灶时多雇人不会多开火（`min` 卡住），这也是实测「1 灶雇人一碗不多」的由来。
+ *
+ * 天花板仍是四道闸取最小：这一项回答的是「今天最多能卖几碗」，
+ * 不是「这一件能不能把那道闸抬高」（后者看 `capacityGain`）。
+ */
+export function capacityWithCooks(state: GameState, extra: number): Capacity {
+  const now = capacityOf(state);
+  const stoves = Math.max(1, state.venue.stoves);
+  const slots = Math.max(1, cookSlots(state));
+  const want = Math.max(1, slots + Math.max(0, Math.floor(extra)));
+  // 一锅几份（inNoodlesNum）两边同时出现，约掉了 —— 只留「能同时开几口灶」之比
+  const ratio = Math.max(1, Math.min(stoves, want)) / Math.max(1, Math.min(stoves, slots));
+  const raw = bowlMinutes(state, FLOW.serveMinutes, stationServeFactor(state));
+  const stove = DAY_MINUTES / Math.max(0.2, raw / ratio);
+  return pack(stove, now.seats, now.cap, now.demand, now.serveNow);
 }
 
 /**

@@ -46,19 +46,46 @@ export function crewFitWords(stoves: number, slots: number): string {
   return `灶位 ${stoves} 口，能开火 ${slots} 口 —— 人手够，每一口灶都烧得上`;
 }
 
-/** 副句：多开一口火到底有没有用 —— 只看厨房今天是不是四道闸里最紧的那道 */
-export function crewWhyWords(kitchenBinds: boolean): string {
-  return kitchenBinds
-    ? "今天卡的就是灶 —— 补齐人手这口灶才烧得上。"
-    : "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
+/**
+ * 半碗以内的差是浮点噪声，不算「多卖」（批 AV′，解 P469）。
+ *
+ * 为什么是半碗而不是一碗：模型里 `total` 是 `min(stove, seats, cap, demand)` 的浮点结果，
+ * 一次除法链下来在 1e-13 量级抖动；0.5 只用来挡噪声，不承担任何「够不够划算」的判断。
+ */
+export const COOK_GAIN_NOISE = 0.5;
+
+/**
+ * 副句：多开一口火到底有没有用（批 AV′ 解 P470 —— 原来只有一个 bool，差一点与差很远说同一句）。
+ *
+ * 两档，判据是**模型算出来的 `cookGain`**（多一个人掌勺当天上限能抬几碗），不是 `tight` 反推：
+ *   ① 灶真是紧的那道 —— 直说「补齐人手这口灶才烧得上」，并把这口火**值几碗**说出来；
+ *      差一点（多卖 5 碗）与差很远（多卖 30 碗）从此不是同一句话。
+ *   ② 灶根本不是紧的那道 —— 说清「多开一口火也不会多卖」。
+ *
+ * 这里唯一出现的数字是 `Math.round(cookGain)`，由调用方从确定性模拟算好传进来
+ * （AGENTS.md 三、数值纪律：文案不产数字）。
+ */
+export function crewWhyWords(kitchenBinds: boolean, cookGain: number): string {
+  if (kitchenBinds) {
+    const bowls = Math.max(1, Math.round(cookGain));
+    return `今天卡的就是灶 —— 补齐人手这口灶才烧得上（多一个人约多卖 ${bowls} 碗）。`;
+  }
+  return "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
 }
 
-/** 价钱句的尾巴：厨房不是最紧那道时，把「雇了也不涨碗」这个前提说出来（批 AU′ 解 P466） */
+/** 价钱句的尾巴：补人换不来碗时，把这个前提说出来（批 AU′ 解 P466） */
 export function crewCostPremiseWords(): string {
   return "（不过今天厨房不是最紧那道，换个人也换不来更多的碗）";
 }
 
-/** 价钱句：一个人日薪多少、介绍费多少（**一次性**）、一个月约多少 */
+/**
+ * 价钱句：一个人日薪多少、介绍费多少（**一次性**）、一个月约多少。
+ *
+ * 第二个参数**必须传**（批 AV′ 解 P471）：原来默认 `kitchenBinds = true`，
+ * 调用方忘传就把「雇了也换不来碗」这句前提静默吞掉 —— 一句假话比一句废话伤人。
+ * 现在由类型系统挡住：`cookAddsBowls` 是模型算出来的（`cookGain > COOK_GAIN_NOISE`），
+ * 不是猜的。
+ */
 export function crewCostWords(
   hire: {
     name: string;
@@ -67,12 +94,12 @@ export function crewCostWords(
     fee: number;
     monthly: number;
   },
-  kitchenBinds = true,
+  cookAddsBowls: boolean,
 ): string {
   const line =
     `今天有人来问工：${hire.name}（技能 ${hire.skill}）日薪 ¥${hire.wage}` +
     ` · 介绍费 ¥${hire.fee}（一次）· 月薪约 ¥${hire.monthly}`;
-  return kitchenBinds ? line : `${line}${crewCostPremiseWords()}`;
+  return cookAddsBowls ? line : `${line}${crewCostPremiseWords()}`;
 }
 
 /** 招不进来时说的话：还得忙到多少位累计接待才有人来问 */

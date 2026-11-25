@@ -197,3 +197,58 @@ describe("批 AS′：补一个人要多少", () => {
     }
   });
 });
+
+/**
+ * 批 AV′（解 P469 / P470 / P471）：那两句「补人也换不来碗」原来是从 `tight` 反推的，
+ * 现在让模型自己算一遍「多一个人掌勺」的差值。
+ *
+ * 三条：① 默认配平下这个差值过不了噪声线，价钱句才该带前提；
+ * ② 厨房真卡时差值是真的（4 座 2 灶压慢到 6 分：+5.45 碗），界面把这口火值几碗说出来；
+ * ③ 前提的开关必须由调用方显式传（`crewCostWords` 的第二参数没有默认值）。
+ */
+describe("批 AV′：补一个人到底多卖几碗", () => {
+  function withCookCandidateAgain(seats: number, stoves: number, wage = 150) {
+    const s = withStoves(seats, stoves);
+    s.staff.candidates = [
+      { uid: "cand-cook", name: "阿强", role: "cook", wage, fatigue: 0, skill: 3, xp: 0, resting: false },
+    ] as StaffMember[];
+    s.totalCustomers = 300;
+    return s;
+  }
+
+  it("默认配平：补人的差值是 0，价钱句带「换不来更多的碗」（P469）", () => {
+    const s = withCookCandidateAgain(6, 2);
+    const f = crewFacts(s);
+    expect(f.idle).toBe(1);
+    expect(f.kitchenBinds).toBe(false);
+    expect(f.cookGain).toBe(0);
+    expect(f.cost).toContain("换不来更多的碗");
+  });
+
+  it("厨房真卡：差值是真的，副句说清这口火值几碗（P470）", () => {
+    const s = withCookCandidateAgain(4, 2);
+    const before = FLOW.serveMinutes;
+    try {
+      FLOW.serveMinutes = 6;
+      const f = crewFacts(s);
+      expect(f.kitchenBinds).toBe(true);
+      expect(f.cookGain).toBeGreaterThan(5);
+      expect(f.why).toContain("约多卖 5 碗");
+      // 真能多卖的时候，价钱句不许再说「换不来更多的碗」
+      expect(f.cost).not.toContain("换不来更多的碗");
+    } finally {
+      FLOW.serveMinutes = before;
+    }
+  });
+
+  it("只有一口灶时多雇人也不多开火：差值恒 0（min 卡在灶位数上）", () => {
+    const s = withCookCandidateAgain(6, 1);
+    // 一口灶、老板自己掌勺：没有缺口，多雇的那个人开不了新火
+    expect(crewFacts(s).idle).toBe(0);
+    expect(crewFacts(s).cookGain).toBe(0);
+    s.venue.stoves = 2;
+    s.staff.roster.push(cook("c1"));
+    // 两口灶、两个人掌勺：再添一个人同样换不来碗
+    expect(crewFacts(s).cookGain).toBe(0);
+  });
+});

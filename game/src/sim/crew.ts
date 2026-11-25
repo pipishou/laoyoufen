@@ -1,5 +1,6 @@
 import { HIRE_FEE_RATE, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
 import {
+  COOK_GAIN_NOISE,
   crewCostWords,
   crewFitWords,
   crewGapWords,
@@ -7,7 +8,7 @@ import {
   crewNoneWords,
   crewWhyWords,
 } from "../data/crew";
-import { capacityOf } from "./bottleneck";
+import { capacityOf, capacityWithCooks } from "./bottleneck";
 import { cookSlots } from "./staff";
 import type { GameState } from "./state";
 
@@ -57,6 +58,8 @@ export interface CrewFacts {
   idle: number;
   /** 厨房（灶）今天是不是四道闸里最紧的那一道 */
   kitchenBinds: boolean;
+  /** 再添一个人掌勺，当天上限能抬多少碗（模型算的，批 AV′ 解 P469） */
+  cookGain: number;
   /** 今天候选人里最该看的那个煮粉师傅（每一块钱技能最高的）；今天没有煮粉候选就是 null */
   hire: CrewHire | null;
   /** 人手槽还差多少累计接待量（招不到人时才有值） */
@@ -75,12 +78,21 @@ export function crewFacts(state: GameState): CrewFacts {
   const stoves = Math.max(1, state.venue.stoves);
   const slots = Math.max(1, cookSlots(state));
   const idle = Math.max(0, stoves - slots);
-  const kitchenBinds = capacityOf(state).tight === "stove";
+  const now = capacityOf(state);
+  const kitchenBinds = now.tight === "stove";
+  /**
+   * 批 AV′（解 P469）：那两句「补人也换不来碗」不再从 `tight` 反推。
+   *
+   * 「灶不是最紧那道」推不出「补人不多卖」—— 中间那一档可能只差半碗，也可能差二十碗。
+   * 这里让模型自己再算一遍「多一个人掌勺」的当天上限，差值才是那句话的依据。
+   */
+  const cookGain = capacityWithCooks(state, 1).total - now.total;
+  const cookAddsBowls = cookGain > COOK_GAIN_NOISE;
 
   const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
 
   // 只在「有人手缺口」时说第二句：没有缺口时这句话是废话（而且会把打烊单撑长）
-  const why = idle === 0 ? "" : crewWhyWords(kitchenBinds);
+  const why = idle === 0 ? "" : crewWhyWords(kitchenBinds, cookGain);
 
   // 批 AT′（解 P461 / P463）：候选池里挑的不是「最便宜」那个，而是**每一块钱技能最高**那个 ——
   // 日薪由技能定（`WAGE_BY_SKILL` 110/130/150/180/220），贵的那个技能一定更高，
@@ -115,9 +127,11 @@ export function crewFacts(state: GameState): CrewFacts {
       cost = crewGateWords(gate);
     } else if (hire) {
       // 批 AT′：技能跟着报（相同日薪下技能才是差别），介绍费标明「一次」
-      // 批 AU′（解 P466）：厨房不是最紧那道时补一句前提 —— 实测默认配平下
+      // 批 AU′（解 P466）：补人换不来碗时补一句前提 —— 实测默认配平下
       // 换谁都只多卖 0.6–1.3 碗，光报价钱等于让人白花钱。
-      cost = crewCostWords(hire, kitchenBinds);
+      // 批 AV′（解 P469 / P471）：前提的判据改成模型算的 `cookGain`，
+      // 且这个参数不再有默认值 —— 忘传会被类型系统挡住。
+      cost = crewCostWords(hire, cookAddsBowls);
     } else {
       cost = crewNoneWords();
     }
@@ -126,5 +140,5 @@ export function crewFacts(state: GameState): CrewFacts {
   // 打烊单那一行要短的：面板能写长句，打烊单只能占一行（P406 折行）
   const brief = idle > 0 ? crewGapWords(stoves, slots, true) : "";
 
-  return { stoves, slots, idle, kitchenBinds, hire, gate, words, brief, why, cost };
+  return { stoves, slots, idle, kitchenBinds, cookGain, hire, gate, words, brief, why, cost };
 }
