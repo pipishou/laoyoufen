@@ -1,4 +1,5 @@
 import { RAMEN_CALC, type CalcGroup } from "../data/ramen-calc";
+import { soupBaseById } from "../data/soupbase";
 import { BASE_COST, findTopping, type Ingredient } from "../data/ingredients";
 import type { NoodleId } from "../data/noodles";
 import { DEFAULT_PORTION, START_MAIN, mainCostYuan, portionCostYuan } from "../data/mains";
@@ -185,7 +186,7 @@ export function scoreRecipe(
   const rice = riceById(extra.rice ?? DEFAULT_RICE);
   const bone = boneById(extra.bone ?? DEFAULT_BONE);
   const qq = qualityById(extra.quality);
-  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${xpKey(extra.xp, recipe.toppings)}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${price}`;
+  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${xpKey(extra.xp, recipe.toppings)}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${recipe.base ?? ""}|${price}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -214,8 +215,10 @@ export function scoreRecipe(
    */
   const riceNoodle = rice?.noodleDelta ?? 0;
   const boneSoup = bone?.soupDelta ?? 0;
-  const gradeCost = (rice?.costDelta ?? 0) + (bone?.costDelta ?? 0);
-  const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup + pairing.soup + boneSoup);
+  const gradeCost =
+      (rice?.costDelta ?? 0) + (bone?.costDelta ?? 0) + soupBaseById(recipe.base).costDelta;
+  const baseSoup = soupBaseById(recipe.base).soupDelta;
+    const soup = Math.min(100, groupScore(subs, "soup") + flavor.soup + pairing.soup + boneSoup + baseSoup);
   // 粉型 × 汤 的契合度（REA soupaffinity）：切粉恒 100，所以默认粉型下分数不变。
   // 选错粉最多把「粉」这半分砍掉四成，选对最多加四成 —— 不碰 total 的权重公式。
   const fit = noodleFit(kind, recipe.soup);

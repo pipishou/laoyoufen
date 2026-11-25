@@ -90,6 +90,7 @@ export function syncEditing(state: GameState): void {
   item.main = state.main;
   item.portion = state.portion;
   item.recipe = {
+    base: state.recipe.base,
     soup: state.recipe.soup.slice() as typeof state.recipe.soup,
     noodle: state.recipe.noodle.slice() as typeof state.recipe.noodle,
     toppings: state.recipe.toppings.slice(),
@@ -110,6 +111,7 @@ export function selectDish(state: GameState, index: number): { ok: boolean; reas
   state.main = item.main;
   state.portion = item.portion;
   state.recipe = {
+    base: item.recipe.base,
     soup: item.recipe.soup.slice() as typeof state.recipe.soup,
     noodle: item.recipe.noodle.slice() as typeof state.recipe.noodle,
     toppings: item.recipe.toppings.slice(),

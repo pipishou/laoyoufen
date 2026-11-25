@@ -1,0 +1,20 @@
+{
+  "three_cards": true,
+  "names_cn": true,
+  "default_is_laoyou": true,
+  "summary_says_base": true,
+  "cards_no_multiplier": true,
+  "read_before": true,
+  "switch_works": true,
+  "buffer_written": true,
+  "item_written": true,
+  "summary_follows": true,
+  "soup_capped": true,
+  "cost_up_half": true,
+  "total_up": true,
+  "repeat_refused": true,
+  "locked_when_short": true,
+  "locked_disabled": true,
+  "save_version_37": true,
+  "console_clean": true
+}

@@ -60,6 +60,11 @@ export type NoodleParams = [
 ];
 
 export interface Recipe {
+  /**
+   * 汤底用哪一底（批 Z′）：`laoyou` / `tomato` / `piglioo`，没写就是老友底。
+   * 只影响汤底分与料钱两项，见 `data/soupbase.ts` 的三条纪律。
+   */
+  base?: string;
   soup: SoupParams;
   noodle: NoodleParams;
   toppings: string[];
@@ -808,6 +813,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     gradeLevel: 0,
     price: DEFAULT_PRICE,
     recipe: {
+      base: DEFAULT_RECIPE.base,
       soup: DEFAULT_RECIPE.soup.slice() as SoupParams,
       noodle: DEFAULT_RECIPE.noodle.slice() as NoodleParams,
       toppings: [],
@@ -818,6 +824,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
       {
         id: 1,
         recipe: {
+          base: DEFAULT_RECIPE.base,
           soup: DEFAULT_RECIPE.soup.slice() as SoupParams,
           noodle: DEFAULT_RECIPE.noodle.slice() as NoodleParams,
           toppings: [],

@@ -71,6 +71,7 @@ import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
 import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
 import { noodleSummary, setNoodleKind } from "./sim/noodles";
+import { setSoupBase as setSoupBaseImpl, soupBaseSummary } from "./sim/soupbase";
 import { noteById, noteTick, noteVoiceContext, rememberNoodle } from "./sim/notebook";
 import { dishNameOfItem, scoreOf } from "./sim/dish";
 import { addFavorFree, useFavor as useFavorImpl } from "./sim/favor";
@@ -308,6 +309,17 @@ panels = mountPanels(hudRoot, {
       // 阿婆的笔记本（批次八）：换粉是「粉的厚薄」那一页的钥匙
       const tried = rememberNoodle(state, state.noodle);
       noteTick(state, { noodle: state.noodle, noodlesTried: tried });
+    }
+    playSfx("ui");
+    refresh();
+  },
+  setSoupBase(id) {
+    const r = setSoupBaseImpl(state, String(id));
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else {
+      // 汤底是「这一款」的属性，改完要落笔（同份量 P47）
+      syncEditing(state);
+      hud.showToast(r.line ?? `打底换了：${soupBaseSummary(state)}`, "info");
     }
     playSfx("ui");
     refresh();

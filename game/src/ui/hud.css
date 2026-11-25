@@ -2549,3 +2549,21 @@ html.prefs-big #hud .clock{font-size:17px}
 .pane .lrow.expdone{opacity:.85}
 
 .pane .rallybox{border:2px dashed var(--red);padding:5px 8px 4px;margin:6px 0}
+
+/* 汤底三底（批 Z′）：三张卡，只写「锅里在干什么 / 汤底分 / 料钱」，不写乘数。 */
+.bases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+@media (max-width: 640px) {
+  .bases {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bcard .nline {
+  color: var(--wood);
+}

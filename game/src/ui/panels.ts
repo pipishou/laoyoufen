@@ -25,6 +25,7 @@ import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expan
 import { gradeOf, unlockViews } from "../sim/unlocks";
 import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from "../sim/sides";
 import { noodleSummary, noodleViews } from "../sim/noodles";
+import { soupBaseLockWords, soupBaseSummary, soupBaseViews } from "../sim/soupbase";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
 import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
 import { dishNameOf, dishNameOfItem, isHouseBowl } from "../sim/dish";
@@ -223,6 +224,7 @@ export interface PanelActions {
   /** 进货档（A5）：换米 / 换骨，随时可换、代价进每碗料钱 */
   setRice(id: string): void;
   setBone(id: string): void;
+  setSoupBase(id: string): void;
   /** 新开一局：清存档、回建店界面（I-20） */
   restart(): void;
   dismissReport(): void;
@@ -267,6 +269,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
             <div class="rcol">
               <div class="sechd">${icon("bowl")}菜单 · 今天卖几款<span class="sechint" data-menusum></span></div>
               <div class="menucards" data-menu></div>
+              <div class="sechd">${icon("pot")}汤底 · 拿什么打底<span class="sechint" data-basesum></span></div>
+              <div class="bases" data-bases></div>
               <div class="sechd">${icon("pan")}汤底 · 8 参</div>
               <div class="sliders" data-sliders="soup">${sliderRows("soup", SOUP_DEFS)}</div>
               <div class="sechd">${icon("pan")}主料 · 这碗是什么肉<span class="sechint" data-mainsum></span></div>
@@ -320,6 +324,9 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const noodlesEl = wrap.querySelector("[data-noodles]") as HTMLElement;
   const noodleSumEl = wrap.querySelector("[data-noodlesum]") as HTMLElement;
   const mainsEl = wrap.querySelector("[data-mains]") as HTMLElement;
+  const basesEl = wrap.querySelector("[data-bases]") as HTMLElement;
+  const baseSumEl = wrap.querySelector("[data-basesum]") as HTMLElement;
+  let lastBaseKey = "";
   const mainSumEl = wrap.querySelector("[data-mainsum]") as HTMLElement;
   const menuEl = wrap.querySelector("[data-menu]") as HTMLElement;
   const menuSumEl = wrap.querySelector("[data-menusum]") as HTMLElement;
@@ -444,6 +451,9 @@ let lastGradeKey = "";
         break;
       case "toggleside":
         actions.toggleSide(id);
+        break;
+      case "setbase":
+        actions.setSoupBase(id);
         break;
       case "setnoodle":
         actions.setNoodle(id);
@@ -1858,6 +1868,39 @@ function collectionHtml(s: GameState): string {
    * 滑块的问题是玩家在猜数字；粉型是离散选择，每张卡直接说清
    * 「它跟现在的汤配不配（契合度）」「当季还是反季」「还差几位客人解锁」。
    */
+  /**
+   * 汤底三底（批 Z′）：三张卡，说清「锅里在干什么 / 汤底分 / 料钱 / 还差几位客人」。
+   * 只改汤底分与料钱，不改任何乘数 —— 卡上也不写乘数。
+   */
+  function renderBases(s: GameState): void {
+    const views = soupBaseViews(s);
+    const key = views.map((v) => `${v.def.id}:${v.on ? 1 : 0}:${v.unlocked ? 1 : 0}`).join(",");
+    const lock = soupBaseLockWords(s);
+    baseSumEl.textContent = ` ${soupBaseSummary(s)}`;
+    baseSumEl.title = lock;
+    if (key === lastBaseKey) return;
+    lastBaseKey = key;
+    basesEl.innerHTML = views
+      .map((v) => {
+        const cls = ["ncard", "bcard"];
+        if (v.on) cls.push("on");
+        if (!v.unlocked) cls.push("locked");
+        const delta = [
+          v.def.soupDelta === 0 ? "汤底不动" : `汤底 +${v.def.soupDelta}`,
+          v.def.costDelta === 0 ? "料钱不动" : `料钱 +¥${v.def.costDelta}`,
+        ];
+        const foot = v.unlocked
+          ? `<span class="nfit">${delta.join(" · ")}</span>`
+          : `<span class="nfit">还差 ${v.short} 位客人</span>`;
+        return `<button type="button" class="${cls.join(" ")}" data-act="setbase" data-id="${v.def.id}" ${v.unlocked ? "" : "disabled"} title="${v.def.why}">
+          <span class="nname">${v.def.name}</span>
+          ${foot}
+          <span class="nline">${v.def.look}</span>
+        </button>`;
+      })
+      .join("");
+  }
+
   function renderNoodles(s: GameState): void {
     const views = noodleViews(s);
     const key = views
@@ -2032,6 +2075,7 @@ function collectionHtml(s: GameState): string {
       renderMenu(s);
     renderMains(s);
       renderPortions(s);
+      renderBases(s);
       renderNoodles(s);
       // 这碗粉叫什么（P43）：四轴（做法×主料×粉型×加料）从当前配置推出来，评语按分数 5 档
       const dishKey = `${dishNameOf(s)}|${score.total}`;

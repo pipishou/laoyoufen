@@ -26,6 +26,16 @@ export const EVENT_ROLL_MINUTE = 0;
 export const EVENT_START_ABS_DAY = 1;
 /** 抽取间隔（天）。MVP 定为 7：每周一个叙事事件。 */
 export const EVENT_ROLL_INTERVAL_DAYS = 7;
+/**
+ * 剧本那一幕要指的事，店里得先有余钱才来（批 Z′，解 P364）。
+ *
+ * 头一个月那五件「本来要等两三个月才遇到」的事（酸笋坊、老客带人、地滑、别家开张、
+ * 夜市摊）放在十二幕里，是为了让新手第一天就知道「这些会发生」；但替身四种子实测
+ * 营收因此掉了十一个点 —— 因为穷店被这五件提前收了一笔。所以加一道闸：
+ * 现金不到这条线，这一幕指的事先不来，剧本本身照讲。
+ */
+export const SCRIPT_EVENT_MIN_CASH = 2000;
+
 /** 事件日志保留条数 */
 export const EVENT_LOG_LIMIT = 20;
 
@@ -109,7 +119,7 @@ export function tickEvents(state: GameState): void {
   const act = scriptActById(state.flow.actToday ?? "");
   if (act?.eventId) {
     const def = EVENTS_BY_ID.get(act.eventId);
-    if (def && eventEligible(state, def, today)) {
+    if (def && state.cash >= SCRIPT_EVENT_MIN_CASH && eventEligible(state, def, today)) {
       ev.pending = { id: def.id, absDay: today };
       const pressure = isPressureEvent(def);
       ev.lastKind = pressure ? "pressure" : "plain";
