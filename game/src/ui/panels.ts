@@ -46,6 +46,7 @@ import { PACK_SETUP } from "../data/pack";
 import { packOwned, packRateWords, packSkuLines, packSkuWords, packSummary } from "../sim/pack";
 import { newsDate, newsList, newsSummary } from "../sim/news";
 import { MANUAL_TOTAL, manualSections } from "../data/manual";
+import { manualRead, manualReadCount } from "../sim/manual";
 import { placeLineOf, placeShortsOf } from "../data/places";
 import { dishNoteOf } from "../data/dish-name";
 import { branchSizeOptions, branchSummary, branchViews } from "../sim/branches";
@@ -185,6 +186,8 @@ export interface PanelActions {
   renameDish(itemId: number, name: string): void;
   /** 换招牌（批 Y′）：清洗规则与开张一致，不改任何数值 */
   renameShop(name: string): void;
+  /** 手册读完一页（只有读没读，不给奖励） */
+  readManual(id: string): void;
   /** 袋装线（A7）：置办包装机 */
   buyPack(): void;
   /** 批次七：货架换渠道 / 调价 */
@@ -583,6 +586,19 @@ let lastGradeKey = "";
   });
 
   // 改名用 change（离开输入框或按回车才生效）：input 每敲一个字就重渲染，光标会丢
+  // 手册展开即算读过（批 AD′，解 P387）：不弹提示、不给奖励，只在页签上留个印
+  wrap.addEventListener(
+    "toggle",
+    (ev) => {
+      const det = ev.target as HTMLElement;
+      if (!(det instanceof HTMLDetailsElement) || !det.open) return;
+      const id = det.getAttribute("data-manual") ?? "";
+      if (id === "") return;
+      if (!lastState || manualRead(lastState).includes(id)) return;
+      actions.readManual(id);
+    },
+    true,
+  );
   wrap.addEventListener("change", (e) => {
     const el = e.target as HTMLInputElement;
     if (el.dataset.rename) actions.renameDish(Number(el.dataset.rename), el.value);
@@ -1737,14 +1753,14 @@ function collectionHtml(s: GameState): string {
    * 默认全收起 —— 打开图鉴就看到一大段说明书，反而不想读。
    */
   const manualSec = `<div class="sec">
-      <div class="sechd">${icon("book")}店里的手册 · ${MANUAL_TOTAL} 页</div>
+      <div class="sechd">${icon("book")}店里的手册 · ${MANUAL_TOTAL} 页<span class="sechint" data-manualread>${manualReadCount(s)} / ${MANUAL_TOTAL} 读过</span></div>
       <div class="sechint">一页一件事，点开看。手册只讲这间店真有的规矩。</div>
       ${manualSections()
         .map(
           (grp) => `<div class="mgroup"><div class="mghd">${grp.section}</div>
           ${grp.pages
             .map(
-              (pg) => `<details class="mpage" data-manual="${pg.id}"><summary>${pg.title}</summary>
+              (pg) => `<details class="mpage" data-manual="${pg.id}"${manualRead(s).includes(pg.id) ? ' data-read="1"' : ""}><summary>${pg.title}${manualRead(s).includes(pg.id) ? '<span class="mread">读过</span>' : ""}</summary>
             <div class="mgist">${pg.gist}</div><div class="mbody">${pg.body}</div></details>`,
             )
             .join("")}
@@ -2171,7 +2187,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.month}|${s.contest.lastMonth}|${s.contest.results.length}|${score.total}|${Math.floor(s.cash / 100)}`;
       html = contestHtml(s, score);
     } else if (current === "collection") {
-      key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}|${(s.collection.flavors ?? []).length}|${(s.bowls ?? []).length}|${(s.flow.notes ?? []).length}|${s.news.length}|${(s.rivals ?? []).filter((r) => !r.closed).length}|${s.bowl ?? ""}|${s.gradeLevel}|${s.district}|${(s.branches ?? []).length}`;
+      key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}|${(s.collection.flavors ?? []).length}|${(s.bowls ?? []).length}|${(s.flow.notes ?? []).length}|${s.news.length}|${(s.rivals ?? []).filter((r) => !r.closed).length}|${s.bowl ?? ""}|${s.gradeLevel}|${s.district}|${(s.branches ?? []).length}|${manualRead(s).length}`;
       html = collectionHtml(s);
     } else {
       key = `${s.months.length}|${s.years.length}|${s.pendingReport?.year ?? -1}|${s.finished}|${Math.floor(s.cash / 100)}`;

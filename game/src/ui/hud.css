@@ -2530,6 +2530,28 @@ html.prefs-big #hud .clock{font-size:17px}
 .daywhy [data-invest-line]::before{content:"到点 · "}
 .daywhy [data-thick-line]::before{content:"挂汤 · "}
 .daywhy [data-act-line]::before{content:"功课 · "}
+/* 打烊单折行（批 AD′，解 P406）：375 宽一屏只放三条，多的收起来 */
+.daywhy [data-why-fold]{
+  margin-top:2px;
+  color:var(--red);
+  font-size:10px;
+  letter-spacing:1px;
+  cursor:pointer;
+  text-decoration:underline dotted;
+}
+.daywhy [data-why-fold]:empty{display:none}
+
+/* 手册读过标记（批 AD′，解 P387）：读过的页收一档，抬头上给个进度 */
+.pane .mpage[data-read="1"] > summary{opacity:.72}
+.pane .mpage .mread{
+  margin-left:6px;
+  padding:0 4px;
+  font-size:9px;
+  letter-spacing:1px;
+  color:var(--paper);
+  background:var(--wood);
+  border:2px solid var(--sand);
+}
 
 /* 老板那碗：老友猪杂伊面（批 S′）—— 只是认出来，不是新数值 */
 .pane .dcard .dmine{

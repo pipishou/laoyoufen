@@ -646,6 +646,8 @@ export interface GameState {
   ingredientXp: Record<string, number>;
   /** 前三十天十二幕：已经讲过哪几幕（批 U′；可选，老档没有就当空表） */
   script?: { seen: string[] };
+  /** 手册读过哪几页（批 AD′，解 P387）—— 只有读没读，不给奖励 */
+  manual?: { read: string[] };
   /** 街上的门路（批 B′）：id → 到期那天（打烊天数）；可选，老档缺省当没买过 */
   investments?: Record<string, number>;
   /** 杂货铺（批 B′）：id → 日戳 month*100+day；只当天有效 */
@@ -934,6 +936,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     quality: DEFAULT_QUALITY,
     ingredientXp: {},
     script: { seen: [] },
+  manual: { read: [] },
     investments: {},
     goods: {},
     skills: {},

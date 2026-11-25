@@ -1,0 +1,53 @@
+{
+  "url": "http://localhost:4243/",
+  "checks": {
+    "fold_total_over_three": {
+      "ok": true,
+      "detail": "{'text': '还有 1 条 · 点开', 'shown': 3, 'total': 4}"
+    },
+    "fold_hides_extra": {
+      "ok": true,
+      "detail": "3"
+    },
+    "fold_says_more": {
+      "ok": true,
+      "detail": "还有 1 条 · 点开"
+    },
+    "fold_click_shows_all": {
+      "ok": true,
+      "detail": "{'text': '收起', 'shown': 4}"
+    },
+    "fold_says_collapse": {
+      "ok": true,
+      "detail": "收起"
+    },
+    "manual_pages_sixteen": {
+      "ok": true,
+      "detail": "{'counter': '0 / 16 读过', 'pages': 16, 'unread': 16}"
+    },
+    "manual_counter_zero": {
+      "ok": true,
+      "detail": "0 / 16 读过"
+    },
+    "manual_open_marks_read": {
+      "ok": true,
+      "detail": "{'counter': '1 / 16 读过', 'read': '1', 'tag': True, 'saved': 1}"
+    },
+    "manual_counter_counts": {
+      "ok": true,
+      "detail": "1 / 16 读过"
+    },
+    "manual_saved_in_state": {
+      "ok": true,
+      "detail": "1"
+    },
+    "save_version": {
+      "ok": true,
+      "detail": "37"
+    },
+    "console_clean": {
+      "ok": true,
+      "detail": "[]"
+    }
+  }
+}

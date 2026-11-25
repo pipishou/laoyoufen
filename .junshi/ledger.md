@@ -1197,3 +1197,16 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 替身四种子与 Z″/AA′/AB′ **逐位一致**：均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**。
 - 上游：行 136 的批 AB′ 已部署（tar md5 `4c9c486cd0e3321ab9a565ed0283c727`、417 块、`events 83 / playtests 97`、线上 `index-C5FoonfZ.js` 1,736,981 B / `index-Cn-mRMRM.css` 55,214 B ＝本地）。
 - 文档 `docs/工序反馈AC′-2026-11-25.md`。新缺口 P408（只指最慢那段）/ P409（设备页与配方页各说一半）/ P410（开局靠 `STATION_ORDER` 顺序决定答案）。
+
+### 行 138 · 2026-11-25 · 打烊单收三条 · 手册记读过（批 AD′）
+
+- 两条都是「内容没变、读起来变了」：打烊单不再一屏滑两页（解 P406），手册翻过的页留个印（解 P387）。一格数值没动，替身四种子与 AC′ **逐位一致**。
+- `game/src/ui/hud.ts`：`.daywhy` 末尾加 `<span data-why-fold></span>`；新增 `foldWhyLines()` 与 `whyOpen` 开关 —— 有内容的行超过三条就收起，末尾写「还有 N 条 · 点开」，点开变「收起」；只收不删、不改顺序。
+- `game/src/ui/hud.css`：`[data-why-fold]` 红色点线小字（10px），空时不占位。
+- 手册：新建 `game/src/sim/manual.ts`（`manualRead` / `manualHasRead` / `markManualRead` / `manualReadCount` / `manualReadWords`）；`GameState.manual?: { read: string[] }`（可选，**存档仍 37**）；`panels.ts` 的 `details` 挂 `data-read="1"` 与 `.mread`「读过」、`wrap` 上 `toggle` 捕获监听调 `actions.readManual(id)`、抬头写 `N / 16 读过`；`main.ts` 加 `readManual(id)` 动作。
+- **第十三次「键漏字段」**：collection 页的缓存键补 `manualRead(s).length` —— 不加这格，标记写进状态了界面还是旧的（探针 `manual_open_marks_read` 首跑红就是因为这个）。
+- 新建 `game/src/sim/manual-read.test.ts` **5 例**（开局零 / 同页只记一次 / 空 id 不记 / 进度封在总页数上 / 老档没有字段也读得动）。
+- 新探针 `tools/gate/fold_probe.py`（preview **4243**）**12 / 12**。两个坑：① `.daywhy span` 会把折叠按钮自己也数进去 → 要写 `span:not([data-why-fold])`；② 日结台词不是塞字段就出得来 —— 「为什么」读 `dayReport.lostQueue/lostPrice/lostWait`（`game/src/sim/bottleneck.ts:178`）、「功课」读 `state.flow.actToday`（不是 `dayReport.act`）。
+- 验收：`tsc` 0；`vitest --no-file-parallelism` **93 文件 996 用例**；`copy_gate` ok；`eye_gate --slug fold` 五视口 **725 · 778 · 584 · 1246 · 1511** 色、stamp **171**；`ai_gate` ok；构建 `index-D46XsLD5.js` **1,738,362 B** / `index-BREpkhCi.css` **55,638 B**。
+- 上游：行 137 的批 AC′ 已部署（tar md5 `a0fb6905104e6c95a7e8ed35288d186f`、417 块、`events 83 / playtests 97`、外网四项 200）。
+- 文档 `docs/打烊单收三条与手册记读过AD′-2026-11-25.md`。新缺口 P411（阈值写死三条）/ P412（收起状态不记忆）/ P413（设置里的操作一览不算读过）/ P414（`manualReadWords` 只有测试在调）。

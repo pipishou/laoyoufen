@@ -267,7 +267,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       </div>
       <div class="daynote" data-day-note></div>
       <div class="dayhook" data-day-hook><span class="hookmain" data-hook-main></span><span class="hookwhy" data-hook-why></span><span class="hookline" data-hook-line></span></div>
-      <div class="daywhy"><span data-act-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span></div>
+      <div class="daywhy"><span data-act-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span><span data-why-fold></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
@@ -293,6 +293,29 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const investLine = dayWrap.querySelector("[data-invest-line]") as HTMLElement;
   const thickLine = dayWrap.querySelector("[data-thick-line]") as HTMLElement;
   const actLineEl = dayWrap.querySelector("[data-act-line]") as HTMLElement;
+  /** 打烊单折行（批 AD′，解 P406）：窄屏上七行太长，默认只留前三条 */
+  const whyFoldEl = dayWrap.querySelector("[data-why-fold]") as HTMLElement;
+  let whyOpen = false;
+  whyFoldEl.addEventListener("click", () => {
+    whyOpen = !whyOpen;
+    foldWhyLines();
+  });
+
+  /**
+   * 有内容的那几行按顺序排好，超过三条就收起来。
+   * 为什么是三条 —— 375 宽一屏正好放下三条十一号字，再多就要滑两屏（P406）。
+   */
+  function foldWhyLines(): void {
+    const lines = [actLineEl, lossLine, menuLine, investLine, thickLine].filter(
+      (el) => (el.textContent ?? "").trim() !== "",
+    );
+    const limit = 3;
+    lines.forEach((el, i) => {
+      el.hidden = !whyOpen && i >= limit;
+    });
+    const rest = lines.length - limit;
+    whyFoldEl.textContent = rest > 0 ? (whyOpen ? "收起" : `还有 ${rest} 条 · 点开`) : "";
+  }
 
   dayWrap.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("[data-day-next]")) opts.onNextDay?.();
@@ -671,6 +694,7 @@ const render = (s: GameState, score: RecipeScore): void => {
       thickLine.textContent = thick > 0 ? `${thick} 碗走的是猪脚卤水，客人说汤挂在粉上` : "";
       // 前三十天十二幕（批 U′）：今天这一幕念一遍。CSS 的 ::before 已经写了「功课 · 」
       actLineEl.textContent = actTodayLine(s);
+      foldWhyLines();
     }
     el.cash.textContent = formatMoney(s.cash);
     el.stars.textContent = stars(s.reputation);

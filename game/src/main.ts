@@ -81,6 +81,7 @@ import { rallyMember, resolveRally } from "./sim/rally";
 import { fire, hire, toggleRest } from "./sim/staff";
 import { ackDayReport, createInitialState, openShop, tickMinute, type GameState } from "./sim/state";
 import { openForBusiness, renameShop as renameShopImpl } from "./sim/setup";
+import { markManualRead } from "./sim/manual";
 import { mountSetup, type SetupScreen } from "./ui/setup";
 import { mountArena, type ArenaUi } from "./ui/arena";
 import { COMMAND_BY_ID, COMMAND_KEY_MAP, arenaById } from "./data/arena";
@@ -410,6 +411,10 @@ panels = mountPanels(hudRoot, {
       playSfx("ui");
     }
     refresh();
+  },
+  /** 手册读完一页（批 AD′，解 P387）：只留个印，不弹提示不给奖励 */
+  readManual(id) {
+    if (markManualRead(state, String(id))) refresh();
   },
   renameDish(itemId, name) {
     const r = renameDishImpl(state, Number(itemId), String(name ?? ""));
