@@ -32,7 +32,7 @@ import { GEARS } from "../data/gear";
 import { hasGear } from "./gear";
 import { equipLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
-import { capacityGain, lossSplitOf } from "./bottleneck";
+import { capacityGain, capacityOf, lossSplitOf } from "./bottleneck";
 import { menuViews } from "./menu";
 import { dishNameOfItem } from "./dish";
 
@@ -231,10 +231,14 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
 
   // 门口站满（queue 主因）时先看「能不能多坐几个人」：
   // 排队的本质是坐下的人太少，灶再快也接不住站着的那一队（试玩 11-21：座位 2、排队 12/12）。
+  // 批 AM′：座位那一环没有富余（座位日碗量不高于出碗日碗量）时也算「先添凳」。
+  // 实测（`docs/钩子先添凳AM′-2026-11-25.md` 那张四天表）：4 座时买凳第 4 天多卖 18.4 碗，
+  // 而买灶一碗都不多（被座位闸卡住）—— 旧版按「每块钱抬高多少碗」排，把平局判给灶，方向是反的。
   if (preferSeat) {
-    const seatPicks = pool.filter((p) => p.kind === "seat");
+    const seatPicks = picks.filter((p) => p.kind === "seat");
     if (seatPicks.length > 0) {
-      return seatPicks.sort((a, b) => a.cost - b.cost).find((p) => state.cash >= p.cost) ?? seatPicks[0]!;
+      const byCost = seatPicks.sort((a, b) => a.cost - b.cost);
+      return byCost.find((p) => state.cash >= p.cost) ?? byCost[0]!;
     }
   }
 
@@ -284,7 +288,11 @@ export function nextHook(state: GameState): HookPlan {
         };
       }
     }
-    const pick = capacityPick(state, split.dominant === "queue");
+    // 批 AM′：座位没有富余时也先添凳 —— `cap.seats <= cap.stove` 就是「坐着能吃下的人
+    // 不比灶一天能出的碗多」，这时候灶再快也只是让菜等着凳子。
+    const cap = capacityOf(state);
+    const seatTight = cap.seats <= cap.stove;
+    const pick = capacityPick(state, split.dominant === "queue" || seatTight);
     if (pick) {
       const head = state.cash >= pick.cost ? `先把「${pick.what}」加上` : `卖了钱先添「${pick.what}」`;
       const dayWord = sample.live ? "今天" : "昨天";
