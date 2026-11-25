@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "./state";
 import { crewFacts } from "./crew";
+import { capacityOf, capacityWithCooks } from "./bottleneck";
 import { serveParallel, cookSlots, inNoodlesNum } from "./staff";
 import type { StaffMember } from "./state";
 import { FLOW } from "../data/balance";
@@ -225,7 +226,7 @@ describe("批 AV′：补一个人到底多卖几碗", () => {
     expect(f.cost).toContain("换不来更多的碗");
   });
 
-  it("厨房真卡：差值是真的，副句说清这口火值几碗（P470）", () => {
+  it("厨房真卡：差值是真的，副句把这口火值几碗说出来，并点名技能（P470 / P472）", () => {
     const s = withCookCandidateAgain(4, 2);
     const before = FLOW.serveMinutes;
     try {
@@ -233,12 +234,65 @@ describe("批 AV′：补一个人到底多卖几碗", () => {
       const f = crewFacts(s);
       expect(f.kitchenBinds).toBe(true);
       expect(f.cookGain).toBeGreaterThan(5);
-      expect(f.why).toContain("约多卖 5 碗");
+      // 批 AW′（P473）：五碗这个量级保留一位小数，5.45 写「5.5 碗」而不是抹成「5 碗」
+      expect(f.why).toContain("约多卖 5.5 碗");
+      // 批 AW′（P472）：说的是「这一个技能 3 的人」，不是「随便一个人」
+      expect(f.why).toContain("技能 3");
       // 真能多卖的时候，价钱句不许再说「换不来更多的碗」
       expect(f.cost).not.toContain("换不来更多的碗");
     } finally {
       FLOW.serveMinutes = before;
     }
+  });
+
+  it("同一条街同一口灶：换个技能更高的师傅，多卖的碗也跟着涨（P472）", () => {
+    const before = FLOW.serveMinutes;
+    try {
+      // 压到 12 分一碗：这时「多一个人」只在部分配置里能把灶抬到仍低于座位/来客的位置，
+      // 技能才有地方显出来（首版用 serve 6 + 4 座，两种技能都被座位 65.45 压住，差值是同一个数）
+      FLOW.serveMinutes = 12;
+      const low = withCookCandidateAgain(4, 2, 110);
+      low.staff.candidates[0]!.skill = 1;
+      const high = withCookCandidateAgain(4, 2, 220);
+      high.staff.candidates[0]!.skill = 5;
+      for (const s of [low, high]) s.capacity = 999;
+
+      const gainLow = crewFacts(low).cookGain;
+      const gainHigh = crewFacts(high).cookGain;
+      // 技能真的进来了：高技能那个人的差值更大
+      expect(gainHigh).toBeGreaterThan(gainLow);
+      // 话里报的是那个人自己的技能，两个人不是同一句
+      expect(crewFacts(low).why).toContain("技能 1");
+      expect(crewFacts(high).why).toContain("技能 5");
+      expect(crewFacts(high).why).not.toBe(crewFacts(low).why);
+    } finally {
+      FLOW.serveMinutes = before;
+    }
+  });
+
+  it("技能进了模型，但日上限还被别的闸压着时，差值可以相同 —— 句子仍报那个人（P472）", () => {
+    const before = FLOW.serveMinutes;
+    try {
+      FLOW.serveMinutes = 6;
+      const low = withCookCandidateAgain(4, 2, 110);
+      low.staff.candidates[0]!.skill = 1;
+      const high = withCookCandidateAgain(4, 2, 220);
+      high.staff.candidates[0]!.skill = 5;
+      // 灶项自己变了（技能走的两条链都在里面）……
+      expect(capacityWithCooks(high, 1, 5).stove).toBeGreaterThan(capacityWithCooks(low, 1, 1).stove);
+      // ……可今天座位先顶住 65.45，两种人抬到顶都是同一个数：这不是 bug，是四道闸取最小
+      expect(crewFacts(high).cookGain).toBeCloseTo(crewFacts(low).cookGain, 9);
+      expect(crewFacts(high).why).toContain("技能 5");
+      expect(crewFacts(low).why).toContain("技能 1");
+    } finally {
+      FLOW.serveMinutes = before;
+    }
+  });
+
+  it("不添人时模型自己必须原地不动（多算 0 个人的口径等于 capacityOf）", () => {
+    const s = withCookCandidateAgain(6, 2);
+    expect(capacityWithCooks(s, 0, 0).total).toBeCloseTo(capacityOf(s).total, 9);
+    expect(capacityWithCooks(s, 0, 5).total).toBeCloseTo(capacityOf(s).total, 9);
   });
 
   it("只有一口灶时多雇人也不多开火：差值恒 0（min 卡在灶位数上）", () => {

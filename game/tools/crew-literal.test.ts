@@ -22,6 +22,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  bowlGainWords,
   crewCostWords,
   crewFitWords,
   crewGapWords,
@@ -118,17 +119,47 @@ describe("灶位那句话只有一个出处（P462 / P465 / P467）", () => {
     expect(loose).toContain("厨房不是最紧那道");
   });
 
-  it("副句把「这口火值几碗」说出来：差一点与差很远不同一句（P470）", () => {
+  it("副句把「这口火值几碗」说出来：差一点与差很远不同一句（P470 / P473）", () => {
     const near = crewWhyWords(true, 5.45);
     const far = crewWhyWords(true, 30.2);
     const off = crewWhyWords(false, 0);
     expect(near).toContain("今天卡的就是灶");
-    expect(near).toContain("约多卖 5 碗");
+    // 批 AW′（P473）：五碗这个量级保留一位小数 —— 5.45 写「5.5 碗」，5.4 写「5.4 碗」
+    expect(near).toContain("约多卖 5.5 碗");
+    expect(crewWhyWords(true, 5.4)).toContain("约多卖 5.4 碗");
+    expect(near).not.toBe(crewWhyWords(true, 5.4));
     expect(far).toContain("约多卖 30 碗");
     expect(near).not.toBe(far);
     expect(off).toContain("多开一口火也不会多卖");
-    // 半碗也算一个人：不许出现「约多卖 0 碗」
-    expect(crewWhyWords(true, 0)).toContain("约多卖 1 碗");
+    // 不到一碗时不许糊成「1 碗」（那是假话），也不许写「0 碗」
+    expect(crewWhyWords(true, 0.6)).toContain("约多卖 不到 1 碗");
+    expect(crewWhyWords(true, 0)).not.toContain("0 碗");
+  });
+
+  it("取整只有一条规则：十碗以内带小数、十碗以上取整（P473）", () => {
+    expect(bowlGainWords(0.6)).toBe("不到 1 碗");
+    expect(bowlGainWords(1)).toBe("1 碗");
+    expect(bowlGainWords(5)).toBe("5 碗");
+    expect(bowlGainWords(5.4)).toBe("5.4 碗");
+    expect(bowlGainWords(5.45)).toBe("5.5 碗");
+    expect(bowlGainWords(9.4)).toBe("9.4 碗");
+    expect(bowlGainWords(9.95)).toBe("10 碗");
+    expect(bowlGainWords(30.2)).toBe("30 碗");
+    // 负值（理论上不该出现）当 0 处理，不许写「-1 碗」
+    expect(bowlGainWords(-3)).toBe("不到 1 碗");
+  });
+
+  it("副句里的人也得点名技能：技能变了句子跟着变（P472）", () => {
+    const one = crewWhyWords(true, 4.2, 1);
+    const five = crewWhyWords(true, 6.8, 5);
+    expect(one).toContain("技能 1");
+    expect(five).toContain("技能 5");
+    expect(one).toContain("约多卖 4.2 碗");
+    expect(one).not.toBe(five);
+    // 今天没人在问工时落回「多一个人」的说法，不许编一个技能等级
+    const nobody = crewWhyWords(true, 4.2, null);
+    expect(nobody).toContain("多一个人约多卖");
+    expect(nobody).not.toContain("技能");
   });
 
   it("价钱句的「雇了能多卖吗」必须由调用方算好传进来（P471）", () => {

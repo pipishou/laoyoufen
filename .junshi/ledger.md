@@ -1470,3 +1470,23 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 构建 `index-BgQOVPO3.js` **1,746,670 B**（gzip 525.50）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
 - 文档 `docs/换个人到底多卖几碗AV′-2026-11-26.md`（八节：三条是一件事 / `capacityWithCooks` 与口径 / 三句话跟着改 / 第十七次键漏字段 / 验收表 / 没动什么 / 新缺口 P472–P475 / 复现命令）。
 - 新缺口：**P472**（`cookGain` 只算「多一个人」，不算「这个人的技能」，界面那句话其实跟着技能变）/ **P473**（「约多卖 N 碗」是 `Math.round`，5.4 与 5.45 都写 5）/ **P474**（`COOK_GAIN_NOISE = 0.5` 与 P450 的「+0.5」是同一把拍子写了两处）/ **P475**（`capacityWithCooks` 没进第三节口径表）。
+
+### 行 159 · 2026-11-26 · 批 AW′：补进来的是谁也得进模型（P472 / P473 / P474 / P475）
+
+- 四条是批 AV′ 刚记下的四条尾巴，都长在同一个新函数上：`capacityWithCooks(state, extra)` 只认「多了几个人」，不认「多了个什么人」。
+- P472：`game/src/sim/staff.ts` 新增 `staffWithExtraCooks(state, add, skill): { parallel, multiplier }` —— 两条链一起算：并行槽 `min(灶位, 掌勺人数 + add) × 一锅几份`（技能总和过 50 点再加一份），以及煮技总和进 `serveMultiplier` 的 boil 项（`1 - min(0.55, 技能 × 0.045)`）。`capacityWithCooks(state, extra, cookSkill = 0)` 改用它。`sim/crew.ts` 把 hire 候选块**整体上移到 `cookGain` 之前** —— 先知道是谁，才谈得上他能多卖几碗。
+- 副句跟着点名：`crewWhyWords(kitchenBinds, cookGain, cookSkill)` —— 「今天卡的就是灶 —— 补一个技能 5 的师傅，这口灶就烧得上了（约多卖 35.5 碗）」；没人来问工就落回「多一个人」，不编技能等级。
+- P473：取整收成 `bowlGainWords(gain)`（`game/src/data/crew.ts`）：不到 1 碗写「不到 1 碗」、≥ 9.95 按整碗、其余四舍五入到一位小数。实测同店同灶下技能 1 → 32.83 碗（写「32.8 碗」）、技能 5 → 35.45 碗（写「35.5 碗」）。
+- P474：半碗容差收成 `game/src/data/balance.ts` 的 `BOWL_EPSILON = 0.5`，`demandBlocked`（P450）与 `cookAddsBowls` 都读它，`COOK_GAIN_NOISE` 删除。
+- P475：`docs/ACCEPTANCE.md` 第三节新增「五个『当天上限』口径」表 —— `capacityOf` / `capacityGain` / `capacityWithCooks` / `demandPerDay` / `serveParallel` 逐个写清「回答什么 / 用了几道闸」，并点明 `capacityGain` 的出碗三段是**三道闸**口径。
+- 实测两张表（`tmp_aw1.test.ts`，跑完已删；夹具 `createInitialState` + `venue.seats/stoves` + `capacity = 999` + 一个煮粉候选 + `totalCustomers = 300`）：
+  - `serve 12` / 4 座 / 2 灶：加人前灶 30.0、座位 65.5、tight stove；技能 1 → 灶 62.8、日上限 62.83、**+32.83 碗**；技能 3 → 灶 69.4 → 65.45、**+35.45**；技能 5 → 灶 77.4 → 同样 65.45（**座位压住**）。
+  - `serve 6` / 4 座 / 2 灶：加人前灶 60.0、座位 65.5；技能 1/3/5 加人后灶 125.7 / 138.7 / 154.8，日上限一律 65.45 → **+5.45 碗**（三档同值）。
+  → 这条写成了测试：**技能真的进了灶项，但日上限是四道闸取最小 —— 换个更高的师傅不保证再多卖**。
+- 测试：`src/sim/crew.test.ts` 14 → **17 例**（技能越高多卖越多、被别的闸压住时差值可以相同、`capacityWithCooks(s, 0, x).total` 与 `capacityOf(s).total` 到 9 位相等）；`game/tools/crew-literal.test.ts` 10 → **12 例**（`bowlGainWords` 八个边界、「副句点名技能 / 没人问工时不编等级」）。
+- **没有第十八次键漏字段**：`cookGain` 已在 AV′ 补进两处缓存键；本批只是它的算法变了，键里那个数跟着变，未新增字段。
+- 五门：`tsc` 0；`vitest --no-file-parallelism` **106 文件 1082 用例**；`copy_gate` ok；`eye_gate --slug crew6` 五视口 **723 · 778 · 581 · 1241 · 1512** 色、stamp **180**、控制台 10 条（预览 `/laoyou-api/` 404 良性）；`ai_gate` 四段 `"ok": true`（跑完已重建）；帧差门重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps 58/60、2475 采样、堆 0.0、一句话接口 7 次 0.19/天、console 18 条全白名单、4xx 全在 `/laoyou-api/`）；`debug_exit_gate` **4 / 4**（扫 1 个 js 共 1,747,236 B，只挂 `__laoyou`）；`crew_probe.py` **25 / 25 true**（本批不加判据 —— 副句新说法只在「厨房真卡」时出现，探针造不出那个配平）。
+- 替身四种子 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**，与 AT′ / AU′ / AV′ **逐位相同**（替身不读 `crewFacts`，本批只改那句诊断的算法）。
+- 构建 `index-BDxIwBEJ.js` **1,747,236 B**（gzip 525.72）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
+- 文档 `docs/换谁掌勺到底差几碗AW′-2026-11-26.md`（九节）。
+- 新缺口：**P476**（句子报「技能 5」而候选池今天可能没有技能 5 的人，池子与句子之间少一次核对）/ **P477**（`staffWithExtraCooks` 只支持整份技能累加，不支持同一个人成长）/ **P478**（`bowlGainWords` 的十碗分界 9.95 也是拍的）/ **P479**（`BOWL_EPSILON` 不在 `FLOW` 里也不在 `resetFlowTuning` 里，看着像可调参数）。

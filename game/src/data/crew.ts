@@ -47,31 +47,53 @@ export function crewFitWords(stoves: number, slots: number): string {
 }
 
 /**
- * 半碗以内的差是浮点噪声，不算「多卖」（批 AV′，解 P469）。
+ * 多卖几碗的那句话 —— **全项目只有这一处**（批 AW′ 解 P473）。
  *
- * 为什么是半碗而不是一碗：模型里 `total` 是 `min(stove, seats, cap, demand)` 的浮点结果，
- * 一次除法链下来在 1e-13 量级抖动；0.5 只用来挡噪声，不承担任何「够不够划算」的判断。
+ * 原来直接 `Math.round(cookGain)`，于是 5.4 与 5.45 都写「5 碗」：技能高一级带来的那点差别
+ * 在文案上凭空消失，玩家看不出「为什么这个人更贵」。
+ *
+ * 规则（只有一条，也只在这里）：
+ *   ① 不到一碗 → 「不到 1 碗」（0.6 碗写成「1 碗」是假话，写成「0.6 碗」又太啰嗦）；
+ *   ② 十碗以内 → 保留一位小数（5.4 →「5.4 碗」，5.45 →「5.5 碗」，差别看得见）；
+ *   ③ 十碗以上 → 取整（30.2 →「30 碗」；这个量级差半碗没人计较）。
+ *
+ * 数字仍由调用方从确定性模拟算好传进来，这里只管语法与取整（AGENTS.md 三、数值纪律）。
  */
-export const COOK_GAIN_NOISE = 0.5;
+export function bowlGainWords(gain: number): string {
+  const n = Math.max(0, gain);
+  if (n < 1) return "不到 1 碗";
+  if (n >= 9.95) return `${Math.round(n)} 碗`;
+  const tenth = Math.round(n * 10) / 10;
+  return Number.isInteger(tenth) ? `${tenth} 碗` : `${tenth.toFixed(1)} 碗`;
+}
 
 /**
- * 副句：多开一口火到底有没有用（批 AV′ 解 P470 —— 原来只有一个 bool，差一点与差很远说同一句）。
+ * 副句：多开一口火到底有没有用（批 AV′ 解 P470；批 AW′ 解 P472 / P473）。
  *
  * 两档，判据是**模型算出来的 `cookGain`**（多一个人掌勺当天上限能抬几碗），不是 `tight` 反推：
  *   ① 灶真是紧的那道 —— 直说「补齐人手这口灶才烧得上」，并把这口火**值几碗**说出来；
  *      差一点（多卖 5 碗）与差很远（多卖 30 碗）从此不是同一句话。
  *   ② 灶根本不是紧的那道 —— 说清「多开一口火也不会多卖」。
  *
- * 这里唯一出现的数字是 `Math.round(cookGain)`，由调用方从确定性模拟算好传进来
- * （AGENTS.md 三、数值纪律：文案不产数字）。
+ * `cookSkill` 是「补进来的这个人」的技能（批 AW′ 解 P472）：`cookGain` 本来就是按某个具体的人
+ * 算出来的（技能越高，同一口灶出得越快）；这里不带技能，玩家会以为「换谁都一样」，而实际
+ * 差一个等级就是一千多块的工钱差。今天没人在问工时传 `null`，落回「多一个人」的说法。
  */
-export function crewWhyWords(kitchenBinds: boolean, cookGain: number): string {
-  if (kitchenBinds) {
-    const bowls = Math.max(1, Math.round(cookGain));
-    return `今天卡的就是灶 —— 补齐人手这口灶才烧得上（多一个人约多卖 ${bowls} 碗）。`;
+export function crewWhyWords(
+  kitchenBinds: boolean,
+  cookGain: number,
+  cookSkill: number | null = null,
+): string {
+  if (!kitchenBinds) {
+    return "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
   }
-  return "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
+  const bowls = bowlGainWords(cookGain);
+  if (cookSkill === null) {
+    return `今天卡的就是灶 —— 补齐人手这口灶才烧得上（多一个人约多卖 ${bowls}）。`;
+  }
+  return `今天卡的就是灶 —— 补一个技能 ${cookSkill} 的师傅，这口灶就烧得上了（约多卖 ${bowls}）。`;
 }
+
 
 /** 价钱句的尾巴：补人换不来碗时，把这个前提说出来（批 AU′ 解 P466） */
 export function crewCostPremiseWords(): string {

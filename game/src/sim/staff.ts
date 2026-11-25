@@ -152,6 +152,46 @@ export function serveMultiplier(state: GameState): number {
   return boil * setout * specialtyServeFactor(state);
 }
 
+/**
+ * 再添 `add` 个技能为 `skill` 的煮粉师傅之后，并行槽与出碗倍率各是多少（批 AW′ 解 P472）。
+ *
+ * 为什么需要这个函数：`crewFacts` 那句「换个人约多卖几碗」是按**某个具体的人**算的。
+ * 补进来的这个人同时改两条链：
+ *   ① `cookSlots +1` → `serveParallel` 可能从 `min(灶位, 人)` 这一侧放开（灶位不够时放开不了）；
+ *   ② `sumSkill(cook) + skill` → `boil` 变快，且 `inNoodlesNum` 可能每 50 点再 +1（封顶 +2）。
+ * 两条都走「按人头累加」的同一套口径，所以这里直接复用 `sumSkill` / `equipLevel` /
+ * `staffEffects`，不另抄一遍公式 —— 抄一遍就会出现「模型说多卖 5 碗、实际卖不动」。
+ *
+ * `add = 0` 时返回值必须与 `serveParallel(state)` / `serveMultiplier(state)` 逐位相同，
+ * 这是 `crew.test.ts` 里钉住的等式。
+ */
+export function staffWithExtraCooks(
+  state: GameState,
+  add: number,
+  skill: number,
+): { parallel: number; multiplier: number } {
+  const extra = Math.max(0, Math.floor(add));
+  const stoves = Math.max(1, state.venue.stoves);
+  const slotsNow = Math.max(1, cookSlots(state));
+  const slotsAfter = Math.max(1, slotsNow + extra);
+
+  const cookSkillNow = sumSkill(state, "cook");
+  const cookSkillAfter = cookSkillNow + extra * Math.max(0, skill);
+  const grown = staffEffects(state).noodle;
+  const perStoveAfter =
+    3 + equipLevel(state, "strainer") + Math.min(2, Math.floor(cookSkillAfter / 50) + grown);
+
+  const parallel = Math.max(1, Math.min(stoves, slotsAfter)) * perStoveAfter;
+
+  // 只把煮技那一项换掉，上菜段与专精原样带过去（它们不随「多一个人」变）
+  const boilNow = 1 - Math.min(COOK_CUT_MAX, cookSkillNow * COOK_CUT_PER_SKILL);
+  const boilAfter = 1 - Math.min(COOK_CUT_MAX, cookSkillAfter * COOK_CUT_PER_SKILL);
+  const multiplier =
+    boilNow > 0 ? (serveMultiplier(state) / boilNow) * boilAfter : serveMultiplier(state);
+
+  return { parallel, multiplier };
+}
+
 /** 跑堂让顾客更愿意等 */
 export function patienceMultiplier(state: GameState): number {
   // 专精（A9）：跑堂学过「记性」，等的人更有底

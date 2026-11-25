@@ -1,6 +1,5 @@
 import { HIRE_FEE_RATE, monthlyWageOf, nextStaffNeed, staffSlots } from "../data/staff";
 import {
-  COOK_GAIN_NOISE,
   crewCostWords,
   crewFitWords,
   crewGapWords,
@@ -8,6 +7,7 @@ import {
   crewNoneWords,
   crewWhyWords,
 } from "../data/crew";
+import { BOWL_EPSILON } from "../data/balance";
 import { capacityOf, capacityWithCooks } from "./bottleneck";
 import { cookSlots } from "./staff";
 import type { GameState } from "./state";
@@ -80,19 +80,6 @@ export function crewFacts(state: GameState): CrewFacts {
   const idle = Math.max(0, stoves - slots);
   const now = capacityOf(state);
   const kitchenBinds = now.tight === "stove";
-  /**
-   * 批 AV′（解 P469）：那两句「补人也换不来碗」不再从 `tight` 反推。
-   *
-   * 「灶不是最紧那道」推不出「补人不多卖」—— 中间那一档可能只差半碗，也可能差二十碗。
-   * 这里让模型自己再算一遍「多一个人掌勺」的当天上限，差值才是那句话的依据。
-   */
-  const cookGain = capacityWithCooks(state, 1).total - now.total;
-  const cookAddsBowls = cookGain > COOK_GAIN_NOISE;
-
-  const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
-
-  // 只在「有人手缺口」时说第二句：没有缺口时这句话是废话（而且会把打烊单撑长）
-  const why = idle === 0 ? "" : crewWhyWords(kitchenBinds, cookGain);
 
   // 批 AT′（解 P461 / P463）：候选池里挑的不是「最便宜」那个，而是**每一块钱技能最高**那个 ——
   // 日薪由技能定（`WAGE_BY_SKILL` 110/130/150/180/220），贵的那个技能一定更高，
@@ -100,6 +87,9 @@ export function crewFacts(state: GameState): CrewFacts {
   //   ① 价钱说清「介绍费」是**一次性**的（周薪式误解是 P463）；
   //   ② 报技能等级，让玩家看得出贵的那个人强在哪；
   //   ③ 一个候选都没有就直说，不编一个价钱。
+  //
+  // 批 AW′（解 P472）：这段必须排在 `cookGain` **之前** —— 下面那句「约多卖几碗」是按
+  // **这个具体的人**算的（技能越高，同一口灶出得越快），先挑人才能算数。
   const cooks = state.staff.candidates.filter((m) => m.role === "cook");
   const cand = cooks
     .slice()
@@ -113,6 +103,23 @@ export function crewFacts(state: GameState): CrewFacts {
         monthly: monthlyWageOf(cand.wage),
       }
     : null;
+
+  /**
+   * 批 AV′（解 P469）：那两句「补人也换不来碗」不再从 `tight` 反推。
+   *
+   * 「灶不是最紧那道」推不出「补人不多卖」—— 中间那一档可能只差半碗，也可能差二十碗。
+   * 这里让模型自己再算一遍「多一个人掌勺」的当天上限，差值才是那句话的依据。
+   *
+   * 批 AW′（解 P472）：这个人是谁也要传进去 —— 技能 1 与技能 5 在同一个灶位上不是同一件事；
+   * 今天没人来问工时退回 0（按最弱的算，「多一个人」的说法才不算吹）。
+   */
+  const cookGain = capacityWithCooks(state, 1, hire ? hire.skill : 0).total - now.total;
+  const cookAddsBowls = cookGain > BOWL_EPSILON;
+
+  const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
+
+  // 只在「有人手缺口」时说第二句：没有缺口时这句话是废话（而且会把打烊单撑长）
+  const why = idle === 0 ? "" : crewWhyWords(kitchenBinds, cookGain, hire ? hire.skill : null);
 
   // 「人手槽还差多少位」只在**眼下招不进来**时才说：店里还有空位却说
   // 「还差 500 位」会把能立刻雇的人挡住（首跑就被这条判红）。

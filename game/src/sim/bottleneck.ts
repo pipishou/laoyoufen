@@ -29,8 +29,8 @@
  *   卡的是来客天花板（`demandPerDay`）。
  */
 import { DAY_MINUTES, SERVE_MINUTES, demandPerDay } from "./customer";
-import { bowlMinutes, cookSlots } from "./staff";
-import { FLOW } from "../data/balance";
+import { bowlMinutes, staffWithExtraCooks } from "./staff";
+import { BOWL_EPSILON, FLOW } from "../data/balance";
 import { stationCount, stationCountAfter, stationServeFactor, stageMinutes } from "./equipment";
 import { BENCH_CAPACITY_STEP, STAGE_MINUTES, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
 import type { GameState } from "./state";
@@ -144,7 +144,7 @@ export function capacityOf(state: GameState): Capacity {
 }
 
 /**
- * 再添 N 个人掌勺，当天上限变成多少（批 AV′，解 P469）。
+ * 再添 `extra` 个技能为 `cookSkill` 的掌勺的人，当天上限变成多少（批 AV′ 解 P469；批 AW′ 解 P472）。
  *
  * **为什么需要它**：界面那句「雇了也换不来更多的碗」原来是拿
  * `capacityOf().tight === "stove"` 反推的 ——「灶不是最紧那道」并不等于
@@ -152,22 +152,23 @@ export function capacityOf(state: GameState): Capacity {
  * **量化断言**，只有让模型自己算一遍才守得住（AGENTS.md 三、数值纪律：
  * 文案不许发明数字，也不许替模型下结论）。
  *
- * 口径与 `capacityOf` 一致：`bowlMinutes ∝ 1 / 并行槽`，所以多一个掌勺的人
- * 等于把出碗间隔除以 `并行槽比`。并行槽 = `min(灶位数, 能掌勺的人数) × 一锅几份`
- * —— 一口灶时多雇人不会多开火（`min` 卡住），这也是实测「1 灶雇人一碗不多」的由来。
+ * **批 AW′ 之前这里是虚的**：只按 `min(灶位, 人数)` 之比折一下，`cookSkill` 根本没进来 ——
+ * 可补进来的这个人同时改两件事（并行槽 +1、煮技总和 +skill），界面却说「多一个人」，
+ * 于是「技能 1 的人」与「技能 5 的人」算出同一个数，玩家凭什么多付一倍工钱？
+ * 现在并行槽与出碗倍率都由 `staffWithExtraCooks` 按人头累加算出来，
+ * `extra = 0` 时与 `capacityOf` 的灶项逐位相同（`crew.test.ts` 钉住这条等式）。
  *
  * 天花板仍是四道闸取最小：这一项回答的是「今天最多能卖几碗」，
  * 不是「这一件能不能把那道闸抬高」（后者看 `capacityGain`）。
  */
-export function capacityWithCooks(state: GameState, extra: number): Capacity {
+export function capacityWithCooks(state: GameState, extra: number, cookSkill = 0): Capacity {
   const now = capacityOf(state);
-  const stoves = Math.max(1, state.venue.stoves);
-  const slots = Math.max(1, cookSlots(state));
-  const want = Math.max(1, slots + Math.max(0, Math.floor(extra)));
-  // 一锅几份（inNoodlesNum）两边同时出现，约掉了 —— 只留「能同时开几口灶」之比
-  const ratio = Math.max(1, Math.min(stoves, want)) / Math.max(1, Math.min(stoves, slots));
-  const raw = bowlMinutes(state, FLOW.serveMinutes, stationServeFactor(state));
-  const stove = DAY_MINUTES / Math.max(0.2, raw / ratio);
+  const { parallel, multiplier } = staffWithExtraCooks(state, extra, cookSkill);
+  const batchMinutes = Math.max(
+    0.2,
+    (FLOW.serveMinutes * multiplier * stationServeFactor(state)) / parallel,
+  );
+  const stove = DAY_MINUTES / batchMinutes;
   return pack(stove, now.seats, now.cap, now.demand, now.serveNow);
 }
 
@@ -252,7 +253,8 @@ export function capacityGain(state: GameState): {
    * 这不是「厨房不卡」，是「卡不在店里」—— 街上一天就进来这么多人。
    * 严格的 `gateBase > demand` 才置真：如果三道闸恰好等于来客量，抬闸还是能多卖。
    */
-  const demandBlocked = now.tight === "demand" && gateBase > now.demand + 0.5;
+  // 半碗容差走的是全项目同一把拍子（`BOWL_EPSILON`，批 AW′ 解 P474）
+  const demandBlocked = now.tight === "demand" && gateBase > now.demand + BOWL_EPSILON;
 
   return { stove, pot, basket, bench, seat, demandBlocked };}
 
