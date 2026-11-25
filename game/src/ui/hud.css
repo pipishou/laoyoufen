@@ -2567,3 +2567,5 @@ html.prefs-big #hud .clock{font-size:17px}
 .bcard .nline {
   color: var(--wood);
 }
+.bases .bcard .btag{display:inline-block;margin:0 0 2px;padding:0 3px;font-size:9px;letter-spacing:1px;color:var(--wood);background:var(--paper2);border:2px solid var(--sand)}
+.pane .dcard .dbase{display:inline-block;margin:0 0 2px 3px;padding:1px 5px 0;font-size:9px;letter-spacing:1px;color:var(--ink);background:var(--sand);border:2px solid var(--ink)}

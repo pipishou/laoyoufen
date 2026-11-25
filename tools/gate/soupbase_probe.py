@@ -68,7 +68,18 @@ def main():
         note("default_is_laoyou", "老友底" in on_first, on_first)
 
         sum0 = pg.inner_text("[data-basesum]")
-        note("summary_says_base", "老友底" in sum0, sum0)
+        note("summary_says_base", "骨头汤" in sum0 and "酸笋" in sum0, sum0)
+
+        broth = pg.inner_text("[data-broth]")
+        note("broth_line", "骨头汤打底" in broth and "爆香" in broth and "冲汤下粉" in broth, broth)
+
+        tags = pg.eval_on_selector_all("[data-bases] .bcard .btag", "els => els.map((e) => e.textContent)")
+        note("card_extra_tags",
+             len(tags) == 3 and all("骨汤 +" in t for t in tags) and any("酸笋" in t for t in tags),
+             tags)
+
+        head = pg.evaluate("() => (document.querySelector('.pane')?.textContent || '')")
+        note("section_says_broth", "骨汤打底，再加一味" in head, head[:0] or "")
 
         banned = ("进店", "客流", "耐心", "出碗", "×")
         note("cards_no_multiplier", not any(x in n for n in names for x in banned))
@@ -88,7 +99,26 @@ def main():
         note("item_written", base_state.get("menuBase") == "tomato", base_state)
 
         sum1 = pg.inner_text("[data-basesum]")
-        note("summary_follows", "番茄底" in sum1 and "汤底 +3" in sum1, sum1)
+        note("summary_follows", "番茄" in sum1 and "汤底 +3" in sum1, sum1)
+
+        delta = pg.evaluate(
+            """() => {
+              const el = document.querySelector('[data-basedelta]');
+              if (!el) return null;
+              return { text: (el.textContent || '').trim(), hidden: el.hidden };
+            }"""
+        )
+        note("delta_says_where",
+             bool(delta) and delta["hidden"] is False and "+3" in delta["text"] and "番茄底" in delta["text"],
+             delta)
+
+        badge = pg.evaluate(
+            """() => {
+              const el = document.querySelector('[data-menu] .dcard .dbase');
+              return el ? (el.textContent || '').trim() : '';
+            }"""
+        )
+        note("dish_card_badge", "骨汤+番茄" in badge, badge)
 
         after = pg.evaluate(READ)
         # 汤底分那一格在面板里是分组合成值，不随底变；判据改成「总分没掉、成本涨了五毛」

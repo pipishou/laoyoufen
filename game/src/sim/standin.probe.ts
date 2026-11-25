@@ -18,6 +18,7 @@ import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
 import { auditPlaytest, verdictLabel } from "./playtest";
 import { nextFloat } from "./rng";
 import { noodleKindOf, noodleViews, setNoodleKind, currentSeason } from "./noodles";
+import { setSoupBase, soupBaseOf, soupBaseViews } from "./soupbase";
 import { scoreOf } from "./dish";
 import { mainViews, setMain, setPortion } from "./mains";
 import { MAX_BRANCHES } from "../data/branches";
@@ -94,6 +95,29 @@ function pickNoodle(s: GameState): void {
     }
   }
   if (bestId !== noodleKindOf(s)) setNoodleKind(s, bestId);
+}
+
+/**
+ * 选打底（批 Z″，解 P389「替身从不选底，收益侧零验证」）。
+ *
+ * 量尺：一分的汤底值多少料钱 —— `soupDelta * 1.0 - costDelta * 3`。
+ * 只有手里过了五千才肯多掏这份料钱（新手期把现金留着保命）。
+ * 猪脚底要卖出四百碗才开，比番茄底更难卖动，所以只有开得够久才会换过去。
+ */
+function pickSoupBase(s: GameState): void {
+  if (s.cash < 5000) return;
+  const cur = soupBaseOf(s).id;
+  let bestId = cur;
+  let best = 0;
+  for (const v of soupBaseViews(s)) {
+    if (!v.unlocked) continue;
+    const worth = v.def.soupDelta * 1.0 - v.def.costDelta * 3;
+    if (worth > best + 0.05) {
+      best = worth;
+      bestId = v.def.id;
+    }
+  }
+  if (bestId !== cur) setSoupBase(s, bestId);
 }
 
 /**
@@ -247,6 +271,8 @@ let gears = 0;
       // 量尺不会这两下，就等于这一期做的东西没被测过（P40 的老教训）。
       pickMain(s);
       pickPortion(s);
+      // 打底（批 Z″，解 P389）：手中过了五千才肯多花料钱换底；挑「汤底分值多少 − 料钱多花多少」最高的那一底。
+      pickSoupBase(s);
       // 菜单（P47）：够段位就多挂一款 —— 不然后面的定价/产能判断都只针对一碗
       manageMenu(s);
 pruneMenu(s);

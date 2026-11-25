@@ -25,7 +25,13 @@ import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expan
 import { gradeOf, unlockViews } from "../sim/unlocks";
 import { kindLabel, drinkTempSummary, sideShareOf, sideSummary, sideViews } from "../sim/sides";
 import { noodleSummary, noodleViews } from "../sim/noodles";
-import { soupBaseLockWords, soupBaseSummary, soupBaseViews } from "../sim/soupbase";
+import {
+  soupBaseLockWords,
+  soupBaseSummary,
+  soupBaseViews,
+  soupBrothWords,
+  soupDeltaWords,
+} from "../sim/soupbase";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
 import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
 import { dishNameOf, dishNameOfItem, isHouseBowl } from "../sim/dish";
@@ -88,6 +94,7 @@ import { bowlMinutes, dailyWage } from "../sim/staff";
 import { SERVE_MINUTES } from "../sim/customer";
 import { equipServeMultiplier } from "../sim/equipment";
 import type { GameState, MenuItem } from "../sim/state";
+import { DEFAULT_SOUP_BASE, soupBaseById } from "../data/soupbase";
 
 export type PanelTab =
   | "recipe"
@@ -269,8 +276,10 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
             <div class="rcol">
               <div class="sechd">${icon("bowl")}菜单 · 今天卖几款<span class="sechint" data-menusum></span></div>
               <div class="menucards" data-menu></div>
-              <div class="sechd">${icon("pot")}汤底 · 拿什么打底<span class="sechint" data-basesum></span></div>
+              <div class="sechd">${icon("pot")}汤底 · 骨汤打底，再加一味<span class="sechint" data-basesum></span></div>
+              <div class="lmeta" data-broth></div>
               <div class="bases" data-bases></div>
+              <div class="lmeta" data-basedelta></div>
               <div class="sechd">${icon("pan")}汤底 · 8 参</div>
               <div class="sliders" data-sliders="soup">${sliderRows("soup", SOUP_DEFS)}</div>
               <div class="sechd">${icon("pan")}主料 · 这碗是什么肉<span class="sechint" data-mainsum></span></div>
@@ -326,6 +335,8 @@ export function mountPanels(root: HTMLElement, actions: PanelActions): Panels {
   const mainsEl = wrap.querySelector("[data-mains]") as HTMLElement;
   const basesEl = wrap.querySelector("[data-bases]") as HTMLElement;
   const baseSumEl = wrap.querySelector("[data-basesum]") as HTMLElement;
+  const brothEl = wrap.querySelector("[data-broth]") as HTMLElement;
+  const deltaEl = wrap.querySelector("[data-basedelta]") as HTMLElement;
   let lastBaseKey = "";
   const mainSumEl = wrap.querySelector("[data-mainsum]") as HTMLElement;
   const menuEl = wrap.querySelector("[data-menu]") as HTMLElement;
@@ -1872,12 +1883,25 @@ function collectionHtml(s: GameState): string {
    * 汤底三底（批 Z′）：三张卡，说清「锅里在干什么 / 汤底分 / 料钱 / 还差几位客人」。
    * 只改汤底分与料钱，不改任何乘数 —— 卡上也不写乘数。
    */
-  function renderBases(s: GameState): void {
-    const views = soupBaseViews(s);
+  /**
+   * 菜单卡上标出「这一款不是拿默认底煮的」（批 Z″，解 P394）。
+   * 默认底（骨汤 + 酸笋）不印，免得每张卡都挂一条。
+   */
+  function baseBadge(item: MenuItem): string {
+    const def = soupBaseById(item.recipe?.base);
+    if (def.id === DEFAULT_SOUP_BASE) return "";
+    return `<span class="dbase" title="这一款打底：骨汤 + ${def.extra}">骨汤+${def.extra}</span>`;
+  }
+
+  function renderBases(s: GameState): void {    const views = soupBaseViews(s);
     const key = views.map((v) => `${v.def.id}:${v.on ? 1 : 0}:${v.unlocked ? 1 : 0}`).join(",");
     const lock = soupBaseLockWords(s);
     baseSumEl.textContent = ` ${soupBaseSummary(s)}`;
     baseSumEl.title = lock;
+    brothEl.textContent = soupBrothWords();
+    const deltaWords = soupDeltaWords(s);
+    deltaEl.textContent = deltaWords;
+    deltaEl.hidden = deltaWords === "";
     if (key === lastBaseKey) return;
     lastBaseKey = key;
     basesEl.innerHTML = views
@@ -1894,6 +1918,7 @@ function collectionHtml(s: GameState): string {
           : `<span class="nfit">还差 ${v.short} 位客人</span>`;
         return `<button type="button" class="${cls.join(" ")}" data-act="setbase" data-id="${v.def.id}" ${v.unlocked ? "" : "disabled"} title="${v.def.why}">
           <span class="nname">${v.def.name}</span>
+          <span class="btag">骨汤 + ${v.def.extra}</span>
           ${foot}
           <span class="nline">${v.def.look}</span>
         </button>`;
@@ -2001,7 +2026,7 @@ function collectionHtml(s: GameState): string {
 
   function renderMenu(s: GameState): void {
     const views = menuViews(s);
-    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${views.map((v) => s.menuAlias?.[String(v.item.id)] ?? "").join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.noodle}${v.item.portion}:${v.item.recipe.toppings.join("-")}`).join(",")}`;
+    const key = `${views.map((v) => `${v.item.id}:${v.item.on ? 1 : 0}:${v.editing ? 1 : 0}:${v.item.price}:${v.sold}`).join(",")}|${views.map((v) => s.menuAlias?.[String(v.item.id)] ?? "").join(",")}|${s.gradeLevel}|${views.map((v) => v.item.master ?? "").join(",")}|${s.favor}|${s.cash}|${views.map((v) => `${v.item.main}${v.item.noodle}${v.item.portion}:${v.item.recipe.toppings.join("-")}:${v.item.recipe.base ?? ""}`).join(",")}`;
     menuSumEl.textContent = ` ${menuSummary(s)}`;
     if (key === menuKey) return;
     menuKey = key;
@@ -2018,6 +2043,7 @@ function collectionHtml(s: GameState): string {
           </button>
           <label class="drename" title="自己起个名，八个字以内；留空改回系统名"><span>叫</span><input type="text" maxlength="8" data-rename="${v.item.id}" value="${escAttr(dishNameOfItem(s, v.item))}"></label>
           ${isHouseBowl(v.item) ? '<span class="dmine" title="老友猪杂伊面 —— 南宁最家常的一碗，也是老板自己想吃的那碗">老板那碗</span>' : ""}
+          ${baseBadge(v.item)}
           <span class="nfit">味道 ${Math.round(v.score.total)} · ${v.score.grade} · ${sold}</span>
           <span class="ntier" title="四维九档：客人怎么评价这一碗">${tierLine(v.item, v.score)}</span>
           <div class="dacts">

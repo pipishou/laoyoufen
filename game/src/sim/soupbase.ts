@@ -6,7 +6,14 @@
  */
 
 import type { GameState } from "./state";
-import { DEFAULT_SOUP_BASE, SOUP_BASES, soupBaseById, type SoupBaseDef } from "../data/soupbase";
+import {
+  DEFAULT_SOUP_BASE,
+  SOUP_BASES,
+  SOUP_BROTH,
+  soupBaseById,
+  soupPipelineWords,
+  type SoupBaseDef,
+} from "../data/soupbase";
 
 export interface SoupBaseView {
   def: SoupBaseDef;
@@ -52,13 +59,30 @@ export function setSoupBase(state: GameState, id: string): SoupBaseResult {
   return { ok: true, line: `换成${def.name}：${def.look}。` };
 }
 
-/** 面板摘要：现在拿什么打底 */
+/** 面板摘要：现在拿什么打底（骨汤是共同底，写在前头） */
 export function soupBaseSummary(state: GameState): string {
   const def = soupBaseOf(state);
-  const parts: string[] = [def.name];
+  const parts: string[] = [`${SOUP_BROTH} + ${def.extra}`];
   if (def.soupDelta !== 0) parts.push(`汤底 ${def.soupDelta > 0 ? "+" : ""}${def.soupDelta}`);
   if (def.costDelta !== 0) parts.push(`料钱 ${def.costDelta > 0 ? "+" : ""}¥${def.costDelta}`);
   return parts.join(" · ");
+}
+
+/** 共同底 + 固定工序压一句（配方页抬头用，不随选哪一底变） */
+export function soupBrothWords(): string {
+  return `${SOUP_BROTH}打底 · ${soupPipelineWords()}`;
+}
+
+/**
+ * 汤底分那几点到底是谁给的（解 P390）。
+ *
+ * 八参分组是合成值，换底之后那行数字不一定动 —— 所以单独写一句因果，
+ * 让玩家在面板上直接看见「+3 来自番茄底」。
+ */
+export function soupDeltaWords(state: GameState): string {
+  const def = soupBaseOf(state);
+  if (def.soupDelta === 0) return "";
+  return `汤底 ${def.soupDelta > 0 ? "+" : ""}${def.soupDelta} 来自${def.name}（骨汤之外多加了${def.extra}）`;
 }
 
 /** 三底里还没解锁的那几档，写一句「还差几位客人」 */
