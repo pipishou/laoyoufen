@@ -1,0 +1,18 @@
+{
+ "checks": {
+  "start_shows_facts": true,
+  "start_stoves_one": true,
+  "three_stoves_warns": true,
+  "three_stoves_says_second": true,
+  "three_stoves_counts": true,
+  "three_stoves_no_price": true,
+  "hired_moves_the_line": true,
+  "hired_says_third": true,
+  "two_stoves_two_cooks_quiet": true,
+  "staff_page_same_line": true,
+  "save_version": true,
+  "console_clean": true
+ },
+ "ok": 12,
+ "total": 12
+}

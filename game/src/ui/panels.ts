@@ -21,6 +21,7 @@ import { GEARS } from "../data/gear";
 import { DEMAND_PANEL } from "../data/demand";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
+import { crewFacts } from "../sim/crew";
 import { EXPANSIONS, EXPANSION_ORDER } from "../data/expansion";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
@@ -687,8 +688,10 @@ let lastGradeKey = "";
       )
       .join("");
 
+    const crew = crewFacts(s);
     return `<div class="sec">
         <div class="sechd">${icon("staff")}在职 ${s.staff.roster.length}/${slots} · 日薪 ${money(dailyWage(s))} · ${specialtySummary(s)}</div>
+        ${crew.idle > 0 ? `<div class="lmeta crewline" data-crew-idle>${crew.words}。</div>` : ""}
         ${roster || `<div class="empty2">还没雇人。你自己一个人炒锅，出碗 6 分钟。</div>`}
         ${rallyBlock}
         <div class="hint">${s.staff.lastEvent || "疲劳到 100 会辞职，记得安排休息。"} 人是一天一天熟起来的：四属性到门槛就自动学会手艺，不用点。${STAFF_SKILL_TOTAL} 项手艺、${FINISH_SKILL_TOTAL} 门毕业技（四属性都到 3 级才有）。</div>
@@ -732,6 +735,18 @@ let lastGradeKey = "";
     const equipHint = gainBlocked
       ? `<span data-demand-blocked>${DEMAND_PANEL}</span>`
       : `哪一段最慢就添哪一段，添别的会被最慢那段吃掉。`;
+    /**
+     * 批 AR′（解 P449 的前半）：灶位只是上限，真正开火的是**掌勺的人**。
+     *
+     * 实测（`game/src/sim/kitchen-never-binds.test.ts`）：6 座 × 灶 1/2/3/4 口
+     * 全部不是瓶颈，8 座下灶 1 口与 3 口都卖 111.4 碗 —— 因为
+     * `serveParallel = min(stoves, cookSlots) × 每灶批数`，而 `cookSlots = 1 + 在职煮粉师傅`。
+     * 界面上从来没有这句话，玩家花 ¥1,500 买第二口灶只会觉得「买了没反应」。
+     * 只在真有灶没人看的时候出现；不劝买、不给价钱。
+     */
+    const crew = crewFacts(s);
+    const crewLine =
+      crew.idle > 0 ? `<div class="lmeta crewline" data-crew-idle>${crew.words}</div>` : "";
     /**
      * 批 F′（试玩 11-22-2109 第 5 条）：这一页只留一条主提示。
      * 主句照钩子，副句由 `sim/today.ts` 算回本与位置 —— 开罗把「这件东西在哪一段」
@@ -1364,6 +1379,7 @@ let lastGradeKey = "";
             : `<span class="tag2 soft" data-slow-soft>参考：${STATION_NAMES[slow.station]} ${slow.minutes.toFixed(1)} 分最慢</span>`
         }</div>
         <div class="lmeta tightline" data-tight>${tightLine}</div>
+        ${crewLine}
         <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。${equipHint} 钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
       </div>
@@ -2191,7 +2207,7 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}:${m.xp ?? 0}`).join(",")}|${s.staff.candidates.map((c) => c.uid).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${crewFacts(s).idle}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
       html = shopHtml(s);
     } else if (current === "perk") {
       key = `${Object.keys(s.perks ?? {}).sort().join(",")}|${s.gradeLevel}`;

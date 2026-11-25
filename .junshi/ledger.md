@@ -1394,3 +1394,18 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **唯一的可见文案变化**：打烊单那句的尾巴从「得去把街面、名声、同行那几件事办一办」改成与另外两句同一套四条路。
 - **新缺口**：**P455**（`DEMAND_TAG` 与 CSS `::before` 靠字符串匹配对齐，跨语言同源只有这一个土办法）/ **P456**（`data/demand.ts` 是第一个文案专用数据模块，`entry-counts` 43 项不覆盖文案常量）/ **P457**（「换个人多的区」是文案，游戏里换区＝重开一局，不是搬店）。
 - **文档**：`docs/一句话只有一个出处AQ′-2026-11-26.md`（八节）；`docs/ACCEPTANCE.md` 第五节 P451 划掉、新增「五·八」P455–P457、第三节整块换成 AQ′ 数字、第四节加一条 `game/tools/demand-literal.test.ts`。
+### 行 154 · 2026-11-26 · 批 AR′：灶要有人掌勺（P449 的一半）
+
+- **P449 拆成两条**：数值这条（真实配平下厨房永远不是闸）不改；说法这条（买第二口灶没人看火，界面从没说过）本批解。
+- **实测（6 天取后 3 天均值，种子 1/2/3）**：座 6 · 灶 1/2/3 → 卖 111.3、走 128.5，一格不动；座 8 · 灶 1/2/3 → 卖 114.1、走 61.8，一格不动。
+- **出碗节拍也不动销量**：座 6 · serve 0.5/1 分都是 111.3；2 分 105.0；4 分 82.6。座 8 · 0.5/1 分 114.1；2 分 112.7；4 分 87.4。加快出碗只让队短一点。
+- **根因**：`game/src/sim/staff.ts` 的 `serveParallel = Math.max(1, Math.min(stoves, cookSlots(state))) * inNoodlesNum(state)`，而 `cookSlots(state) = 1 + 掌勺人数`。开局 `cookSlots = 1`，`min(stoves, 1)` 恒为 1 —— 买第二口灶并行度不变。grep 全仓 `掌勺|开火` 只有两处命中（招人页「人手已经招满」、包装线说明），没有一处说这件事。
+- **新建 `game/src/sim/crew.ts`**：`CrewFacts { stoves, slots, idle, words }` + `crewFacts(state)`；`idle === 0` → 「灶位 N 口，能开火 N 口 —— 人手够，每一口灶都烧得上」，否则「灶位 N 口，眼下只有 N 个人掌勺 —— 第 N 口起没人看，火开不起来」。三条纪律写进文件头：只说事实 / 不劝买不给价钱 / 不重复招人页那句话。
+- **新建 `game/src/sim/kitchen-never-binds.test.ts` 5 例**：6 座 × 灶 1–4 口共 24 格全部 `tight !== "stove"`；灶量是来客量两倍以上；4 座 `seats`、40 座 `demand` 且灶量不变；压慢节拍到 6 分才轮灶；`finally` 还原后仍是默认配平。
+- **新建 `game/src/sim/crew.test.ts` 5 例**：开局不 idle；2 灶 1 人 idle=1 且含「第 2 口起没人看」；雇一个 `role: "cook"` 后 `cookSlots = 2`、`serveParallel` 翻倍；1 灶雇人也只开 1 口；四组配置文案不匹配 `/¥|元|买|推荐|建议|划算/`（第一版「买来的灶都烧得上」被这条判红，改成「每一口灶都烧得上」）。
+- **界面两处同源**：`game/src/ui/panels.ts` 的 `shopHtml`（`equipHint` 之后、「一碗分成三段」之前插 `[data-crew-idle]`）与 `staffHtml`（段标题之后，同句加句号）；只在 `idle > 0` 时出现。**第十五次「键漏字段」预防**：shop 缓存键补 `|${crewFacts(s).idle}|`，否则买灶后 DOM 不重画。
+- **新探针 `tools/gate/crew_probe.py` ≥ 12 / 12**：开局报事实、三口灶一口人告警、雇人后改口、2 灶 2 人不出现、无价钱字样、店员页同一句、存档 37、控制台干净。探针三坑：开局要 `page.evaluate` 逐个 `.click()`（`page.click` 被弹窗挡住 30s 超时）；标签是 `[data-tab2="staff"]`；改了 state 但当前页不对就读不到，要先 `SET_STOVES` 再切页。
+- **验收**：`tsc` 0；`vitest --no-file-parallelism` **105 文件 1058 用例**；`copy_gate` ok；`eye_gate --slug crew` 五视口 **723 · 778 · 585 · 1244 · 1510** 色、stamp **179**；`ai_gate` 四段全 `"ok": true`；长跑门 **9 / 9**（第 37 天、fps 57/60、一句话接口 7 次 0.19/天）；帧差门重存基准后三视口 **0 px**；调试出口门 4 / 4（只挂 `__laoyou`，扫 1 个 js 1,744,249 B）。
+- **替身四种子与 AQ′ 逐位相同**：¥130,961 / ¥117,013 / ¥134,230 / ¥135,802 → 均值 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**（本批只加一句界面事实，`cookSlots` / `serveParallel` / `serveMinutes` / 座位与来客公式一格没动）。
+- **构建** `index-Fug0BXP4.js` 1,744,249 B（gzip 524.56）/ `index-CyXxqRnG.css` 56,317 B；文档 `docs/灶要有人掌勺AR′-2026-11-26.md`（九节）。
+- **新缺口**：**P458**（`crewFacts` 不给工钱与 ROI，玩家知道卡在哪仍不知道贵不贵）/ **P459**（`kitchen-never-binds.test.ts` 只钉现状，红了不知道该改模型还是改配平）/ **P460**（这句只在店面页与店员页，打烊单与钩子副行没有，与 P448 之前同型）。
