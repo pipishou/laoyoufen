@@ -1,0 +1,53 @@
+{
+  "url": "http://localhost:4244/",
+  "checks": {
+    "manual_pages_sixteen": {
+      "ok": true,
+      "detail": "{'counter': '还没翻过', 'pages': 16, 'unread': 16}"
+    },
+    "manual_counter_zero": {
+      "ok": true,
+      "detail": "还没翻过"
+    },
+    "manual_none_read": {
+      "ok": true,
+      "detail": "16"
+    },
+    "manual_open_marks_read": {
+      "ok": true,
+      "detail": "{'counter': '翻过 1 页，还剩 15 页', 'read': '1', 'tag': True, 'saved': 1}"
+    },
+    "manual_counter_counts": {
+      "ok": true,
+      "detail": "翻过 1 页，还剩 15 页"
+    },
+    "manual_saved_in_state": {
+      "ok": true,
+      "detail": "1"
+    },
+    "how_rows_four": {
+      "ok": true,
+      "detail": "{'rows': 4, 'marked': 0, 'firstId': 'm.how-order'}"
+    },
+    "how_rows_unmarked_here": {
+      "ok": true,
+      "detail": "{'rows': 4, 'marked': 0, 'firstId': 'm.how-order'}"
+    },
+    "how_click_marks_read": {
+      "ok": true,
+      "detail": "{'marked': 1, 'saved': 2, 'counter': '翻过 2 页，还剩 14 页'}"
+    },
+    "how_counts_in_total": {
+      "ok": true,
+      "detail": "翻过 2 页，还剩 14 页"
+    },
+    "save_version": {
+      "ok": true,
+      "detail": "37"
+    },
+    "console_clean": {
+      "ok": true,
+      "detail": "[]"
+    }
+  }
+}

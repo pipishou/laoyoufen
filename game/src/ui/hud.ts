@@ -297,10 +297,15 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const thickLine = dayWrap.querySelector("[data-thick-line]") as HTMLElement;
   const actLineEl = dayWrap.querySelector("[data-act-line]") as HTMLElement;
   /** 打烊单折行（批 AD′，解 P406）：窄屏上七行太长，默认只留前三条 */
+  // 设置对象要先声明在这儿：下面折行要不要展开，读的就是它（别再踩 `let` 的 TDZ，见批 AG′）
+  let prefs: Prefs = loadPrefs();
   const whyFoldEl = dayWrap.querySelector("[data-why-fold]") as HTMLElement;
-  let whyOpen = false;
+  // 点开过就一直开着（批 AH′，解 P412）—— 存进 prefs，不进存档
+  let whyOpen = prefs.whyOpen;
   whyFoldEl.addEventListener("click", () => {
     whyOpen = !whyOpen;
+    prefs = { ...prefs, whyOpen };
+    savePrefs(prefs);
     foldWhyLines();
   });
 
@@ -460,8 +465,8 @@ let lastMarketKey = "";
    * 设置弹窗（批 G′）：开罗把这五项放在标题菜单里，我们放在顶栏 ——
    * 手机上标题菜单离手指远，而音量是随时想改的东西。
    * 改动即存（`laoyou.prefs.v1`），不进存档，不占 `SAVE_VERSION`。
+   * 这个对象现在在打烊单那段之前就声明了（批 AH′：折行状态也走它）。
    */
-  let prefs: Prefs = loadPrefs();
   const prefsWrap = document.createElement("div");
   prefsWrap.className = "modal prefmodal";
   prefsWrap.hidden = true;

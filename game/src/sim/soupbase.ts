@@ -157,6 +157,31 @@ export function soupStages(state: GameState): SoupStage[] {
 const STAGE_UNIT: Record<StationId, string> = { wok: "口", pot: "口", basket: "筒" };
 
 /** 一句人话：三段全列 + 末尾点名卡在哪一段；不劝买什么 */
+/**
+ * 挂汤那句该带着什么料（批 AH′，解 P405）。
+ *
+ * 原来写死 `{ 汤: "挂得住", 嘴: "黏" }` —— 模型只知道「稠」，不知道垫底的是猪脚卤水，
+ * 也不知道今天这碗多不多，出来的一律是同一句「这汤厚得挂勺」。
+ * 这里按当天真发生的事给料：哪一味垫底、多少碗走了这条路、当天口碑在什么档。
+ * **一个数字都不给** —— 服务端 `CN_QUANTITY` 会把带数量词的整句丢掉。
+ */
+export function thickContext(state: GameState): Record<string, string> {
+  const bowls = Math.max(0, Math.round(state.dayReport?.thick ?? 0));
+  const served = Math.max(1, Math.round(state.dayReport?.served ?? bowls));
+  const share = bowls / served;
+  const much =
+    share >= 0.6 ? "大半碗都走的这条路" : share >= 0.3 ? "有几碗走这条路" : "只出了一两碗";
+  const taste = state.dayReport?.taste ?? 0;
+  const mouth = taste >= 70 ? "回头客说这口味正" : taste >= 45 ? "客人吃得下" : "有人说口重了";
+  return {
+    底: "猪脚卤水",
+    汤: "挂得住",
+    嘴: "黏",
+    多: much,
+    味: mouth,
+  };
+}
+
 export function soupStagesWords(state: GameState): string {
   const rows = soupStages(state);
   const parts = rows.map(

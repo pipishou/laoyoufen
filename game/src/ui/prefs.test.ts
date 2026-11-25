@@ -18,7 +18,14 @@ import {
 describe("设置（批 G′，照开罗 text.txt 七项设置的本土化）", () => {
   it("默认值与开罗一致：音乐开、音效开、音量中、两个可访问性开关关", () => {
     const p = defaultPrefs();
-    expect(p).toEqual({ music: true, sfx: true, volume: "mid", contrast: false, bigText: false });
+    expect(p).toEqual({
+      music: true,
+      sfx: true,
+      volume: "mid",
+      contrast: false,
+      bigText: false,
+      whyOpen: false,
+    });
   });
 
   it("三档音量各有增益，且低 < 中 < 高、都不越 0–1", () => {
@@ -42,6 +49,7 @@ describe("设置（批 G′，照开罗 text.txt 七项设置的本土化）", (
       volume: "high",
       contrast: true,
       bigText: false,
+      whyOpen: false,
     });
   });
 

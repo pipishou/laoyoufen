@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
-"""批 AD′ 探针：打烊单折行（P406）+ 手册读过标记（P387）。
+"""批 AH′ 探针：打烊单折行（P406 / P411 / P412）。
+
+拆自批 AD′ 的 `fold_probe.py`（解 P416：一个探针管两件事）——手册那半搬去
+`tools/gate/manualread_probe.py`。
 
 用法（先起 preview）：
-    cd game && npx vite preview --port 4243 --strictPort
-    PW_URL=http://localhost:4243/ python -X utf8 tools/gate/fold_probe.py
+    cd game && npx vite preview --port 4244 --strictPort
+    PW_URL=http://localhost:4244/ python -X utf8 tools/gate/fold_probe.py
 """
 import json
 import os
@@ -11,7 +14,7 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
-URL = os.environ.get("PW_URL", "http://localhost:4243/")
+URL = os.environ.get("PW_URL", "http://localhost:4244/")
 OUT = os.path.join("game", "data", "evidence", "fold")
 os.makedirs(OUT, exist_ok=True)
 
@@ -38,6 +41,28 @@ def open_game(pg):
     pg.wait_for_timeout(600)
 
 
+DAY_JS = """() => {
+  const s = window.__laoyou.state;
+  s.flow.actToday = "a_suan";
+  s.dayReport = {
+    month: 3, day: 12, revenue: 320, served: 30, lost: 11,
+    avgSat: 61, price: 12, cash: 1800, taste: 58,
+    lostQueue: 9, lostPrice: 1, lostWait: 1,
+    investDone: ["夜市摆摊"], investGain: ["进店多 18%"],
+    thick: 4,
+  };
+  window.__laoyou.refresh();
+}"""
+
+COUNT_JS = """() => {
+  const el = document.querySelector("[data-why-fold]");
+  const spans = [...document.querySelectorAll(".daywhy span:not([data-why-fold])")];
+  const shown = spans.filter((x) => !x.hidden && (x.textContent || "").trim() !== "").length;
+  const total = spans.filter((x) => (x.textContent || "").trim() !== "").length;
+  return { text: el ? (el.textContent || "").trim() : "", shown, total };
+}"""
+
+
 def main():
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
@@ -47,52 +72,45 @@ def main():
         open_game(pg)
 
         # 打烊单：塞一份四件事都有的日结（功课 / 为什么 / 到点 / 挂汤）
-        pg.evaluate(
-            """() => {
-              const s = window.__laoyou.state;
-              s.flow.actToday = "a_suan";
-              s.dayReport = {
-                month: 3, day: 12, revenue: 320, served: 30, lost: 11,
-                avgSat: 61, price: 12, cash: 1800, taste: 58,
-                lostQueue: 9, lostPrice: 1, lostWait: 1,
-                investDone: ["夜市摆摊"], investGain: ["进店多 18%"],
-                thick: 4,
-              };
-              window.__laoyou.refresh();
-            }"""
-        )
+        pg.evaluate(DAY_JS)
         pg.wait_for_timeout(400)
 
-        fold = pg.evaluate(
-            """() => {
-              const el = document.querySelector("[data-why-fold]");
-              const spans = [...document.querySelectorAll(".daywhy span:not([data-why-fold])")];
-              const shown = spans.filter((x) => !x.hidden && (x.textContent || "").trim() !== "").length;
-              const total = spans.filter((x) => (x.textContent || "").trim() !== "").length;
-              return { text: el ? (el.textContent || "").trim() : "", shown, total };
-            }"""
-        )
+        fold = pg.evaluate(COUNT_JS)
         note("fold_total_over_three", fold["total"] > 3, fold)
         note("fold_hides_extra", fold["shown"] == 3, fold["shown"])
         note("fold_says_more", "还有" in fold["text"] and "条" in fold["text"], fold["text"])
 
         pg.evaluate("() => document.querySelector('[data-why-fold]')?.click()")
         pg.wait_for_timeout(200)
-        opened = pg.evaluate(
-            """() => {
-              const el = document.querySelector("[data-why-fold]");
-              const spans = [...document.querySelectorAll(".daywhy span:not([data-why-fold])")];
-              const shown = spans.filter((x) => !x.hidden && (x.textContent || "").trim() !== "").length;
-              return { text: el ? (el.textContent || "").trim() : "", shown };
-            }"""
-        )
+        opened = pg.evaluate(COUNT_JS)
         note("fold_click_shows_all", opened["shown"] == fold["total"], opened)
         note("fold_says_collapse", "收起" in opened["text"], opened["text"])
+        pg.screenshot(path=os.path.join(OUT, "01-fold-open.png"))
 
-        pg.screenshot(path=os.path.join(OUT, "01-fold-collapsed.png"))
+        # 批 AH′（解 P412）：这个「点开」要记住 —— 存在设置里（不进存档），重开还是点开的
+        saved = pg.evaluate(
+            """() => {
+              const raw = localStorage.getItem("laoyou.prefs.v1");
+              try { return JSON.parse(raw || "{}").whyOpen === true; } catch { return false; }
+            }"""
+        )
+        note("fold_open_saved_in_prefs", saved is True, saved)
 
-        # 380 以下的屏再窄一档：只留两条（批 AE′，解 P411）
-        pg.evaluate("() => document.querySelector('[data-why-fold]')?.click()")  # 先收回去
+        pg.reload(wait_until="networkidle")
+        pg.wait_for_timeout(900)
+        pg.evaluate("() => document.querySelector('.gbtn.ghost')?.click()")
+        pg.wait_for_timeout(400)
+        pg.evaluate(DAY_JS)
+        pg.wait_for_timeout(400)
+        remembered = pg.evaluate(COUNT_JS)
+        note(
+            "fold_state_remembered",
+            remembered["shown"] == remembered["total"] and "收起" in remembered["text"],
+            remembered,
+        )
+
+        # 380 以下的屏再窄一档：只留两条（批 AE′，解 P411）—— 先收回去
+        pg.evaluate("() => document.querySelector('[data-why-fold]')?.click()")
         pg.wait_for_timeout(150)
         pg.set_viewport_size({"width": 340, "height": 640})
         pg.wait_for_timeout(200)
@@ -105,55 +123,7 @@ def main():
             }"""
         )
         note("fold_narrow_keeps_two", narrow == 2, narrow)
-        pg.set_viewport_size({"width": 375, "height": 667})
-        pg.evaluate("() => window.__laoyou.refresh()")
-        pg.wait_for_timeout(300)
-
-        # 手册：图鉴页
-        pg.evaluate("() => document.querySelector('[data-tab=\"recipe\"]')?.click()")
-        pg.wait_for_timeout(400)
-        pg.evaluate("() => document.querySelector('[data-tab2=\"collection\"]')?.click()")
-        pg.wait_for_timeout(400)
-
-        base = pg.evaluate(
-            """() => {
-              const cnt = document.querySelector("[data-manualread]");
-              const pages = [...document.querySelectorAll(".mpage")];
-              return {
-                counter: cnt ? (cnt.textContent || "").trim() : "",
-                pages: pages.length,
-                unread: pages.filter((p) => p.getAttribute("data-read") !== "1").length,
-              };
-            }"""
-        )
-        note("manual_pages_sixteen", base["pages"] == 16, base)
-        note("manual_counter_zero", "还没翻过" in base["counter"], base["counter"])
-
-        pg.evaluate(
-            """() => {
-              const d = document.querySelector(".mpage");
-              if (d) { d.open = true; d.dispatchEvent(new Event("toggle", { bubbles: true })); }
-            }"""
-        )
-        pg.wait_for_timeout(500)
-
-        after = pg.evaluate(
-            """() => {
-              const cnt = document.querySelector("[data-manualread]");
-              const first = document.querySelector(".mpage");
-              return {
-                counter: cnt ? (cnt.textContent || "").trim() : "",
-                read: first ? first.getAttribute("data-read") : "",
-                tag: first ? !!first.querySelector(".mread") : false,
-                saved: (window.__laoyou.state.manual?.read ?? []).length,
-              };
-            }"""
-        )
-        note("manual_open_marks_read", after["read"] == "1" and after["tag"], after)
-        note("manual_counter_counts", "翻过 1 页" in after["counter"], after["counter"])
-        note("manual_saved_in_state", after["saved"] == 1, after["saved"])
-
-        pg.screenshot(path=os.path.join(OUT, "02-manual-read.png"))
+        pg.screenshot(path=os.path.join(OUT, "02-fold-narrow.png"))
 
         ver = pg.evaluate("() => window.__laoyou.state.saveVersion")
         note("save_version", ver == 37, ver)

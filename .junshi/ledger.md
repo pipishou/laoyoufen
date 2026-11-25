@@ -1245,3 +1245,15 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 替身四种子与批 AF′ **逐位一致**：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（界面层改动不动经济，这正是本批判据）。
 - 文档 `docs/操作一览算翻过与验收指针AG′-2026-11-25.md`（九节）与 `docs/ACCEPTANCE.md`。
 - 剩余：P405（AI 上下文写死）/ P412（折叠开合不记忆）/ P415 与 P413 已解 / P416（探针一管两事）/ P417（界面批次替身恒定）/ P344 / P374 / P389。
+
+### 行 142 · 2026-11-25 · 批 AH′：折行记住、挂汤说实话、探针拆开、事件表由游戏生成
+
+- **P412 折行记住**：`game/src/ui/prefs.ts` 的 `Prefs` 加 `whyOpen`（本机习惯，不进存档、不占 `SAVE_VERSION`）；`game/src/ui/hud.ts` 把 `let prefs = loadPrefs();` 上移到打烊单元素表之前（批 AG′ 白屏的 TDZ 教训，第二次不踩），折叠按钮点一下同时写 prefs 并 `savePrefs`。
+- **P405 挂汤说实话**：`game/src/sim/soupbase.ts` 新增 `thickContext(state)` —— 垫底那味（猪脚卤水）、当天挂汤占比三档（大半碗 / 有几碗 / 只出了一两碗）、口碑三档（口味正 / 吃得下 / 口重了），**一个阿拉伯数字都不给**（服务端 `CN_QUANTITY` 会丢带数量词的整句）。`game/src/main.ts` 的 `speakThick()` 改传它，本地死字符串删掉。
+- **P416 探针拆开**：手册那半从 `tools/gate/fold_probe.py` 搬到新 `tools/gate/manualread_probe.py`；`fold_probe.py` 只留折叠并新增 `fold_open_saved_in_prefs` / `fold_state_remembered`。实测 **10 / 10** 与 **12 / 12**。
+- **P344 事件表生成器**：新 `game/tools/server-events.gen.ts`（放在 `tools/` 而不是 `src/`，否则 `tsc` 会盯 `node:fs` 报 `TS2591`）+ `game/vitest.gen.config.ts` + `package.json` 的 `"gen:server"`。与磁盘不同才写盘，第一次跑 **八十三件逐条一致、没写盘**。
+- **测试**：新 `game/src/sim/thick-context.test.ts` 五例（垫底 / 三档多 / 三档味 / 无数字 / 无日结不炸）；`game/src/ui/prefs.test.ts` 两处断言补 `whyOpen`。
+- **验收**：`tsc` 0；`vitest --no-file-parallelism` **94 文件 1004 用例**；`gen:server` 1 / 1；`copy_gate` ok；`eye_gate --slug prefs` 1243 色 / stamp **173**；`ai_gate` `"ok": true`；构建 `index-svl58Mrm.js` **1,739,525 B** / `index-Cyd0u8tu.css` 55,916 B。
+- **替身四种子与 AG′ 逐位一致**：¥108,911 / ¥95,352 / ¥114,563 / ¥107,308 → 均值 **¥106,534 · 199.5 碗 · 42.3% · 期末 ¥469,495**（这一批一格经济数值没动，四种子不变就是判据，P417）。
+- **新缺口**：P418（折行记忆不出机器）/ P419（挂汤三档分界是拍的）/ P420（生成器只对账不告警，部署脚本里没有 `gen:server`）/ P421（手册那本账跨设备未验）。
+- **文档**：`docs/折行记忆与挂汤实话与事件表生成AH′-2026-11-25.md`；`docs/ACCEPTANCE.md` 已把当期数字、探针清单与剩余项改成这一批之后。

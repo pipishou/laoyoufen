@@ -17,7 +17,8 @@
     "probe:win": "vitest run --config vitest.probe.config.ts -t 可赢性",
     "probe:quality": "vitest run --config vitest.probe.config.ts -t 做得好也能活",
     "probe:standin": "vitest run --config vitest.probe.config.ts -t 替身",
-    "probe:start": "vitest run --config vitest.probe.config.ts -t 首周节奏"
+    "probe:start": "vitest run --config vitest.probe.config.ts -t 首周节奏",
+    "gen:server": "vitest run --config vitest.gen.config.ts"
   },
   "dependencies": {
     "phaser": "^3.90.0"

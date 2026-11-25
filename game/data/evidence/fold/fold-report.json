@@ -1,5 +1,5 @@
 {
-  "url": "http://localhost:4243/",
+  "url": "http://localhost:4244/",
   "checks": {
     "fold_total_over_three": {
       "ok": true,
@@ -15,35 +15,23 @@
     },
     "fold_click_shows_all": {
       "ok": true,
-      "detail": "{'text': '收起', 'shown': 4}"
+      "detail": "{'text': '收起', 'shown': 4, 'total': 4}"
     },
     "fold_says_collapse": {
       "ok": true,
       "detail": "收起"
     },
+    "fold_open_saved_in_prefs": {
+      "ok": true,
+      "detail": "True"
+    },
+    "fold_state_remembered": {
+      "ok": true,
+      "detail": "{'text': '收起', 'shown': 4, 'total': 4}"
+    },
     "fold_narrow_keeps_two": {
       "ok": true,
       "detail": "2"
-    },
-    "manual_pages_sixteen": {
-      "ok": true,
-      "detail": "{'counter': '还没翻过', 'pages': 16, 'unread': 16}"
-    },
-    "manual_counter_zero": {
-      "ok": true,
-      "detail": "还没翻过"
-    },
-    "manual_open_marks_read": {
-      "ok": true,
-      "detail": "{'counter': '翻过 1 页，还剩 15 页', 'read': '1', 'tag': True, 'saved': 1}"
-    },
-    "manual_counter_counts": {
-      "ok": true,
-      "detail": "翻过 1 页，还剩 15 页"
-    },
-    "manual_saved_in_state": {
-      "ok": true,
-      "detail": "1"
     },
     "save_version": {
       "ok": true,

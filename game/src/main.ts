@@ -71,7 +71,7 @@ import { buyEquipment } from "./sim/equipment";
 import { buyExpansion } from "./sim/expansion";
 import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
 import { noodleSummary, setNoodleKind } from "./sim/noodles";
-import { setSoupBase as setSoupBaseImpl, soupBaseSummary } from "./sim/soupbase";
+import { setSoupBase as setSoupBaseImpl, soupBaseSummary, thickContext } from "./sim/soupbase";
 import { noteById, noteTick, noteVoiceContext, rememberNoodle } from "./sim/notebook";
 import { dishNameOfItem, scoreOf } from "./sim/dish";
 import { addFavorFree, useFavor as useFavorImpl } from "./sim/favor";
@@ -1333,7 +1333,7 @@ function speakThick(): void {
   void fetchLine({
     kind: "broth_thick_voice",
     key,
-    context: { 汤: "挂得住", 嘴: "黏" },
+    context: thickContext(state),
     month: state.month,
     day: state.day,
   }).then((got) => {

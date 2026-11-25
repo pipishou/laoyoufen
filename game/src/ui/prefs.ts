@@ -27,6 +27,12 @@ export interface Prefs {
   volume: VolumeStep;
   contrast: boolean;
   bigText: boolean;
+  /**
+   * 打烊单那几行是不是展开着（批 AH′，解 P412）。
+   * 这不是开罗的东西 —— 是玩家自己点开的习惯，关掉游戏再回来该还开着。
+   * 存这里而不是存进存档：它也属于「这台机器上的习惯」，不跟档走、不占 `SAVE_VERSION`。
+   */
+  whyOpen: boolean;
 }
 
 export const PREFS_KEY = "laoyou.prefs.v1";
@@ -47,7 +53,7 @@ export const VOLUME_WORDS: Readonly<Record<VolumeStep, string>> = {
 const VOLUME_ORDER: readonly VolumeStep[] = ["low", "mid", "high"];
 
 export function defaultPrefs(): Prefs {
-  return { music: true, sfx: true, volume: "mid", contrast: false, bigText: false };
+  return { music: true, sfx: true, volume: "mid", contrast: false, bigText: false, whyOpen: false };
 }
 
 /** 坏值一律退回默认，不让一个手改过的 localStorage 把界面搞白 */
@@ -61,6 +67,7 @@ export function normalizePrefs(raw: unknown): Prefs {
     volume: VOLUME_ORDER.includes(v.volume as VolumeStep) ? (v.volume as VolumeStep) : base.volume,
     contrast: typeof v.contrast === "boolean" ? v.contrast : base.contrast,
     bigText: typeof v.bigText === "boolean" ? v.bigText : base.bigText,
+    whyOpen: typeof v.whyOpen === "boolean" ? v.whyOpen : base.whyOpen,
   };
 }
 
