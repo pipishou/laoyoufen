@@ -16,9 +16,9 @@
  "failed": [],
  "days": 37,
  "fps": {
-  "min": 58.0,
-  "avg": 60.0,
-  "n": 2434
+  "min": 54.0,
+  "avg": 59.9,
+  "n": 2331
  },
  "heap": {
   "samples": [
@@ -55,6 +55,7 @@
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
   "Failed to load resource: the server responded with a status of 404 (Not Found)"
  ],
  "bad_errors": [],
@@ -63,6 +64,7 @@
   "404 http://localhost:4246/laoyou-api/playtest",
   "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/event",
+  "404 http://localhost:4246/laoyou-api/line",
   "404 http://localhost:4246/laoyou-api/line",
   "404 http://localhost:4246/laoyou-api/line",
   "404 http://localhost:4246/laoyou-api/line",
@@ -81,15 +83,15 @@
  "off_api": [],
  "actions": {
   "open": 37,
-  "wait": 2353,
+  "wait": 2250,
   "next-day": 36,
   "event": 8
  },
- "line_calls": 7,
- "line_per_day": 0.19,
+ "line_calls": 8,
+ "line_per_day": 0.22,
  "hud": {
-  "cash": "¥40,690",
-  "date": "第 1 年 · 2 月 · 7 日12:20",
+  "cash": "¥40,287",
+  "date": "第 1 年 · 2 月 · 7 日11:52",
   "canvas": true
  }
 }

@@ -5,7 +5,7 @@ import {
   crewGapWords,
   crewGateWords,
   crewNoneWords,
-  crewWhyNoHandsWords,
+  crewNoHandsWords,
   crewWhyWords,
 } from "../data/crew";
 import { BOWL_EPSILON } from "../data/balance";
@@ -38,12 +38,15 @@ import type { GameState } from "./state";
  * 价钱那两句只在**真有人手缺口**时给：没缺口时说「招人要 ¥220」等于催人白花钱。
  */
 /**
- * 「现有的人往上长」问的刻度：手艺再涨多少点（批 AX′ 解 P477）。
+ * 手艺往上长的**唯一一条真实路径**：人情「让师傅带一手」（批 AY′ 解 P480）。
  *
- * 这是**提问的刻度**，不是模拟里的数值 —— 它不进 `FLOW`、不改任何经济量，
- * 只是让「养人值不值」这句话有个可算的落点（手艺涨点走 `sumSkill("cook")`）。
+ * 批 AX′ 用的是「手艺每涨 10 点」这种凭空的刻度 —— 游戏里没有这条路，玩家照它没法算明天。
+ * 真实入口只有两个，效果都是**手艺涨一档**：
+ *   ① `useFavor(state, "teach_staff")`：在职员工里手艺最低那位 +1 档（`TEACH_STEP = 1`），花 12 点人情；
+ *   ② `learnSpecialty(...)`：送人学专精，也 +1 档（还额外给专精效果）。
+ * 所以这句话问的是「再带一手值几碗」，刻度就是 `TEACH_STEP`，不是编出来的 10。
  */
-const COOK_GROW_STEP = 10;
+const TEACH_RANKS_PER_USE = 1;
 
 export interface CrewHire {
   /** 今天候选人里最该看的那个煮粉师傅 */
@@ -69,7 +72,7 @@ export interface CrewFacts {
   kitchenBinds: boolean;
   /** 再添一个人掌勺，当天上限能抬多少碗（模型算的，批 AV′ 解 P469） */
   cookGain: number;
-  /** 现有的人手艺再涨 `COOK_GROW_STEP` 点，当天上限能抬多少碗（批 AX′ 解 P477） */
+  /** 再带一手（手艺涨一档）当天上限能抬多少碗（批 AX′ 解 P477；批 AY′ 改口径解 P480） */
   growGain: number;
   /** 今天候选人里最该看的那个煮粉师傅（每一块钱技能最高的）；今天没有煮粉候选就是 null */
   hire: CrewHire | null;
@@ -133,11 +136,14 @@ export function crewFacts(state: GameState): CrewFacts {
    * 批 AW′ 的模型只会算「多雇一个人」，可这个店里还有一条真实存在的产能路：
    * 在职师傅的手艺涨点（`sumSkill("cook")` 变大 → `boil` 变快，且每 50 点再 +1 份）。
    * 人数不变、灶位不变，这两条链都在 `staffWithExtraCooks` 的同一个总和上，
-   * 所以只是「加一个人」的特例 —— 传 `extra = 0` 与 `grow = COOK_GROW_STEP`。
+   * 所以只是「加一个人」的特例 —— 传 `extra = 0` 与 `grow = 涨点数量`。
    *
-   * 这句话只在**今天没人来问工**时用：有人在问工时谈「补一个技能 N 的」更具体。
+   * 批 AY′（解 P480）：`grow` 问的必须是**游戏里真有的那一步**。手艺（1–5 档）只有两个入口,
+   * 效果都是涨一档：人情「让师傅带一手」与送人学专精。所以刻度从批 AX′ 拍脑袋的 10 点
+   * 改成 `TEACH_RANKS_PER_USE`（= 1 档），算出来的碗数玩家明天就能照着花人情。
    */
-  const growGain = capacityWithCooks(state, 0, 0, COOK_GROW_STEP).total - now.total;
+  const growGain =
+    capacityWithCooks(state, 0, 0, TEACH_RANKS_PER_USE).total - now.total;
 
   const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
 
@@ -145,13 +151,15 @@ export function crewFacts(state: GameState): CrewFacts {
   //
   // 批 AX′（解 P476）：今天没人来问工时不再落进「补一个技能 N 的师傅」那一档 ——
   // 池子是空的，那句话等于让玩家去招人页看一张空名单。改说唯一能走的路：养现有的人。
+  // 批 AY′（解 P480 / P481）：那条路改报真有的那一步（带一手 = 涨一档），
+  // 不再报「每涨 10 点」这种游戏里不存在的刻度。
   const why =
     idle === 0
       ? ""
       : hire
         ? crewWhyWords(kitchenBinds, cookGain, hire.skill)
         : kitchenBinds
-          ? crewWhyNoHandsWords(growGain, COOK_GROW_STEP)
+          ? crewNoHandsWords(growGain)
           : crewWhyWords(kitchenBinds, cookGain, null);
 
   // 「人手槽还差多少位」只在**眼下招不进来**时才说：店里还有空位却说

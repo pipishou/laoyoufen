@@ -28,7 +28,7 @@ import {
   crewGapWords,
   crewGateWords,
   crewNoneWords,
-  crewWhyNoHandsWords,
+  crewNoHandsWords,
   crewWhyWords,
 } from "../src/data/crew";
 
@@ -190,9 +190,9 @@ describe("灶位那句话只有一个出处（P462 / P465 / P467）", () => {
     expect(css).toContain('[data-crew-line]::before{content:"灶位 · "}');
   });
 
-  it("「今天没人来问工」与「抬不动」那两句也只许有一处出处（P476 / P477）", () => {
+  it("「今天没人来问工」与「抬不动」那两句也只许有一处出处（P476 / P477 / P480）", () => {
     expect(copiedElsewhere("只能靠现有的人往上长"), "这几处又自己写了一遍养人那条路").toEqual([]);
-    expect(copiedElsewhere("现有的人再练也抬不动"), "这几处又抄了一遍「养人也抬不动」").toEqual([]);
+    expect(copiedElsewhere("再带一手也快不了"), "这几处又抄了一遍「养人也抬不动」").toEqual([]);
     expect(copiedElsewhere("补一位进来也抬不动"), "这几处又抄了一遍「补上也抬不动」").toEqual([]);
   });
 
@@ -203,10 +203,11 @@ describe("灶位那句话只有一个出处（P462 / P465 / P467）", () => {
     expect(thin).toContain("抬不动");
     expect(thin).not.toMatch(/\d/);
     expect(thin).not.toContain("不到 1 碗");
-    const stuck = crewWhyNoHandsWords(0, 10);
+    const stuck = crewNoHandsWords(0);
     expect(stuck).not.toMatch(/\d/);
+    expect(stuck).toContain("再带一手也快不了");
     // 抬得动时照旧报碗数，且报的是取整后的那一份
     expect(crewWhyWords(true, 5.45, 3)).toContain("约多卖 5.5 碗");
-    expect(crewWhyNoHandsWords(32.83, 10)).toContain("约多卖 33 碗");
+    expect(crewNoHandsWords(32.83)).toContain("约多卖 33 碗");
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "./state";
 import { crewFacts } from "./crew";
-import { crewWhyNoHandsWords, crewWhyWords } from "../data/crew";
+import { crewNoHandsWords, crewWhyWords } from "../data/crew";
 import { capacityOf, capacityWithCooks } from "./bottleneck";
 import { serveParallel, cookSlots, inNoodlesNum } from "./staff";
 import type { StaffMember } from "./state";
@@ -327,7 +327,9 @@ describe("批 AX′：今天没人来问工，就该谈养人（P476 / P477）",
       expect(f.idle).toBe(1);
       expect(f.kitchenBinds).toBe(true);
       expect(f.why).toContain("只能靠现有的人往上长");
-      expect(f.why).toContain("手艺每涨 10 点");
+      // 批 AY′（解 P480）：报的是游戏里真有的那一步 —— 人情「带一手」，不是凭空的「涨 10 点」
+      expect(f.why).toContain("带一手");
+      expect(f.why).not.toContain("每涨");
       expect(f.why).toMatch(/约多卖 [\d.]+ 碗/);
       // 池子是空的，就不许出现「补一个技能 N 的师傅」这种没人可点的话
       expect(f.why).not.toMatch(/技能 \d+ 的师傅/);
@@ -337,28 +339,56 @@ describe("批 AX′：今天没人来问工，就该谈养人（P476 / P477）",
     }
   });
 
-  it("养人也抬不动时直说，不报数字（P477）", () => {
-    // 手艺已到 0.55 的下限（`sumSkill("cook") ≥ 12.23`）：再涨点也不会更快，
+  it("养人也抬不动时直说，不报数字（P477 / P481）", () => {
+    // 手艺已到 0.55 的下限（`sumSkill("cook") ≥ 12.23`）：再涨一档也不会更快，
     // 这个分支只有直接问那一句才稳定（真实配平里要同时满足「灶是闸 + 手艺封顶」很难凑）
-    const stuck = crewWhyNoHandsWords(0, 10);
-    expect(stuck).toContain("现有的人再练也抬不动");
+    const stuck = crewNoHandsWords(0);
+    expect(stuck).toContain("再带一手也快不了");
     expect(stuck).not.toMatch(/\d/);
-    const worth = crewWhyNoHandsWords(3.2, 10);
-    expect(worth).toContain("手艺每涨 10 点");
+    const worth = crewNoHandsWords(3.2);
+    expect(worth).toContain("带一手");
     expect(worth).toContain("约多卖 3.2 碗");
     expect(worth).not.toBe(stuck);
   });
 
-  it("一口灶时，「雇一个技能 10 的人」与「现有的人涨 10 点」是同一个模型值（P477）", () => {
+  it("一口灶时，「雇一个技能 3 的人」与「现有的人涨一档」是同一个模型值（P477）", () => {
     const s = emptyPool(4, 1);
     s.staff.roster.push(cook("c1"));
     s.venue.stoves = 2;
     // 2 口灶 2 个人：再雇一个人开不了新火，只有煮技总和在动 —— 与「涨点」完全等价
-    const hire = capacityWithCooks(s, 1, 10, 0).stove;
-    const grow = capacityWithCooks(s, 0, 0, 10).stove;
+    const hire = capacityWithCooks(s, 1, 3, 0).stove;
+    const grow = capacityWithCooks(s, 0, 0, 3).stove;
     expect(grow).toBeCloseTo(hire, 9);
     // 两个都不传时仍与模型原地一致
     expect(capacityWithCooks(s, 0, 0, 0).total).toBeCloseTo(capacityOf(s).total, 9);
+  });
+
+  it("「养人值几碗」问的是手艺涨一档，不是凭空的 10 点（P480）", () => {
+    const s = emptyPool(4, 2);
+    const before = FLOW.serveMinutes;
+    try {
+      FLOW.serveMinutes = 6;
+      // 一档 = 一个人 +1 技能（`TEACH_STEP = 1`），`cookSlots` 不变
+      const oneRank = capacityWithCooks(s, 0, 0, 1).total - capacityOf(s).total;
+      expect(crewFacts(s).growGain).toBeCloseTo(oneRank, 9);
+      // 模型对「涨 10 点」确实算得出更多碗 —— 但游戏里没有这条路，所以界面不许报它
+      const tenPoints = capacityWithCooks(s, 0, 0, 10).total - capacityOf(s).total;
+      expect(tenPoints).toBeGreaterThan(oneRank);
+      expect(crewFacts(s).why).not.toContain("10 点");
+      expect(crewFacts(s).why).toContain("带一手");
+    } finally {
+      FLOW.serveMinutes = before;
+    }
+  });
+
+  it("「再涨 N 点才有救」这种话一句都不写：那一档四十个人也够不着（P481）", () => {
+    // `inNoodlesNum` 的老口径是「手艺总和每 50 点 +1 份」，可 4 个满级煮粉也只有 20 点；
+    // 所以只要手艺没封顶，界面就只能报「带一手值几碗」，不许报「还差多少点」
+    for (const text of [crewNoHandsWords(0), crewNoHandsWords(2.5), crewNoHandsWords(30)]) {
+      // 「12 点人情」是真实的价钱，可以写；「每涨 N 点」「再涨 N 点」「还差 N 点」不行
+      expect(text).not.toMatch(/每涨|再涨|还差/);
+      expect(text).not.toMatch(/\d+ 点(?!人情)/);
+    }
   });
 
   it("差值不到半碗时，副句不许把「不到 1 碗」塞进「这口灶就烧得上了」（P476）", () => {

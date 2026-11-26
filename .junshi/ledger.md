@@ -1505,3 +1505,18 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 构建 `index-BC_L9zvE.js` **1,747,767 B**（gzip 525.91）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
 - 文档 `docs/今天没人来问工就谈养人AX′-2026-11-26.md`（九节：两条是一件事的两头 / 模型补 `grow` / 三句话各自的作用域表 / AW′ 那道缝 / 第十八次键漏字段 / 验收表 / 没动什么 / 新缺口 P480–P482 / 复现命令）。
 - 新缺口：**P480**（`COOK_GROW_STEP` 是提问刻度，玩家看不出「涨 10 点要几天」，模型不知道「一天涨几点」）/ **P481**（「再练也抬不动」与 `inNoodlesNum` 每 50 点一档台阶互相打架，句子分不清「完全没救」与「再涨 20 点才有救」）/ **P482**（打烊单 `brief` 仍只说缺口，养人这条路没进打烊单，与 P448 同型）。
+
+### 行 161 · 2026-11-26 · 批 AY′：养人这一步到底怎么走（P480 / P481）
+
+- 两条是同一个毛病：那句话在指着**一条不存在的路**。
+- P480：批 AX′ 写的「手艺每涨 10 点」—— 游戏里没有任何一处能让手艺「涨 10 点」。真实入口只有两个，效果都是**涨一档**（`+1`）：`useFavor(state, "teach_staff")`（人情 12 点，`TEACH_STEP = 1`）与 `learnSpecialty(...)`（送人学专精，也 `Math.min(5, skill + 1)`）。所以 `game/src/sim/crew.ts` 的 `COOK_GROW_STEP = 10` 删掉，换成 `TEACH_RANKS_PER_USE = 1`，`growGain` 问的就是「再带一手」。
+- P481：`inNoodlesNum` 的第三个台阶是 `Math.floor(sumSkill/50)` —— 四个人满编 4×5 = 20 点，连 50 点都到不了。所以「再涨 N 点才有救」这一档在真实配平里**永远够不着**，句子一句都不许写（`crewNoHandsWords` 里没有任何「每涨/再涨/还差」）。
+- 文案：`crewWhyNoHandsWords(growGain, step)` 删掉，换成 `crewNoHandsWords(teachGain)`，价钱从 `FAVOR_BY_ID.get("teach_staff").costPoints` 读（12 点**只写一处**，`data/favor.ts` 是唯一的表）；抬不动时改说「现有的人手艺都到顶了 —— 再带一手也快不了，该去理座位和街上的人了」，一个数字都不报。
+- 取数（三个临时脚本，跑完已删）：`capacityWithCooks(s, 0, 0, g)` 扫 g=1..50 —— 12 座 serve 20 单 cook1 时 g=1/2/3/…/10 是 1.86/3.92/6.21/…/32.91（**g ≥ 10 就撞座位/来客天花板**），所以「加 10 点」既不比「加一档」多信息、也不是玩家能走的路；另一条：8 座 serve 24 三 cook1 时 +1 手值 1.553 碗，而离下一个 50 点台阶还差 49 点却值 39.195 碗 —— 值钱但够不着，正是 P481 说的那句「分不清完全没救与再涨 20 点才有救」。
+- 测试：`src/sim/crew.test.ts` 21 → **23 例**（「养人值几碗」问的是涨一档 vs `(s,0,0,10)` 那组对照、「再涨 N 点才有救」一句都不写 —— 后者第一版写成 `not.toContain("点")` 被「12 点人情」判红，改成 `not.toMatch(/\d+ 点(?!人情)/)`）；`game/tools/crew-literal.test.ts` 14 例（扫描词从「现有的人再练也抬不动」换成「再带一手也快不了」）。
+- 五门：`tsc` 0；`vitest --no-file-parallelism` **106 文件 1090 用例**；`copy_gate` ok；`crew_probe.py` **25 / 25 true**；`eye_gate --slug crew8` 五视口 **727 · 778 · 585 · 1249 · 1505** 色、stamp **180**、控制台 10 条（预览 `/laoyou-api/` 404 良性）；`ai_gate` 四段 `"ok": true`（跑完已重建）；帧差门重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**；`debug_exit_gate` **4 / 4**（扫 1,747,858 B，只挂 `__laoyou`）。
+- 替身四种子 **¥129,501 · 221.2 碗 · 37% · ¥1,004,186**，与批 AX′ **逐位相同**（只改说法与刻度口径，`crewFacts` 不进模拟）。
+- 构建 `index-C2FeNIKZ.js` **1,747,858 B**（gzip 525.98）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
+- 文档 `docs/养人这一步到底怎么走AY′-2026-11-26.md`。
+- 新缺口：**P483**（`TEACH_RANKS_PER_USE = 1` 是常量，`learnSpecialty` 与 `teach_staff` 都写 `+1`，但后者封顶 5 档、前者不封 —— 一句话把两条路说成同一条）/ **P484**（`crewNoHandsWords` 报的碗数是「一手」的收益，没说是「12 点人情」的收益，玩家算不出「这 12 点值不值」）/ **P485**（`useFavor` 挑的是「手艺最低的那位」，而 `crewNoHandsWords` 说的是「现有的人」—— 谁往上长没对上）。
+- 注：本行排在 **GAP 四轮**之后写，因为用户 m39021 在批 AY′ 收尾前插入了对账任务；两件事各自独立，GAP 四轮不改代码。

@@ -19,6 +19,7 @@
  */
 
 import { BOWL_EPSILON } from "./balance";
+import { FAVOR_BY_ID } from "./favor";
 
 /** 核心那一截：第 N 口起没人看（长句短句共用） */
 function gapCore(slots: number): string {
@@ -103,22 +104,32 @@ export function crewWhyWords(
 }
 
 /**
- * 副句的另一半：**今天没人来问工**，但灶真是紧的那道（批 AX′ 解 P476 / P477）。
+ * 副句的另一半：**今天没人来问工**，但灶真是紧的那道（批 AX′ 解 P476；批 AY′ 解 P480 / P481）。
  *
  * 原来这种情况落进 `crewWhyWords(…, null)`，说的是「补齐人手这口灶才烧得上」，
  * 可池子里一个人都没有 —— 玩家去招人页只会看到空名单。现在改说**眼下唯一能走的路**：
- * 让现有的人往上长（手艺涨点、专精突破）。这条路到底值几碗，也由模型算（`growGain`），
- * 不是猜的；`growGain` 抬不动就直说抬不动。
+ * 让现有的人往上长。
  *
- * `step` 是「手艺再涨多少点」这个**提问的刻度**（不是文案里的数字游戏），由调用方给。
+ * 批 AY′：批 AX′ 那句话写的是「手艺每涨 10 点」，可游戏里**没有「每涨 10 点」这条路** ——
+ * 手艺（1–5 档）只有两个入口：人情「让师傅带一手」（`TEACH_STEP = 1` 档，12 点人情）
+ * 与送人学专精（`learnSpecialty` 也 +1 档）。10 点是一个凭空的刻度，玩家照着它没法算
+ * 明天怎么办（P480）。所以这句话改报**真那条路**：带一手多卖几碗，并把人情点数写出来。
+ *
+ * 批 AX′ 还留了一半没说：`inNoodlesNum` 每 50 点再 +1 份，可四个人满编的手艺总和也就
+ * 15 点上下 —— 那一档在真实配平里**永远够不着**。所以「再涨 N 点才有救」这种话一句都不写，
+ * 抬不动就直说抬不动（P481）。
+ *
+ * 三个分支的判据全在调用方用模型算好（`teachGain`），这里只管语法。
  */
-export function crewWhyNoHandsWords(growGain: number, step: number): string {
-  if (growGain <= BOWL_EPSILON) {
-    return "今天卡的就是灶，可现有的人再练也抬不动 —— 该去理座位和街上的人了。";
+export function crewNoHandsWords(teachGain: number): string {
+  if (teachGain <= BOWL_EPSILON) {
+    // 抬不动时一个数字都不许出现：报「约多卖 不到 1 碗」等于自己打脸
+    return "今天卡的就是灶，可现有的人手艺都到顶了 —— 再带一手也快不了，该去理座位和街上的人了。";
   }
+  const cost = FAVOR_BY_ID.get("teach_staff")?.costPoints ?? 0;
   return (
     `今天卡的就是灶 —— 今天没人来问工，只能靠现有的人往上长：` +
-    `手艺每涨 ${step} 点，约多卖 ${bowlGainWords(growGain)}。`
+    `让人情带一手（${cost} 点人情，手艺涨一档），约多卖 ${bowlGainWords(teachGain)}。`
   );
 }
 
