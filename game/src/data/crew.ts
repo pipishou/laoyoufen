@@ -18,6 +18,8 @@
  * 「口起没人看」「每一口灶都烧得上」「今天卡的不是灶」「今天有人来问工」。
  */
 
+import { BOWL_EPSILON } from "./balance";
+
 /** 核心那一截：第 N 口起没人看（长句短句共用） */
 function gapCore(slots: number): string {
   return `第 ${slots + 1} 口起没人看`;
@@ -87,11 +89,37 @@ export function crewWhyWords(
   if (!kitchenBinds) {
     return "不过今天卡的不是灶：座位和街上的人先顶着天花板，多开一口火也不会多卖。";
   }
+  // 批 AX′（解 P476）：卡是卡在灶，可补上这位也抬不动 —— 这时候再报一个数字就是假的。
+  // 「约多卖 不到 1 碗」这种话是批 AW′ 留下的缝：`bowlGainWords` 诚实地写成「不到 1 碗」，
+  // 可把它塞进「这口灶就烧得上了（约多卖 …）」里，前后半句互相打脸。
+  if (cookGain <= BOWL_EPSILON) {
+    return "今天卡的就是灶，可今天补一位进来也抬不动 —— 这口灶得一直有人盯着才烧得起来。";
+  }
   const bowls = bowlGainWords(cookGain);
   if (cookSkill === null) {
     return `今天卡的就是灶 —— 补齐人手这口灶才烧得上（多一个人约多卖 ${bowls}）。`;
   }
   return `今天卡的就是灶 —— 补一个技能 ${cookSkill} 的师傅，这口灶就烧得上了（约多卖 ${bowls}）。`;
+}
+
+/**
+ * 副句的另一半：**今天没人来问工**，但灶真是紧的那道（批 AX′ 解 P476 / P477）。
+ *
+ * 原来这种情况落进 `crewWhyWords(…, null)`，说的是「补齐人手这口灶才烧得上」，
+ * 可池子里一个人都没有 —— 玩家去招人页只会看到空名单。现在改说**眼下唯一能走的路**：
+ * 让现有的人往上长（手艺涨点、专精突破）。这条路到底值几碗，也由模型算（`growGain`），
+ * 不是猜的；`growGain` 抬不动就直说抬不动。
+ *
+ * `step` 是「手艺再涨多少点」这个**提问的刻度**（不是文案里的数字游戏），由调用方给。
+ */
+export function crewWhyNoHandsWords(growGain: number, step: number): string {
+  if (growGain <= BOWL_EPSILON) {
+    return "今天卡的就是灶，可现有的人再练也抬不动 —— 该去理座位和街上的人了。";
+  }
+  return (
+    `今天卡的就是灶 —— 今天没人来问工，只能靠现有的人往上长：` +
+    `手艺每涨 ${step} 点，约多卖 ${bowlGainWords(growGain)}。`
+  );
 }
 
 

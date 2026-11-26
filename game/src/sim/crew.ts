@@ -5,6 +5,7 @@ import {
   crewGapWords,
   crewGateWords,
   crewNoneWords,
+  crewWhyNoHandsWords,
   crewWhyWords,
 } from "../data/crew";
 import { BOWL_EPSILON } from "../data/balance";
@@ -36,6 +37,14 @@ import type { GameState } from "./state";
  *
  * 价钱那两句只在**真有人手缺口**时给：没缺口时说「招人要 ¥220」等于催人白花钱。
  */
+/**
+ * 「现有的人往上长」问的刻度：手艺再涨多少点（批 AX′ 解 P477）。
+ *
+ * 这是**提问的刻度**，不是模拟里的数值 —— 它不进 `FLOW`、不改任何经济量，
+ * 只是让「养人值不值」这句话有个可算的落点（手艺涨点走 `sumSkill("cook")`）。
+ */
+const COOK_GROW_STEP = 10;
+
 export interface CrewHire {
   /** 今天候选人里最该看的那个煮粉师傅 */
   name: string;
@@ -60,6 +69,8 @@ export interface CrewFacts {
   kitchenBinds: boolean;
   /** 再添一个人掌勺，当天上限能抬多少碗（模型算的，批 AV′ 解 P469） */
   cookGain: number;
+  /** 现有的人手艺再涨 `COOK_GROW_STEP` 点，当天上限能抬多少碗（批 AX′ 解 P477） */
+  growGain: number;
   /** 今天候选人里最该看的那个煮粉师傅（每一块钱技能最高的）；今天没有煮粉候选就是 null */
   hire: CrewHire | null;
   /** 人手槽还差多少累计接待量（招不到人时才有值） */
@@ -116,10 +127,32 @@ export function crewFacts(state: GameState): CrewFacts {
   const cookGain = capacityWithCooks(state, 1, hire ? hire.skill : 0).total - now.total;
   const cookAddsBowls = cookGain > BOWL_EPSILON;
 
+  /**
+   * 批 AX′（解 P477）：另一条路 —— **现有的人往上长**。
+   *
+   * 批 AW′ 的模型只会算「多雇一个人」，可这个店里还有一条真实存在的产能路：
+   * 在职师傅的手艺涨点（`sumSkill("cook")` 变大 → `boil` 变快，且每 50 点再 +1 份）。
+   * 人数不变、灶位不变，这两条链都在 `staffWithExtraCooks` 的同一个总和上，
+   * 所以只是「加一个人」的特例 —— 传 `extra = 0` 与 `grow = COOK_GROW_STEP`。
+   *
+   * 这句话只在**今天没人来问工**时用：有人在问工时谈「补一个技能 N 的」更具体。
+   */
+  const growGain = capacityWithCooks(state, 0, 0, COOK_GROW_STEP).total - now.total;
+
   const words = idle === 0 ? crewFitWords(stoves, slots) : crewGapWords(stoves, slots);
 
   // 只在「有人手缺口」时说第二句：没有缺口时这句话是废话（而且会把打烊单撑长）
-  const why = idle === 0 ? "" : crewWhyWords(kitchenBinds, cookGain, hire ? hire.skill : null);
+  //
+  // 批 AX′（解 P476）：今天没人来问工时不再落进「补一个技能 N 的师傅」那一档 ——
+  // 池子是空的，那句话等于让玩家去招人页看一张空名单。改说唯一能走的路：养现有的人。
+  const why =
+    idle === 0
+      ? ""
+      : hire
+        ? crewWhyWords(kitchenBinds, cookGain, hire.skill)
+        : kitchenBinds
+          ? crewWhyNoHandsWords(growGain, COOK_GROW_STEP)
+          : crewWhyWords(kitchenBinds, cookGain, null);
 
   // 「人手槽还差多少位」只在**眼下招不进来**时才说：店里还有空位却说
   // 「还差 500 位」会把能立刻雇的人挡住（首跑就被这条判红）。
@@ -147,5 +180,5 @@ export function crewFacts(state: GameState): CrewFacts {
   // 打烊单那一行要短的：面板能写长句，打烊单只能占一行（P406 折行）
   const brief = idle > 0 ? crewGapWords(stoves, slots, true) : "";
 
-  return { stoves, slots, idle, kitchenBinds, cookGain, hire, gate, words, brief, why, cost };
+  return { stoves, slots, idle, kitchenBinds, cookGain, growGain, hire, gate, words, brief, why, cost };
 }

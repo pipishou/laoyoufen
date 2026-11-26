@@ -1490,3 +1490,18 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - 构建 `index-BDxIwBEJ.js` **1,747,236 B**（gzip 525.72）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
 - 文档 `docs/换谁掌勺到底差几碗AW′-2026-11-26.md`（九节）。
 - 新缺口：**P476**（句子报「技能 5」而候选池今天可能没有技能 5 的人，池子与句子之间少一次核对）/ **P477**（`staffWithExtraCooks` 只支持整份技能累加，不支持同一个人成长）/ **P478**（`bowlGainWords` 的十碗分界 9.95 也是拍的）/ **P479**（`BOWL_EPSILON` 不在 `FLOW` 里也不在 `resetFlowTuning` 里，看着像可调参数）。
+
+### 行 160 · 2026-11-26 · 批 AX′：今天没人来问工，就谈养人（P476 / P477）
+
+- 两条是同一句话的两头：P476 是「这句话说给谁听」（候选池今天可能是空的），P477 是「店里到底有哪条路能多卖」（除了新雇一个，还有现有的人手艺往上长）。
+- 模型补了第四条参数：`staffWithExtraCooks(state, add, skill, grow)`，`cookSkillAfter = 现有 + extra × skill + grow`；`capacityWithCooks(state, extra, cookSkill, grow)` 逐层透传。`sumSkill` 只看总和，所以在**一口灶**下「雇一个技能 10 的人」与「现有的人涨 10 点」是同一个值 —— 单测用 `toBeCloseTo(…, 9)` 钉住；`(0,0,0)` 仍逐位等于 `capacityOf`。
+- 副句第一次分四档（`game/src/sim/crew.ts`）：灶不是闸 → 「不是灶」；灶是闸且有人来问工 → `crewWhyWords(kitchenBinds, cookGain, hire.skill)`；灶是闸、**没人来问工** → `crewWhyNoHandsWords(growGain, COOK_GROW_STEP)`；灶是闸、没人来问工且手艺也封顶 → 同一句的落空分支「现有的人再练也抬不动 —— 该去理座位和街上的人了」。
+- 修掉批 AW′ 的一道缝：`cookGain <= BOWL_EPSILON` 时不再写「补齐人手这口灶才烧得上（约多卖 不到 1 碗）」这种前后打脸的话，只说「今天补一位进来也抬不动 —— 这口灶得一直有人盯着才烧得起来」，**一个数字都不出现**（`crew-literal.test.ts` 用 `not.toMatch(/\d/)` 钉住）。
+- `COOK_GROW_STEP = 10` 放在 `sim/crew.ts`，注释写明是**提问的刻度**：不进 `FLOW`、不改任何经济量、不被 `resetFlowTuning` 管 —— 它只给「手艺每涨 N 点」一个可算的落点。
+- **第十八次「键漏字段」**：副句现在依赖 `growGain`，`game/src/ui/panels.ts:2225`（店员页）与 `:2228`（店面页）两处缓存键各补 `|${crewFacts(s).growGain}`，否则「没人来问工 → 养人」这句在 DOM 上不重画。
+- 测试：`src/sim/crew.test.ts` 17 → **21 例**（池子空时谈养人、抬不动时无数字、一口灶下 grow 与 hire 同值、`crewWhyWords(true,0.3,3)` 不含「约多卖」）；`tools/crew-literal.test.ts` 12 → **14 例**（三句新说法各只许一处出处、抬不动时一个数字都不许出现）。合计 **106 文件 1088 用例**。
+- 五门：`tsc` 0；`copy_gate` ok；`eye_gate --slug crew7` 五视口 **725 · 778 · 586 · 1238 · 1510** 色、stamp **180**、控制台 10 条（预览 `/laoyou-api/` 404 良性）；`ai_gate` 四段 `"ok": true`、`pageerrors: []`（跑完已重建）；帧差重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps 58/60、2434 采样、堆 0.0、一句话接口 7 次 0.19/天、console 18 条全白名单、4xx 全在 `/laoyou-api/`）；`debug_exit_gate` **4 / 4**（扫 1 个 js 共 1,747,767 B，只挂 `__laoyou`）；`crew_probe.py` **25 / 25 true**（本批不加判据）。
+- 替身四种子 **¥129,501 · 221.2 碗 · 37% · 期末 ¥1,004,186**，与 AV′ / AW′ **逐位相同**（本批不动一个经济数值，只改那句话怎么选分支）。
+- 构建 `index-BC_L9zvE.js` **1,747,767 B**（gzip 525.91）/ `index-IvOrrQh0.css` 56,677 B（gzip 11.93）。
+- 文档 `docs/今天没人来问工就谈养人AX′-2026-11-26.md`（九节：两条是一件事的两头 / 模型补 `grow` / 三句话各自的作用域表 / AW′ 那道缝 / 第十八次键漏字段 / 验收表 / 没动什么 / 新缺口 P480–P482 / 复现命令）。
+- 新缺口：**P480**（`COOK_GROW_STEP` 是提问刻度，玩家看不出「涨 10 点要几天」，模型不知道「一天涨几点」）/ **P481**（「再练也抬不动」与 `inNoodlesNum` 每 50 点一档台阶互相打架，句子分不清「完全没救」与「再涨 20 点才有救」）/ **P482**（打烊单 `brief` 仍只说缺口，养人这条路没进打烊单，与 P448 同型）。

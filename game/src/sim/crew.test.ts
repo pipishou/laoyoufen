@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "./state";
 import { crewFacts } from "./crew";
+import { crewWhyNoHandsWords, crewWhyWords } from "../data/crew";
 import { capacityOf, capacityWithCooks } from "./bottleneck";
 import { serveParallel, cookSlots, inNoodlesNum } from "./staff";
 import type { StaffMember } from "./state";
@@ -304,5 +305,83 @@ describe("批 AV′：补一个人到底多卖几碗", () => {
     s.staff.roster.push(cook("c1"));
     // 两口灶、两个人掌勺：再添一个人同样换不来碗
     expect(crewFacts(s).cookGain).toBe(0);
+  });
+});
+
+describe("批 AX′：今天没人来问工，就该谈养人（P476 / P477）", () => {
+  /** 今天空池子的店（候选一个都没有） */
+  function emptyPool(seats: number, stoves: number) {
+    const s = withStoves(seats, stoves);
+    s.staff.candidates = [];
+    s.totalCustomers = 300;
+    return s;
+  }
+
+  it("厨房真卡、今天又没人来问工：不说「补一个技能 N 的师傅」，改说养人（P476）", () => {
+    const s = emptyPool(4, 2);
+    const before = FLOW.serveMinutes;
+    try {
+      // 压慢出碗节拍，让灶成为四道闸里最紧的那道（与批 AV′ / AW′ 同一手法）
+      FLOW.serveMinutes = 6;
+      const f = crewFacts(s);
+      expect(f.idle).toBe(1);
+      expect(f.kitchenBinds).toBe(true);
+      expect(f.why).toContain("只能靠现有的人往上长");
+      expect(f.why).toContain("手艺每涨 10 点");
+      expect(f.why).toMatch(/约多卖 [\d.]+ 碗/);
+      // 池子是空的，就不许出现「补一个技能 N 的师傅」这种没人可点的话
+      expect(f.why).not.toMatch(/技能 \d+ 的师傅/);
+      expect(f.why).not.toContain("不到 1 碗");
+    } finally {
+      FLOW.serveMinutes = before;
+    }
+  });
+
+  it("养人也抬不动时直说，不报数字（P477）", () => {
+    // 手艺已到 0.55 的下限（`sumSkill("cook") ≥ 12.23`）：再涨点也不会更快，
+    // 这个分支只有直接问那一句才稳定（真实配平里要同时满足「灶是闸 + 手艺封顶」很难凑）
+    const stuck = crewWhyNoHandsWords(0, 10);
+    expect(stuck).toContain("现有的人再练也抬不动");
+    expect(stuck).not.toMatch(/\d/);
+    const worth = crewWhyNoHandsWords(3.2, 10);
+    expect(worth).toContain("手艺每涨 10 点");
+    expect(worth).toContain("约多卖 3.2 碗");
+    expect(worth).not.toBe(stuck);
+  });
+
+  it("一口灶时，「雇一个技能 10 的人」与「现有的人涨 10 点」是同一个模型值（P477）", () => {
+    const s = emptyPool(4, 1);
+    s.staff.roster.push(cook("c1"));
+    s.venue.stoves = 2;
+    // 2 口灶 2 个人：再雇一个人开不了新火，只有煮技总和在动 —— 与「涨点」完全等价
+    const hire = capacityWithCooks(s, 1, 10, 0).stove;
+    const grow = capacityWithCooks(s, 0, 0, 10).stove;
+    expect(grow).toBeCloseTo(hire, 9);
+    // 两个都不传时仍与模型原地一致
+    expect(capacityWithCooks(s, 0, 0, 0).total).toBeCloseTo(capacityOf(s).total, 9);
+  });
+
+  it("差值不到半碗时，副句不许把「不到 1 碗」塞进「这口灶就烧得上了」（P476）", () => {
+    const s = emptyPool(4, 2);
+    s.staff.candidates = [
+      {
+        uid: "cand-cook",
+        name: "阿强",
+        role: "cook",
+        wage: 150,
+        fatigue: 0,
+        skill: 3,
+        xp: 0,
+        resting: false,
+      } as StaffMember,
+    ];
+    // 直接问那一句：抬不动时只许说抬不动
+    const text = crewWhyWords(true, 0.3, 3);
+    expect(text).toContain("抬不动");
+    expect(text).not.toContain("约多卖");
+    expect(text).not.toContain("不到 1 碗");
+    // 抬得动时照旧报到碗数
+    expect(crewWhyWords(true, 5.45, 3)).toContain("约多卖 5.5 碗");
+    expect(crewFacts(s).idle).toBe(1);
   });
 });

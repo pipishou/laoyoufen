@@ -161,9 +161,14 @@ export function capacityOf(state: GameState): Capacity {
  * 天花板仍是四道闸取最小：这一项回答的是「今天最多能卖几碗」，
  * 不是「这一件能不能把那道闸抬高」（后者看 `capacityGain`）。
  */
-export function capacityWithCooks(state: GameState, extra: number, cookSkill = 0): Capacity {
+export function capacityWithCooks(
+  state: GameState,
+  extra: number,
+  cookSkill = 0,
+  grow = 0,
+): Capacity {
   const now = capacityOf(state);
-  const { parallel, multiplier } = staffWithExtraCooks(state, extra, cookSkill);
+  const { parallel, multiplier } = staffWithExtraCooks(state, extra, cookSkill, grow);
   const batchMinutes = Math.max(
     0.2,
     (FLOW.serveMinutes * multiplier * stationServeFactor(state)) / parallel,

@@ -169,6 +169,7 @@ export function staffWithExtraCooks(
   state: GameState,
   add: number,
   skill: number,
+  grow = 0,
 ): { parallel: number; multiplier: number } {
   const extra = Math.max(0, Math.floor(add));
   const stoves = Math.max(1, state.venue.stoves);
@@ -176,7 +177,10 @@ export function staffWithExtraCooks(
   const slotsAfter = Math.max(1, slotsNow + extra);
 
   const cookSkillNow = sumSkill(state, "cook");
-  const cookSkillAfter = cookSkillNow + extra * Math.max(0, skill);
+  // 批 AX′（解 P477）：`grow` 是「现有的人往上长」那一条路 —— 手艺涨点、专精突破，
+  // 人数不变但煮技总和变高。它与「多雇一个人」在同一条链上（`sumSkill` 只看总和），
+  // 所以两个参数可以直接相加；不传 `grow` 时行为与批 AW′ 逐位相同。
+  const cookSkillAfter = cookSkillNow + extra * Math.max(0, skill) + Math.max(0, grow);
   const grown = staffEffects(state).noodle;
   const perStoveAfter =
     3 + equipLevel(state, "strainer") + Math.min(2, Math.floor(cookSkillAfter / 50) + grown);
