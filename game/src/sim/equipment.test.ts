@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BENCH_CAPACITY_STEP, EQUIPMENT, MAX_EQUIP_LEVEL, STAGE_MINUTES, STATION_ORDER } from "../data/equipment";
+import { BENCH_CAPACITY_STEP, EQUIPMENT, MAX_EQUIP_LEVEL, MAX_EQUIP_LEVEL_UNLOCKED, STAGE_MINUTES, STATION_ORDER } from "../data/equipment";
 import { CAPITAL, bowls } from "../data/anchors";
 import { SERVE_MINUTES } from "./customer";
 import {
@@ -7,6 +7,7 @@ import {
   effectiveServeMinutes,
   equipCostMultiplier,
   equipLevel,
+  equipMaxLevel,
   equipNextCost,
   equipServeMultiplier,
   slowestStation,
@@ -25,13 +26,19 @@ const fresh = () => {
 };
 
 describe("设备 S4：四件设备，三段并行", () => {
-  it("四件设备、每件四档，价格与 CAPITAL.equipmentYuan 一致（¥1,500→¥30,000）", () => {
+  it("四件设备、每件五档（第五档要第 8 段才开），价格与 CAPITAL.equipmentYuan 一致（¥1,500→¥68,000）", () => {
     expect(EQUIPMENT.map((e) => e.id)).toEqual(["stove", "pot", "strainer", "bench"]);
     for (const e of EQUIPMENT) {
       expect(e.tiers).toEqual([...CAPITAL.equipmentYuan]);
-      expect(e.tiers.length).toBe(MAX_EQUIP_LEVEL);
-      expect(e.effects.length).toBe(MAX_EQUIP_LEVEL);
+      // 批 AZ′（解 GAP 四轮 A 条）：表里一直是五档的并口数，但 `MAX_EQUIP_LEVEL` 卡在 4
+      // —— 第五档的「黄金灶」玩家永远换不到。现在档数跟数据结构一致，能不能买由段位说了算。
+      expect(e.tiers.length).toBe(MAX_EQUIP_LEVEL_UNLOCKED);
+      expect(e.effects.length).toBe(MAX_EQUIP_LEVEL_UNLOCKED);
+      // 不用段位就能买到的那四档仍是老价钱
+      expect(e.tiers[MAX_EQUIP_LEVEL - 1]).toBe(30_000);
     }
+    expect(MAX_EQUIP_LEVEL).toBe(4);
+    expect(MAX_EQUIP_LEVEL_UNLOCKED).toBe(5);
     expect(bowls(CAPITAL.equipmentYuan[3]!)).toBe(3_000);
   });
 
@@ -66,17 +73,34 @@ describe("设备 S4：四件设备，三段并行", () => {
     expect(equipNextCost(s, "stove")).toBe(3_800);
   });
 
-  it("满级后拒绝，且下一档返回 Infinity", () => {
+  it("段位没到时第五档拒绝并说明原因，评到第 8 段就能买到，之后再拒绝说顶档（批 AZ′）", () => {
     const s = fresh();
     s.cash = 1_000_000;
     for (let i = 0; i < MAX_EQUIP_LEVEL; i += 1) expect(buyEquipment(s, "bench").ok).toBe(true);
     expect(equipLevel(s, "bench")).toBe(4);
+    // 四档买满，第五档还锁着：不是「顶档」，是「段位没到」
+    expect(equipMaxLevel(s, "bench")).toBe(MAX_EQUIP_LEVEL);
     expect(equipNextCost(s, "bench")).toBe(Infinity);
     const cash = s.cash;
-    const r = buyEquipment(s, "bench");
-    expect(r.ok).toBe(false);
-    expect(r.reason).toContain("顶档");
+    const blocked = buyEquipment(s, "bench");
+    expect(blocked.ok).toBe(false);
+    expect(blocked.reason).toContain("第 8 段");
+    expect(blocked.reason).not.toContain("顶档");
     expect(s.cash).toBe(cash);
+    expect(equipLevel(s, "bench")).toBe(4);
+
+    // 评到第 8 段：第五档开了，价钱是真价钱，买得动
+    s.gradeLevel = 8;
+    expect(equipMaxLevel(s, "bench")).toBe(MAX_EQUIP_LEVEL_UNLOCKED);
+    expect(equipNextCost(s, "bench")).toBe(CAPITAL.equipmentYuan[4]);
+    expect(buyEquipment(s, "bench").ok).toBe(true);
+    expect(equipLevel(s, "bench")).toBe(MAX_EQUIP_LEVEL_UNLOCKED);
+
+    // 五档买满：这次才是真的顶档
+    expect(equipNextCost(s, "bench")).toBe(Infinity);
+    const top = buyEquipment(s, "bench");
+    expect(top.ok).toBe(false);
+    expect(top.reason).toContain("顶档");
   });
 
   it("不认识的设备：拒绝，不抛异常", () => {
@@ -98,6 +122,20 @@ describe("设备 S4：四件设备，三段并行", () => {
     expect(wok[1]).toBeCloseTo(STAGE_MINUTES.wok / 2, 6);
     expect(wok[4]).toBeCloseTo(STAGE_MINUTES.wok / 5, 6);
     for (let i = 1; i < wok.length; i += 1) expect(wok[i]!).toBeLessThan(wok[i - 1]!);
+  });
+
+  it("第五档「黄金灶」买得到之后，炒锅真开到 6 口、案台真加 200 碗（批 AZ′）", () => {
+    const s = fresh();
+    s.cash = 1_000_000;
+    s.gradeLevel = 8;
+    for (let i = 0; i < MAX_EQUIP_LEVEL_UNLOCKED; i += 1) expect(buyEquipment(s, "stove").ok).toBe(true);
+    expect(stationCount(s, "wok")).toBe(6);
+    expect(stageMinutes(s).wok).toBeCloseTo(STAGE_MINUTES.wok / 6, 6);
+
+    const cap0 = s.capacity;
+    for (let i = 0; i < MAX_EQUIP_LEVEL_UNLOCKED; i += 1) expect(buyEquipment(s, "bench").ok).toBe(true);
+    // 前四档各 +40，第五档 +200（数据表里那句「日上限 +200 碗」不是文案）
+    expect(s.capacity).toBe(cap0 + BENCH_CAPACITY_STEP * MAX_EQUIP_LEVEL + 200);
   });
 
   it("三段合计分钟数逐档下降，stationServeFactor 同步递减且永远小于 1", () => {

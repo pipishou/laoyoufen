@@ -61,17 +61,19 @@ describe("手艺树（P39，对齐开罗 rank.txt）", () => {
     expect(roadworkBoostOf(s)).toBeLessThan(1.2);
   });
 
-  it("pending 的解锁永远不算已解锁（不许假装生效）", () => {
+  it("十条全部接进了模拟：没有一条还挂着「预告」（批 AZ′）", () => {
     const s = fresh();
-    s.gradeLevel = 10;
+    // 评到第 11 段（最后一条 `legend` 的门槛）才谈得上「全都亮」
+    s.gradeLevel = 11;
     const views = unlockViews(s);
+    // 批 AZ′ 之前这里断言「pending 全都 unlocked === false」。四条 pending 接完之后
+    // 一格都不剩，断言跟着翻过来：**再出现 pending 就说明又有人写了个假承诺**。
     const pending = views.filter((v) => v.pending);
-    expect(pending.length).toBeGreaterThan(0);
-    for (const v of pending) expect(v.unlocked).toBe(false);
-    // 已接进模拟的全都会亮
+    expect(pending).toHaveLength(0);
     for (const v of views.filter((v) => !v.pending)) expect(v.unlocked).toBe(true);
-    expect(isUnlocked(s, "branch")).toBe(false);
-    expect(isUnlocked(s, "takeaway")).toBe(false);
+    // 第 10 段：分店与打包都已接上（批 AZ′ 之前这两条是 false）
+    expect(isUnlocked(s, "branch")).toBe(true);
+    expect(isUnlocked(s, "takeaway")).toBe(true);
   });
 
   it("扩建四档的段位门槛与解锁表对得上（第 3 段后巷、第 6 段二楼）", () => {

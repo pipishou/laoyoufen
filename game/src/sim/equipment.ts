@@ -1,7 +1,9 @@
 import {
   BENCH_CAPACITY_STEP,
+  BENCH_CAPACITY_UNLOCKED_STEP,
   EQUIP_BY_ID,
   MAX_EQUIP_LEVEL,
+  MAX_EQUIP_LEVEL_UNLOCKED,
   PARALLEL_BY_TIER,
   STAGE_MINUTES,
   STATION_EQUIP,
@@ -12,9 +14,11 @@ import {
   type EquipId,
   type StationId,
 } from "../data/equipment";
+import { UNLOCK_BY_ID } from "../data/unlocks";
 import type { GameState } from "./state";
 import { investSlowestDelta } from "./invest";
 import { perkServeDelta } from "./perk";
+import { isUnlocked } from "./unlocks";
 
 export interface BuyResult {
   ok: boolean;
@@ -96,6 +100,7 @@ function upgradeLine(id: EquipId, level: number): string {
     const unit = station === "basket" ? "筒" : "口";
     return `${STATION_NAMES[station]}第 ${level} 档：开到 ${after} ${unit}`;
   }
+  if (level >= MAX_EQUIP_LEVEL_UNLOCKED) return `案台第 ${level} 档：每天多备 ${BENCH_CAPACITY_UNLOCKED_STEP} 碗的料`;
   return `案台第 ${level} 档：每天多备 ${BENCH_CAPACITY_STEP} 碗的料`;
 }
 
@@ -103,27 +108,65 @@ export function equipLevel(state: GameState, id: string): number {
   return state.equipment[id] ?? 0;
 }
 
+/**
+ * 这件设备**现在**最多能买到第几档（批 AZ′，解 GAP 四轮 A 条）。
+ *
+ * 前四档谁都能买；第 5 档写着 `unlockLevel: 5`，要评到第 8 段（`unlocks` 的 `stove5`）。
+ * 单出口：`equipNextCost` / `buyEquipment` / 钩子 / 面板都读这一个函数 ——
+ * 原来 `MAX_EQUIP_LEVEL = 4` 被抄在四个地方（`sim/equipment.ts` 两处、`sim/hook.ts` 一处、
+ * 面板一处），加一档就要改四处，漏一处就出现「面板能点、模拟拒绝」。
+ */
+export function equipMaxLevel(state: GameState, id: string): number {
+  const def = EQUIP_BY_ID.get(id);
+  if (!def) return MAX_EQUIP_LEVEL;
+  if (!def.unlockLevel || def.unlockLevel <= MAX_EQUIP_LEVEL) return MAX_EQUIP_LEVEL;
+  return isUnlocked(state, "stove5") ? MAX_EQUIP_LEVEL_UNLOCKED : MAX_EQUIP_LEVEL;
+}
+
+/** 还差什么才买得到下一档（买得到时返回 null）—— 给面板与钩子一句话 */
+export function equipLockReason(state: GameState, id: string): string | null {
+  const def = EQUIP_BY_ID.get(id);
+  if (!def || !def.unlockLevel) return null;
+  const lv = equipLevel(state, id);
+  if (lv < MAX_EQUIP_LEVEL) return null;
+  if (isUnlocked(state, "stove5")) return null;
+  const gate = UNLOCK_BY_ID.get("stove5");
+  return `第 ${MAX_EQUIP_LEVEL + 1} 档要评到第 ${gate?.grade ?? 8} 段（「${gate?.name ?? "第五档·黄金灶"}」）才换得到`;
+}
+
 /** 下一档要多少钱；满级返回 Infinity */
 export function equipNextCost(state: GameState, id: string): number {
   const def = EQUIP_BY_ID.get(id);
   if (!def) return Infinity;
   const lv = equipLevel(state, id);
-  if (lv >= MAX_EQUIP_LEVEL) return Infinity;
+  if (lv >= equipMaxLevel(state, id)) return Infinity;
   return def.tiers[lv] ?? Infinity;
 }
 
-/** 买下一档：钱不够/满级都拒绝且不扣钱，案台当场提升日上限 */
+/** 买下一档：钱不够/满级/段位没到都拒绝且不扣钱，案台当场提升日上限 */
 export function buyEquipment(state: GameState, id: string): BuyResult {
   const def: EquipDef | undefined = EQUIP_BY_ID.get(id);
   if (!def) return { ok: false, reason: "没有这台设备" };
   const lv = equipLevel(state, id);
-  if (lv >= MAX_EQUIP_LEVEL) return { ok: false, reason: "已经换到顶档" };
+  const maxLv = equipMaxLevel(state, id);
+  if (lv >= maxLv) {
+    const lock = equipLockReason(state, id);
+    return { ok: false, reason: lock ?? "已经换到顶档" };
+  }
   const cost = equipNextCost(state, id);
   if (state.cash < cost) return { ok: false, reason: `还差 ¥${Math.ceil(cost - state.cash)}` };
 
   state.cash -= cost;
   state.equipment[id] = lv + 1;
-  if (id === ("bench" satisfies EquipId)) state.capacity += BENCH_CAPACITY_STEP;
+  /**
+   * 案台：前四档各 +40（`BENCH_CAPACITY_STEP`），第五档（黄金备料线）+200
+   * （`BENCH_CAPACITY_UNLOCKED_STEP`，批 AZ′）。数据表里第五档写的就是「日上限 +200 碗」，
+   * 这一行必须跟那句文案对得上，否则界面说 +200、账上只加 40。
+   */
+  if (id === ("bench" satisfies EquipId)) {
+    const after = lv + 1;
+    state.capacity += after >= MAX_EQUIP_LEVEL_UNLOCKED ? BENCH_CAPACITY_UNLOCKED_STEP : BENCH_CAPACITY_STEP;
+  }
   return { ok: true, line: upgradeLine(def.id, lv + 1) };
 }
 

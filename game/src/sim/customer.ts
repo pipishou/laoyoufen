@@ -14,7 +14,7 @@ import { collectGift, maybePickRegular, recordVisit, regularSatisfactionBonus } 
 import { FAVOR_GAIN } from "../data/favor";
 import { addFavor, addFavorFree, favorAttractMult } from "./favor";
 import { nextFloat } from "./rng";
-import { queueMaxOf } from "./unlocks";
+import { isUnlocked, queueMaxOf } from "./unlocks";
 import type { RecipeScore } from "./score";
 import { costMultiplier, patienceMultiplier, serveMultiplier, serveParallel, surveyRate } from "./staff";
 import { equipCostMultiplier, equipServeMultiplier } from "./equipment";
@@ -319,6 +319,22 @@ const MAX_ARRIVALS_PER_MINUTE = 4;
  * 一分钟理论最多 5 批；留 6 当兜底，防止某天冷却算出 0 变成死循环。
  */
 const MAX_BATCHES_PER_MINUTE = 6;
+
+/**
+ * 这位客人是不是「打包带走」（批 AZ′，解 GAP 四轮 A 条的 `takeaway`）。
+ *
+ * 开罗 `help.txt` 的 More Active Items 系给的是「同时能操作更多」；本作第 9 段的
+ * 承诺原话是「每分钟有一成客人打包带走（不占座）」—— 所以这里只有一条效果：
+ * **他出碗不吃座位**。碗要出的时间、这人付的钱、满意度，一条都不改。
+ *
+ * 为什么用 `id % 10` 而不是掷骰子：`arriveOne` 的纪律是「来一个人固定消耗 4 个随机数」
+ * （见那里的长注释），多掷一次会让整条 rng 流错位、36 个月全变 —— 那时我们以为在调
+ * 打包窗口，其实在掷骰子。客人 id 是单调递增的，取模十就够「一成」，且同一份存档
+ * 跑两遍结果一样。
+ */
+export function isTakeawayGuest(state: GameState, c: QueueCustomer): boolean {
+  return isUnlocked(state, "takeaway") && c.id % 10 === 0;
+}
 
 /**
  * 一位客人到店：掷「来不来」的骰子在调用方已经掷完，这里只负责
@@ -724,7 +740,8 @@ export function tickCustomers(state: GameState): void {
         settle(state, c);
         continue;
       }
-      eatingNow += 1;
+      // 批 AZ′：打包客吃的是路，不是座位 —— 他不在 `eatingNow` 里
+      if (!isTakeawayGuest(state, c)) eatingNow += 1;
     }
     staying.push(c);
   }
@@ -754,16 +771,27 @@ export function tickCustomers(state: GameState): void {
     let serveFactorSum = 0;
     let serveFactorCount = 0;
     while (slots > 0) {
-      const freeSeats = state.venue.seats - eatingNow;
-      if (freeSeats <= 0) break;
-      const next = flow.customers.find((c) => c.status === "waiting");
-      if (!next) break;
+      // 批 AZ′：打包客（`isTakeawayGuest`）不吃座位 —— 他站在窗口拿走。
+      // 所以「座位满了」不再是「这一批到此为止」，而是「只给打包客出碗」：
+      // 队头是坐吃的、位子满了，就往后找一位打包的；找不到才真的停。
+      // 旧写法（先判 freeSeats 再找队头）会让第 9 段的承诺等于零：一满座就 break，
+      // 打包客永远排在队里等不到窗口。
+      const headGuest = flow.customers.find((c) => c.status === "waiting");
+      if (!headGuest) break;
+      let next = headGuest;
+      if (!isTakeawayGuest(state, headGuest) && state.venue.seats - eatingNow <= 0) {
+        const packed = flow.customers.find((c) => c.status === "waiting" && isTakeawayGuest(state, c));
+        if (!packed) break;
+        next = packed;
+      }
+      const carryOut = isTakeawayGuest(state, next);
       const dish = state.menu.find((d) => d.id === next.dishId);
       serveFactorSum += serveFactorOfKind(dish?.noodle ?? state.noodle);
       serveFactorCount += 1;
       next.status = "eating";
       next.elapsed = 0;
-      eatingNow += 1;
+      // 打包客不占座位：`eatingNow` 只数坐着的，座位账一天都不会因为第 9 段变松
+      if (!carryOut) eatingNow += 1;
       slots -= 1;
       servedAny = true;
     }

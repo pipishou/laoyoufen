@@ -27,10 +27,10 @@ import { checkGrade } from "./grade";
 import { arenaViews } from "./arena";
 import { gearViews } from "./gear";
 import { streetViews } from "./streets";
-import { EQUIPMENT, MAX_EQUIP_LEVEL, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
+import { EQUIPMENT, STATION_EQUIP, type EquipId, type StationId } from "../data/equipment";
 import { GEARS } from "../data/gear";
 import { hasGear } from "./gear";
-import { equipLevel, equipNextCost } from "./equipment";
+import { equipLevel, equipMaxLevel, equipNextCost } from "./equipment";
 import { expansionLockReason, expansionNextCost, nextExpansion } from "./expansion";
 import { capacityGain, capacityOf, lossSplitOf } from "./bottleneck";
 import { menuViews } from "./menu";
@@ -187,7 +187,7 @@ function capacityPick(state: GameState, preferSeat = false): CapPick | null {
 
   for (const eq of EQUIPMENT) {
     const lv = equipLevel(state, eq.id);
-    if (lv < MAX_EQUIP_LEVEL) {
+    if (lv < equipMaxLevel(state, eq.id)) {
       picks.push({
         what: `${eq.name}（第 ${lv + 1} 档）`,
         cost: equipNextCost(state, eq.id),

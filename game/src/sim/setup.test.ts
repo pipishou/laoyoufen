@@ -112,11 +112,20 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     expect(monthsOf(120_000)).toBe(5.7);
   });
 
-  it("资本阶梯有份量：单件设备最贵 3 万元 = 3,000 碗，远高于旧值 2,400 元", () => {
-    const top = Math.max(...CAPITAL.equipmentYuan);
-    expect(top).toBe(30_000);
-    expect(bowls(top)).toBe(3_000);
-    expect(CAPITAL.equipmentYuan[0]).toBeLessThan(top / 10); // 档间级差 ≥ 10 倍
+  it("资本阶梯有份量：第四档 3 万元 = 3,000 碗；第五档（黄金灶，第 8 段才开）6.8 万元 = 6,800 碗", () => {
+    // 批 AZ′（解 GAP 四轮 A 条）：设备从四档变成五档，第五档是开罗的 Golden 系列，
+    // 价差故意拉成 6,800 碗 —— 那是给「段位费之外还剩一大笔钱」准备的出口，
+    // 所以这里不能再用 `Math.max(...)` 当「顶档」的判据，得按档位分开断言。
+    expect(CAPITAL.equipmentYuan).toHaveLength(5);
+    const tier4 = CAPITAL.equipmentYuan[3]!;
+    const tier5 = CAPITAL.equipmentYuan[4]!;
+    expect(tier4).toBe(30_000);
+    expect(bowls(tier4)).toBe(3_000);
+    expect(tier5).toBe(68_000);
+    expect(bowls(tier5)).toBe(6_800);
+    expect(CAPITAL.equipmentYuan[0]).toBeLessThan(tier5 / 10); // 档间级差 ≥ 10 倍（首档对顶档）
+    // 前四档仍是老阶梯：每一档都不少于上一档的两倍不到（1,500 → 3,800 → 9,000 → 30,000）
+    for (let i = 1; i < 4; i += 1) expect(CAPITAL.equipmentYuan[i]!).toBeGreaterThan(CAPITAL.equipmentYuan[i - 1]!);
   });
 
   it("段位费是主出口：合计约六万六千碗（全程碗数的三成），照开罗 grade_review 的形状", () => {
@@ -133,9 +142,13 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     const fee = totalGradeFee();
     expect(cap).toBeGreaterThan(30_000);
     expect(cap).toBeLessThan(fee);
-    // 单看设备（不含转让费与扩建）更是零头
+    // 单看设备（不含转让费与扩建）仍是零头。
+    // 批 AZ′：设备多了一档黄金灶（¥68,000），四件合计从 ¥43,300 涨到 ¥112,300，
+    // 占比从 6.5% 涨到 17% —— 但「段位费是主出口」这条结构没变，所以阈值从 10% 放到 20%，
+    // 并额外钉住「设备加总 < 段位费的四分之一」，防止以后有人靠抬设备价绕开段位费。
     const equip = CAPITAL.equipmentYuan.reduce((a, b) => a + b, 0);
-    expect(equip).toBeLessThan(fee * 0.1);
+    expect(equip).toBeLessThan(fee * 0.2);
+    expect(equip).toBeLessThan(fee * 0.25);
   });
 
   it("月租是铺位固定值（2025 实测）：摊位 ¥1,500 / 社区店 ¥4,600 / 临街 ¥7,600，每年 +3%", () => {

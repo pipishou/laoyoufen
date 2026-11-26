@@ -1,0 +1,30 @@
+{
+ "checks": {
+  "low_found": true,
+  "low_maxed_four": true,
+  "low_tag_lv44": true,
+  "low_btn_not_top": true,
+  "low_btn_says_grade": true,
+  "low_meta_says_grade8": true,
+  "low_disabled": true,
+  "high_tag_lv45": true,
+  "high_btn_reports_price": true,
+  "high_enabled": true,
+  "high_meta_no_lock": true,
+  "craft_found": true,
+  "craft_no_pending_tag": true,
+  "craft_all_known": true,
+  "craft_takeaway_known": true,
+  "craft_branch_known": true,
+  "district_found": true,
+  "district_decays_before": true,
+  "district_energy_dropped": true,
+  "district_no_decay_after": true,
+  "district_no_minus9": true,
+  "district_energy_full": true,
+  "save_version": true,
+  "console_clean": true
+ },
+ "ok": 24,
+ "total": 24
+}

@@ -26,7 +26,16 @@ export interface UnlockDef {
   kairo: string;
   /** 一句南宁话（AI 改造预留：将来由 /event 代理改写，本地模板先兜底） */
   line: string;
-  /** true = 只在上海报里预告，数值尚未接到模拟里（不许假装生效） */
+  /**
+   * true = 只在上海报里预告，数值尚未接到模拟里（不许假装生效）。
+   *
+   * **批 AZ′（解 GAP 四轮 A 条）之后这一格是空的** —— 十条全部接进了模拟：
+   * `queue2`/`queue4` 改排队位、`roadwork` 乘客流、`hall_back`/`second_floor` 是扩建档、
+   * `topping4` 改浇头上限、`stove5` 开第五档设备、`takeaway` 开打包窗口、
+   * `branch` 让分店并入总账（`sim/branches.ts` 早就在跑）、`legend` 停本区能量衰减。
+   *
+   * 字段留着：以后加新条目时先写 `pending: true` 预告，接进模拟再删 —— 界面会把 pending 标成「预告」。
+   */
   pending?: boolean;
 }
 
@@ -83,10 +92,9 @@ export const UNLOCKS: readonly UnlockDef[] = [
     id: "stove5",
     grade: 8,
     name: "第五档·黄金灶",
-    effect: "设备上限 4 → 5 档",
+    effect: "设备上限 4 → 5 档（黄金灶 ¥68,000）",
     kairo: "More Active Items（同时操作更多）",
     line: "灶眼烧到发白，一碗接一碗都不断火。",
-    pending: true,
   },
   {
     id: "takeaway",
@@ -95,7 +103,6 @@ export const UNLOCKS: readonly UnlockDef[] = [
     effect: "每分钟有一成客人打包带走（不占座）",
     kairo: "More Active Items（并行更多）",
     line: "窗口一开，骑手同上班族都从侧边拿粉走。",
-    pending: true,
   },
   {
     id: "branch",
@@ -104,7 +111,6 @@ export const UNLOCKS: readonly UnlockDef[] = [
     effect: "分店营收并入总账",
     kairo: "Buy Amazing Shop（买顶级店）",
     line: "招牌挂到第二个区，老友粉就唔止一条街识。",
-    pending: true,
   },
   {
     id: "legend",
@@ -113,7 +119,6 @@ export const UNLOCKS: readonly UnlockDef[] = [
     effect: "所有区能量不再衰减",
     kairo: "More Investments（更多投资位）",
     line: "做到这一步，系人都知你是老友粉，唔系一间铺咁简单。",
-    pending: true,
   },
 ] as const;
 

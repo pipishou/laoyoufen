@@ -17,6 +17,7 @@
 import { DISTRICTS, dailyTrafficOf, districtById, type DistrictId } from "../data/nanning";
 import type { GameState } from "./state";
 import { roadworkBoostOf } from "./unlocks";
+import { isUnlocked } from "./unlocks";
 import { rivalShareOf, takeoverPoolBoostOf } from "./rivals";
 import { streetPoolMult } from "./streets";
 
@@ -44,8 +45,18 @@ function quarters(month: number): number {
   return Math.floor(Math.max(0, month) / 3);
 }
 
-/** 本区能量：按「住进这个区多久」衰减，不看全局月份 */
+/**
+ * 本区能量：按「住进这个区多久」衰减，不看全局月份。
+ *
+ * **批 AZ′（解 GAP 四轮 A 条）**：第 11 段「全区连锁 · 总店」（`unlocks` 的 `legend`，
+ * 效果原话「所有区能量不再衰减」）在这里生效 —— 原来 `pending: true` 时这句是空话，
+ * `homeEnergyOf` 根本不知道有这条解锁。
+ *
+ * 它不停**胃口**（`homeAppetiteOf`）：开罗 `help.txt` 把 energy（来不来）与 appetite（点多少）
+ * 分成两条通道，第 11 段的承诺只说了 energy 那一条，别顺手把另一条也关掉。
+ */
 export function homeEnergyOf(state: GameState): number {
+  if (isUnlocked(state, "legend")) return 1;
   const age = quarters(state.month - state.districtSince);
   return Math.max(ENERGY_MIN, 1 - HOME_DECAY_PER_QUARTER * age);
 }
@@ -87,6 +98,18 @@ export function appetiteWords(state: GameState): string {
   if (a < 0.9) return `这一片有点吃腻了（点单 ×${a.toFixed(2)}，换区能重新养回来）`;
   if (a >= 1.1) return `这一片正吃得下（点单 ×${a.toFixed(2)}）`;
   return "这一片还吃得下（点单 ×1.00）";
+}
+
+/**
+ * 一句人话：这一片的客流会不会往下掉（批 AZ′）。
+ *
+ * 第 11 段 `legend` 之后本区不再衰减，面板上那句「每季度 −9%」就变成假话了 ——
+ * 与其在模板里塞一个 if，不如让这句话自己知道该怎么说（与 `DEMAND_*` 同一条纪律：
+ * 同一件事只有一个出处）。
+ */
+export function energyWords(state: GameState): string {
+  if (isUnlocked(state, "legend")) return "本区客流不再往下掉（第 11 段连锁看过来的老客撑住了）";
+  return `本区客流每季度 −${Math.round(HOME_DECAY_PER_QUARTER * 100)}%，换区能重新养回满格`;
 }
 
 /**

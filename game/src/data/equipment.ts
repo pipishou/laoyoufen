@@ -9,8 +9,9 @@
  * 三段基准节拍合计 6.0 游戏分钟，与 `sim/customer.ts` 的 `SERVE_MINUTES` 对齐：
  * 炒 2.2 / 汤 2.2 / 粉 1.6。每段各有一条设备线抬它的口数。
  *
- * 价格仍取 `data/anchors.ts` 的 `CAPITAL.equipmentYuan` = ¥1,500 / ¥3,800 / ¥9,000 / ¥30,000
- * （四档都同一套价，因为四件在现实里都是「换一台商用设备」的量级）。
+ * 价格仍取 `data/anchors.ts` 的 `CAPITAL.equipmentYuan` = ¥1,500 / ¥3,800 / ¥9,000 / ¥30,000 / ¥68,000
+ * （五档都同一套价，因为四件在现实里都是「换一台商用设备」的量级；第五档是开罗的 Golden 系列，
+ * 价差拉成 6,800 碗，专门吃掉后期没地方花的钱 —— 见批 AZ′）。
  */
 
 import { CAPITAL } from "./anchors";
@@ -26,13 +27,17 @@ export const STATION_ORDER: readonly StationId[] = ["wok", "pot", "basket"];
 export const STAGE_MINUTES: Record<StationId, number> = { wok: 2.2, pot: 2.2, basket: 1.6 };
 
 /**
- * 每段的口数：下标是设备档位 0–4（0 = 还没买，1–4 = 买过的四档）。
+ * 每段的口数：下标是设备档位 0–5（0 = 还没买，1–5 = 买过的五档）。
  * 三条线各有节奏：灶是「一口一口加」，汤锅越到后面越靠换大锅，粉篓最便宜所以加得最猛。
+ *
+ * **批 AZ′（解 GAP 四轮 A 条）**：第 5 档接上了 —— 原来表里就写到 5 口/6 口/7 筒，
+ * 但 `MAX_EQUIP_LEVEL = 4` 把第 5 档锁死，界面上写着「炒锅开到 5 口」却永远买不到。
+ * 现在第 5 档要评到第 8 段（`unlocks` 的 `stove5`「第五档·黄金灶」）。
  */
 export const PARALLEL_BY_TIER: Record<StationId, readonly number[]> = {
-  wok: [1, 2, 3, 4, 5],
-  pot: [1, 2, 3, 4, 6],
-  basket: [1, 2, 3, 5, 7],
+  wok: [1, 2, 3, 4, 5, 6],
+  pot: [1, 2, 3, 4, 6, 8],
+  basket: [1, 2, 3, 5, 7, 10],
 };
 
 /** 哪件设备管哪一段（案台不进三段，它管日上限） */
@@ -45,10 +50,15 @@ export interface EquipDef {
   name: string;
   /** 一句话说明这件东西现实里长什么样 */
   desc: string;
-  /** 四档价格（元），与 CAPITAL.equipmentYuan 对齐 */
+  /** 五档价格（元），与 CAPITAL.equipmentYuan 对齐 */
   tiers: readonly number[];
   /** 升到第 i+1 档之后的效果说明（给玩家看，不写系数） */
   effects: readonly string[];
+  /**
+   * 第几档开始要段位（批 AZ′）：前四档谁都能买，第五档要评到第 8 段。
+   * 0 = 不用解锁；写成 5 表示「第 5 档起要 `stove5`」。
+   */
+  unlockLevel?: number;
 }
 
 export const EQUIPMENT: readonly EquipDef[] = [
@@ -57,28 +67,44 @@ export const EQUIPMENT: readonly EquipDef[] = [
     name: "猛火灶",
     desc: "双环猛火，一锅水翻得起来，爆香那一段靠它",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["炒锅开到 2 口", "炒锅开到 3 口", "炒锅开到 4 口", "炒锅开到 5 口"],
+    effects: ["炒锅开到 2 口", "炒锅开到 3 口", "炒锅开到 4 口", "炒锅开到 5 口", "黄金灶：炒锅开到 6 口"],
+    unlockLevel: 5,
   },
   {
     id: "pot",
     name: "汤锅",
     desc: "一口锅滚一锅汤，汤不够滚，粉下得再快也出不去",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["汤锅添到 2 口", "汤锅还是 2 口，火更稳", "汤锅添到 3 口", "汤锅添到 4 口"],
+    effects: [
+      "汤锅添到 2 口",
+      "汤锅还是 2 口，火更稳",
+      "汤锅添到 3 口",
+      "汤锅添到 4 口",
+      "汤锅添到 6 口",
+    ],
+    unlockLevel: 5,
   },
   {
     id: "strainer",
     name: "粉篓与汤勺",
     desc: "漏勺大小、汤勺刻度，决定每碗抓得准不准、起得快不快",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["粉篓添到 2 筒", "粉篓添到 3 筒", "粉篓添到 4 筒", "粉篓添到 5 筒"],
+    effects: ["粉篓添到 2 筒", "粉篓添到 3 筒", "粉篓添到 4 筒", "粉篓添到 5 筒", "粉篓添到 7 筒"],
+    unlockLevel: 5,
   },
   {
     id: "bench",
     name: "案台与备料区",
     desc: "切配、过水、装碗的地方够宽，才接得住更多人",
     tiers: CAPITAL.equipmentYuan,
-    effects: ["日上限 +40 碗", "日上限 +80 碗", "日上限 +120 碗", "日上限 +160 碗"],
+    effects: [
+      "日上限 +40 碗",
+      "日上限 +80 碗",
+      "日上限 +120 碗",
+      "日上限 +160 碗",
+      "日上限 +200 碗",
+    ],
+    unlockLevel: 5,
   },
 ] as const;
 
@@ -88,5 +114,18 @@ export const EQUIP_BY_ID: ReadonlyMap<string, EquipDef> = new Map(EQUIPMENT.map(
 export const STRAINER_COST_FACTOR = 0.97;
 /** 每档日上限加成 */
 export const BENCH_CAPACITY_STEP = 40;
-/** 四档（0 档 = 还没买） */
+/**
+ * 第五档（黄金灶）案台一次加的日上限（批 AZ′）。
+ *
+ * 前四档是「换个宽一点的案台」，各 +40；第五档在数据表里写的是「日上限 +200 碗」
+ * —— 那是换整条备料线（开罗 `storeequip` 的 Golden 系列同一档），不是第四档的延长线。
+ * 分开写而不是塞进 `BENCH_CAPACITY_STEP * n`，是因为「第 5 档加多少」以后会单独调。
+ */
+export const BENCH_CAPACITY_UNLOCKED_STEP = 200;
+/** 四档（0 档 = 还没买）—— 不用段位就能买到的那四档 */
 export const MAX_EQUIP_LEVEL = 4;
+/**
+ * 第五档（批 AZ′，解 GAP 四轮 A 条）：`unlocks` 的 `stove5`「第五档·黄金灶」评到第 8 段才开。
+ * 这不是新数字 —— `PARALLEL_BY_TIER` 的表一直写到了第 5 档，只是闸没开。
+ */
+export const MAX_EQUIP_LEVEL_UNLOCKED = 5;

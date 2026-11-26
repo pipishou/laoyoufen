@@ -14,13 +14,13 @@ import { collectionProgress, likeStats, LIKES_TOTAL } from "../sim/collection";
 import { canEnter, contestScore, maxTierOf } from "../sim/contest";
 import { arenaSummary, arenaViews } from "../sim/arena";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
-import { appetiteWords, districtOptions, homeAppetiteOf, homeEnergyOf } from "../sim/district";
+import { appetiteWords, districtOptions, energyWords, homeAppetiteOf, homeEnergyOf } from "../sim/district";
 import { capacityGain, tightWords } from "../sim/bottleneck";
 import { hasGear } from "../sim/gear";
 import { GEARS } from "../data/gear";
 import { DEMAND_PANEL } from "../data/demand";
 import { checkGrade } from "../sim/grade";
-import { equipLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
+import { equipLevel, equipLockReason, equipMaxLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
 import { crewFacts } from "../sim/crew";
 import { EXPANSIONS, EXPANSION_ORDER } from "../data/expansion";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
@@ -791,7 +791,9 @@ let lastGradeKey = "";
       const lv = equipLevel(s, e.id);
       const cost = equipNextCost(s, e.id);
       const maxed = !Number.isFinite(cost);
-      const next = maxed ? "已到顶档" : e.effects[lv] ?? "";
+      // 第 5 档（批 AZ′）：不是「已到顶档」，是「段位没到」——两句话不能混
+      const lock = maxed ? equipLockReason(s, e.id) : null;
+      const next = maxed ? (lock ? "第 5 档未开" : "已到顶档") : e.effects[lv] ?? "";
       const now =
         e.id === "bench"
           ? `现在日上限 ${s.capacity} 碗`
@@ -801,9 +803,9 @@ let lastGradeKey = "";
               return `现在 ${stationCount(s, k)} ${k === "basket" ? "筒" : "口"} · ${st[k].toFixed(1)} 分`;
             })();
       return `<div class="lrow${today?.equipId === e.id ? " hotrow" : ""}">
-        <div class="lname">${e.name}<span class="tag2">Lv ${lv}/4</span><span class="tag2">${next}</span></div>
-        <div class="lmeta">${now}｜${e.desc}</div>
-        <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? "已到顶档" : money(cost)}</button></div>
+        <div class="lname">${e.name}<span class="tag2">Lv ${lv}/${equipMaxLevel(s, e.id)}</span><span class="tag2">${next}</span></div>
+        <div class="lmeta">${now}｜${e.desc}${lock ? `｜${lock}` : ""}</div>
+        <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? (lock ? "段位没到" : "已到顶档") : money(cost)}</button></div>
       </div>`;
     }).join("");
     const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
@@ -933,7 +935,7 @@ let lastGradeKey = "";
     const opts = districtOptions(s);
     const districtSec = `<div class="sec">
         <div class="sechd">${icon("street")}换区 · 现在 ${opts.find((o) => o.current)?.name ?? s.district}</div>
-        <div class="lmeta" style="padding:0 2px 8px">本区客流每季度 −9%，别处每季度 +6%%。客人还吃得下多少也在变：本区每季度 −4%（最低 75%），搬完两条都从 100% 重新养。</div><div class="lmeta" style="padding:0 2px 8px">这一片：客流 ×${homeEnergyOf(s).toFixed(2)} · 胃口 ×${homeAppetiteOf(s).toFixed(2)} —— ${appetiteWords(s)}</div>
+        <div class="lmeta" style="padding:0 2px 8px">${energyWords(s)}；别处每季度 +6%%。客人还吃得下多少也在变：本区每季度 −4%（最低 75%），搬完两条都从 100% 重新养。</div><div class="lmeta" style="padding:0 2px 8px">这一片：客流 ×${homeEnergyOf(s).toFixed(2)} · 胃口 ×${homeAppetiteOf(s).toFixed(2)} —— ${appetiteWords(s)}</div>
         ${opts
           .slice(0, 6)
           .map(
@@ -2225,7 +2227,11 @@ function collectionHtml(s: GameState): string {
       key = `${s.staff.roster.map((m) => `${m.uid}:${m.fatigue}:${m.resting}:${m.xp ?? 0}`).join(",")}|${s.staff.candidates.map((c) => `${c.uid}:${c.wage}`).join(",")}|${Math.floor(s.cash / 100)}|${s.staff.lastEvent}|${s.venue.stoves}|${s.totalCustomers}|${crewFacts(s).idle}|${crewFacts(s).cookGain}|${crewFacts(s).growGain}`;
       html = staffHtml(s);
     } else if (current === "shop") {
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${crewFacts(s).idle}|${crewFacts(s).cost}|${crewFacts(s).cookGain}|${crewFacts(s).growGain}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
+      // **第十九次「键漏字段」（批 AZ′）**：换区那一段现在读 `energyWords(s)` 与
+      // `homeEnergyOf(s)`，两者都按「住进这个区多久」算（`month − districtSince`）。
+      // 这两样原来都不在键里 —— 住上几个季度、能量从 1.00 掉到 0.64，面板上的数字
+      // 却一直是开局那个（第 11 段评上去之后同样不重画：那句「不再往下掉」永远不出现）。
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.month}|${s.districtSince}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${crewFacts(s).idle}|${crewFacts(s).cost}|${crewFacts(s).cookGain}|${crewFacts(s).growGain}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
       html = shopHtml(s);
     } else if (current === "perk") {
       key = `${Object.keys(s.perks ?? {}).sort().join(",")}|${s.gradeLevel}`;
