@@ -22,6 +22,8 @@ import { DEMAND_PANEL } from "../data/demand";
 import { checkGrade } from "../sim/grade";
 import { equipLevel, equipLockReason, equipMaxLevel, equipNextCost, slowestStation, stageMinutes, stationCount } from "../sim/equipment";
 import { crewFacts } from "../sim/crew";
+import { customLevel, customViews, customWords } from "../sim/custom";
+import { costFactorAt, tasteFloorAt } from "../data/custom";
 import { EXPANSIONS, EXPANSION_ORDER } from "../data/expansion";
 import { expansionLevel, expansionLockReason, nextExpansion } from "../sim/expansion";
 import { gradeOf, unlockViews } from "../sim/unlocks";
@@ -37,7 +39,7 @@ import {
 } from "../sim/soupbase";
 import { bowlPriceOf, mainSummary, mainViews, portionSummary } from "../sim/mains";
 import { PORTIONS, portionOf, suggestPriceWithMain } from "../data/mains";
-import { dishNameOf, dishNameOfItem, isHouseBowl } from "../sim/dish";
+import { dishNameOf, dishNameOfItem, isHouseBowl, scoreOf } from "../sim/dish";
 import { menuCap, menuSummary, menuViews } from "../sim/menu";
 import { masterOf, masterViews } from "../sim/master";
 import { tierLine } from "../sim/tier";
@@ -169,6 +171,8 @@ export interface PanelActions {
   rally(id: string): void;
   buy(id: string): void;
   buyEquip(id: string): void;
+  /** 店底子（批 BA′）：`taste` / `cost` 各五级，买断 */
+  buyCustom(id: string): void;
   buyExpand(): void;
   /** 加料/饮料上架或下架（P41） */
   toggleSide(id: string): void;
@@ -449,6 +453,9 @@ let lastGradeKey = "";
         break;
       case "buyequip":
         actions.buyEquip(id);
+        break;
+      case "buycustom":
+        actions.buyCustom(id);
         break;
       case "buildexpand":
         actions.buyExpand();
@@ -808,6 +815,32 @@ let lastGradeKey = "";
         <div class="lbtns"><button type="button" data-act="buyequip" data-id="${e.id}" ${maxed ? "disabled" : ""}>${maxed ? (lock ? "段位没到" : "已到顶档") : money(cost)}</button></div>
       </div>`;
     }).join("");
+    /**
+     * 店底子（批 BA′）：买断的两类上限，各五级。
+     *
+     * 界面三条（`game-ui-ux` 的规矩）：
+     *   ① 一行只说一件事 —— 角标给「买到第几级」与「这一项现在值多少」，价钱在按钮上；
+     *   ② 三态写死：已买满 / 买得起（标价）/ 钱不够（也标价，点了会说还差多少，与设备同一条规矩）；
+     *   ③ 不写死像素，一律复用 `lrow` / `lname` / `tag2` / `lmeta` / `lbtns`，
+     *      小市的三个断点（375 / 768 / 1440）跟着既有的收缩规则走，这一页不加新样式。
+     */
+    const customRows = customViews(s)
+      .map((v) => `<div class="lrow" data-custom-row="${v.def.id}">
+        <div class="lname">${v.def.name}<span class="tag2" data-custom-lv>Lv ${v.level}/${v.max}</span><span class="tag2" data-custom-now>${customWords(s, v.def.id)}</span></div>
+        <div class="lmeta">${v.maxed ? `${v.def.ceiling}｜买满了` : `${v.def.effect}｜下一级：${v.nextName} —— ${v.nextWhy}`}</div>
+        <div class="lbtns"><button type="button" data-act="buycustom" data-id="${v.def.id}" ${v.maxed ? "disabled" : ""}>${v.maxed ? "已买满" : money(v.nextCost)}</button></div>
+      </div>`)
+      .join("");
+    const customHead = (() => {
+      const taste = customLevel(s, "taste");
+      const cost = customLevel(s, "cost");
+      return `卖相 +${Math.round(tasteFloorAt(taste) * 100)}% · 料钱 −${Math.round((1 - costFactorAt(cost)) * 100)}%`;
+    })();
+    /**
+     * 这一碗料钱现在是多少 —— 玩家买「料钱的底子」之后当场能看到那个数字往下走，
+     * 不必等到打烊结算。这一行也是探针验「买断真的接进了报价」的那一眼。
+     */
+    const bowlCostNow = scoreOf(s).cost;
     const serveNow = bowlMinutes(s, SERVE_MINUTES, equipServeMultiplier(s));
     // 流失超过 45%：这一页最该看的不是菜单，是「店面」和「设备」（P70）
     /**
@@ -1400,6 +1433,12 @@ let lastGradeKey = "";
         ${crewLine}
         <div class="lmeta" style="padding:0 2px 8px">一碗分成三段：${stageLine}。${equipHint} 钱不够就先别动，一碗毛利只有 ¥${(s.price - BOWL.costYuan).toFixed(1)}。</div>
         ${equipRows}
+      </div>
+      <div class="sec">
+        <div class="sechd">${icon("star")}店底子 · ${customHead}</div>
+        <div class="lmeta" style="padding:0 2px 8px">花钱把两个上限往上抬一格：手艺的底子让每碗都好看一点，料钱的底子让每碗料钱永久便宜一点。买了就一直在 —— 不管今天进哪档货、也不管忙不忙。品质档照样三档、照样每天能换，这一层只是把三档各自的加成抬高。</div>
+        <div class="lmeta" data-custom-bowlcost style="padding:0 2px 8px">这一碗料钱 ¥${bowlCostNow.toFixed(2)}（买断只降配料那一段，主料与份量照原价）</div>
+        ${customRows}
       </div>
       <div class="sec">
         <div class="sechd">${icon("crate")}店里 · 摆了 ${gearCount}/12 件家当<span class="sechint" data-shopmap-sum> ${shopMapSummary(s)}</span></div>
@@ -2231,7 +2270,7 @@ function collectionHtml(s: GameState): string {
       // `homeEnergyOf(s)`，两者都按「住进这个区多久」算（`month − districtSince`）。
       // 这两样原来都不在键里 —— 住上几个季度、能量从 1.00 掉到 0.64，面板上的数字
       // 却一直是开局那个（第 11 段评上去之后同样不重画：那句「不再往下掉」永远不出现）。
-      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.month}|${s.districtSince}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${crewFacts(s).idle}|${crewFacts(s).cost}|${crewFacts(s).cookGain}|${crewFacts(s).growGain}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
+      key = `${Object.entries(s.venue.upgrades).join(",")}|${Math.floor(s.cash / 100)}|${s.venue.seats}|${s.venue.stoves}|${s.capacity}|${s.venue.expansion}|${s.gradeLevel}|${s.district}|${s.month}|${s.districtSince}|${s.sides.active.join("+")}|${Object.keys(s.sides.sold).length}|${s.tally.comboHits}|${s.venue.seats}|${s.venue.stoves}|${Object.values(s.equipment ?? {}).join("")}|${s.branches.length}|${branchPick}|${s.sides.mealDeal}|${s.sides.drinkTemp}|${(s.streets ?? []).length}|${(s.gear ?? []).length}|${s.style ?? ""}|${(s.styles ?? []).length}|${s.bowl ?? ""}|${(s.bowls ?? []).length}|${s.menu.map((m) => `${m.id}:${m.price}`).join(",")}|${(s.rivals ?? []).filter((r) => r.closed).length}|${s.retail?.channel ?? ""}|${Object.entries(s.retail?.prices ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.values(s.retail?.sold ?? {}).reduce((n, v) => n + v, 0)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Object.entries(s.goods ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${Math.round(s.favor ?? 0)}|${remoteLineCount()}|${s.reputation ?? 0}|${s.totalCustomers ?? 0}|${capacityGain(s).demandBlocked ? 1 : 0}|${crewFacts(s).idle}|${crewFacts(s).cost}|${crewFacts(s).cookGain}|${crewFacts(s).growGain}|${Object.entries(s.custom ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${scoreOf(s).cost}|${(() => { const m = alignMarks(s); return `${m.focus.kind}:${m.focus.sec}:${m.focus.gearId ?? ""}:${m.focus.equipId ?? ""}:${m.gradeHot ? 1 : 0}:${m.slowHot ? 1 : 0}:${m.demoted.length}`; })()}`;
       html = shopHtml(s);
     } else if (current === "perk") {
       key = `${Object.keys(s.perks ?? {}).sort().join(",")}|${s.gradeLevel}`;

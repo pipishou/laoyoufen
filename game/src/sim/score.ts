@@ -168,6 +168,18 @@ export interface ScoreExtra {
    * 与浇头熟练度落在同一处 `min(100, …)`，不另开出口。
    */
   perkTaste?: number;
+  /**
+   * 店底子（批 BA′）：卖相加成（加法，0–0.5）与料钱乘数（乘法，1–0.85）。
+   *
+   * 两个数由 `sim/custom.ts` 的 `customCharmFloor` / `customCostFactor` 提供，
+   * 这里只是**出口**，不自己算。默认 `0` 与 `1`，所以没买过（或老档）时与历史逐位相同。
+   *
+   * 为什么与 `quality` 分开传而不是并进品质档：品质档是「今天进哪档货」（每天能换），
+   * 店底子是「买断了就一直在」—— 两者在同一个乘号里相加，但出处不同，
+   * 面板上也要能分开说「这一档值多少」与「你的底子值多少」。
+   */
+  customCharm?: number;
+  customCost?: number;
 }
 
 /**
@@ -186,7 +198,13 @@ export function scoreRecipe(
   const rice = riceById(extra.rice ?? DEFAULT_RICE);
   const bone = boneById(extra.bone ?? DEFAULT_BONE);
   const qq = qualityById(extra.quality);
-  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${xpKey(extra.xp, recipe.toppings)}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${recipe.base ?? ""}|${price}`;
+  /**
+   * 店底子（批 BA′）：0 级时这两个数就是 `0` 与 `1`，所以 memo 键里也必须带上 ——
+   * 不带的话「买断前后同一份配方」会命中同一条缓存，面板上永远是买断前的数（键漏字段的老坑）。
+   */
+  const customCharm = Number.isFinite(extra.customCharm) ? Math.max(0, extra.customCharm ?? 0) : 0;
+  const customCost = Number.isFinite(extra.customCost) ? Math.max(0, extra.customCost ?? 1) : 1;
+  const key = `${kind}|${mainId}|${portion}|${rice?.id ?? ""}|${bone?.id ?? ""}|${qq.id}|${xpKey(extra.xp, recipe.toppings)}|${recipe.soup.join(",")}|${recipe.noodle.join(",")}|${recipe.toppings.join(",")}|${recipe.base ?? ""}|${price}|${customCharm}|${customCost}`;
   if (memoScore && key === memoKey) return memoScore;
 
   const vars = recipeVars(recipe);
@@ -245,7 +263,8 @@ export function scoreRecipe(
    * 只抬 30 以上的那一部分 —— 30 是「一碗粉该有的样子」的地板，地板不因为进货贵就变高。
    */
   const charmBase = charmOf(recipe.toppings) + flavor.charm + pairing.charm;
-  const charm = Math.min(100, 30 + (charmBase - 30) * (1 + qq.charmBoost));
+  // 店底子（批 BA′）：买断的那一半与品质档的加成在同一个乘号里相加（见 `sim/custom.ts`）
+  const charm = Math.min(100, 30 + (charmBase - 30) * (1 + qq.charmBoost + customCharm));
   const valueScore = valueScoreOf(safePrice);
   // 品质档只乘配料那一段：主料、分量、进货档的米与骨都按原价（不然「头手货」会把整碗都变贵）
   // 熟练度只压「这一份料」的损耗，不压主料/份量/进货档
@@ -257,7 +276,7 @@ export function scoreRecipe(
   const topCost = Math.round(cookedTopCost * 100) / 100;
   const cost =
     Math.round(
-      (BASE_COST + topCost * qq.costMult + mainCostYuan(mainId) + portionCostYuan(portion) + gradeCost) * 100,
+      (BASE_COST + topCost * qq.costMult * customCost + mainCostYuan(mainId) + portionCostYuan(portion) + gradeCost) * 100,
     ) / 100;
   const margin = safePrice - cost;
   const marginRate = safePrice > 0 ? margin / safePrice : 0;

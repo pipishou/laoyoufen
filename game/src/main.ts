@@ -68,6 +68,7 @@ import {
 import {  } from "./sim/score";
 import { buyUpgrade } from "./sim/shop";
 import { buyEquipment } from "./sim/equipment";
+import { buyCustom } from "./sim/custom";
 import { buyExpansion } from "./sim/expansion";
 import { drinkTempSummary, setDrinkTemp, sideSummary, toggleMealDeal, toggleSide } from "./sim/sides";
 import { noodleSummary, setNoodleKind } from "./sim/noodles";
@@ -289,6 +290,13 @@ panels = mountPanels(hudRoot, {
     const r = buyEquipment(state, id);
     if (!r.ok && r.reason) hud.showToast(r.reason, "info");
     else hud.showToast(r.line ?? "设备换了，明天出碗更快", "info");
+    playSfx("upgrade");
+    refresh();
+  },
+  buyCustom(id) {
+    const r = buyCustom(state, id);
+    if (!r.ok && r.reason) hud.showToast(r.reason, "info");
+    else hud.showToast(r.line ?? "置办好了", "info");
     playSfx("upgrade");
     refresh();
   },

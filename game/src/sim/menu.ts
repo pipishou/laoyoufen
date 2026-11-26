@@ -1,4 +1,5 @@
 import { districtAppetite } from "./district";
+import { customCharmFloor, customCostFactor } from "./custom";
 import { perkTasteCap } from "./perk";
 import { MAINS, portionOf } from "../data/mains";
 import { menuCapOf } from "../data/menu";
@@ -69,6 +70,9 @@ export function scoreDish(item: MenuItem, state?: GameState): RecipeScore {
     quality: state?.quality,
     xp: state?.ingredientXp,
     perkTaste: state ? perkTasteCap(state) : 0,
+    // 店底子（批 BA′）：没有 state 时走恒等（+0 / ×1），历史断言一分不动
+    customCharm: state ? customCharmFloor(state) : 0,
+    customCost: state ? customCostFactor(state) : 1,
   });
   /**
    * 料钱定死（A6）：师傅教你拿秤称，这款每碗料钱 −8%。

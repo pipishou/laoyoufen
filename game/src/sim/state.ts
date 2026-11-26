@@ -642,6 +642,12 @@ export interface GameState {
   pack: boolean;
   /** 配料品质档（批次五）：plain / good / top —— 换来的是每碗料钱与卖相 */
   quality: string;
+  /**
+   * 店底子（批 BA′，见 `data/custom.ts`）：`taste` / `cost` → 买到第几级（0–5）。
+   * 与品质档的区别是**买断**：品质档每天能换，这一格买了就一直在。
+   * 老档缺省当一级都没买（两个出口都是恒等）。
+   */
+  custom?: Record<string, number>;
   /** 浇头熟练度（批 A′）：每份料做过的碗数。等级与出口见 `sim/topping-xp.ts` */
   ingredientXp: Record<string, number>;
   /** 前三十天十二幕：已经讲过哪几幕（批 U′；可选，老档没有就当空表） */
@@ -933,6 +939,7 @@ export function createInitialState(playerId: string, seed: number): GameState {
     streetSeen: [],
     gear: [],
     pack: false,
+    custom: {},
     quality: DEFAULT_QUALITY,
     ingredientXp: {},
     script: { seen: [] },

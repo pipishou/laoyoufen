@@ -11,6 +11,7 @@ import { DEFAULT_PORTION, mainById, portionOf, type MainId, type Portion } from 
 import { noodleById } from "../data/noodles";
 import { noodleKindOf } from "./noodles";
 import { perkTasteCap } from "./perk";
+import { customCharmFloor, customCostFactor } from "./custom";
 import { scoreRecipe, type RecipeScore } from "./score";
 import { activeSides } from "./sides";
 import type { GameState, MenuItem } from "./state";
@@ -68,6 +69,9 @@ export function scoreOf(state: GameState): RecipeScore {
     quality: state.quality,
     xp: state.ingredientXp,
     perkTaste: perkTasteCap(state),
+    // 店底子（批 BA′）：买断的那部分，0 级时恒等（+0 / ×1）
+    customCharm: customCharmFloor(state),
+    customCost: customCostFactor(state),
   });
 }
 

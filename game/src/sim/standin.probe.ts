@@ -17,6 +17,7 @@ import { RIVAL_BY_ID } from "../data/rivals";
 import { applyGrade, checkGrade } from "./grade";
 import { districtOptions, homeEnergyOf, moveShop } from "./district";
 import { buyEquipment, equipLevel, equipNextCost } from "./equipment";
+import { buyCustom, customViews } from "./custom";
 import { auditPlaytest, verdictLabel } from "./playtest";
 import { nextFloat } from "./rng";
 import { noodleKindOf, noodleViews, setNoodleKind, currentSeason } from "./noodles";
@@ -242,6 +243,8 @@ function play(seed: number): GameState {
   let expands = 0;
   let hires = 0;
   let equips = 0;
+  /** 店底子（批 BA′）：买断了几级 —— 期末现金该往下走的那一格里，钱花到哪去了 */
+  let customs = 0;
 let gears = 0;
   /** 上月试涨价时的价与营收（这月用来判断该不该退） */
   let trialPrice = 0;
@@ -360,6 +363,28 @@ spendFavor(s);
       const exp = nextExpansion(s);
       if (exp && s.cash >= exp.costYuan + 8_000) {
         if (buyExpansion(s).ok) expands += 1;
+      }
+
+      /**
+       * 店底子（批 BA′，解「钱多了没处放」）。
+       *
+       * 排在家当、袋装线、扩建之后 —— 这三件都是「开得动就不该等」的东西，
+       * 置办是「真富余了才买」的那一格。
+       *
+       * 守卫是跑出来的（三版）：
+       *   ① 首版只留 ¥30,000、也没有月份闸 → 钱全锁在置办里，四种子期末现金从 ¥99 万
+       *      掉到 ¥9 万（−90.8%），营收也掉 16%：该买的设备与家门反而买不起。
+       *   ② 加「第一年不买」+ ¥120,000 → 现金 ¥26 万，但营收还是掉 3.9%
+       *      （提前花掉的那几笔挤掉了当月该做的资产）。
+       *   ③ 现在是「第一年不买」+ **手上至少留 ¥200,000**（约五个月工资加料钱）：
+       *      营收 / 碗数 / 流失三个数与批 AZ′ **逐位相同**，只有现金少 ¥657,500 ——
+       *      这一批要的就是这个形状：置办只吃现金，不许偷偷改经济。
+       */
+      const customPick = customViews(s)
+        .filter((v) => !v.maxed)
+        .sort((a, b) => a.nextCost - b.nextCost)[0];
+      if (s.months.length >= 12 && customPick && s.cash >= customPick.nextCost + 200_000) {
+        if (buyCustom(s, customPick.def.id).ok) customs += 1;
       }
 
       const slots = staffSlots(s.totalCustomers);
@@ -494,7 +519,7 @@ spendFavor(s);
   const sc = scoreOf(s);
   console.log(
     `\n=== 种子 ${seed} · 味道 ${sc.total} · 粉 ${noodleKindOf(s)} · 期末现金 ¥${Math.round(s.cash).toLocaleString("zh-CN")}` +
-      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 家当 ${gears} 件 · 换底 ${baseSwitches} 次 · 袋装线 ${packsOpened} 次 · 搭配 ${activeCombos(s).length} 组 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
+      ` · 扩建 ${expands} 次 · 雇人 ${hires} 人 · 买设备 ${equips} 次 · 置办 ${customs} 级 · 家当 ${gears} 件 · 换底 ${baseSwitches} 次 · 袋装线 ${packsOpened} 次 · 搭配 ${activeCombos(s).length} 组 · 人情 ${favorsUsed} 次 · 转手 ${recipesSold} 款 · 赛事 ${tourneysPlayed} 场 · 成就 ${(s.trophies ?? []).length} 枚 ===`,
   );
   for (const line of log) console.log(line);
 
