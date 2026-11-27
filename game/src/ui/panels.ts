@@ -1214,16 +1214,20 @@ let lastGradeKey = "";
   /**
    * 街上的门路（批 B′）：花一次钱，买一天的「量」。
    *
-   * 三条都是「今天多做出几碗 / 今天多进来几个人」，一个乘数都不买 ——
+   * `make` / `voice` 两类都只买「今天多做出几碗 / 今天多进来几个人」，一个乘数都不买 ——
    * 料钱已经叠了五层（品质档、行情、物产、技法），再叠就没人算得清了（P154）。
+   * 批 BB′ 加了第三类 `hedge`：买的是「那条行情这半个月抽不到」，同样不是乘数。
    */
   const investSec = `
   <div class="sec">
     <div class="sechd">${icon("crate")}街上的门路 · ${investSummary(s)}</div>
-    <div class="hint2">钱能买到的是「今天多做出几碗」和「今天多进来几个人」，买不到乘数。同类只能走一条。</div>
+    <div class="hint2">钱能买到的是「今天多做出几碗」「今天多进来几个人」，还有「这半个月烦人的那条不来」。买不到乘数。同类只能走一条。</div>
     ${investViews(s)
       .map(
-        (v) => `<div class="lrow${v.affordable || v.active ? "" : " locked"}">
+        // 批 BB′：每行钉一个 `data-invest-id`。原先这一格只能靠「行里有没有买按钮」来认，
+        // 买下之后按钮换成「在走 · 还剩 N 天」，整行就认不出来了 —— 探针 `bb_probe`
+        // 的 `report_shows_running` / `meat_blocked_by_class` 两条红就是这么来的（不是界面没刷新）。
+        (v) => `<div class="lrow${v.affordable || v.active ? "" : " locked"}" data-invest-id="${v.def.id}">
       <div class="lbtns">${
         v.active
           ? `<span class="tag2 on">在走 · 还剩 ${v.leftDays} 天</span>`

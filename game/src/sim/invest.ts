@@ -20,6 +20,8 @@ import {
   type InvestClass,
   type InvestDef,
 } from "../data/invest";
+import { marketById } from "../data/market";
+import type { MarketId } from "../data/market";
 import type { GameState } from "./state";
 
 /** 今天到第几天（打烊天数；当天还没记进去） */
@@ -121,6 +123,7 @@ export function investGainOf(def: InvestDef): string {
   if (def.capacity) return `多做 ${def.capacity} 碗`;
   if (def.slowestMinutes) return `出碗快 ${def.slowestMinutes} 分`;
   if (def.attractPct) return `进店多 ${Math.round(def.attractPct * 100)}%`;
+  if (def.hedgeOf) return `「${marketById(def.hedgeOf)?.name ?? def.hedgeOf}」不上门`;
   return "";
 }
 
@@ -160,7 +163,28 @@ export function investWords(def: InvestDef): string {
   if (def.capacity) bits.push(`当天产能 +${def.capacity} 碗`);
   if (def.slowestMinutes) bits.push(`最慢那一段 −${def.slowestMinutes} 分`);
   if (def.attractPct) bits.push(`进店 +${Math.round(def.attractPct * 100)}%`);
+  if (def.hedgeOf) bits.push(`「${marketById(def.hedgeOf)?.name ?? def.hedgeOf}」抽不到`);
   return bits.join(" · ");
+}
+
+/**
+ * 这几天被买断的那几条行情（批 BB′）。
+ *
+ * 只做「剔出抽签池」这一件事，不改任何倍率 —— `sim/market.ts` 在抽之前读它。
+ * 放在这里而不是新建一个模块，是因为它要读 `state.investments`，而 `sim/market.ts`
+ * 读它、`sim/invest.ts` 不读 `sim/market.ts`，这样没有环。
+ *
+ * `extraDays` 是「问的是今天往后第几天」：明天预告要按明天还剩几天算，
+ * 否则一条今天到期的报备会把明天的检查也预告掉。
+ */
+export function hedgedMarketIds(state: GameState, extraDays = 0): Set<MarketId> {
+  const base = dayIndexOf(state) + Math.max(0, Math.floor(extraDays));
+  const out = new Set<MarketId>();
+  for (const def of INVESTS) {
+    if (!def.hedgeOf) continue;
+    if (investUntil(state, def.id) > base) out.add(def.hedgeOf);
+  }
+  return out;
 }
 
 /** 抬头：「今天没走门路」/「今天：跟料商多留一筐」 */

@@ -1,5 +1,6 @@
 import { MARKET_BY_ID, MARKETS, type MarketDef, type MarketId } from "../data/market";
 import { goodFixesApplied } from "./goods";
+import { hedgedMarketIds } from "./invest";
 import { hashString } from "./rng";
 import type { GameState } from "./state";
 
@@ -55,17 +56,38 @@ function hasMarketAt(month: number, day: number, seed: string): boolean {
   return hashString(`${seed}:market:${month}:${day}:has`) / 4294967296 <= MARKET_CHANCE;
 }
 
-function pickMarketAt(month: number, day: number, seed: string): MarketDef | null {
+/**
+ * 抽一条：先按老办法抽，抽到被买断的那条才改抽（批 BB′）。
+ *
+ * 为什么不直接把被买断的那条从 `pool` 里剔掉：剔池子会让**每一天**的下标整体错位，
+ * 哪怕那天的行情本来与对冲无关 —— 存档里「昨天预告的是赶圩，今天变成了台风」。
+ * 所以这里走「先抽、抽中了才避让」：没买对冲的日子与原来自洽（替身不买门路，
+ * 数字逐位不变），买了对冲的日子只会少那一条。
+ */
+function pickMarketAt(
+  month: number,
+  day: number,
+  seed: string,
+  hedged: ReadonlySet<MarketId> = new Set(),
+): MarketDef | null {
   const pool = MARKETS.filter((m) => SEASON[m.id].includes(month));
   if (pool.length === 0) return null;
   const r = hashString(`${seed}:market:${month}:${day}:pick`) / 4294967296;
-  return pool[Math.floor(r * pool.length) % pool.length] ?? null;
+  const picked = pool[Math.floor(r * pool.length) % pool.length] ?? null;
+  if (!picked || !hedged.has(picked.id)) return picked;
+  // 抽中了被买断的那条：从剩下的里再抽一次（换一个盐，免得与原来同一条）
+  const rest = pool.filter((m) => !hedged.has(m.id));
+  if (rest.length === 0) return null;
+  const r2 = hashString(`${seed}:market:${month}:${day}:hedge`) / 4294967296;
+  return rest[Math.floor(r2 * rest.length) % rest.length] ?? null;
 }
 
 /** 某一天（不一定是今天）的行情：给「明天」的预告用，不碰 state.rng */
 export function marketOnDay(state: GameState, month: number, day: number): MarketDef | null {
   if (!hasMarketAt(month, day, state.playerId)) return null;
-  return pickMarketAt(month, day, state.playerId);
+  // 预告看的是「那一天还剩几天对冲」，不是今天
+  const ahead = Math.max(0, (month - state.month) * 30 + (day - state.day));
+  return pickMarketAt(month, day, state.playerId, hedgedMarketIds(state, ahead));
 }
 
 export function todayMarket(state: GameState): MarketDef | null {
@@ -73,7 +95,13 @@ export function todayMarket(state: GameState): MarketDef | null {
   const pool = MARKETS.filter((m) => SEASON[m.id].includes(state.month));
   if (pool.length === 0) return null;
   const idx = Math.floor(roll(state, "pick") * pool.length) % pool.length;
-  return pool[idx] ?? null;
+  const picked = pool[idx] ?? null;
+  const hedged = hedgedMarketIds(state);
+  if (!picked || !hedged.has(picked.id)) return picked;
+  const rest = pool.filter((m) => !hedged.has(m.id));
+  if (rest.length === 0) return null;
+  const idx2 = Math.floor(roll(state, "hedge") * rest.length) % rest.length;
+  return rest[idx2] ?? null;
 }
 
 /** 今天的行情（给界面与接线读） */

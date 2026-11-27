@@ -1,0 +1,28 @@
+{
+ "checks": {
+  "invest_found": true,
+  "hedge_rows_present": true,
+  "report_names_inspection": true,
+  "report_says_not_drawn": true,
+  "meat_names_pork": true,
+  "meat_says_not_drawn": true,
+  "hedge_days_fifteen": true,
+  "hedge_no_multiplier": true,
+  "hint_mentions_hedge": true,
+  "hint_not_two_only": true,
+  "found_inspection_day_before": true,
+  "both_affordable_first": true,
+  "report_shows_running": true,
+  "meat_blocked_by_class": true,
+  "same_day_no_inspection": true,
+  "same_day_has_other_market": true,
+  "undo_gives_inspection_back": true,
+  "fifteen_days_clear": true,
+  "closing_line_shows": true,
+  "closing_line_says_hedge": true,
+  "save_version": true,
+  "console_clean": true
+ },
+ "ok": 22,
+ "total": 22
+}

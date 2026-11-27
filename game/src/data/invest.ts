@@ -13,7 +13,12 @@
  *
  * 开罗对照：`investment` 111 行（单笔 5,760–20,250 KCU，约 5–20 碗价），
  * 本作按「一碗 ¥10」折算成 ¥50/¥120/¥400 三档。
+ *
+ * 批 BB′ 加了第三类 `hedge`（行情对冲），它买的是「那条行情半个月里不再出现」，
+ * 不是乘数 —— 理由见下面 `InvestClass` 的注释。
  */
+
+import type { MarketId } from "./market";
 
 export type InvestId =
   | "supplier"
@@ -23,10 +28,24 @@ export type InvestId =
   | "central_kitchen"
   | "tourism"
   | "expo"
-  | "livestream";
+  | "livestream"
+  | "inspect_report"
+  | "meat_price_deal";
 
-/** 门路的类别：make = 今天能多做出几碗；voice = 今天街上多几个人知道你 */
-export type InvestClass = "make" | "voice";
+/**
+ * 门路的类别（批 BB′：三类）。
+ *
+ * - `make`：今天能多做出几碗（产能、最慢一段）；
+ * - `voice`：今天街上多几个人知道你（进店率）；
+ * - `hedge`：**这半个月那条行情不来找你**（批 BB′ 加的一类，解 GAP 四轮 B 条）。
+ *
+ * 第三类为什么不照抄开罗的 `Prices Up` / `Ingr. Costs Down`（那两条是「乘一个数」）：
+ * 本作的料钱已经叠了五层（品质档 × 行情 ±14% × 物产 × 技法 × 店底子），
+ * 再挂一条 −6% 就是第六层，上限没人验过（P154）。所以这里买的是**一条行情不出现**，
+ * 不是「再乘一个系数」—— 纪律一「只买量不买乘数」因此没有被破，只是把「量」换成了
+ * 「天数」：半个月里那条行情抽不到。
+ */
+export type InvestClass = "make" | "voice" | "hedge";
 
 export interface InvestSource {
   label: string;
@@ -49,6 +68,13 @@ export interface InvestDef {
   slowestMinutes?: number;
   /** 这几天进店率 +N% */
   attractPct?: number;
+  /**
+   * 行情对冲（批 BB′）：买下的这几天里，**这一条行情抽不到**。
+   *
+   * 只填一条 `MarketId`，不是乘数。抽签时把这一条从池子里剔掉（`sim/market.ts`），
+   * 于是它在这几天里既不出现、也就不会有它的效果 —— 这就是「买一段安稳」的全部含义。
+   */
+  hedgeOf?: MarketId;
   line: string;
   why: string;
   kairo: string;
@@ -243,6 +269,71 @@ export const INVESTS: readonly InvestDef[] = [
         label: "老友网（南宁网络广播电视台）《「寻味南宁·老友粉」系列新媒体直播》",
         url: "http://www.nntv.cn/news/m/2024-7-25/1721872548263.shtml",
         quote: "直播回放：“寻味南宁·老友粉”系列新媒体直播",
+      },
+    ],
+  },
+  /**
+   * 行情对冲一：报备（批 BB′）。
+   *
+   * 数字为什么这么小：检查那条本身只压 −8% 进店，而且十六条行情里它只是其中一条，
+   * 一天被抽中的概率本就低。买它买的不是收益，是「这半个月门口不用提心吊胆」。
+   * 所以价格也定得低（¥300 / 十五天），当它是保险，不是发财路。
+   */
+  {
+    id: "inspect_report",
+    name: "跟监管所报个备",
+    cls: "hedge",
+    what: "手续摊在柜台上，这半个月不会有人上门抽查",
+    costYuan: 300,
+    days: 15,
+    hedgeOf: "inspection",
+    line: "手续都交上去了，这半个月门口清静。",
+    why: "南宁的日常监督检查是随机抽查：原料控制、场所卫生、人员健康、餐具消毒逐项看。手续齐的店照章办事，抽到了也只是看一眼。",
+    kairo: "economy：另一半（开罗的行情分好坏两半，这一半是「坏事不来」）",
+    source: [
+      {
+        label: "南宁市人民政府《食品生产经营日常监督检查管理办法》随机抽查事项清单",
+        url: "https://www.nanning.gov.cn/zwgk/fdzdgknr/zdxxgk/ssjygk/t2564311.html",
+        quote:
+          "原料控制（含食品添加剂）情况的检查 / 餐饮服务经营者 / 一般检查事项 / 现场检查、书面检查",
+      },
+      {
+        label: "广西食品安全网《西乡塘区开展春节前食品安全专项检查》",
+        url: "https://gxfsn.org.cn/page52?article_id=13457",
+        quote:
+          "执法人员……随机检查了食品加工流程、场所环境卫生、人员健康管理、餐具清洗消毒、原材料采购、食品留样等情况",
+      },
+    ],
+  },
+  /**
+   * 行情对冲二：包月（批 BB′）。
+   *
+   * 这一条本来在 GAP 四轮里写的是「半个月料钱 −6%」，落成代码时改成了
+   * 「这半个月猪肉涨价那条抽不到」—— 因为 −6% 是第六层乘数（纪律一，P154 没验过上限），
+   * 而「那条行情不出现」动的是抽签池，不动任何倍率。效果量小一些，但算得清。
+   */
+  {
+    id: "meat_price_deal",
+    name: "跟菜贩子包个月",
+    cls: "hedge",
+    what: "价钱讲定在这半个月，猪肉涨价那条摊不到你头上",
+    costYuan: 220,
+    days: 15,
+    hedgeOf: "porkUp",
+    line: "价钱跟菜贩子讲定了，这半个月涨跌都不算你的。",
+    why: "南宁的粉店早就靠「以销定产」跟上游讲价：一家企业的车间每天十余吨原料送到全市各店，价钱是提前定死的。",
+    kairo: "economy：另一半（开罗 `economy` 里「进价」那一路的反面）",
+    source: [
+      {
+        label: "广西日报《一碗粉的产业链》（南宁米粉全产业链）",
+        url: "http://epaper.gxrb.com.cn/gxrb2/html/2021-12/24/content_1814966.htm",
+        quote:
+          "通过「以销定产」模式统一生产及销售……为猪霸王、赖坚记等 500 多家米粉门店提供米粉、猪肉",
+      },
+      {
+        label: "广西政府采购网《广西宁昌鲜蔬达供应链》",
+        url: "https://zfcg.gxzf.gov.cn/site/supplierDetail?supplierId=jXYUEfaibxEX0oeqgrpIBw==",
+        quote: "当日订、次日达……为客户降低采购成本",
       },
     ],
   },
