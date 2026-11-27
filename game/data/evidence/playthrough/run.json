@@ -16,9 +16,9 @@
  "failed": [],
  "days": 37,
  "fps": {
-  "min": 54.0,
-  "avg": 59.8,
-  "n": 2243
+  "min": 56.0,
+  "avg": 59.9,
+  "n": 2375
  },
  "heap": {
   "samples": [
@@ -81,15 +81,15 @@
  "off_api": [],
  "actions": {
   "open": 37,
-  "wait": 2162,
+  "wait": 2294,
   "next-day": 36,
   "event": 8
  },
  "line_calls": 7,
  "line_per_day": 0.19,
  "hud": {
-  "cash": "¥40,533",
-  "date": "第 1 年 · 2 月 · 7 日10:48",
+  "cash": "¥40,771",
+  "date": "第 1 年 · 2 月 · 7 日11:48",
   "canvas": true
  }
 }

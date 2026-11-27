@@ -131,8 +131,9 @@ describe("批 BC′：门路位随段位长", () => {
     expect(cancelInvest(s, "supplier").reason).toContain("本来就没在走");
   });
 
-  it("门路表本身没被位子改动：还是十条，一条都没删", () => {
-    expect(INVESTS).toHaveLength(10);
+  it("门路表本身没被位子改动：一条都没删，每条都说得出一句", () => {
+    // 批 BC′ 落盘时是十条；批 BD′ 加了第四条路（趁势）两条，现在是十二条
+    expect(INVESTS).toHaveLength(12);
     for (const d of INVESTS) expect(investWords(d).length).toBeGreaterThan(0);
   });
 });

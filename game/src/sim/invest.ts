@@ -202,6 +202,7 @@ export function investGainOf(def: InvestDef): string {
   if (def.slowestMinutes) return `出碗快 ${def.slowestMinutes} 分`;
   if (def.attractPct) return `进店多 ${Math.round(def.attractPct * 100)}%`;
   if (def.hedgeOf) return `「${marketById(def.hedgeOf)?.name ?? def.hedgeOf}」不上门`;
+  if (def.leanOn) return `「${marketById(def.leanOn)?.name ?? def.leanOn}」一定会来`;
   return "";
 }
 
@@ -242,6 +243,7 @@ export function investWords(def: InvestDef): string {
   if (def.slowestMinutes) bits.push(`最慢那一段 −${def.slowestMinutes} 分`);
   if (def.attractPct) bits.push(`进店 +${Math.round(def.attractPct * 100)}%`);
   if (def.hedgeOf) bits.push(`「${marketById(def.hedgeOf)?.name ?? def.hedgeOf}」抽不到`);
+  if (def.leanOn) bits.push(`「${marketById(def.leanOn)?.name ?? def.leanOn}」一定来`);
   return bits.join(" · ");
 }
 
@@ -261,6 +263,27 @@ export function hedgedMarketIds(state: GameState, extraDays = 0): Set<MarketId> 
   for (const def of INVESTS) {
     if (!def.hedgeOf) continue;
     if (investUntil(state, def.id) > base) out.add(def.hedgeOf);
+  }
+  return out;
+}
+
+/**
+ * 这几天被「叫到台面上」的那几条好行情（批 BD′）。
+ *
+ * 与 `hedgedMarketIds` 正好对着：那边是「这条别来」，这边是「这条一定来」。
+ * 同样只读 `state.investments`、同样不新增任何倍率 —— 效果仍由 `data/market.ts` 给。
+ * `extraDays` 的道理也一样（明天预告要按明天还剩几天算）。
+ *
+ * 冲突怎么办：同一帧里既被对冲又被叫来的情况本作数据里不可能发生
+ * （`hedge` 挡检查/猪肉、`lean` 叫圩日/发薪，四条 id 互不相干），
+ * 所以 `sim/market.ts` 只把对冲排在前面 —— 万一以后有重叠，挡坏事优先。
+ */
+export function leanedMarketIds(state: GameState, extraDays = 0): Set<MarketId> {
+  const base = dayIndexOf(state) + Math.max(0, Math.floor(extraDays));
+  const out = new Set<MarketId>();
+  for (const def of INVESTS) {
+    if (!def.leanOn) continue;
+    if (investUntil(state, def.id) > base) out.add(def.leanOn);
   }
   return out;
 }

@@ -34,8 +34,8 @@ describe("批 BB′：买一段安稳（第三类门路）", () => {
     }
     expect(hedge.find((d) => d.id === "inspect_report")!.hedgeOf).toBe("inspection");
     expect(hedge.find((d) => d.id === "meat_price_deal")!.hedgeOf).toBe("porkUp");
-    // 三类齐全，且每条只属于一类
-    expect(INVESTS.every((d) => ["make", "voice", "hedge"].includes(d.cls))).toBe(true);
+    // 四类齐全（批 BD′ 加了 `lean`），且每条只属于一类
+    expect(INVESTS.every((d) => ["make", "voice", "hedge", "lean"].includes(d.cls))).toBe(true);
   });
 
   it("批 BC′：两条对冲都能挂（底板两位），但要拦就拦在位子上", () => {

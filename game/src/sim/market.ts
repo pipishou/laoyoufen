@@ -1,6 +1,6 @@
 import { MARKET_BY_ID, MARKETS, type MarketDef, type MarketId } from "../data/market";
 import { goodFixesApplied } from "./goods";
-import { hedgedMarketIds } from "./invest";
+import { hedgedMarketIds, leanedMarketIds } from "./invest";
 import { hashString } from "./rng";
 import type { GameState } from "./state";
 
@@ -57,37 +57,57 @@ function hasMarketAt(month: number, day: number, seed: string): boolean {
 }
 
 /**
- * 抽一条：先按老办法抽，抽到被买断的那条才改抽（批 BB′）。
+ * 抽一条：先按老办法抽，抽到被买断的那条才改抽（批 BB′）；
+ * 最后再把「买了趁势的那条」摁到台面上（批 BD′）。
  *
  * 为什么不直接把被买断的那条从 `pool` 里剔掉：剔池子会让**每一天**的下标整体错位，
  * 哪怕那天的行情本来与对冲无关 —— 存档里「昨天预告的是赶圩，今天变成了台风」。
  * 所以这里走「先抽、抽中了才避让」：没买对冲的日子与原来自洽（替身不买门路，
  * 数字逐位不变），买了对冲的日子只会少那一条。
+ *
+ * 趁势（`leaned`）排在避让之后：它买的是「一定来」，所以只要那天**本来就有行情**，
+ * 就把那条好行情摁上去；那天本来没行情（`hasMarketAt` 判掉），它也不会凭空造一天出来
+ * —— 否则买一次趁势就等于「三天必定有行情」，那是加天数，不是换行情。
+ * 用 `pool.find` 而不是直接 `MARKET_BY_ID.get`：好行情要是那个月不在季（开学在九月、
+ * 东博会在九月），宁可按原样走，也不抽一条季节外的天气出来。
  */
 function pickMarketAt(
   month: number,
   day: number,
   seed: string,
   hedged: ReadonlySet<MarketId> = new Set(),
+  leaned: ReadonlySet<MarketId> = new Set(),
 ): MarketDef | null {
   const pool = MARKETS.filter((m) => SEASON[m.id].includes(month));
   if (pool.length === 0) return null;
   const r = hashString(`${seed}:market:${month}:${day}:pick`) / 4294967296;
-  const picked = pool[Math.floor(r * pool.length) % pool.length] ?? null;
-  if (!picked || !hedged.has(picked.id)) return picked;
-  // 抽中了被买断的那条：从剩下的里再抽一次（换一个盐，免得与原来同一条）
-  const rest = pool.filter((m) => !hedged.has(m.id));
-  if (rest.length === 0) return null;
-  const r2 = hashString(`${seed}:market:${month}:${day}:hedge`) / 4294967296;
-  return rest[Math.floor(r2 * rest.length) % rest.length] ?? null;
+  let picked = pool[Math.floor(r * pool.length) % pool.length] ?? null;
+  if (picked && hedged.has(picked.id)) {
+    // 抽中了被买断的那条：从剩下的里再抽一次（换一个盐，免得与原来同一条）
+    const rest = pool.filter((m) => !hedged.has(m.id));
+    if (rest.length === 0) return null;
+    const r2 = hashString(`${seed}:market:${month}:${day}:hedge`) / 4294967296;
+    picked = rest[Math.floor(r2 * rest.length) % rest.length] ?? null;
+  }
+  if (picked && leaned.size > 0) {
+    const wanted = pool.find((m) => leaned.has(m.id));
+    if (wanted) picked = wanted;
+  }
+  return picked;
 }
 
 /** 某一天（不一定是今天）的行情：给「明天」的预告用，不碰 state.rng */
 export function marketOnDay(state: GameState, month: number, day: number): MarketDef | null {
   if (!hasMarketAt(month, day, state.playerId)) return null;
-  // 预告看的是「那一天还剩几天对冲」，不是今天
+  // 预告看的是「那一天还剩几天对冲／趁势」，不是今天
   const ahead = Math.max(0, (month - state.month) * 30 + (day - state.day));
-  return pickMarketAt(month, day, state.playerId, hedgedMarketIds(state, ahead));
+  return pickMarketAt(
+    month,
+    day,
+    state.playerId,
+    hedgedMarketIds(state, ahead),
+    leanedMarketIds(state, ahead),
+  );
 }
 
 export function todayMarket(state: GameState): MarketDef | null {
@@ -95,13 +115,20 @@ export function todayMarket(state: GameState): MarketDef | null {
   const pool = MARKETS.filter((m) => SEASON[m.id].includes(state.month));
   if (pool.length === 0) return null;
   const idx = Math.floor(roll(state, "pick") * pool.length) % pool.length;
-  const picked = pool[idx] ?? null;
+  let picked = pool[idx] ?? null;
   const hedged = hedgedMarketIds(state);
-  if (!picked || !hedged.has(picked.id)) return picked;
-  const rest = pool.filter((m) => !hedged.has(m.id));
-  if (rest.length === 0) return null;
-  const idx2 = Math.floor(roll(state, "hedge") * rest.length) % rest.length;
-  return rest[idx2] ?? null;
+  if (picked && hedged.has(picked.id)) {
+    const rest = pool.filter((m) => !hedged.has(m.id));
+    if (rest.length === 0) return null;
+    const idx2 = Math.floor(roll(state, "hedge") * rest.length) % rest.length;
+    picked = rest[idx2] ?? null;
+  }
+  const leaned = leanedMarketIds(state);
+  if (picked && leaned.size > 0) {
+    const wanted = pool.find((m) => leaned.has(m.id));
+    if (wanted) picked = wanted;
+  }
+  return picked;
 }
 
 /** 今天的行情（给界面与接线读） */

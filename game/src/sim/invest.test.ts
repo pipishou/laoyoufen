@@ -22,9 +22,9 @@ const newState = () => {
 };
 
 describe("街上的门路：三条表的纪律", () => {
-  it("十条（批 J′ 八条 + 批 BB′ 两条对冲），id 不重复，每条都有 name / what / line / why", () => {
-    expect(INVEST_TOTAL).toBe(10);
-    expect(new Set(INVESTS.map((d) => d.id)).size).toBe(10);
+  it("十二条（批 J′ 八条 + 批 BB′ 两条对冲 + 批 BD′ 两条趁势），id 不重复，每条都有 name / what / line / why", () => {
+    expect(INVEST_TOTAL).toBe(12);
+    expect(new Set(INVESTS.map((d) => d.id)).size).toBe(12);
     for (const d of INVESTS) {
       expect(d.name.length).toBeGreaterThan(2);
       expect(d.what.length).toBeGreaterThan(6);
@@ -56,10 +56,11 @@ describe("街上的门路：三条表的纪律", () => {
     expect(investById("press")!.days).toBe(3);
     for (const d of INVESTS) {
       // 批 BB′：对冲那条没有三个量里的任何一个，它「买的是那条行情不出现」
+      // 批 BD′：趁势那条也一样，它「买的是那条好行情一定来」
       const n = (d.capacity ?? 0) + (d.slowestMinutes ?? 0) + (d.attractPct ?? 0);
-      expect(n > 0 || d.hedgeOf !== undefined).toBe(true);
+      expect(n > 0 || d.hedgeOf !== undefined || d.leanOn !== undefined).toBe(true);
     }
-    // make 三条、voice 五条、hedge 两条
+    // make 三条、voice 五条、hedge 两条、lean 两条
     expect(investsOfClass("make").map((d) => d.id)).toEqual(["supplier", "master", "central_kitchen"]);
     expect(investsOfClass("voice").map((d) => d.id)).toEqual([
       "press",
@@ -71,6 +72,10 @@ describe("街上的门路：三条表的纪律", () => {
     expect(investsOfClass("hedge").map((d) => d.id)).toEqual([
       "inspect_report",
       "meat_price_deal",
+    ]);
+    expect(investsOfClass("lean").map((d) => d.id)).toEqual([
+      "stall_at_market",
+      "wage_day_spread",
     ]);
   });
 
