@@ -10,10 +10,12 @@
   "hedge_no_multiplier": true,
   "hint_mentions_hedge": true,
   "hint_not_two_only": true,
+  "hint_says_slots_not_class": true,
   "found_inspection_day_before": true,
   "both_affordable_first": true,
   "report_shows_running": true,
-  "meat_blocked_by_class": true,
+  "meat_still_affordable": true,
+  "third_row_says_cancel_first": true,
   "same_day_no_inspection": true,
   "same_day_has_other_market": true,
   "undo_gives_inspection_back": true,
@@ -23,6 +25,6 @@
   "save_version": true,
   "console_clean": true
  },
- "ok": 22,
- "total": 22
+ "ok": 24,
+ "total": 24
 }

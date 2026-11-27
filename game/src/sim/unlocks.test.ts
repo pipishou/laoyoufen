@@ -13,7 +13,7 @@ function fresh(): ReturnType<typeof createInitialState> {
 
 describe("手艺树（P39，对齐开罗 rank.txt）", () => {
   it("表本身：段位门槛升序、每项都有开罗对应行与南宁话", () => {
-    expect(UNLOCKS.length).toBe(10);
+    expect(UNLOCKS.length).toBe(12);
     const grades = UNLOCKS.map((u) => u.grade);
     expect(grades).toEqual([...grades].sort((a, b) => a - b));
     expect(new Set(UNLOCKS.map((u) => u.id)).size).toBe(UNLOCKS.length);
@@ -23,11 +23,12 @@ describe("手艺树（P39，对齐开罗 rank.txt）", () => {
       expect(u.grade).toBeGreaterThanOrEqual(2);
       expect(u.grade).toBeLessThanOrEqual(11);
     }
-    // 开罗那 17 行里最能改变玩法的三类必须出现
+    // 开罗那 17 行里最能改变玩法的几类必须出现（批 BC′ 加进 More Investments）
     const kairo = UNLOCKS.map((u) => u.kairo).join("|");
     expect(kairo).toContain("Ramen Hall Expansion");
     expect(kairo).toContain("More Line Tiles");
     expect(kairo).toContain("Buy Big Shop");
+    expect(kairo).toContain("More Investments");
   });
 
   it("初始 0 段：一件都没解锁，排队位就是 FLOW.queueMax", () => {
@@ -61,7 +62,7 @@ describe("手艺树（P39，对齐开罗 rank.txt）", () => {
     expect(roadworkBoostOf(s)).toBeLessThan(1.2);
   });
 
-  it("十条全部接进了模拟：没有一条还挂着「预告」（批 AZ′）", () => {
+  it("十二条全部接进了模拟：没有一条还挂着「预告」（批 AZ′ 十条 + 批 BC′ 两条门路位）", () => {
     const s = fresh();
     // 评到第 11 段（最后一条 `legend` 的门槛）才谈得上「全都亮」
     s.gradeLevel = 11;

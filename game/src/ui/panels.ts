@@ -201,6 +201,8 @@ export interface PanelActions {
   stepRetailPrice(id: string, dir: number): void;
   /** 街上的门路（批 B′）：花一次钱买一天的量 */
   buyInvest(id: string): void;
+  /** 批 BC′：撤一条正在走的门路（不退钱，只为空出位子） */
+  cancelInvest(id: string): void;
   /** 杂货铺（批 B′）：花人情买一天的方便 */
   buyGood(id: string): void;
   buyPerk(id: string): void;
@@ -516,6 +518,9 @@ let lastGradeKey = "";
         break;
       case "buyinvest":
         actions.buyInvest(String(id));
+        break;
+      case "cancelinvest":
+        actions.cancelInvest(String(id));
         break;
       case "buygood":
         actions.buyGood(String(id));
@@ -1217,11 +1222,16 @@ let lastGradeKey = "";
    * `make` / `voice` 两类都只买「今天多做出几碗 / 今天多进来几个人」，一个乘数都不买 ——
    * 料钱已经叠了五层（品质档、行情、物产、技法），再叠就没人算得清了（P154）。
    * 批 BB′ 加了第三类 `hedge`：买的是「那条行情这半个月抽不到」，同样不是乘数。
+   *
+   * 批 BC′：约束从「同类只能走一条」换成**门路位**（2 位起，第 5 段 3 位、第 8 段 4 位）。
+   * 抬头那句 `investSlotsWords` 就是「挂了几条 / 一共几位」，判据要求这个数写在面板上 ——
+   * 所以它进 `sechd` 而不是藏进任何说明段。满位时按钮不写价钱，写「先撤一条」（一分不扣），
+   * 正在走的那行给一个「撤一条」按钮：不撤就没法换，看着像死局。
    */
   const investSec = `
   <div class="sec">
     <div class="sechd">${icon("crate")}街上的门路 · ${investSummary(s)}</div>
-    <div class="hint2">钱能买到的是「今天多做出几碗」「今天多进来几个人」，还有「这半个月烦人的那条不来」。买不到乘数。同类只能走一条。</div>
+    <div class="hint2">钱能买到的是「今天多做出几碗」「今天多进来几个人」，还有「这半个月烦人的那条不来」。买不到乘数。位子挂满了就先撤一条，撤掉不退钱。</div>
     ${investViews(s)
       .map(
         // 批 BB′：每行钉一个 `data-invest-id`。原先这一格只能靠「行里有没有买按钮」来认，
@@ -1230,7 +1240,7 @@ let lastGradeKey = "";
         (v) => `<div class="lrow${v.affordable || v.active ? "" : " locked"}" data-invest-id="${v.def.id}">
       <div class="lbtns">${
         v.active
-          ? `<span class="tag2 on">在走 · 还剩 ${v.leftDays} 天</span>`
+          ? `<span class="tag2 on">在走 · 还剩 ${v.leftDays} 天</span><button type="button" class="pickbtn ghost" data-act="cancelinvest" data-id="${v.def.id}" title="撤掉不退钱，位子当天就能让别人用">撤一条</button>`
           : v.affordable
             ? `<button type="button" class="pickbtn" data-act="buyinvest" data-id="${v.def.id}">${money(v.def.costYuan)}</button>`
             : `<span class="tag2">${v.reason}</span>`

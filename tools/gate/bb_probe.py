@@ -4,7 +4,8 @@
 判据（对应 `docs/GAP四轮-2026-11-26.md` 第五节的 BB′）：
   1. 门路那一页多出两条：`跟监管所报个备`（¥300 · 管 15 天）、`跟菜贩子包个月`（¥220 · 管 15 天）；
   2. 每条的说明里写清「哪条行情抽不到」，并且**一个乘数都不许写**（纪律一：只买量不买乘数）；
-  3. 同类仍只一条：买了一条，另一条的按钮变成「先等「X」过去」；
+  3. 两条都买得下（批 BC′ 之后底板是**两位**，不再按类互斥）—— 第一版这里断的是
+     「买了一条另一条变『先等』」，那条口径已被 BC′ 换掉，留着它就是第二条在说假话；
   4. 真买下来：这半个月里那条行情一天都不出现，界面上的行情行也不再提它；
   5. 到点那一天打烊单报一句（`到点 · 跟监管所报个备 走完了（「创城检查」不上门）`）。
 
@@ -164,6 +165,8 @@ def main() -> int:
         hint = base.get("hint", "")
         checks["hint_mentions_hedge"] = "烦人" in hint and "乘数" in hint
         checks["hint_not_two_only"] = "和「今天多进来几个人」，买不到乘数" not in hint
+        # 批 BC′：这句总说明原来的尾巴是「同类只能走一条」，现在必须换成位子口径
+        checks["hint_says_slots_not_class"] = "先撤一条" in hint and "同类只能走一条" not in hint
 
         # ── 三、先找一天本来是「创城检查」——**必须在买之前找**。
         #     首版把这段放在买之后，而买下的正是「创城检查不上门」，于是永远找不到那一天
@@ -182,7 +185,7 @@ def main() -> int:
                 break
         checks["found_inspection_day_before"] = target is not None
 
-        # ── 四、同类只一条：买了一条，另一条排不进来
+        # ── 四、批 BC′ 之后底板是两位：两条对冲都买得下（原来这里断的是「同类互斥」）
         before_meat = by_id.get("meat_price_deal", {})
         checks["both_affordable_first"] = before_meat.get("btn", "") != ""
         page.evaluate(BUY, "inspect_report")
@@ -192,11 +195,23 @@ def main() -> int:
         report_after = after_by_id.get("inspect_report", {})
         meat_after = after_by_id.get("meat_price_deal", {})
         checks["report_shows_running"] = "在走" in (report_after.get("tag") or "")
-        checks["meat_blocked_by_class"] = (
-            "先等" in (meat_after.get("tag") or "")
-            and "报个备" in (meat_after.get("tag") or "")
-            and meat_after.get("btn", "") == ""
+        # 批 BC′：第二条**还买得下**（两位底板）。旧断言「先等『报个备』过去」是同类互斥时代的口径，
+        # 口径换了这条就必须跟着换 —— 否则探针会一直替旧行为作证。
+        checks["meat_still_affordable"] = meat_after.get("btn", "") != ""
+        # 两位都占上之后，再看第三条（press）是不是「先撤一条」（满位才是真的拦）
+        page.evaluate(BUY, "meat_price_deal")
+        page.wait_for_timeout(400)
+        full = page.evaluate(READ_INVEST)
+        full_by_id = {r["id"]: r for r in full.get("rows", []) if r["id"]}
+        press_full = full_by_id.get("press", {})
+        checks["third_row_says_cancel_first"] = (
+            "先撤一条" in (press_full.get("tag") or "") and press_full.get("btn", "") == ""
         )
+        # 撤一条回去，好让后面「买前/买后」只挂着 inspect_report
+        page.evaluate(
+            """() => { const s = window.__laoyou.state; const n = { ...s.investments }; delete n.meat_price_deal; s.investments = n; window.__laoyou.refresh(); }"""
+        )
+        page.wait_for_timeout(200)
         page.screenshot(path=os.path.join(OUT, "02-bb-bought.png"), full_page=False)
 
         # ── 五、真买下来：这半个月里那条行情一天都不出现
@@ -220,7 +235,7 @@ def main() -> int:
             # 首版点按钮，但撤销时那次 refresh 不保证重绘（面板没打开时 render 直接 return），
             # DOM 里那一行还停在「在走」，找不到买按钮 → 点空 → 对冲没挂上，
             # 于是 `same_day_no_inspection` 与 `fifteen_days_clear` 两条假红（界面本身没问题）。
-            # 「点按钮能买」这条路由上面第三段的 `report_shows_running` / `meat_blocked_by_class` 负责。
+            # 「点按钮能买」这条路由上面第三段的 `report_shows_running` / `meat_still_affordable` 负责。
             page.evaluate(
                 """() => {
                   const s = window.__laoyou.state;

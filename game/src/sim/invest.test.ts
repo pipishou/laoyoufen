@@ -86,19 +86,25 @@ describe("街上的门路：三条表的纪律", () => {
     expect(investWords(investById("supplier")!)).toContain("+20 碗");
   });
 
-  it("同类互斥：料商与老师傅只能走一条，理由说人话", () => {
+  it("底板两位：两条 `make` 也能并排走，第三类要等空出位子（批 BC′ 之前这里只能走一条）", () => {
     const s = newState();
     expect(buyInvest(s, "supplier").ok).toBe(true);
-    const second = buyInvest(s, "master");
-    expect(second.ok).toBe(false);
-    expect(second.reason).toContain("先等");
-    expect(second.reason).toContain("料商");
+    // 批 BC′：不再按类互斥，位子够就行 —— 料商与老师傅都是 make，也都能挂
+    expect(buyInvest(s, "master").ok).toBe(true);
+    expect(activeInvests(s).map((d) => d.id).sort()).toEqual(["master", "supplier"]);
+    // 两位满了，第三条（不管哪一类）一律「先撤一条」，并且一分钱都不扣
+    const cashBefore = s.cash;
+    const third = buyInvest(s, "press");
+    expect(third.ok).toBe(false);
+    expect(third.reason).toContain("先撤一条");
+    expect(third.reason).toContain("料商");
+    expect(s.cash).toBe(cashBefore);
     // 已买的那条也不能重复买
     expect(buyInvest(s, "supplier").ok).toBe(false);
-    // 面板上第二条也是「先等」
-    const view = investViews(s).find((v) => v.def.id === "master")!;
+    // 面板上第三条也是「先撤一条」
+    const view = investViews(s).find((v) => v.def.id === "press")!;
     expect(view.affordable).toBe(false);
-    expect(view.reason).toContain("先等");
+    expect(view.reason).toContain("先撤一条");
   });
 
   it("不同类可以并存：门路 + 美食号，进店 ×1.3", () => {
@@ -117,7 +123,7 @@ describe("街上的门路：三条表的纪律", () => {
     s.investments = { supplier: dayIndexOf(s) };
     expect(investToday(s, "supplier")).toBe(false);
     expect(investCapacityBonus(s)).toBe(0);
-    expect(investSummary(s)).toBe("今天还没走门路");
+    expect(investSummary(s)).toBe("今天还没走门路 · 0 / 2 位");
   });
 
   it("老师傅只治最慢那一段：总分钟数减 0.5，其余段不动", () => {

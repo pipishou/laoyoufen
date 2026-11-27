@@ -73,6 +73,23 @@ export const UNLOCKS: readonly UnlockDef[] = [
     line: "灯箱一亮，行到巷口就闻见酸笋味。",
   },
   {
+    /**
+     * 批 BC′（解 GAP 四轮 D 条）：门路位随段位长。
+     *
+     * 开罗 `rank.txt` 第 16 行 `More Investments`「Invest in more things at once.」——
+     * 涨的不是每条门路的强度，是**同时能挂几条**。我们原先的「2 位」是从
+     * 「同类只能挂一条 × 两类（make / voice）」推出来的，属于巧合而不是设计：
+     * 批 BB′ 加了第三类 `hedge` 之后这个数就悄悄变成 3 了，而玩家一点都看不出来。
+     * 所以这里把「几位」明确成段位给的东西，第 5 段 2 → 3。
+     */
+    id: "invest3",
+    grade: 5,
+    name: "多认一条街的门路",
+    effect: "门路位 2 → 3（同时能挂三条）",
+    kairo: "More Investments（同时能投更多）",
+    line: "以前只敢同时走一条路，现在三条一齐谈，边谈边做。",
+  },
+  {
     id: "second_floor",
     grade: 6,
     name: "二楼摆四张台",
@@ -97,6 +114,22 @@ export const UNLOCKS: readonly UnlockDef[] = [
     line: "灶眼烧到发白，一碗接一碗都不断火。",
   },
   {
+    /**
+     * 批 BC′：第四位（照开罗同一条 `More Investments` 的第二、第三个门槛）。
+     *
+     * 说明白一件事：目前门路只有三类、且「同类只能一条」，所以第四位在多出一条
+     * 第四类之前**用不满**（三类各挂一条就是三条）。这一位先给出来，是因为
+     * 它本来就是开罗那条奖励的形状（一次给一位），而且它让「第 8 段」这个门槛
+     * 在门路这条线上也有一条可读的成长 —— 用不满这件事记在 P504。
+     */
+    id: "invest4",
+    grade: 8,
+    name: "门路再添一位",
+    effect: "门路位 3 → 4（同时能挂四条）",
+    kairo: "More Investments（同时能投更多）",
+    line: "现在四条街的门路一齐摆在桌上谈，哪条先黄哪条先办，一眼看得清。",
+  },
+  {
     id: "takeaway",
     grade: 9,
     name: "开个打包窗口",
@@ -113,11 +146,17 @@ export const UNLOCKS: readonly UnlockDef[] = [
     line: "招牌挂到第二个区，老友粉就唔止一条街识。",
   },
   {
+    /**
+     * 批 BC′：这条的 `kairo` 原来是「More Investments（更多投资位）」，与它真正干的事
+     * （所有区能量不再衰减）**不是一回事** —— 那是 P497 同型的错标：开罗那条奖励
+     * 明明管的是「同时能投几条」，我们的门路位后来才真按它做（`invest3` / `invest4`）。
+     * 现在把它改回诚实的样子：开罗 17 行里没有「全区连锁」这一行，这一条是本作自造的。
+     */
     id: "legend",
     grade: 11,
     name: "全区连锁 · 总店",
     effect: "所有区能量不再衰减",
-    kairo: "More Investments（更多投资位）",
+    kairo: "无对应（本作自造）：开罗 17 行里没有「全区连锁」",
     line: "做到这一步，系人都知你是老友粉，唔系一间铺咁简单。",
   },
 ] as const;

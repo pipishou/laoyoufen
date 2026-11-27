@@ -39,7 +39,8 @@ function atGrade(s: GameState, level: number): GameState {
 describe("批 AZ′ · 四条预告接进模拟", () => {
   it("四条 pending 全部删掉了（再挂 pending 就等于又写了个假承诺）", () => {
     expect(UNLOCKS.filter((u) => u.pending)).toHaveLength(0);
-    expect(UNLOCKS).toHaveLength(10);
+    // 批 AZ′ 收尾时是 10 条；批 BC′ 补了两条门路位（invest3 / invest4）
+    expect(UNLOCKS).toHaveLength(12);
     for (const id of ["stove5", "takeaway", "branch", "legend"]) {
       expect(UNLOCKS.find((u) => u.id === id)?.pending).toBeUndefined();
     }

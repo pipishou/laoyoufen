@@ -1594,3 +1594,24 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **探针** `tools/gate/bb_probe.py` **22 / 22 true**。三个坑：① 认行不能靠按钮；② 「找一天本来是检查」必须排在买之前且扫满 360 天（≈2%/天）；③ 撤销后重买不能点按钮（撤销那次 `refresh()` 不保证重绘，点空）。
 - **门**：`copy_gate` ok；`eye_gate --slug bb` 五视口 **722 · 778 · 583 · 1244 · 1511** 色 stamp **182**；`ai_gate` 四段 ok（跑完已重建）；帧差门重存后 **0 px**；长跑门 **9 / 9**（第 37 天、fps 49 / 59.7、采样 2287、堆 0.0、一句话接口 7 次 0.19/天）；`debug_exit_gate` **4 / 4**（1,757,833 B）。
 - **新缺口**：P499（一条 `hedgeOf` 只能挡一条，`waterCut` 那种含两个坏处的挡掉等于全挡）/ P500（十五天里躲掉几次没人说）/ P501（`:hedge` 与 `roll(state,"hedge")` 是两条流，预告与实抽可能不一致，无测试钉）/ P502（写死 15 天 vs 原稿「半个月」）/ P503（被换掉那条拉高「今天没有行情」的概率，界面没解释）。
+
+### 行 166 · 2026-11-27 · 批 BC′：门路位随段位长（GAP 四轮 D 条）
+
+GAP 四轮第五节的最后一条。前面四条（AZ′ / BA′ / BB′ 与本批）到这里收口。
+
+- **为什么会漏**：`game/src/sim/invest.ts` 原来的约束写的是「同类同时只能一条」。看着像设计，其实是 `make` / `voice` 两类各一条的**巧合** —— 批 BB′ 加上第三类 `hedge` 之后，「两类各一条」正好等于「同时能挂两条」，于是位子数从 2 悄悄变成 3，而文案还写着「同类只能走一条」。位子这件事从头到尾没有被写成过一个数。
+- **开罗怎么做的**：`D:\项目\REA\REA\逆向\_逆向上游\TheRamenSensei\取证\textassets\xls_out\English.lproj__rank.txt` 第 16 行 `16 More Investments 12 Invest in more things at once. 0 0 1 3 2 1 2`，与第 2 行（Max Thickness，只有一档）末尾 `0 0 1 3 24 1 1` 形状相同 ⇒ 开罗那条只给**一档 +1**。GAP 四轮要求把它摊成两处门槛，本批照办：**第 5 段 2 → 3 位、第 8 段 3 → 4 位**。
+- **两条解锁**：`game/src/data/unlocks.ts` 从 10 条变 **12 条** —— `invest3`（grade 5「多认一条街的门路」，effect「门路位 2 → 3（同时能挂三条）」）、`invest4`（grade 8「门路再添一位」，effect「门路位 3 → 4（同时能挂四条）」）。两条都挂 `kairo: "More Investments（同时能投更多）"`。
+- **单一出口** `investSlots(state)`：`INVEST_BASE_SLOTS = 2` + `isUnlocked("invest3")` + `isUnlocked("invest4")`；配套 `investSlotsLeft` 与 `investSlotsWords`（`` `${activeInvests(state).length} / ${investSlots(state)} 位` ``）。位子数只有一个出处，面板、`investViews`、`buyInvest` 都读它。
+- **`buyInvest` 把位子判在现金判之前**：原来按类互斥，判在钱之前无所谓；改成位子之后如果先扣钱再发现没位子，「钱扣了没买上」是最难查的一类账。满位 reason 写 `` `先撤一条（现在「${first.name}」占着）` ``，一个字段都不写、一分钱都不动。
+- **新增 `cancelInvest`，且一分不退**：只 `delete next[def.id]`。退了就成了「花钱租位子、随时退」的刷钱口 —— 想换一条就得再花一趟钱，这是有意为之的代价（记 P505）。`investUntil` / `hedgedMarketIds` 都按天算，撤掉之后对冲当场失效（`bb_probe` 的 `undo_gives_inspection_back` 继续看着）。
+- **界面**：门路抬头第一次写出 `2 / 3 位`（`investSummary` 末尾追加）；`hint2` 从「同类只能走一条」改成「位子挂满了就先撤一条，撤掉不退钱」；正在走的那行多一个「撤一条」按钮（`data-act="cancelinvest"`，`main.ts` 里 toast + `playSfx("ui")`，不播升级音、不占一句话接口额度）。
+- **手册同步**：`game/src/data/manual.ts` 的「街上的门路」一页写「一开局两位，评到第五段三位、第八段四位；位子满了按钮会写『先撤一条』，撤掉不退钱」。**坑**：`manual.test.ts:32` 断言正文不许出现阿拉伯数字 —— 首版写「第 5 段」当场红，只能写「第五段」。
+- **顺手修掉一处错标注**：`legend`（第 11 段）的 `kairo` 原来写着「More Investments（更多投资位）」，而它实际效果是「所有区能量不再衰减」 —— 与 P497 同型（标注与效果对不上）。改成「无对应（本作自造）：开罗 17 行里没有『全区连锁』」。
+- **测试**：新建 `game/src/sim/invest-slots.test.ts` **8 例**（位子阶梯 `[0,2][4,2][5,3][7,3][8,4][11,4]` / 两个门槛取自解锁表 / `investSlotsWords` 与 `investSummary` 可读 / 满位拒绝且一分不扣 / 第 5 段三条并排 / 撤一条不退款且当天能换 / 两条拒绝路径文案 / `INVESTS` 仍 10 条）。跟着改四处：`invest.test.ts` 的「同类互斥」整条换「底板两位」、`invest-hedge.test.ts` 的「同类仍只一条」换「按位子拦」、`unlocks.test.ts` 与 `az-unlocks.test.ts` 的 `UNLOCKS` 10 → 12。
+- **验收**：`npx tsc --noEmit` 0（在 `game/`）；`npx vitest run --no-file-parallelism` **110 文件 1120 用例全过**（BB′ 是 109/1112）；`npm run -s gen:server` 2/2 无 diff；构建 `game/dist/assets/index-DGUX8BCq.js` **1,759,378 B**（gzip 530.98）/ `index-IvOrrQh0.css` 56,677 B。
+- **探针**：新建 `tools/gate/bc_probe.py` **23 / 23 true**（抬头可读 / 第 5 段 3 位 / 第 8 段 4 位 / 满位 `2 / 2 位` / 第三条写「先撤一条」且点名占位者、没有买按钮 / 被拦这一下现金逐位不变 / 撤一条后抬头回 `1 / 2 位`、一分没退、两条都立刻能买 / 手册写着「门路位」与「撤一条」/ `save_version` 37 / 控制台干净）。两个坑写进文件头：① 手册挂在**图鉴**页，`render` 只在页签被打开过之后才画；② 切页签必须 `page.evaluate` 点，面板开着时 `.modal` 盖住底栏，`page.click` 会卡到 30 秒超时。`bb_probe.py` 同步改三条（「同类互斥」那批已被本批换掉），**24 / 24 true** —— 先前两条红（`same_day_no_inspection` / `fifteen_days_clear`）证明是**旧 dist 未重建**，不是逻辑问题。
+- **门**：`copy_gate` ok；`eye_gate --slug bc` 五视口 **722 · 778 · 583 · 1239 · 1510** 色 stamp **182**（上一批 bb 是 1244 / 1511 —— 门路行多了「撤一条」按钮，色数掉 4）；`ai_gate` 四段 ok（跑完已重建）；`framediff_probe` 重存基准后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps 最低 54.0 / 平均 59.8、采样 2243、堆 0.0、一句话接口 7 次 0.19/天）；`debug_exit_gate` **4 / 4**（1,759,387 B，只挂 `__laoyou`）。
+- **替身四种子逐位不变**：`¥132,042 · 233.1 碗 · 33.5% · ¥334,292`（1 `¥136,294/235.7/34%/¥303,313` · 2 `¥121,201/212.9/35%/¥402,821` · 3 `¥132,802/238.8/32%/¥272,230` · 4 `¥137,872/244.8/33%/¥358,805`），与 BB′ / BB1′ 完全相同 —— 判据：替身策略一行 `invest` 都没有，位子数对它没有意义。这一批属第一类（只改「看得见 / 抓得住」），数字不动才对。
+- **新缺口**：P504（第四位要等第四类门路才有用，三类各挂一条 = 三条，第八段那一位短期用不满）/ P505（没有「换一条」的一步操作，撤了再买中间位子是空的，且撤掉不退钱，换一次要再花一趟）/ P506（位子数只在门路抬头写一次，街道总览 / 账本 / 打烊单里都没有）/ P507（`investSlots` 读两条硬编码 id，加第三条解锁要改函数体）/ P508（`legend` 的 `kairo` 改对了，但 `unlocks.test.ts` 只查 `More Investments` 存在，不查它对不对得上）。
+- **文档**：`docs/门路位随段位长BC′-2026-11-27.md`（七节）；`docs/ACCEPTANCE.md` 当期→BC′、第一节标签链整体重排（当期 BB′ 上移、链条下移一格、最早期并成「最早五批（本轮系列）」）、第三节换数字、第四节加 `bc_probe.py` 整行、第五节加「五·二十一」P504–P508。

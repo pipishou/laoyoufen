@@ -36,7 +36,7 @@ import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channe
 import { buyGood as buyGoodImpl } from "./sim/goods";
 import { PERKS } from "./data/perk";
 import { buyPerk as buyPerkImpl } from "./sim/perk";
-import { buyInvest as buyInvestImpl } from "./sim/invest";
+import { buyInvest as buyInvestImpl, cancelInvest as cancelInvestImpl } from "./sim/invest";
 import { renameDish as renameDishImpl } from "./sim/dish";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
@@ -448,6 +448,24 @@ panels = mountPanels(hudRoot, {
     hud.showToast(r.line, "like");
     playSfx("upgrade");
     speakItem("invest", String(id), r.line);
+    refresh();
+  },
+  /**
+   * 批 BC′：撤一条门路。
+   *
+   * 走的是同一个刷新手数，但**不播放买成功那个音**（撤掉不是好事，`ui` 更合适），
+   * 也不走 `speakItem` —— 那一句是给「今天这条街出了什么事」用的，
+   * 撤一条不该占掉一句话接口的额度。
+   */
+  cancelInvest(id) {
+    const r = cancelInvestImpl(state, String(id));
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    hud.showToast(r.line, "info");
+    playSfx("ui");
     refresh();
   },
   /** 手艺点树（批 K′）：花段位给的份量，点一门手上的功夫 */

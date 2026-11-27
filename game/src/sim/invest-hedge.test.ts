@@ -11,7 +11,8 @@ import { createInitialState, type GameState } from "./state";
  * 判据（`docs/GAP四轮-2026-11-26.md` 第五节 BB′）：
  * ① 买后当月对应行情不再抽到；
  * ② 天数到点打烊单报一句；
- * ③ `cls` 从 2 类变 3 类，且同类仍只一条。
+ * ③ `cls` 从 2 类变 3 类。
+ * （批 BC′ 把「同类仍只一条」换成了「按门路位算」，所以第三条不再包含互斥。）
  */
 
 const newState = (): GameState => {
@@ -21,7 +22,7 @@ const newState = (): GameState => {
 };
 
 describe("批 BB′：买一段安稳（第三类门路）", () => {
-  it("第三类只有一条，且这一类只买「那条行情不出现」", () => {
+  it("第三类两条，且这一类只买「那条行情不出现」", () => {
     const hedge = investsOfClass("hedge");
     expect(hedge.map((d) => d.id)).toEqual(["inspect_report", "meat_price_deal"]);
     for (const d of hedge) {
@@ -37,13 +38,20 @@ describe("批 BB′：买一段安稳（第三类门路）", () => {
     expect(INVESTS.every((d) => ["make", "voice", "hedge"].includes(d.cls))).toBe(true);
   });
 
-  it("同类仍只一条：买了一条对冲，另一条就排不进来", () => {
+  it("批 BC′：两条对冲都能挂（底板两位），但要拦就拦在位子上", () => {
     const s = newState();
     expect(buyInvest(s, "inspect_report").ok).toBe(true);
-    const second = buyInvest(s, "meat_price_deal");
-    expect(second.ok).toBe(false);
-    expect(second.reason).toContain("先等");
-    expect(second.reason).toContain("报个备");
+    // 原来「同类只一条」会在这里拦下来；批 BC′ 之后按位子算 —— 两位都能用
+    expect(buyInvest(s, "meat_price_deal").ok).toBe(true);
+    expect(hedgedMarketIds(s).has("inspection")).toBe(true);
+    expect(hedgedMarketIds(s).has("porkUp")).toBe(true);
+    // 两位满了，第三条（这里用 voice 类）说的是「先撤一条」，不是「先等」
+    const cashBefore = s.cash;
+    const third = buyInvest(s, "press");
+    expect(third.ok).toBe(false);
+    expect(third.reason).toContain("先撤一条");
+    expect(third.reason).not.toContain("先等");
+    expect(s.cash).toBe(cashBefore);
   });
 
   it("买后这半个月那条行情一天都不出现，过期后又会回来", () => {
