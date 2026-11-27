@@ -36,3 +36,6 @@ deploy/ecs_ed25519
 
 # 试玩报告原始压缩包（含 26 张截图，3MB 二进制；正文已归档为 docs/试玩报告原文-*.md）
 docs/*.zip
+
+# DSH 多窗口：worktree 池子（插件会自动写自忽略的 .gitignore，手动建不会）
+.agents/worktrees/
