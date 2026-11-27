@@ -1,0 +1,28 @@
+{
+  "before": {
+    "found": true,
+    "header": "加料台与饮料柜 · 加料 3 样 · 饮料 0 样",
+    "rows": 15,
+    "on": 3,
+    "locked": 1,
+    "hasKairo": false,
+    "hasComboLine": true
+  },
+  "after": {
+    "header": "加料台与饮料柜 · 加料 4 样 · 饮料 0 样",
+    "ludanBtn": "下架",
+    "on": 4,
+    "active": [
+      "suansun",
+      "douchi",
+      "lazhi",
+      "ludan"
+    ]
+  },
+  "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}
+{"ok": false}
+

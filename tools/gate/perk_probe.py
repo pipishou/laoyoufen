@@ -23,6 +23,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4226/")
 OUT = "game/data/evidence/perk"
@@ -166,7 +167,7 @@ def main() -> int:
         after = page.evaluate(READ)
         checks["buy_one"] = first_id in after["perks"] and len(after["perks"]) == len(before["perks"]) + 1
         checks["owned_style"] = after["ownedCells"] == before["ownedCells"] + 1
-        checks["save_version"] = after["saveVersion"] == 37
+        checks["save_version"] = after["saveVersion"] == SAVE_VERSION
 
         again = page.evaluate(TOASTS)
         page.evaluate(CLICK_CELL_ID, first_id)

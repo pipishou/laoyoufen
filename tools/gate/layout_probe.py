@@ -1,18 +1,21 @@
 """批次十（店里九十六格）的探针。
 
 十件事：
-1. 店铺页有「店里 · 灶 1/4 · 桌 2/12 …」那一段；
+1. 店铺页有「店里 · 炒锅 1/6 · 桌 2/12 …」那一段（批 BB1′ 把第一格从「灶」改叫「炒锅」，
+   因为店面页抬头那个「灶位 N」是扩建买来的灶位，两个都叫「灶」玩家分不清）；
 2. 网格是 96 格，一格不多；
 3. 摆上的格子数与 summary 对得上；
 4. 每类格子的 title 是「灶N / 桌N / 案N / 招N」；
 5. 空槽位不带标签、也不带 on 类；
 6. 把座位加到 8：桌子格跟着变多；
-7. 把灶抬到 4 档：灶格 4 个；
-8. 换门面（yeshi）格局不变；
-9. 存档版本是 35；
-10. 控制台干净。
+7. 把炒锅抬到第 4 档：灶格 5 个；抬到第 5 档（黄金灶）：灶格 6 个（批 BB1′ 补的）；
+8. 换门面（yeshi）格局不变（与**黄金灶那一档**比：这一步之前刚把炒锅抬到第 5 档，
+   拿第 4 档的快照去比会差一个灶格 —— 批 BB1′ 修的就是这个自己踩自己的比法）；
+9. 存档版本与 `game/src/sim/state.ts` 的 `SAVE_VERSION` 一致（批 BB1′ 之前写死 35）；
+10. 控制台干净（`/laoyou-api/` 的 404 是 preview 里没有后端，良性）。
 
-用法：先在 4215 起 preview，再在项目根 `python -X utf8 tools/gate/layout_probe.py`。
+用法：先在 4246 起 preview，再在项目根
+`PW_URL=http://localhost:4246/ python -X utf8 tools/gate/layout_probe.py`。
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4215/")
 OUT = "game/data/evidence/layout10"
@@ -101,7 +105,8 @@ def main() -> int:
         base = page.evaluate(READ)
         checks["section_found"] = bool(base["found"])
         checks["grid_96"] = base["total"] == 96
-        checks["head_has_summary"] = "灶" in base["head"] and "桌" in base["head"]
+        checks["head_has_summary"] = "炒锅" in base["head"] and "桌" in base["head"]
+        checks["head_no_bare_stove"] = "灶 " not in base["head"]
         checks["on_count_matches"] = base["on"] > 0
         checks["titles_are_cn"] = all(t[:1] in "灶桌案招" for t in base["onTitles"]) if base["onTitles"] else False
         checks["kinds_present"] = len({k for k in base["onKinds"] if k}) >= 2
@@ -118,17 +123,29 @@ def main() -> int:
         page.wait_for_timeout(300)
         open_shop(page)
         stove = page.evaluate(READ)
-        checks["stove_four"] = sum(1 for t in stove["onTitles"] if t.startswith("灶")) == 4
+        # 设备第 4 档 = `PARALLEL_BY_TIER.wok[4]` = 5 口（批 AZ′ 的第五档是黄金灶 6 口）
+        checks["stove_five"] = sum(1 for t in stove["onTitles"] if t.startswith("灶")) == 5
+        checks["stove_head_six"] = "炒锅 5/6" in stove["head"]
+
+        page.evaluate(SET, {"stove": 5})
+        page.wait_for_timeout(300)
+        open_shop(page)
+        golden = page.evaluate(READ)
+        checks["stove_six"] = sum(1 for t in golden["onTitles"] if t.startswith("灶")) == 6
+        checks["stove_head_full"] = "炒锅 6/6" in golden["head"]
+        page.screenshot(path=f"{OUT}/03-layout-golden.png")
 
         page.evaluate(SET, {"style": "yeshi"})
         page.wait_for_timeout(300)
         open_shop(page)
         styled = page.evaluate(READ)
-        checks["style_same_layout"] = styled["on"] == stove["on"]
+        # 与黄金灶那一档比（同一套 8 座 + 6 灶），只换门面
+        checks["style_same_layout"] = styled["on"] == golden["on"]
         page.screenshot(path=f"{OUT}/02-layout-full.png")
 
-        checks["save_version"] = base["saveVersion"] == 35
-        checks["console_clean"] = len(console) == 0
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
+        noisy = [e for e in console if "Failed to load resource" not in e and "404" not in e]
+        checks["console_clean"] = len(noisy) == 0
 
         browser.close()
 
@@ -138,7 +155,7 @@ def main() -> int:
     print("AFTER:", json.dumps({k: after[k] for k in ("head", "on")}, ensure_ascii=False))
     print("STOVE:", json.dumps({k: stove[k] for k in ("head", "on", "onTitles")}, ensure_ascii=False))
     print("CHECKS:", json.dumps(checks, ensure_ascii=False))
-    print("CONSOLE:", console[:5])
+    print("CONSOLE:", noisy[:5])
     print("ok:", ok)
     return 0 if ok else 1
 

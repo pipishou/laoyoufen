@@ -17,6 +17,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4246/")
 OUT = os.path.join("game", "data", "evidence", "demand")
@@ -164,7 +165,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(300)
 
     st = page.evaluate("() => ({ v: window.__laoyou.state.saveVersion, n: window.__laoyou.state.shopName })")
-    note("save_version_37", st.get("v") == 37, st)
+    note("save_version", st.get("v") == SAVE_VERSION, st)
 
     real = [e for e in errors if "Failed to load resource" not in e and "laoyou-api" not in e]
     note("console_clean", len(real) == 0, real[:2])

@@ -1,0 +1,14 @@
+PASS how_rows_four              ['m.how-order', 'm.how-serve', 'm.how-tabs', 'm.how-prefs']
+PASS how_rows_clickable         ['pointer', 'pointer', 'pointer', 'pointer']
+PASS how_rows_no_mark_yet       怎么点一碗配方页挑三样，出碗就照这个出。
+        翻一下
+PASS how_click_writes_state     ['m.how-order']
+PASS how_row_shows_mark         怎么点一碗翻过配方页挑三样，出碗就照这个出。
+        再看看
+PASS manual_counter_counts      翻过 1 页，还剩 15 页
+      一页一
+PASS save_version_37            37
+PASS console_clean              []
+
+8 / 8 true
+

@@ -1,0 +1,67 @@
+{
+  "locked": {
+    "count": 19,
+    "on": [
+      "laoyou",
+      "pork",
+      "flat"
+    ],
+    "locked": [
+      "tomato",
+      "piglioo",
+      "offal",
+      "beef",
+      "beefOffal",
+      "trotter",
+      "duck",
+      "brisket",
+      "threeFresh",
+      "fish",
+      "round",
+      "yifu",
+      "wetchow",
+      "dry",
+      "claypot"
+    ],
+    "summary": " 切粉（宽扁） · 契合 100%"
+  },
+  "after": {
+    "noodle": "claypot",
+    "on": [
+      "laoyou",
+      "pork",
+      "claypot"
+    ],
+    "summary": " 砂锅老友粉 · 契合 104% · 当季",
+    "fits": [
+      "汤底不动 · 料钱不动",
+      "汤底 +3 · 料钱 +¥0.4",
+      "汤底 +5 · 料钱 +¥0.7",
+      "不额外花料钱 · 建议价照旧",
+      "料钱 +¥1.2 · 建议加价 +¥2",
+      "料钱 +¥2.0 · 建议加价 +¥3",
+      "料钱 +¥1.8 · 建议加价 +¥3",
+      "料钱 +¥1.6 · 建议加价 +¥3",
+      "料钱 +¥1.7 · 建议加价 +¥3",
+      "料钱 +¥2.4 · 建议加价 +¥4",
+      "料钱 +¥0.9 · 建议加价 +¥2",
+      "料钱 +¥1.4 · 建议加价 +¥3",
+      "料钱 −¥0.8 · 建议加价 −¥1",
+      "契合 100%",
+      "契合 94%",
+      "契合 100%",
+      "契合 94%",
+      "契合 79%",
+      "契合 104%"
+    ]
+  },
+  "meal": {
+    "mealDeal": true
+  },
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "ok": false
+}
+

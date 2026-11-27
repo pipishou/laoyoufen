@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "game" / "data" / "evidence" / "a12"
@@ -143,7 +144,7 @@ def main() -> int:
             page.screenshot(path=str(OUT / "16-talk-regular.png"))
 
             ver = page.evaluate("() => window.__laoyou.state.saveVersion")
-            steps.append({"name": "save_version", "ok": ver == 31, "value": ver})
+            steps.append({"name": "save_version", "ok": ver == SAVE_VERSION, "value": ver})
             br.close()
     finally:
         proc.terminate()

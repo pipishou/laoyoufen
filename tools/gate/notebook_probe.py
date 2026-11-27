@@ -20,6 +20,7 @@ import os
 import re
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4213/")
 OUT = "game/data/evidence/notebook"
@@ -118,7 +119,7 @@ def main() -> int:
         checks["body_visible"] = all(len(r["body"]) > 20 for r in got)
         checks["title_has_elder"] = all("阿婆原话" in r["elder"] for r in got)
         checks["body_no_digits"] = all(not re.search(r"[0-9０-９]", r["body"]) for r in after["rows"])
-        checks["save_version"] = after["saveVersion"] == 34
+        checks["save_version"] = after["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
         page.screenshot(path=f"{OUT}/02-notebook-two.png")
 

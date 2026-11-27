@@ -18,6 +18,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4214/")
 OUT = "game/data/evidence/map9"
@@ -131,7 +132,7 @@ def main() -> int:
         checks["local_cell_still"] = len([c for c in mashan["cells"] if c["prod"]]) == 3
         page.screenshot(path=f"{OUT}/03-map-mashan.png")
 
-        checks["save_version"] = mashan["saveVersion"] == 35
+        checks["save_version"] = mashan["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
 
         browser.close()

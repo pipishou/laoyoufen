@@ -9,11 +9,16 @@ from __future__ import annotations
 import json
 import pathlib
 
+from probe_console import on_console, noisy, texts
+from probe_source import SIDE_DRINK_IDS, SIDE_TOP_IDS
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
+DEV_URL = URL + ("&" if "?" in URL else "?") + "dev=1"  # 出处（kairo）只在 ?dev=1 下渲染，见 ui/dev.ts
 SHOT_DIR = ROOT / "game" / "data" / "evidence" / "p41"
+SIDE_IDS = SIDE_TOP_IDS + SIDE_DRINK_IDS
 
 
 def main() -> int:
@@ -25,10 +30,10 @@ def main() -> int:
         )
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-        page.goto(URL, wait_until="load", timeout=30000)
+        page.on("console", on_console(errors))
+        page.goto(DEV_URL, wait_until="load", timeout=30000)
         page.evaluate("() => localStorage.clear()")
-        page.reload(wait_until="load")
+        page.goto(DEV_URL,wait_until="load")
         page.wait_for_timeout(600)
 
         # 过建店
@@ -48,23 +53,27 @@ def main() -> int:
         page.wait_for_timeout(700)
 
         before = page.evaluate(
-            """() => {
+            """(all) => {
               const secs = [...document.querySelectorAll('.sec')];
               const sec = secs.find((x) => (x.querySelector('.sechd') || {}).textContent?.includes('加料台'));
               if (!sec) return { found: false };
               const rows = [...sec.querySelectorAll('.lrow')];
               const on = rows.filter((r) => (r.textContent || '').includes('在架')).length;
               const locked = rows.filter((r) => r.classList.contains('locked')).length;
+              // 批 BB1′：不再写死「12 行」——表里每一条都得渲染出来（见 probe_source）
+              const ids = [...sec.querySelectorAll('[data-id]')].map((e) => e.dataset.id);
               return {
                 found: true,
                 header: (sec.querySelector('.sechd') || {}).textContent || '',
                 rows: rows.length,
+                missing: all.filter((id) => !ids.includes(id)),
                 on,
                 locked,
                 hasKairo: (sec.textContent || '').includes('开罗：'),
                 hasComboLine: (sec.textContent || '').includes('凑出组合'),
               };
-            }"""
+            }""",
+            SIDE_IDS,
         )
 
         # 上架卤蛋：面板每秒重渲染，用 DOM click 避免 actionability 卡住
@@ -104,18 +113,18 @@ def main() -> int:
         )
         page.wait_for_timeout(400)
         page.screenshot(path=str(SHOT_DIR / "06-sides.png"))
-        out = {"before": before, "after": after, "errors": errors[:5]}
+        out = {"before": before, "after": after, "errors": texts(errors)[:5]}
         browser.close()
 
     print(json.dumps(out, ensure_ascii=False, indent=2))
     ok = (
         bool(out["before"])  # type: ignore[index]
         and out["before"]["found"]  # type: ignore[index]
-        and out["before"]["rows"] == 12  # type: ignore[index]
+        and not out["before"]["missing"]  # type: ignore[index]
         and out["before"]["on"] == 3  # type: ignore[index]
         and out["after"]["ludanBtn"] == "下架"  # type: ignore[index]
         and "ludan" in out["after"]["active"]  # type: ignore[index]
-        and not out["errors"]
+        and not noisy(errors)
     )
     print(json.dumps({"ok": ok}))
     return 0 if ok else 1

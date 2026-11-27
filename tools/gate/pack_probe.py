@@ -8,6 +8,7 @@ import os
 import pathlib
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -128,7 +129,7 @@ def main() -> None:
               return null;
             }"""
         )
-        note("save_version", ver == 37, str(ver))
+        note("save_version", ver == SAVE_VERSION, str(ver))
 
         bad = [e for e in errors if "Failed to load resource" not in e and "404" not in e]
         note("console_clean", len(bad) == 0, "; ".join(bad[:3]))

@@ -1559,3 +1559,22 @@ GAP 三轮第 ⑥ 条（开罗 `fixevent` 五百行「行号即顺序」，前�
 - **构建**：`game/dist/assets/index-voS9F1Gz.js` 1,754,763 B / `index-IvOrrQh0.css` 56,677 B。
 - **新缺口**：P490 `TASTE_FLOOR` 的 +10%/级在 30–100 挤压后不是等量（平常货 +6.2 分、头手货 +9.5 分）；P491 「这一碗料钱」只报当前菜单那一碗，玩家可能以为 −15% 是全碗；P492 替身守卫的 ¥200,000 与「第一年不买」是跑出来的、没有模型解释；P493 两条线的收益换算不了（一个卖相一个料钱），替身只能按价钱挑。
 - **复现坑**：`npx vitest run` 必须在 `game/` 里跑；从仓库根跑 `tools/server-events.test.ts` 的相对路径会指错地方，红一条与本批无关的「不存在」。
+
+### 行 164 · 2026-11-27 · 批 BB1′：门先修好，再谈口径
+
+体检发现的第一件事不是游戏坏了，是**门坏了** —— 扫过的四十九条线索里有二十条在说假话。这一批只做两件事：把门修到可信，再修它挡住的那处口径。
+
+- **十四探针整条失效**：`advice / calib / dayreport / invest / map / notebook / pricewar / quality / retail / seat / settings / skill / today / why` 全部断言 `saveVersion == 36`，而 `game/src/sim/state.ts:33` 从批 K′ 起就是 `SAVE_VERSION = 37`。这些探针每天都出现在交付清单上、每天都红、每天都被当成「已知」跳过 —— 十四条线索集体报废。
+- **九个探针被 404 打红**：`dish / equip / expand / noodle / sides / branch / unlock / dayflow / setup` 的判据是 `len(console_errors) == 0`，而预览没有服务端，`/laoyou-api/*` 必然 404。
+- **九个探针写死端口**：一律 `http://127.0.0.1:4173/` 且不认 `PW_URL`；顺带一个坑 —— `vite preview` 只绑 IPv6 `localhost`，`127.0.0.1:4246` 会 `ERR_CONNECTION_REFUSED`。
+- **三条期望值抄了数据表**：手册「12 页 4 组」（实际 16 页 5 组）、加料台「12 行」（实际 15 行）、粉型「6 张卡」（`.ncard` 后来被汤底卡 `bcard` 与款卡 `mcard` 共用，数到 19 张）。
+- **出处看不见**：`sides` / `branch` / `unlock` 在生产构建上找「开罗：」，而那行只在 `?dev=1` 时由 `game/src/ui/dev.ts:14` 的 `devMode` 渲染 —— 出处一直都在，只是探针没去看。
+- **判据取错节点**：`set_probe` 找「另买凳子」，源码 `game/src/ui/panels.ts:1300` 确有「多坐一个人还是得另买凳子」，但探针取的是第二个 `.sechint`。
+- **新建 `tools/gate/probe_version.py`**：从 `state.ts` 正则读 `SAVE_VERSION`（找不到就抛，不静默退回 0）。四十四个探针内不写版本号，以后涨档一处不改。
+- **新建 `tools/gate/probe_console.py`**：`on_console` 记 `{text, url}`，`is_noise` 只认 `/laoyou-api/`，`noisy()` / `texts()` 供 ok 与打印。**按来源 URL 判噪声**，不按文本 —— 含「404」就算噪声会把「少了 js / 图裂了」一起吞掉；旧式字符串条目一律不算噪声，改漏一个调用点也不会放行。
+- **`probe_source.py` 扩出 `SIDE_*` / `NOODLE_*`**：`SIDE_TOTAL 13`（加料 9 + 饮料 4）、`NOODLE_TOTAL 6`。加料台改成「表里每一条都渲染出来」（`missing` 为空），粉型卡改成 `.ncard:not(.bcard):not(.mcard)` —— **判据从「数出来」改成「对得上」**。文件顶必须 `from __future__ import annotations` 且排在 `import` 之前，否则 `str | None` 在导入期抛 `TypeError`。
+- **灶位口径（体检 P-B）**：`game/src/data/slots.ts` 灶格从 4 补到 6（沿后墙 x=0/2/4/6/8/10），`game/src/sim/slots.ts` 的 `cap` 不再写死，改成 `{ ...SLOT_COUNT }` —— 表改长了不用改第二处。九十六格抬头第一格从「灶 N/4」改「炒锅 N/6」，面板三处与 `game/src/data/unlocks.ts:79` 的「灶 +1」全部改叫「灶位」：**九十六格数的是炒锅口数（设备档位），抬头那个数的是灶位（扩建档位），两个数从此各有各的名字**。
+- **验收**：`npx tsc --noEmit` 0（在 `game/`）；`npx vitest run --no-file-parallelism` **108 文件 1106 用例**（BB1′ +1）；构建 `index-DLzmoBXG.js` **1,754,898 B**（gzip 528.54）/ `index-IvOrrQh0.css` 56,677 B；`layout_probe` 16 / 16（新增 `head_no_bare_stove` / `stove_five` / `stove_head_six` / `stove_six` / `stove_head_full`）、`manual_probe` 16 页 5 组、`shopname_probe` 16 / 16、`set_probe` 9 / 9、`sides_probe` ok、`noodle_probe` ok、九个原 404 打红的全 ok、十四个版本号写死的全 ok；`copy_gate` ok；`eye_gate --slug bb1` 五视口 **722 · 778 · 581 · 1239 · 1510** 色、stamp **182**；`ai_gate` 四段 ok（跑完已重建）；帧差重存后三视口 **0 px**；`playthrough_gate --minutes 5` **9 / 9**（第 37 天、fps **58 / 60**、采样 2441、堆 0.0、一句话接口 7 次）；`debug_exit_gate` 4 / 4（1,754,898 B）。
+- **替身四种子逐位不变**：`¥132,042 · 233.1 碗 · 33.5% · ¥334,292`（四个种子 ¥136,294/235.7/34%/¥303,313 · ¥121,201/212.9/35%/¥402,821 · ¥132,802/238.8/32%/¥272,230 · ¥137,872/244.8/33%/¥358,805）。这是判据：这一批只改「画」与「说法」，**一个经济数值都没动**。
+- **新缺口**：P494（`probe_source` 的正则不防嵌套/注释）、P495（`is_noise` 只认一类接口）、P496（默认端口仍是 4173）、P497（旧文档仍写「灶 N/4」）、P498（`layout_probe` 不验灶格位置）。
+- **文档**：`docs/门先修好再谈口径BB1′-2026-11-27.md`（十一节）；`docs/ACCEPTANCE.md` 当期→BB1′、第三节换数字、第四节加 `probe_version.py` / `probe_console.py` / `probe_source.py` 三行、新增「五·十九」P494–P498；下一批仍是 GAP 四轮第五节的 **BB′ → BC′**。

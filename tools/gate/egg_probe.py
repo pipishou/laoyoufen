@@ -13,6 +13,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4234/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -145,7 +146,7 @@ def main() -> int:
               return 0;
             }"""
         )
-        checks["save_version_37"] = ver == 37
+        checks["save_version"] = ver == SAVE_VERSION
 
         pg.screenshot(path=os.path.join(EVID, "01-egg-house-bowl.png"), full_page=False)
         noisy = [e for e in errors if "Failed to load resource" not in e and "404" not in e]

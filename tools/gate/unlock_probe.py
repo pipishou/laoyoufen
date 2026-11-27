@@ -9,10 +9,13 @@ from __future__ import annotations
 import json
 import pathlib
 
+from probe_console import on_console, noisy, texts
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
+DEV_URL = URL + ("&" if "?" in URL else "?") + "dev=1"  # 出处（kairo）只在 ?dev=1 下渲染，见 ui/dev.ts
 SHOT_DIR = ROOT / "game" / "data" / "evidence" / "p39"
 OUT: dict[str, object] = {}
 
@@ -23,10 +26,10 @@ def main() -> int:
         browser = p.chromium.launch(channel="msedge", headless=True, args=["--disable-extensions"])
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-        page.goto(URL, wait_until="load", timeout=30000)
+        page.on("console", on_console(errors))
+        page.goto(DEV_URL, wait_until="load", timeout=30000)
         page.evaluate("() => localStorage.clear()")
-        page.reload(wait_until="load")
+        page.goto(DEV_URL,wait_until="load")
         page.wait_for_timeout(600)
 
         # 过建店
@@ -90,12 +93,12 @@ def main() -> int:
 
         OUT.update(
             {
-                "ok": bool(info.get("found")) and info.get("rows") == 10 and errors == [],
+                "ok": bool(info.get("found")) and info.get("rows") == 10 and not noisy(errors),
                 "before": before,
                 "after": after,
                 "craft": info,
                 "craft_box": craft_box,
-                "console_errors": errors[:5],
+                "console_errors": texts(noisy(errors))[:5],
             }
         )
         page.screenshot(path=str(SHOT_DIR / "07-craft-full.png"), full_page=False)

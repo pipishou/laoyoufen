@@ -15,6 +15,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4245/")
 OUT = os.path.join("game", "data", "evidence", "align")
@@ -152,7 +153,7 @@ def main():
               return 0;
             }"""
         )
-        note("save_version", ver == 37, ver)
+        note("save_version", ver == SAVE_VERSION, ver)
 
         bad = [e for e in errors if "Failed to load resource" not in e]
         note("console_clean", len(bad) == 0, bad[:2])

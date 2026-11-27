@@ -1,0 +1,57 @@
+{
+ "start": {
+  "cash": 15000,
+  "seats": 4,
+  "stoves": 1,
+  "capacity": 200,
+  "expansion": 0,
+  "total": 0,
+  "slots": null
+ },
+ "trace_before_inject": {
+  "phase": "open",
+  "day": 1,
+  "minute": 26,
+  "total": 8
+ },
+ "customers_before_buy": 327,
+ "panel_ready": true,
+ "panel_before": "店面 · 座位 4 · 灶 1",
+ "expand_click": "clicked",
+ "after_expand": {
+  "cash": 4258.199999999991,
+  "seats": 6,
+  "stoves": 1,
+  "capacity": 260,
+  "expansion": 1,
+  "panel": "店面 · 座位 6 · 灶 1",
+  "caprow": "座位 6 · 2.0 分/碗日上限 260 碗客流 130/日人情 21可评定「摆摊仔」"
+ },
+ "staff_before": {
+  "roster": 0,
+  "cands": [
+   "cook",
+   "prep",
+   "prep"
+  ],
+  "line": "在职 0/1 · 日薪 ¥0 · 还没雇人",
+  "hint": "疲劳到 100 会辞职，记得安排休息。 人是一天一天熟起来的：四属性到门槛就自动学会手艺，不用点。21 项手艺、6 门毕业技（四属性都到 3 级才有）。"
+ },
+ "hired_uid": "st.laoli-1-0",
+ "after_hire": {
+  "cash": 4591.799999999989,
+  "roster": 1,
+  "line": "在职 1/1 · 日薪 ¥180 · 0 / 1 位学出手艺",
+  "caprow": "座位 6 · 1.6 分/碗日上限 260 碗客流 130/日人情 51可评定「摆摊仔」",
+  "serveText": "座位 6 · 1.6 分/碗日上限 260 碗客流 130/日人情 51可评定「摆摊仔」"
+ },
+ "console_error_count": 3,
+ "console_errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ],
+ "expand_net_spend": 10742,
+ "ok": false
+}
+

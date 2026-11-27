@@ -1,0 +1,64 @@
+{
+ "single_hot_section_a": {
+  "ok": true,
+  "detail": "{'hotSecs': ['店面 · 座位 4 · '], 'hotRows': ['塑料矮凳¥150\\n   '], 'hotCount': 2, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeCl"
+ },
+ "slow_hot_when_focus": {
+  "ok": false,
+  "detail": "{'hotSecs': ['店面 · 座位 4 · '], 'hotRows': ['塑料矮凳¥150\\n   '], 'hotCount': 2, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeCl"
+ },
+ "slow_no_grey_when_hot": {
+  "ok": false,
+  "detail": "tag2 soft"
+ },
+ "demoted_line_present": {
+  "ok": true,
+  "detail": "今天先不动：最慢的是厨房设备那一环（2.2 分），今天先不动它；「打通隔墙，多摆两张桌」的钱也够了（第 1 步），今天不急"
+ },
+ "single_hot_section_b": {
+  "ok": true,
+  "detail": "{'hotSecs': ['店面 · 座位 4 · '], 'hotRows': ['塑料矮凳¥150\\n   '], 'hotCount': 2, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeCl"
+ },
+ "grade_soft_when_not_focus": {
+  "ok": true,
+  "detail": "soft"
+ },
+ "grade_ready_label": {
+  "ok": true,
+  "detail": "交费评定"
+ },
+ "hud_chip_not_hot": {
+  "ok": true,
+  "detail": "chip grade"
+ },
+ "demoted_says_enough": {
+  "ok": true,
+  "detail": "今天先不动：「评摆摊仔」已经够格了，今天先记着；最慢的是厨房设备那一环（2.2 分），今天先不动它；「打通隔墙，多摆两张桌」的钱也够了（第 1 步），今天不急"
+ },
+ "single_hot_section_c": {
+  "ok": true,
+  "detail": "{'hotSecs': [], 'hotRows': [], 'hotCount': 0, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeClass': '', 'gradeText': '交费评定'"
+ },
+ "grade_hot_when_focus": {
+  "ok": true,
+  "detail": "{'hotSecs': [], 'hotRows': [], 'hotCount': 0, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeClass': '', 'gradeText': '交费评定'"
+ },
+ "hud_chip_hot": {
+  "ok": true,
+  "detail": "chip grade hot"
+ },
+ "slow_still_soft": {
+  "ok": true,
+  "detail": "参考：炒锅 2.2 分最慢"
+ },
+ "save_version": {
+  "ok": true,
+  "detail": "37"
+ },
+ "console_clean": {
+  "ok": true,
+  "detail": "[]"
+ }
+}
+13 / 15 true
+

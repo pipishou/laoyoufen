@@ -1,0 +1,35 @@
+{
+  "ok": false,
+  "steps": [
+    {
+      "name": "rows",
+      "ok": true,
+      "rows": [
+        "9002",
+        "9001"
+      ]
+    },
+    {
+      "name": "custlist_clickable",
+      "ok": true,
+      "value": "auto"
+    },
+    {
+      "name": "queue_talk",
+      "ok": true,
+      "toast": "\u3010\u5b66\u751f\u4ed4\u3011\u4f60\u5514\u4f7f\u6025\uff0c\u6211\u7747\u4f4f\u4f60\u843d\u6599\uff0c\u843d\u5f97\u51e0\u8db3\u3002\u7b49\u9635\u90fd\u503c\u3002"
+    },
+    {
+      "name": "regular_talk",
+      "ok": false,
+      "toast": ""
+    },
+    {
+      "name": "save_version",
+      "ok": false,
+      "value": 37
+    }
+  ],
+  "console_errors": []
+}
+

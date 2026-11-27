@@ -10,6 +10,7 @@ import os
 import sys
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4220/")
 OUT = os.path.join("game", "data", "evidence", "seat")
@@ -120,7 +121,7 @@ def main():
         page.wait_for_timeout(300)
         hook = page.evaluate(READ)
         CHECKS["hook_names_seat"] = ("矮凳" in hook["hook"]) or ("躺椅" in hook["hook"])
-        CHECKS["save_version"] = after["ver"] == 36
+        CHECKS["save_version"] = after["ver"] == SAVE_VERSION
         CHECKS["console_clean"] = len(errors) == 0
         page.screenshot(path=os.path.join(OUT, "03-seat-hook.png"))
         b.close()

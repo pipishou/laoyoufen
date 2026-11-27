@@ -87,7 +87,7 @@ describe("店铺四档的铺面面积（批 T′，解「店没变大」）", ()
     const stoves0 = s.venue.stoves;
     const cap0 = s.capacity;
     const lv0 = layoutOf(s);
-    expect(lv0.cap).toEqual({ stove: 4, table: 12, prep: 6, front: 4 });
+    expect(lv0.cap).toEqual({ stove: 6, table: 12, prep: 6, front: 4 });
     expect(s.venue.seats).toBe(seats0);
     expect(s.venue.stoves).toBe(stoves0);
     expect(s.capacity).toBe(cap0);

@@ -15,6 +15,7 @@ import sys
 import time
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4222/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -96,7 +97,7 @@ def main() -> int:
             "矮凳" in base["hot"][0] or "躺椅" in base["hot"][0]
         )
         checks["slow_not_hot"] = base["slow_hot"] == 0
-        checks["save_version"] = base["ver"] == 36
+        checks["save_version"] = base["ver"] == SAVE_VERSION
         page.screenshot(path=os.path.join(EVID, "01-today-shop.png"))
 
         # 建好之后那一条要换方向：把座位加到 24、流失仍高 → 轮到设备或别处

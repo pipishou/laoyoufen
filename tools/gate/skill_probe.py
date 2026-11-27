@@ -18,6 +18,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4211/")
 OUT = "game/data/evidence/skill"
@@ -129,7 +130,7 @@ def main() -> int:
         checks["level_three"] = three["wok"] == 3
         checks["mastered_row"] = "练满了" in three["firstText"]
         checks["head_three"] = "3 / 36" in three["head"]
-        checks["save_version"] = three["saveVersion"] == 33
+        checks["save_version"] = three["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
         page.screenshot(path=f"{OUT}/03-skill-mastered.png")
 

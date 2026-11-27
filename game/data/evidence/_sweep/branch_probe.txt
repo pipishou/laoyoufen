@@ -1,0 +1,51 @@
+{
+  "ok": false,
+  "before": {
+    "found": true,
+    "header": "分店 · 已开 0/4",
+    "picks": [
+      "qingxiu",
+      "xixiangtang",
+      "jiangnan",
+      "liangqing",
+      "wuming",
+      "xingning",
+      "hengzhou",
+      "binyang",
+      "yongning",
+      "longan",
+      "shanglin",
+      "mashan"
+    ],
+    "sizes": [
+      "small",
+      "normal",
+      "big",
+      "amazing"
+    ],
+    "locked": 3,
+    "hasKairo": false,
+    "cash": 200000
+  },
+  "picked": "qingxiu",
+  "after_open": {
+    "branches": [
+      {
+        "id": "b1",
+        "district": "qingxiu",
+        "size": "small",
+        "warmth": 0.45
+      }
+    ],
+    "cash": 170000
+  },
+  "after_close": {
+    "branches": 0,
+    "cash": 170750
+  },
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}
+

@@ -25,6 +25,7 @@ import os
 import re
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4218/")
 OUT = "game/data/evidence/invest"
@@ -134,7 +135,7 @@ def main() -> int:
             "http" in t for t in base["invest"]["titles"] + base["goods"]["titles"]
         )
         checks["favor_cost_shown"] = "人情" in " ".join(base["goods"]["rows"])
-        checks["save_version"] = base["saveVersion"] == 36
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
         page.screenshot(path=f"{OUT}/01-invest-default.png")
 
         # 买料商留货

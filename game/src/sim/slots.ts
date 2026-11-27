@@ -8,6 +8,7 @@
 
 import {
   SLOTS,
+  SLOT_COUNT,
   SLOT_SETS,
   STAGE_CELLS,
   STAGE_H,
@@ -93,7 +94,10 @@ export function layoutOf(state: GameState): Layout {
       });
     }
   }
-  const cap: Record<SlotKind, number> = { stove: 4, table: 12, prep: 6, front: 4 };
+  // 批 BB1′（解体检 P-B）：cap 原来写死 `{ stove: 4, … }`，而批 AZ′ 的黄金灶能把
+  // 炒锅开到第六口 —— 于是「灶 6/4」这种自相矛盾的抬头会出现。cap 现在直接读
+  // `SLOT_COUNT`（槽位表自己数出来的），表改长了这里不用再改第二处。
+  const cap: Record<SlotKind, number> = { ...SLOT_COUNT };
   const area = storeAreaOf(level);
   const floor = cells.filter((c) => c.floor).length;
   return {
@@ -117,9 +121,17 @@ function labelOf(kind: SlotKind, n: number): string {
   return `招${n}`;
 }
 
+/**
+ * 面板抬头那串「炒锅 N/6 · 桌 4/12 · 备料 0/6 · 门面 0/4」。
+ *
+ * 批 BB1′（解体检 P-B）：第一格原来写「灶 N/4」，与店面页抬头「灶 2」（扩建买来的
+ * 灶位，1–3）撞名，玩家看到两个不同的数都叫「灶」。这一格数的是**设备炒锅的口数**
+ * （`stationCount(state,"wok")`，1–6），所以改叫「炒锅」；扩建买的那一格在店面页
+ * 抬头里改叫「灶位」。
+ */
 export function layoutSummary(state: GameState): string {
   const l = layoutOf(state);
-  return `灶 ${l.used.stove}/${l.cap.stove} · 桌 ${l.used.table}/${l.cap.table} · 备料 ${l.used.prep}/${l.cap.prep} · 门面 ${l.used.front}/${l.cap.front}`;
+  return `炒锅 ${l.used.stove}/${l.cap.stove} · 桌 ${l.used.table}/${l.cap.table} · 备料 ${l.used.prep}/${l.cap.prep} · 门面 ${l.used.front}/${l.cap.front}`;
 }
 
 /** 九十六格里摆了几格（给面板抬头用） */

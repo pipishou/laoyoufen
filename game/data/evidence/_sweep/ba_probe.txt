@@ -1,0 +1,31 @@
+{
+ "custom_found": true,
+ "custom_two_rows": true,
+ "custom_head_zero": true,
+ "custom_lv_zero": true,
+ "custom_price_taste": true,
+ "custom_price_cost": true,
+ "custom_rows_not_disabled": true,
+ "custom_bowlcost_shows": true,
+ "buy_taste_toast": true,
+ "buy_taste_lv1": true,
+ "buy_taste_tag": true,
+ "buy_taste_head": true,
+ "buy_taste_next_price": true,
+ "buy_taste_cash": true,
+ "buy_cost_head": true,
+ "buy_cost_bowlcost": true,
+ "buy_cost_cash": true,
+ "full_head": true,
+ "full_lv5": true,
+ "full_btn_maxed": true,
+ "full_disabled": true,
+ "full_cost_still_open": true,
+ "poor_toast_says_short": true,
+ "poor_cash_unchanged": true,
+ "poor_level_unchanged": true,
+ "save_version": true,
+ "console_clean": true
+}
+27 / 27 true
+

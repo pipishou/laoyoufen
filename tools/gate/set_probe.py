@@ -7,6 +7,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4230/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -64,7 +65,10 @@ def main() -> int:
               const first = done[0] || null;
               const name = first ? first.querySelector('.lname') : null;
               const before = name ? getComputedStyle(name, '::before').content : '';
-              const hint = sec ? (sec.querySelectorAll('.sechint')[1] || {}).textContent || '' : '';
+              // 批 BB1′：「多坐一个人还是得另买凳子」在成套那句（`.sechint` 第二句起）
+              // 探针原来只取 `[1]` 恰好取空 —— 现在整段 `.sechint` 拼起来再找
+              const hints = sec ? Array.from(sec.querySelectorAll('.sechint')).map((n) => n.textContent || '') : [];
+              const hint = hints.join(' ');
               return {
                 rows: rows.length,
                 doneRows: done.length,
@@ -83,7 +87,7 @@ def main() -> int:
         checks["set_no_seat_gift"] = "座位" not in base["doneText"]
         checks["hint_says_buy_stool"] = "另买凳子" in base["hint"]
         checks["seats_unchanged"] = base["seats"] == 6
-        checks["save_version"] = base["ver"] == 37
+        checks["save_version"] = base["ver"] == SAVE_VERSION
 
         pg.screenshot(path=os.path.join(EVID, "01-set-done.png"), full_page=False)
 

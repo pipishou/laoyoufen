@@ -17,6 +17,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4210/")
 OUT = "game/data/evidence/quality"
@@ -124,7 +125,7 @@ def main() -> int:
         checks["top_charm_up"] = top["charm"] >= good["charm"]
         checks["total_untouched_by_top"] = top["total"] == base["total"]
         checks["head_shows_mult"] = "×2.6" in top["head"]
-        checks["save_version"] = top["saveVersion"] == 32
+        checks["save_version"] = top["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
         page.screenshot(path=f"{OUT}/03-quality-top.png")
 

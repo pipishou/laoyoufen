@@ -19,6 +19,7 @@ import os
 import re
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4209/")
 OUT = "game/data/evidence/pricewar"
@@ -101,7 +102,7 @@ def main() -> int:
         checks["pricewar_says_dear"] = "贵" in base["pw"]
         checks["menu_two_dishes"] = len(base["menus"]) >= 1 and all("／" in m for m in base["menus"])
         checks["menu_has_prices"] = all(len(re.findall(r"¥\d+", m)) >= 2 for m in base["menus"]) if base["menus"] else False
-        checks["save_version"] = base["saveVersion"] == 31
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
         page.screenshot(path=f"{OUT}/01-pricewar-dear.png")
 
         page.evaluate(SET_PRICE, 4)

@@ -1,0 +1,8 @@
+SET: {"seats": 8, "stove": null, "style": null}
+BASE: {"head": "店里 · 灶 1/4 · 桌 4/12 · 备料 0/6 · 门面 0/4", "hint": "铺开了 48 / 48 格（第 0 档 · 街边摊）", "total": 96, "on": 5, "slotOnly": 21}
+AFTER: {"head": "店里 · 灶 1/4 · 桌 8/12 · 备料 0/6 · 门面 0/4", "on": 9}
+STOVE: {"head": "店里 · 灶 4/4 · 桌 8/12 · 备料 0/6 · 门面 0/4", "on": 12, "onTitles": ["灶1", "灶2", "灶3", "灶4", "桌1", "桌2", "桌3", "桌4", "桌5", "桌6", "桌7", "桌8"]}
+CHECKS: {"section_found": true, "grid_96": true, "head_has_summary": true, "on_count_matches": true, "titles_are_cn": true, "kinds_present": true, "slot_marked": true, "seat_grows": true, "stove_four": true, "style_same_layout": true, "save_version": false, "console_clean": false}
+CONSOLE: ['Failed to load resource: the server responded with a status of 404 (Not Found)', 'Failed to load resource: the server responded with a status of 404 (Not Found)']
+ok: False
+

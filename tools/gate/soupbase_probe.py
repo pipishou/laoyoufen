@@ -10,6 +10,7 @@ import os
 import re
 import sys
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4241/")
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -231,7 +232,7 @@ def main():
               return null;
             }"""
         )
-        note("save_version_37", ver == 37, ver)
+        note("save_version", ver == SAVE_VERSION, ver)
         # 预览环境没有后端，/laoyou-api/ 那几条 404 算良性
         bad = [e for e in errors if "laoyou-api" not in e and "Failed to load resource" not in e]
         note("console_clean", len(bad) == 0, bad[:3])

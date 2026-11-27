@@ -7,6 +7,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4235/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -131,7 +132,7 @@ def main() -> int:
         checks["bare_shrinks"] = ladder[-1]["bare"] == 0
         checks["expanded_rows_marked"] = ladder[-1]["expDone"] == 4
         checks["seats_grew_by_expansion"] = ladder[-1]["seats"] > ladder[0]["seats"]
-        checks["save_version"] = l0["ver"] == 37
+        checks["save_version"] = l0["ver"] == SAVE_VERSION
         pg.screenshot(path=os.path.join(EVID, "02-store-level-4.png"))
 
         bad = [

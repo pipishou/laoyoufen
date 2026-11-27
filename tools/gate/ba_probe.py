@@ -18,6 +18,7 @@ import re
 import sys
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4246/")
 OUT = "game/data/evidence/ba"
@@ -205,7 +206,7 @@ def main():
         checks["poor_level_unchanged"] = (poor.get("custom") or {}).get("cost") == 1
         page.screenshot(path=f"{OUT}/05-ba-poor.png", full_page=False)
 
-        checks["save_version"] = page.evaluate("() => window.__laoyou.state.saveVersion") == 37
+        checks["save_version"] = page.evaluate("() => window.__laoyou.state.saveVersion") == SAVE_VERSION
         real = [e for e in errors if "Failed to load resource" not in e]
         checks["console_clean"] = len(real) == 0
         if real:

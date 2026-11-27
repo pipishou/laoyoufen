@@ -21,6 +21,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4228/")
 OUT = "game/data/evidence/quarter"
@@ -123,7 +124,7 @@ def main() -> int:
         checks["tourney_head_24"] = "24" in contest["tourneyHead"]
         page.screenshot(path=f"{OUT}/03-tourneys-24.png")
 
-        checks["save_version"] = back["saveVersion"] == 37
+        checks["save_version"] = back["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
         report = {
             "ok": all(checks.values()),

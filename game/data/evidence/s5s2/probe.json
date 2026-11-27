@@ -16,37 +16,37 @@
  },
  "customers_before_buy": 327,
  "panel_ready": true,
- "panel_before": "店面 · 座位 4 · 灶 1",
+ "panel_before": "店面 · 座位 4 · 灶位 1",
  "expand_click": "clicked",
  "after_expand": {
-  "cash": 3834.2000000000307,
+  "cash": 3804.4999999999905,
   "seats": 6,
   "stoves": 1,
   "capacity": 260,
   "expansion": 1,
-  "panel": "店面 · 座位 6 · 灶 1",
-  "caprow": "座位 6 · 出餐 6.0 分/碗 · 日上限 260 碗"
+  "panel": "店面 · 座位 6 · 灶位 1",
+  "caprow": "座位 6 · 2.0 分/碗日上限 260 碗客流 130/日人情 13比赛 5 个月后"
  },
  "staff_before": {
   "roster": 0,
   "cands": [
-   "prep",
-   "prep",
-   "server"
+   "server",
+   "cook",
+   "cook"
   ],
-  "line": "在职 0/1 · 日薪 ¥0",
-  "hint": "疲劳到 100 会辞职，记得安排休息。"
+  "line": "在职 0/1 · 日薪 ¥0 · 还没雇人",
+  "hint": "疲劳到 100 会辞职，记得安排休息。 人是一天一天熟起来的：四属性到门槛就自动学会手艺，不用点。21 项手艺、6 门毕业技（四属性都到 3 级才有）。"
  },
- "hired_uid": "st.aming-0-0",
+ "hired_uid": "st.laoli-1-1",
  "after_hire": {
-  "cash": 3438.8000000000284,
+  "cash": 3840.499999999991,
   "roster": 1,
-  "line": "在职 1/1 · 日薪 ¥150",
-  "caprow": "座位 6 · 出餐 6.0 分/碗 · 日上限 260 碗",
-  "serveText": "座位 6 · 出餐 6.0 分/碗 · 日上限 260 碗"
+  "line": "在职 1/1 · 日薪 ¥180 · 0 / 1 位学出手艺",
+  "caprow": "座位 6 · 1.6 分/碗日上限 260 碗客流 130/日人情 41比赛 5 个月后",
+  "serveText": "座位 6 · 1.6 分/碗日上限 260 碗客流 130/日人情 41比赛 5 个月后"
  },
  "console_error_count": 0,
  "console_errors": [],
- "expand_net_spend": 11166,
+ "expand_net_spend": 11196,
  "ok": true
 }

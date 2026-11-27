@@ -9,6 +9,7 @@ import re
 import sys
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4224/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -129,7 +130,7 @@ def main() -> int:
         ver = pg.evaluate(
             """() => { try { return JSON.parse(localStorage.getItem('laoyou.save.v4') || '{}').saveVersion ?? 0; } catch (e) { return -1; } }"""
         )
-        checks["save_version"] = ver == 36
+        checks["save_version"] = ver == SAVE_VERSION
 
         clean = [e for e in errors if "laoyou-api" not in e and "Failed to load resource" not in e]
         checks["console_clean"] = not clean

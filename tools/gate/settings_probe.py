@@ -9,6 +9,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4223/")
 EVID = os.path.join("game", "data", "evidence", "settings")
@@ -115,7 +116,7 @@ def main() -> None:
         ver = pg.evaluate(
             """() => { try { const s = JSON.parse(localStorage.getItem('laoyou.save.v4') || '{}'); return s.saveVersion ?? 0; } catch (e) { return -1; } }"""
         )
-        checks["save_version"] = ver == 36
+        checks["save_version"] = ver == SAVE_VERSION
 
         clean = [e for e in errors if "laoyou-api/line" not in e and "Failed to load resource" not in e]
         checks["console_clean"] = not clean

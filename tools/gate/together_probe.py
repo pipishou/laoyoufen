@@ -22,6 +22,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4225/")
 OUT = "game/data/evidence/together"
@@ -140,7 +141,7 @@ def main() -> int:
         setrows = " ".join(base["shop"]["rows"])
         checks["set_two_rows"] = "店里坐得下了" in setrows and "门面齐了" in setrows
         checks["set_rewards_shown"] = "耐心 +12%" in setrows and "进店 +4%" in setrows
-        checks["save_version"] = base["saveVersion"] == 37
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
         page.screenshot(path=f"{OUT}/01-together-default.png")
 
         # 买一盏灯：人情 −5，日戳记上，行变今天在用

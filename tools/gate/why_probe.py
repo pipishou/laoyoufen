@@ -20,6 +20,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4221/")
 OUT = "game/data/evidence/why"
@@ -97,7 +98,7 @@ def main() -> int:
         checks["why_differs_from_note"] = bool(base["note"]) and base["why"] != base["note"] and (
             "两头看一眼" not in base["why"]
         )
-        checks["save_version"] = base["saveVersion"] == 36
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
         page.screenshot(path=f"{OUT}/01-why-report.png")
 
         # 回到营业、让 HUD 停在一碗的时间上，读左下角

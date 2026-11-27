@@ -12,6 +12,7 @@ import sys
 import time
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4232/")
 OUT = os.path.join("game", "data", "evidence", "grace")
@@ -61,7 +62,7 @@ def main() -> int:
               return null;
             }"""
         )
-        note("save_version", ver == 37, str(ver))
+        note("save_version", ver == SAVE_VERSION, str(ver))
 
         # ① 压迫型：标题带记号
         page.evaluate(

@@ -17,6 +17,7 @@ import os
 import re
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4217/")
 OUT = "game/data/evidence/calib"
@@ -177,7 +178,7 @@ def main() -> int:
         ver = page.evaluate(
             "() => JSON.parse(localStorage.getItem('laoyou.save.v4') || '{}').saveVersion ?? -1"
         )
-        checks["save_version"] = ver == 36
+        checks["save_version"] = ver == SAVE_VERSION
         checks["console_clean"] = not errors
 
         browser.close()

@@ -1,0 +1,14 @@
+  OK  manual_pages_sixteen
+  OK  manual_counter_zero
+  OK  manual_none_read
+  OK  manual_open_marks_read
+  OK  manual_counter_counts
+  OK  manual_saved_in_state
+  OK  how_rows_four
+  OK  how_rows_unmarked_here
+  OK  how_click_marks_read
+  OK  how_counts_in_total
+  OK  save_version
+  OK  console_clean
+12 / 12 true
+

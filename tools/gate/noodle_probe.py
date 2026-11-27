@@ -12,10 +12,13 @@ from __future__ import annotations
 import json
 import pathlib
 
+from probe_console import on_console, noisy, texts
+from probe_source import NOODLE_TOTAL
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
 SHOT_DIR = ROOT / "game" / "data" / "evidence" / "p42"
 OUT: dict[str, object] = {}
 
@@ -26,7 +29,7 @@ def main() -> int:
         browser = p.chromium.launch(channel="msedge", headless=True, args=["--disable-extensions"])
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+        page.on("console", on_console(errors))
         page.goto(URL, wait_until="load", timeout=30000)
         page.evaluate("() => localStorage.clear()")
         page.reload(wait_until="load")
@@ -43,15 +46,19 @@ def main() -> int:
         page.wait_for_timeout(500)
 
         locked_view = page.evaluate(
-            """() => {
-              const cards = [...document.querySelectorAll('.ncard')];
+            """(n) => {
+              // 批 BB1′：`.ncard` 后来被汤底卡（bcard）与款卡（mcard）共用，
+              // 直接数 `.ncard` 会数到十九张 —— 这里只数粉型卡，条数取 data/noodles.ts
+              const cards = [...document.querySelectorAll('.ncard:not(.bcard):not(.mcard)')];
               return {
                 count: cards.length,
+                total: n,
                 on: cards.filter((c) => c.classList.contains('on')).map((c) => c.dataset.id),
                 locked: cards.filter((c) => c.disabled).map((c) => c.dataset.id),
                 summary: (document.querySelector('[data-noodlesum]') || {}).textContent || '',
               };
-            }"""
+            }""",
+            NOODLE_TOTAL,
         )
         OUT["locked"] = locked_view
 
@@ -111,12 +118,13 @@ def main() -> int:
 
         OUT["consoleErrors"] = errors
         OUT["ok"] = (
-            locked_view["count"] == 6
+            locked_view["count"] == locked_view["total"]
+            and locked_view["total"] == NOODLE_TOTAL
             and "flat" in locked_view["on"]
             and after["noodle"] == "claypot"
             and "claypot" in after["on"]
             and OUT["meal"]["mealDeal"] is True
-            and len(errors) == 0
+            and len(noisy(errors)) == 0
         )
         browser.close()
 

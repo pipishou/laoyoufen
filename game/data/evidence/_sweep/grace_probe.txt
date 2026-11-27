@@ -1,0 +1,10 @@
+PASS save_version  37
+PASS pressure_marked  隔壁开螺蛳粉
+PASS pressure_title_text  隔壁开螺蛳粉
+PASS plain_unmarked
+PASS mark_follows_event
+PASS no_pressure_yet
+PASS console_clean
+---
+all true
+

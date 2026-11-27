@@ -12,10 +12,12 @@ from __future__ import annotations
 import json
 import pathlib
 
+from probe_console import on_console, noisy, texts
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
 SHOT_DIR = ROOT / "game" / "data" / "evidence" / "p43"
 OUT: dict[str, object] = {}
 
@@ -43,7 +45,7 @@ def main() -> int:
         browser = p.chromium.launch(channel="msedge", headless=True, args=["--disable-extensions"])
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+        page.on("console", on_console(errors))
         page.goto(URL, wait_until="load", timeout=30000)
         page.evaluate("() => localStorage.clear()")
         page.reload(wait_until="load")
@@ -117,12 +119,12 @@ def main() -> int:
                 and sandpot["name"].startswith("砂锅")
                 and temp["drinkTemp"] == "hot"
                 and temp["row"] is True
-                and errors == [],
+                and not noisy(errors),
                 "base": base,
                 "with_offal": with_offal,
                 "sandpot": sandpot,
                 "temp": temp,
-                "console_errors": errors[:5],
+                "console_errors": texts(noisy(errors))[:5],
             }
         )
         browser.close()

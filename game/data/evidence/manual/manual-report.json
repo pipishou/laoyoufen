@@ -2,8 +2,8 @@
   "ok": true,
   "checks": {
     "manual_found": true,
-    "twelve_pages": true,
-    "four_groups": true,
+    "all_pages": true,
+    "all_groups": true,
     "details_closed": true,
     "page_opens": true,
     "no_digits": true,
@@ -15,14 +15,15 @@
   },
   "base": {
     "manualFound": true,
-    "pageCount": 12,
+    "pageCount": 16,
     "groups": [
       "一天的生意",
       "这一碗",
       "这条街",
-      "手里的牌"
+      "手里的牌",
+      "怎么操作"
     ],
-    "closed": 12,
+    "closed": 16,
     "digits": false,
     "placeLine": "这一片常去的地方：朝阳广场（早市）、中山路夜市（夜市）。",
     "cells": [
@@ -36,14 +37,15 @@
   },
   "moved": {
     "manualFound": true,
-    "pageCount": 12,
+    "pageCount": 16,
     "groups": [
       "一天的生意",
       "这一碗",
       "这条街",
-      "手里的牌"
+      "手里的牌",
+      "怎么操作"
     ],
-    "closed": 12,
+    "closed": 16,
     "digits": false,
     "placeLine": "这一片常去的地方：邕江边（早市）、蒲庙老镇（老街）。",
     "cells": [

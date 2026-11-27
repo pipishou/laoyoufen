@@ -1,0 +1,27 @@
+{
+  "ok": false,
+  "base": {
+    "name": "老友粉",
+    "note": "酸笋够镬气 —— 锅气足，酸笋的酸是炒出来的，不是泡出来的。"
+  },
+  "with_offal": {
+    "name": "老友粉＋猪杂",
+    "note": "酸笋够镬气 —— 锅气足，酸笋的酸是炒出来的，不是泡出来的。"
+  },
+  "sandpot": {
+    "name": "砂锅老友粉＋猪杂",
+    "note": "酸笋够镬气 —— 锅气足，酸笋的酸是炒出来的，不是泡出来的。"
+  },
+  "temp": {
+    "drinkTemp": "hot",
+    "row": true,
+    "on": [
+      "hot"
+    ]
+  },
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}
+

@@ -1,0 +1,38 @@
+{
+  "ok": false,
+  "before": {
+    "grade": 0,
+    "queue": 0
+  },
+  "after": {
+    "grade": 5
+  },
+  "craft": {
+    "found": true,
+    "header": "手艺树 · 第 5 段 · 已会 4/10",
+    "rows": 10,
+    "locked": 6,
+    "names": [
+      "第 2 段 · 门口摆两张塑料凳已会",
+      "第 3 段 · 后巷搭个雨棚已会",
+      "第 4 段 · 浇头台加一格已会",
+      "第 5 段 · 巷口立块灯箱已会",
+      "第 6 段 · 二楼摆四张台还差 1 段",
+      "第 7 段 · 人行道上划等候线还差 2 段",
+      "第 8 段 · 第五档·黄金灶还差 3 段",
+      "第 9 段 · 开个打包窗口还差 4 段",
+      "第 10 段 · 到别区开第二家还差 5 段",
+      "第 11 段 · 全区连锁 · 总店还差 6 段"
+    ],
+    "hasKairo": false
+  },
+  "craft_box": {
+    "top": 55.41759490966797,
+    "height": 832.049072265625
+  },
+  "console_errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+}
+

@@ -26,9 +26,9 @@ describe("店里九十六格（批次十）", () => {
     expect(l.h).toBe(STAGE_H);
   });
 
-  it("26 个槽位：灶 4 · 桌 12 · 备料 6 · 门面 4", () => {
-    expect(SLOTS).toHaveLength(26);
-    expect(SLOT_COUNT).toEqual({ stove: 4, table: 12, prep: 6, front: 4 });
+  it("28 个槽位：灶 6 · 桌 12 · 备料 6 · 门面 4（批 BB1′：灶位补到六格）", () => {
+    expect(SLOTS).toHaveLength(28);
+    expect(SLOT_COUNT).toEqual({ stove: 6, table: 12, prep: 6, front: 4 });
   });
 
   it("槽位坐标不重复、都在格子内", () => {
@@ -67,11 +67,25 @@ describe("店里九十六格（批次十）", () => {
     s.equipment.stove = 4;
     s.equipment.bench = 4;
     const l = layoutOf(s);
-    expect(l.used.stove).toBe(4);
+    // 批 BB1′：设备第 4 档对应 `PARALLEL_BY_TIER.wok[4]` = 5 口；第 5 档（黄金灶）6 口
+    expect(l.used.stove).toBe(5);
     expect(l.used.prep).toBe(4);
     for (const kind of ["stove", "table", "prep", "front"] as const) {
       expect(l.used[kind]).toBeLessThanOrEqual(l.cap[kind]);
     }
+  });
+
+  it("黄金灶开到六口时，图上真的画得出六个灶位（批 BB1′ 解体检 P-B）", () => {
+    const s = fresh();
+    s.equipment.stove = 5;
+    const l = layoutOf(s);
+    expect(l.used.stove).toBe(6);
+    expect(l.cap.stove).toBe(6);
+    const stoveCells = l.cells.filter((c) => c.kind === "stove");
+    expect(stoveCells).toHaveLength(6);
+    expect(stoveCells.every((c) => c.filled)).toBe(true);
+    // 标签从「灶1」到「灶6」，一个不多一个不少
+    expect(stoveCells.map((c) => c.label).sort()).toEqual(["灶1", "灶2", "灶3", "灶4", "灶5", "灶6"]);
   });
 
   it("门面件买了才占格：锦旗、祖师像这类", () => {
@@ -81,13 +95,16 @@ describe("店里九十六格（批次十）", () => {
     expect(layoutOf(s).used.front).toBeGreaterThanOrEqual(Math.min(4, before + 2));
   });
 
-  it("summary 四类齐、每类都是「已用/可用」", () => {
+  it("summary 四类齐、每类都是「已用/可用」，第一格叫「炒锅」不叫「灶」", () => {
     const text = layoutSummary(fresh());
-    expect(text).toContain("灶 ");
+    // 批 BB1′（解体检 P-B）：店面页抬头那个「灶 N」是扩建买来的灶位（1–3），
+    // 这一格数的是设备炒锅口数（1–6）—— 两个都叫「灶」玩家分不清，所以改叫「炒锅」。
+    expect(text).toContain("炒锅 ");
+    expect(text).not.toMatch(/灶 \d\/\d/);
     expect(text).toContain("桌 ");
     expect(text).toContain("备料 ");
     expect(text).toContain("门面 ");
-    expect(text).toMatch(/灶 \d\/4/);
+    expect(text).toMatch(/炒锅 \d\/6/);
     expect(text).toMatch(/桌 \d+\/12/);
   });
 

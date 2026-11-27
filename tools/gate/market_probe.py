@@ -7,6 +7,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4231/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -115,7 +116,7 @@ def main() -> int:
 
         pg.screenshot(path=os.path.join(EVID, "02-market-pair.png"), full_page=False)
 
-        checks["save_version"] = pg.evaluate("() => window.__laoyou.state.saveVersion") == 37
+        checks["save_version"] = pg.evaluate("() => window.__laoyou.state.saveVersion") == SAVE_VERSION
 
         bad = [
             e

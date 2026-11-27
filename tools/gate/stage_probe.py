@@ -17,6 +17,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = "http://127.0.0.1:4206/"
 OUT = "game/data/evidence/stage"
@@ -117,7 +118,7 @@ def main() -> int:
         checks["buy_raises_count"] = "2 口" in stage_meta2
         page.screenshot(path=f"{OUT}/02-stage-after-stove.png")
 
-        checks["save_version"] = base["version"] == 31
+        checks["save_version"] = base["version"] == SAVE_VERSION
         checks["console_clean"] = len(errors) == 0
         browser.close()
 

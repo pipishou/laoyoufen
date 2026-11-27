@@ -1,23 +1,23 @@
 {
  "single_hot_section_a": {
   "ok": true,
-  "detail": "{'hotSecs': ['设备 · 现在出碗 2.'], 'hotRows': ['猛火灶Lv 0/4炒锅开'], 'hotCount': 2, 'slowSoft': '', 'slowSoftClass': '', 'slowHotTag': '最慢：炒锅 2.2 分', 'gradeClass': 'soft'"
+  "detail": "{'hotSecs': ['店面 · 座位 4 · '], 'hotRows': ['塑料矮凳¥150\\n   '], 'hotCount': 2, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeCl"
  },
  "slow_hot_when_focus": {
-  "ok": true,
-  "detail": "{'hotSecs': ['设备 · 现在出碗 2.'], 'hotRows': ['猛火灶Lv 0/4炒锅开'], 'hotCount': 2, 'slowSoft': '', 'slowSoftClass': '', 'slowHotTag': '最慢：炒锅 2.2 分', 'gradeClass': 'soft'"
+  "ok": false,
+  "detail": "{'hotSecs': ['店面 · 座位 4 · '], 'hotRows': ['塑料矮凳¥150\\n   '], 'hotCount': 2, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeCl"
  },
  "slow_no_grey_when_hot": {
-  "ok": true,
-  "detail": ""
+  "ok": false,
+  "detail": "tag2 soft"
  },
  "demoted_line_present": {
   "ok": true,
-  "detail": "今天先不动：家当里还有买得起的小件，今天先不买；「打通隔墙，多摆两张桌」的钱也够了（第 1 步），今天不急"
+  "detail": "今天先不动：最慢的是厨房设备那一环（2.2 分），今天先不动它；「打通隔墙，多摆两张桌」的钱也够了（第 1 步），今天不急"
  },
  "single_hot_section_b": {
   "ok": true,
-  "detail": "{'hotSecs': ['设备 · 现在出碗 2.'], 'hotRows': ['猛火灶Lv 0/4炒锅开'], 'hotCount': 2, 'slowSoft': '', 'slowSoftClass': '', 'slowHotTag': '最慢：炒锅 2.2 分', 'gradeClass': 'soft'"
+  "detail": "{'hotSecs': ['店面 · 座位 4 · '], 'hotRows': ['塑料矮凳¥150\\n   '], 'hotCount': 2, 'slowSoft': '参考：炒锅 2.2 分最慢', 'slowSoftClass': 'tag2 soft', 'slowHotTag': '', 'gradeCl"
  },
  "grade_soft_when_not_focus": {
   "ok": true,
@@ -33,7 +33,7 @@
  },
  "demoted_says_enough": {
   "ok": true,
-  "detail": "今天先不动：「评摆摊仔」已经够格了，今天先记着；家当里还有买得起的小件，今天先不买；「打通隔墙，多摆两张桌」的钱也够了（第 1 步），今天不急"
+  "detail": "今天先不动：「评摆摊仔」已经够格了，今天先记着；最慢的是厨房设备那一环（2.2 分），今天先不动它；「打通隔墙，多摆两张桌」的钱也够了（第 1 步），今天不急"
  },
  "single_hot_section_c": {
   "ok": true,

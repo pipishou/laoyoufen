@@ -1,0 +1,12 @@
+  OK  fold_total_over_three
+  OK  fold_hides_extra
+  OK  fold_says_more
+  OK  fold_click_shows_all
+  OK  fold_says_collapse
+  OK  fold_open_saved_in_prefs
+  OK  fold_state_remembered
+  OK  fold_narrow_keeps_two
+  OK  save_version
+  OK  console_clean
+10 / 10 true
+

@@ -1,0 +1,12 @@
+true   setdone_row
+true   setdone_check_mark
+true   set_says_patience
+true   set_no_seat_gift
+FALSE  hint_says_buy_stool
+true   seats_unchanged
+true   save_version
+true   mark_follows_tables
+true   console_clean
+---
+{"setdone_row": true, "setdone_check_mark": true, "set_says_patience": true, "set_no_seat_gift": true, "hint_says_buy_stool": false, "seats_unchanged": true, "save_version": true, "mark_follows_tables": true, "console_clean": true}
+

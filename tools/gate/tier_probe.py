@@ -16,6 +16,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = "http://127.0.0.1:4205/"
 OUT = "game/data/evidence/tier"
@@ -139,7 +140,7 @@ def main() -> int:
         checks["legend_titles"] = all(t.strip() for t in legend["titles"])
         page.screenshot(path=f"{OUT}/03-tier-legend.png")
 
-        checks["save_version"] = base["version"] == 31
+        checks["save_version"] = base["version"] == SAVE_VERSION
         checks["console_clean"] = len(errors) == 0
 
         browser.close()

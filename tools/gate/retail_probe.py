@@ -21,6 +21,7 @@ import os
 import re
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://127.0.0.1:4212/")
 OUT = "game/data/evidence/retail"
@@ -122,7 +123,7 @@ def main() -> int:
         goods = [r for r in base["rows"] if "出厂" in r]
         checks["row_has_price_and_units"] = len(goods) >= 8 and all("件" in r for r in goods)
         checks["gate_words"] = any(re.search(r"第 \d+ 段", r) for r in base["rows"])
-        checks["save_version"] = base["saveVersion"] == 34
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
         page.screenshot(path=f"{OUT}/01-retail-default.png")
 
         # 调价一档：价升、件数降（至少价变）

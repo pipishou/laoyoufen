@@ -1,0 +1,2 @@
+{"ok": false, "checks": {"rows_present": true, "loss_has_number": true, "loss_says_queue": true, "menu_says_cold": true, "save_version": false, "appetite_spoken": true, "appetite_marked": true, "console_clean": true}, "errors": []}
+

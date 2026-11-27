@@ -2,21 +2,21 @@
  "before": {
   "cash": 15000,
   "stove": 0,
-  "caprow": "座位 4 · 出餐 6.0 分/碗 · 日上限 200 碗"
+  "caprow": "座位 4 · 2.0 分/碗日上限 200 碗客流 130/日人情 0比赛 5 个月后"
  },
- "panel_serve_line": "设备 · 现在出碗 6.0 分/碗",
+ "panel_serve_line": "设备 · 现在出碗 2.0 分/碗参考：炒锅 2.2 分最慢",
  "after": {
-  "cash": 13508.400000000001,
+  "cash": 13500,
   "stove": 1,
-  "caprow": "座位 4 · 出餐 5.1 分/碗 · 日上限 200 碗",
-  "serveLine": "设备 · 现在出碗 5.1 分/碗"
+  "caprow": "座位 4 · 1.6 分/碗日上限 200 碗客流 130/日人情 0比赛 5 个月后",
+  "serveLine": "设备 · 现在出碗 1.6 分/碗参考：汤锅 2.2 分最慢"
  },
  "after_bench": {
   "capacity": 240,
   "bench": 1,
-  "caprow": "座位 4 · 出餐 5.1 分/碗 · 日上限 240 碗"
+  "caprow": "座位 4 · 1.6 分/碗日上限 240 碗客流 130/日人情 0比赛 5 个月后"
  },
- "cash_spent": 1491.5999999999985,
+ "cash_spent": 1500,
  "serve_minutes_dropped": true,
  "console_error_count": 0,
  "console_errors": [],

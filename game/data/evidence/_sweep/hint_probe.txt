@@ -1,0 +1,14 @@
+true   tomorrow_present
+true   tomorrow_no_digits
+true   tomorrow_says_pairs
+true   rec_one_per_family
+true   rec_title_says_first
+true   invest_line_present
+true   invest_line_says_gain
+true   rec_outline_dashed
+true   rec_not_red
+true   save_version
+true   console_clean
+---
+{"tomorrow_present": true, "tomorrow_no_digits": true, "tomorrow_says_pairs": true, "rec_one_per_family": true, "rec_title_says_first": true, "invest_line_present": true, "invest_line_says_gain": true, "rec_outline_dashed": true, "rec_not_red": true, "save_version": true, "console_clean": true}
+

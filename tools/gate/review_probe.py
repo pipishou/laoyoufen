@@ -20,6 +20,7 @@ import re
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("REVIEW_URL", "http://127.0.0.1:4208/")
 OUT = Path("game/data/evidence/review")
@@ -126,7 +127,7 @@ def main() -> int:
         checks["toast_has_remark"] = "评委" in joined
         checks["save_version"] = page.evaluate(
             "() => JSON.parse(localStorage.getItem('laoyou.save.v4') || '{}').saveVersion ?? -1"
-        ) == 31
+        ) == SAVE_VERSION
         checks["console_clean"] = not errors
         page.screenshot(path=str(OUT / "02-review-after.png"))
 

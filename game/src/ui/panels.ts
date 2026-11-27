@@ -869,7 +869,10 @@ let lastGradeKey = "";
         const done = idx < expLv;
         const isNext = idx === expLv;
         const lockText = def.minGrade > 0 ? `需第 ${def.minGrade} 段` : "";
-        const gain = `座位 +${def.seats}${def.stoves ? ` · 灶 +${def.stoves}` : ""} · 日上限 +${def.capacity}`;
+        // 批 BB1′（解体检 P-B）：「灶」这个词在界面上被两件事共用 —— 扩建买的**灶位**
+        // （1–3，`venue.stoves`）与设备炒锅的**口数**（1–6，`stationCount("wok")`）。
+        // 九十六格那张图数的是后者，抬头改叫「炒锅」；这里与店面抬头一律叫「灶位」。
+        const gain = `座位 +${def.seats}${def.stoves ? ` · 灶位 +${def.stoves}` : ""} · 日上限 +${def.capacity}`;
         if (done) {
           return `<div class="lrow expdone"><div class="lname">${def.name}<span class="tag2">已扩建</span></div><div class="lmeta">${gain}</div></div>`;
         }
@@ -888,7 +891,7 @@ let lastGradeKey = "";
       expSteps +
       (nextExp
         ? ""
-        : `<div class="lmeta" data-exp-top>已经扩到顶了 —— 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}。下一步是换区开分店。</div>`);
+        : `<div class="lmeta" data-exp-top>已经扩到顶了 —— 座位 ${s.venue.seats} · 灶位 ${s.venue.stoves}。下一步是换区开分店。</div>`);
 
     // 加料台与饮料柜（P41 客单价结构）：照开罗 Toppings「可单独卖」+ Customers 1「钱包是上限」
     const sv = sideViews(s);
@@ -1419,8 +1422,8 @@ let lastGradeKey = "";
       </div>`;
     }).join("");
     return `${nameBox}${todayBox}${gc.ready ? "" : ""}<div class="sec">
-        <div class="sechd${hotSeat}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶 ${s.venue.stoves}</div>
-        <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨。</div>
+        <div class="sechd${hotSeat}">${icon("shop")}店面 · 座位 ${s.venue.seats} · 灶位 ${s.venue.stoves}</div>
+        <div class="lmeta" style="padding:0 2px 8px">扩建一次要几万，等于一两个月的净利；但座位和灶位只从这里涨（灶位管几口锅能同时开火，设备那一栏管每口锅多快）。</div>
         ${expRow}
       </div>
       <div class="sec">
@@ -1833,7 +1836,10 @@ function collectionHtml(s: GameState): string {
     </div>`;
 
   /**
-   * 店里的手册（批 N′）：十二页，一页一件事。
+   * 店里的手册（批 N′ 十二页 + 批 Y′ 四页 = 十六页，一页一件事）。
+   *
+   * 页数不再写死在注释里：抬头那个数直接取 `MANUAL_TOTAL`，批 Y′ 加四页之后
+   * 这里也没跟着改过（批 BB1′ 顺手把注释与 `manual_probe` 一起对齐）。
    *
    * 用 `<details>` 而不是弹窗：手册是拿来翻的，玩家常常只想扫标题。
    * 默认全收起 —— 打开图鉴就看到一大段说明书，反而不想读。

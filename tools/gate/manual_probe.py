@@ -23,6 +23,8 @@ import os
 import re
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
+from probe_source import MANUAL_SECTIONS, MANUAL_TOTAL
 
 URL = os.environ.get("PW_URL", "http://localhost:4229/")
 OUT = "game/data/evidence/manual"
@@ -109,9 +111,11 @@ def main() -> int:
         open_collection(page)
         base = page.evaluate(READ)
         checks["manual_found"] = base["manualFound"]
-        checks["twelve_pages"] = base["pageCount"] == 12
-        checks["four_groups"] = base["groups"] == ["一天的生意", "这一碗", "这条街", "手里的牌"]
-        checks["details_closed"] = base["closed"] == 12
+        # 批 BB1′：页数与分章从 data/manual.ts 读（批 Y′ 加四页 how-* 后是 16 页 5 组，
+        # 探针写死 12/4 会替代码记账 —— 这正是一条门失效的原因）
+        checks["all_pages"] = base["pageCount"] == MANUAL_TOTAL
+        checks["all_groups"] = base["groups"] == MANUAL_SECTIONS
+        checks["details_closed"] = base["closed"] == MANUAL_TOTAL
         checks["page_opens"] = base["opened"] is True
         checks["no_digits"] = base["digits"] is False
         checks["place_line"] = "这一片常去的地方" in base["placeLine"]
@@ -126,7 +130,7 @@ def main() -> int:
         checks["place_follows"] = "蒲庙老镇" in moved["placeLine"]
         page.screenshot(path=f"{OUT}/02-places.png")
 
-        checks["save_version"] = moved["saveVersion"] == 37
+        checks["save_version"] = moved["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
 
         report = {

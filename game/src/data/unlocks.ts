@@ -76,7 +76,7 @@ export const UNLOCKS: readonly UnlockDef[] = [
     id: "second_floor",
     grade: 6,
     name: "二楼摆四张台",
-    effect: "第四档扩建：座位 +4、灶 +1、日上限 +160（¥110,000）",
+    effect: "第四档扩建：座位 +4、灶位 +1、日上限 +160（¥110,000）",
     kairo: "Buy Big Shop（买更大的店）",
     line: "楼上原先是房东放杂物，清出来摆四张台，午市不用等。",
   },

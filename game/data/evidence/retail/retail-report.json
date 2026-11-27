@@ -68,7 +68,7 @@
     ],
     "channel": "door",
     "price0": 9,
-    "saveVersion": 34
+    "saveVersion": 37
   },
   "up": {
     "found": true,
@@ -123,7 +123,7 @@
     ],
     "channel": "door",
     "price0": 10,
-    "saveVersion": 34
+    "saveVersion": 37
   },
   "shop": {
     "found": true,
@@ -180,7 +180,7 @@
     ],
     "channel": "shop",
     "price0": 10,
-    "saveVersion": 34
+    "saveVersion": 37
   },
   "errors": []
 }

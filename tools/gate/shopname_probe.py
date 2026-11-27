@@ -15,6 +15,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4240/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -120,7 +121,9 @@ def main() -> int:
         )
         checks["prefhelp_present"] = helpbox["has"]
         checks["prefhelp_four_rows"] = helpbox["rows"] == 4
-        checks["prefhelp_points_to_manual"] = "图鉴页的手册" in helpbox["text"]
+        # 批 BB1′：源码里那句是「与图鉴页那本手册同一本账；完整十六页在图鉴页。」
+        # （`game/src/ui/hud.ts:504`）——只认「图鉴页」+「手册」两个词，不锁整句
+        checks["prefhelp_points_to_manual"] = "图鉴页" in helpbox["text"] and "手册" in helpbox["text"]
         checks["prefhelp_says_tabs"] = "页签" in helpbox["text"]
         pg.evaluate("() => document.querySelector('[data-prefs-close]')?.click()")
         pg.wait_for_timeout(250)
@@ -161,7 +164,7 @@ def main() -> int:
               return 0;
             }"""
         )
-        checks["save_version_37"] = ver == 37
+        checks["save_version"] = ver == SAVE_VERSION
 
         noisy = [e for e in errors if "Failed to load resource" not in e and "404" not in e]
         checks["console_clean"] = len(noisy) == 0

@@ -1,5 +1,5 @@
 {
-  "url": "http://localhost:4232/",
+  "url": "http://localhost:4246/",
   "checks": {
     "goods_rows_10": true,
     "bucket_row_present": true,
@@ -12,10 +12,10 @@
     "save_version": true,
     "console_clean": true
   },
-  "pairText": "气价上调 · 耐心 −4% · 料钱 +10%（好在今天还赶圩日）",
+  "pairText": "停水 · 进店 −16% · 料钱 +5%（好在今天还发薪日） · 明天：停水（配发薪日）",
   "pairDay": [
     1,
-    22
+    7
   ],
   "errors": []
 }

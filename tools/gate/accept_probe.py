@@ -11,6 +11,7 @@ import os
 import sys
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4244/")
 OUT = os.path.join(
@@ -109,7 +110,7 @@ with sync_playwright() as pw:
           return null;
         }"""
     )
-    note("save_version_37", save == 37, save)
+    note("save_version", save == SAVE_VERSION, save)
 
     real = [e for e in errors if "Failed to load resource" not in e and "404" not in e]
     note("console_clean", len(real) == 0, real[:2])

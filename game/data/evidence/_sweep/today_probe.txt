@@ -1,0 +1,2 @@
+{"ok": false, "checks": {"box_present": true, "main_has_words": true, "detail_has_payback": true, "detail_names_section": true, "detail_has_row": true, "hot_single": true, "hot_is_seat_gear": true, "slow_not_hot": true, "save_version": false, "changes_with_state": true, "still_one_hot": true, "console_clean": true}, "errors": []}
+

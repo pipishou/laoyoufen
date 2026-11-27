@@ -21,6 +21,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4227/")
 OUT = "game/data/evidence/staff"
@@ -128,7 +129,7 @@ def main() -> int:
         checks["finish_shows"] = "毕业技" in text168 and "多下一份" in text168
         page.screenshot(path=f"{OUT}/02-staff-veteran.png")
 
-        checks["save_version"] = vet["saveVersion"] == 37
+        checks["save_version"] = vet["saveVersion"] == SAVE_VERSION
         checks["console_clean"] = not errors
 
         report = {

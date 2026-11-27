@@ -11,7 +11,9 @@ import { UPKEEP_GRADE_STEP, UPKEEP_PER_TIER_YUAN } from "../data/balance";
  *
  * 为什么值得单列一笔：升级是「一次付钱、永久变好」，如果永远不再收钱，
  * 后期就没有什么能把钱花掉（P173/P200）。这笔钱按**已有的档位**收，
- * 不新开任何系统，也不拦人升级 —— 满配段 11 约 ¥3,340/月，一天一百多碗就挣回来。
+ * 不新开任何系统，也不拦人升级 —— 满配（四台各五档 = 20 档）段 11 约 ¥4,176/月，
+ * 一天一百多碗就挣回来。（四档时代是 16 档 ¥3,341/月；批 AZ′ 的第五档已经算在里面，
+ * 这里只改了注释 —— `monthlyUpkeepOf` 本来就是按档数求和，不认上限。）
  */
 export function monthlyUpkeepOf(state: GameState): number {
   const tiers = Object.values(state.equipment ?? {}).reduce((n, lv) => n + Math.max(0, lv), 0);
@@ -51,7 +53,7 @@ export function closeMonth(state: GameState): void {
   const rent = monthlyRentOf(state);
   // 分店（S6）的月固定成本：每家店的房租 + 店长工资（料钱已在日结里按碗扣过）
   const branchCost = branchMonthlyCost(state);
-  // 设备维护（批次十二后半）：四台设备各四档、段 11 时约 ¥3,340/月
+  // 设备维护（批次十二后半）：四台设备各五档（批 AZ′ 补了黄金灶）、段 11 时约 ¥4,176/月
   const upkeep = monthlyUpkeepOf(state);
   // M1 同条街：月初同行也在过日子 —— 名气自己涨、被你压下去的会关门、台词轮着说。
   // 服了气的邻居每月送一次食材（每家抵一碗料钱 × 30 天），算成本抵扣。

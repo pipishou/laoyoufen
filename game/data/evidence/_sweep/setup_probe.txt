@@ -1,0 +1,92 @@
+{
+ "console_errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ],
+ "steps": [
+  {
+   "shot": "01-setup.png"
+  },
+  {
+   "shot": "02-picked.png"
+  },
+  {
+   "shot": "03-named.png"
+  },
+  {
+   "shot": "04-opened.png"
+  },
+  {
+   "shot": "05-open.png"
+  }
+ ],
+ "fresh": {
+  "phase": "setup",
+  "site": "",
+  "name": "",
+  "minute": 0,
+  "cash": 30000
+ },
+ "setup_visible": true,
+ "site_cards": [
+  {
+   "id": "stall",
+   "name": "街边摊",
+   "fee": "转让费 不用",
+   "stats": "2 座1 口灶月租约 ¥1,500"
+  },
+  {
+   "id": "alley",
+   "name": "巷内小店",
+   "fee": "转让费 ¥15,000",
+   "stats": "4 座1 口灶月租约 ¥4,600"
+  },
+  {
+   "id": "streetfront",
+   "name": "临街铺面",
+   "fee": "转让费 ¥28,000",
+   "stats": "6 座2 口灶月租约 ¥7,600"
+  }
+ ],
+ "open_disabled": true,
+ "pill": "● 还没开张",
+ "after_4s": {
+  "minute": 0,
+  "customers": 0
+ },
+ "after_pick": {
+  "picked": [
+   "alley"
+  ],
+  "cash_hint": "¥30,000",
+  "open_disabled": false,
+  "note": ""
+ },
+ "chips": [
+  "老友老友粉",
+  "阿婆老友粉铺",
+  "秀灵老友粉店",
+  "水街老友粉",
+  "南铁饮食店"
+ ],
+ "name_after_chip": "老友老友粉",
+ "after_open": {
+  "phase": "prep",
+  "site": "alley",
+  "name": "老友老友粉",
+  "cash": 15000,
+  "seats": 4,
+  "stoves": 1,
+  "capacity": 200
+ },
+ "setup_gone": true,
+ "logo": "老友老友粉",
+ "pill_after": "● 开门营业",
+ "after_open_shop": {
+  "phase": "open",
+  "minute": 2
+ },
+ "clock": "06:08",
+ "console_error_count": 2
+}
+

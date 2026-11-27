@@ -7,6 +7,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4233/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -159,7 +160,7 @@ def main() -> int:
         checks["rec_outline_dashed"] = bool(style) and style["style"] == "dashed"
         checks["rec_not_red"] = bool(style) and style["color"] == style["wood"] and style["red"] != style["wood"]
 
-        checks["save_version"] = pg.evaluate("() => window.__laoyou.state.saveVersion") == 37
+        checks["save_version"] = pg.evaluate("() => window.__laoyou.state.saveVersion") == SAVE_VERSION
 
         bad = [
             e

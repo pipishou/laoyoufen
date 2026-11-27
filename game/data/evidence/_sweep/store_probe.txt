@@ -1,0 +1,53 @@
+[
+  {
+    "step": 1,
+    "text": "铺开了 60 / 60 格（第 1 档 · 打通隔墙）",
+    "bare": 36,
+    "expDone": 1,
+    "expansion": 1,
+    "seats": 6
+  },
+  {
+    "step": 2,
+    "text": "铺开了 72 / 72 格（第 2 档 · 后厨扩容）",
+    "bare": 24,
+    "expDone": 2,
+    "expansion": 2,
+    "seats": 8
+  },
+  {
+    "step": 3,
+    "text": "铺开了 96 / 96 格（第 3 档 · 后巷雨棚）",
+    "bare": 0,
+    "expDone": 3,
+    "expansion": 3,
+    "seats": 11
+  },
+  {
+    "step": 4,
+    "text": "铺开了 96 / 120 格（第 4 档 · 二楼清出），另有楼上 24 格",
+    "bare": 0,
+    "expDone": 4,
+    "expansion": 4,
+    "seats": 15
+  }
+]
+true   floor_label
+true   floor_starts_48
+true   grid_96
+true   bare_48
+true   bare_title_names_next
+true   no_exp_done_yet
+true   ladder_lists_four
+true   ladder_grows
+true   ladder_total_120
+true   ladder_visible_caps_at_96
+true   upstairs_named
+true   bare_shrinks
+true   expanded_rows_marked
+true   seats_grew_by_expansion
+true   save_version
+true   console_clean
+---
+{"floor_label": true, "floor_starts_48": true, "grid_96": true, "bare_48": true, "bare_title_names_next": true, "no_exp_done_yet": true, "ladder_lists_four": true, "ladder_grows": true, "ladder_total_120": true, "ladder_visible_caps_at_96": true, "upstairs_named": true, "bare_shrinks": true, "expanded_rows_marked": true, "seats_grew_by_expansion": true, "save_version": true, "console_clean": true}
+

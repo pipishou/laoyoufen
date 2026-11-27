@@ -1,5 +1,5 @@
 {
-  "url": "http://localhost:4233/",
+  "url": "http://localhost:4246/",
   "checks": {
     "tomorrow_present": true,
     "tomorrow_no_digits": true,
@@ -13,11 +13,11 @@
     "save_version": true,
     "console_clean": true
   },
-  "tomorrow": "猪肉起价 · 客单价 −2% · 料钱 +14% · 明天：赶圩日",
-  "badTomorrow": "停水 · 进店 −16% · 料钱 +5%（好在今天还发薪日） · 明天：气价上调（配赶圩日）",
+  "tomorrow": "停水 · 进店 −16% · 料钱 +5%（好在今天还发薪日） · 明天：发薪日",
+  "badTomorrow": "发薪日 · 耐心 −6% · 客单价 +16% · 明天：修路围挡（配赶圩日）",
   "tomorrowDay": [
-    1,
-    2
+    2,
+    17
   ],
   "rec": {
     "count": 4,

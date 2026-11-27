@@ -20,6 +20,7 @@ import json
 import os
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4219/")
 OUT = "game/data/evidence/advice"
@@ -107,7 +108,7 @@ def main() -> int:
         checks["loss_has_number"] = any(ch.isdigit() for ch in base["loss"])
         checks["loss_says_queue"] = "门口" in base["loss"]
         checks["menu_says_cold"] = "一碗没动" in base["menu"]
-        checks["save_version"] = base["saveVersion"] == 36
+        checks["save_version"] = base["saveVersion"] == SAVE_VERSION
         page.screenshot(path=f"{OUT}/01-advice-dayreport.png")
 
         # 吃腻了的那一句：把搬进来的月份往前推十八个月

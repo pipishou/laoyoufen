@@ -10,10 +10,12 @@ import json
 import pathlib
 import sys
 
+from probe_console import on_console, noisy, texts
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
 SHOT_DIR = ROOT / "game" / "data" / "evidence" / "s5s2"
 
 OUT: dict[str, object] = {}
@@ -49,7 +51,7 @@ def main() -> int:
         browser = p.chromium.launch(channel="msedge", headless=True, args=["--disable-extensions"])
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+        page.on("console", on_console(errors))
         page.goto(URL, wait_until="load", timeout=30000)
         page.evaluate("() => localStorage.clear()")
         page.reload(wait_until="load")
@@ -202,8 +204,8 @@ def main() -> int:
         OUT["after_hire"] = after_hire
         page.screenshot(path=str(SHOT_DIR / "04-after-hire.png"))
 
-        OUT["console_error_count"] = len(errors)
-        OUT["console_errors"] = errors[:5]
+        OUT["console_error_count"] = len(noisy(errors))
+        OUT["console_errors"] = texts(noisy(errors))[:5]
         browser.close()
 
     st = OUT["start"]  # type: ignore[index]

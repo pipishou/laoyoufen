@@ -1,0 +1,97 @@
+{
+ "console_errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ],
+ "steps": [
+  {
+   "shot": "06-prep.png"
+  },
+  {
+   "shot": "07-guide-hidden.png"
+  },
+  {
+   "shot": "08-dayreport.png"
+  },
+  {
+   "shot": "09-nextday.png"
+  }
+ ],
+ "after_setup": {
+  "phase": "prep",
+  "site": "alley",
+  "name": "三姐老友粉铺"
+ },
+ "fresh": {
+  "phase": "prep",
+  "minute": 0,
+  "day": 1,
+  "served": 0
+ },
+ "clock": "06:00",
+ "pill": "● 开门营业",
+ "guide_title": "① 先把味道调起来",
+ "guide_buttons": [
+  "先关掉",
+  "不用教了",
+  "下一步 ›"
+ ],
+ "after_6s": {
+  "phase": "prep",
+  "minute": 0,
+  "customers": 0
+ },
+ "hidden": {
+  "guide_hidden": true,
+  "restore_visible": true,
+  "state": {
+   "done": false,
+   "passed": [],
+   "hidden": true
+  }
+ },
+ "reopened": {
+  "guide_hidden": false,
+  "restore_visible": false
+ },
+ "after_open": {
+  "phase": "open",
+  "minute": 1
+ },
+ "clock_open": "06:04",
+ "pill_open": "● 营业中 · 06:04（还剩 119 分）",
+ "pill_disabled": true,
+ "dayreport": {
+  "month": 0,
+  "day": 1,
+  "revenue": 742,
+  "served": 65,
+  "lost": 0,
+  "lostQueue": 0,
+  "lostPrice": 0,
+  "lostWait": 0,
+  "avgSat": 63,
+  "price": 9,
+  "taste": 68,
+  "cash": 16061,
+  "retailSold": 18,
+  "retailNet": 119.5,
+  "menuSold": {
+   "1": 65
+  },
+  "act": "a_open"
+ },
+ "dayreport_visible": true,
+ "dayreport_text": "今天打烊了第 1 年 · 1 月 · 1 日\n      \n        营业额¥742\n        卖出去65 碗\n        走了0 位\n        平均满意63\n      \n      今天站住了：一碗毛利约 ¥4.2，明天试试多卖几碗。\n      再来 45 位客人，就能评「摆摊仔」门口的牌子亮一点，路过的人才认得出你。\n      先把锅烧热 · 头一天，别急着招呼人。锅烧到冒青烟，油一泼下去才香；粉下晚了，酸笋就只会在汤里飘着。\n      \n        现金 ¥16,061\n        现金变化含熟客回礼与事件，不总等于营业额减料钱\n        明天继续 ›",
+ "clock_closing": "14:00",
+ "next_day": {
+  "phase": "prep",
+  "day": 2,
+  "minute": 0,
+  "report": null
+ },
+ "clock_next": "06:00",
+ "console_error_count": 3
+}
+

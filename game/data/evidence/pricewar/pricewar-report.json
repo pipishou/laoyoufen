@@ -19,7 +19,7 @@
       "菜单：瘦肉粉 ¥8 ／ 素粉 ¥6"
     ],
     "price": 10,
-    "saveVersion": 31
+    "saveVersion": 37
   },
   "cheap": {
     "pw": "你 ¥4，比三姐粉摊的中间价（¥7）还便宜 ¥3",
@@ -29,7 +29,7 @@
       "菜单：瘦肉粉 ¥8 ／ 素粉 ¥6"
     ],
     "price": 4,
-    "saveVersion": 31
+    "saveVersion": 37
   },
   "errors": []
 }

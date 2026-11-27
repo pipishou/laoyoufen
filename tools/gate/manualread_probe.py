@@ -12,6 +12,7 @@ import os
 import sys
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4244/")
 OUT = os.path.join("game", "data", "evidence", "manualread")
@@ -129,7 +130,7 @@ def main():
         pg.wait_for_timeout(300)
 
         ver = pg.evaluate("() => window.__laoyou.state.saveVersion")
-        note("save_version", ver == 37, ver)
+        note("save_version", ver == SAVE_VERSION, ver)
 
         bad = [e for e in errors if "Failed to load resource" not in e and "laoyou-api" not in e]
         note("console_clean", len(bad) == 0, bad[:2])

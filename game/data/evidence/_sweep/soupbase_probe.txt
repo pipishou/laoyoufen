@@ -1,0 +1,39 @@
+PASS three_cards  3
+PASS names_cn  ['老友底\n骨汤 + 酸笋\n汤底不动 · 料钱不动\n吊好的骨汤，爆香时下酸笋、豆豉、蒜末与辣椒，冲汤就是这一锅', '番茄底\n骨汤 + 番茄\n汤底 +3 · 料钱 +¥0.4\n骨汤照吊，番茄先炒到出沙再并进汤里，酸笋最后压一勺', '猪脚底\n骨汤 + 猪脚卤水\n汤底 +5 · 料钱 +¥0.7\n骨汤里再吊一锅猪脚卤水，汤面挂一层胶质，爆香照旧']
+PASS default_is_laoyou  老友底
+骨汤 + 酸笋
+汤底不动 · 料钱不动
+吊好的骨汤，爆香时下酸笋、豆豉、蒜末与辣椒，冲汤就是这一锅
+PASS summary_says_base   骨头汤 + 酸笋
+PASS broth_line  骨头汤打底 · 吊骨汤 → 爆香 → 冲汤下粉
+PASS card_extra_tags  ['骨汤 + 酸笋', '骨汤 + 番茄', '骨汤 + 猪脚卤水']
+PASS section_says_broth
+PASS cards_no_multiplier
+PASS read_before  {'soup': 30, 'cost': 4.8, 'total': 68}
+PASS switch_works  tomato
+PASS buffer_written  {'base': 'tomato', 'menuBase': 'tomato'}
+PASS item_written  {'base': 'tomato', 'menuBase': 'tomato'}
+PASS summary_follows   骨头汤 + 番茄 · 汤底 +3 · 料钱 +¥0.4
+PASS delta_says_where  {'text': '汤底 +3 来自番茄底（骨汤之外多加了番茄）', 'hidden': False}
+PASS dish_card_badge  骨汤+番茄
+PASS badge_on_every_card  {'cards': 1, 'printed': 1}
+PASS thick_line_says_braise  4 碗走的是猪脚卤水，客人说汤挂在粉上
+PASS thick_line_prefix_css  "挂汤 · "
+PASS thick_line_empty_when_zero
+PASS step_held_line  爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」
+PASS step_held_names_step  爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」
+PASS step_lists_three  爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」
+PASS step_units_ok  爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」
+PASS step_same_on_shop  {'recipe': '爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」', 'shop': '爆香 1 口 2.2 分 · 吊骨汤 1 口 2.2 分 · 冲汤下粉 1 筒 1.6 分 —— 卡在「爆香」'}
+PASS soup_capped  30
+PASS cost_up_four  (4.8, 5.2)
+PASS total_up  (68, 70)
+PASS repeat_refused  邕江老友粉 开张了，先调好一碗粉的味道 | 换成番茄底：骨汤照吊，番茄先炒到出沙再并进汤里，酸笋最后压一勺。 | 本来就是番茄底
+PASS locked_when_short  ['tomato', 'piglioo']
+PASS locked_disabled  ['tomato', 'piglioo']
+PASS save_version_37  37
+PASS console_clean
+
+32 / 32 true
+report: D:\项目\REA\REA\重构\老友粉店\game\data\evidence\soupbase\soupbase-report.json
+

@@ -1,5 +1,5 @@
 {
-  "url": "http://localhost:4232/",
+  "url": "http://localhost:4246/",
   "checks": {
     "setdone_row": true,
     "setdone_check_mark": true,

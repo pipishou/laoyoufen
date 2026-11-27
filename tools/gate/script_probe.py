@@ -8,6 +8,7 @@ import os
 import sys
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = os.environ.get("PW_URL", "http://localhost:4236/")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -138,7 +139,7 @@ def main() -> int:
               return null;
             }"""
         )
-        checks["save_version_37"] = ver == 37 or ver is None
+        checks["save_version"] = ver == SAVE_VERSION or ver is None
 
         real = [
             e

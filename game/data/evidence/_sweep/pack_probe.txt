@@ -1,0 +1,15 @@
+[OK ] no_sku_before_pack rows=0
+[OK ] two_sku_at_grade_0 ['soup', 'sour']
+[OK ] sku_names_cn 汤底包
+[OK ] sku_price_shown 一包老友汤底，回家下粉下菜都行。｜一件 ¥18，赚 ¥10
+[OK ] sku_count_shown 4 件
+[OK ] sku_words_lock_gift 汤底包 4 · 酸笋包 3 · 还差段位：礼盒
+[OK ] gift_unlocks ['soup', 'sour', 'gift']
+[OK ] gift_says_box 两袋粉、一包汤底、一包酸笋，扎成一盒送人。｜一件 ¥68，赚 ¥38
+[OK ] sku_counts_positive [5, 3, 2]
+[OK ] sku_counts_spread [5, 3, 2]
+[OK ] save_version 37
+[OK ] console_clean 
+---
+all true
+

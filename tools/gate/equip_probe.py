@@ -10,10 +10,12 @@ import json
 import pathlib
 import sys
 
+from probe_console import on_console, noisy, texts
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
 SHOT_DIR = ROOT / "game" / "data" / "evidence" / "equip"
 
 OUT: dict[str, object] = {}
@@ -26,7 +28,7 @@ def main() -> int:
         browser = p.chromium.launch(channel="msedge", headless=True, args=["--disable-extensions"])
         page = browser.new_page(viewport={"width": 1440, "height": 900})
         errors: list[str] = []
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+        page.on("console", on_console(errors))
         page.goto(url, wait_until="load", timeout=30000)
         page.evaluate("() => localStorage.clear()")
         page.reload(wait_until="load")
@@ -94,8 +96,8 @@ def main() -> int:
 
         OUT["cash_spent"] = before["cash"] - after["cash"]  # type: ignore[index]
         OUT["serve_minutes_dropped"] = before["caprow"] != after["caprow"]  # type: ignore[index]
-        OUT["console_error_count"] = len(errors)
-        OUT["console_errors"] = errors[:5]
+        OUT["console_error_count"] = len(noisy(errors))
+        OUT["console_errors"] = texts(noisy(errors))[:5]
         browser.close()
 
     # 买灶要花 ¥1,500；期间店铺仍在营业会有进账，所以「净支出」只会更小

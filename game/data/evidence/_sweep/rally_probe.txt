@@ -1,0 +1,22 @@
+[OK ] staff_injected {'roster': 1, 'rally': None}
+[OK ] no_rally_when_calm blocks=0
+[OK ] rally_opened {'rally': {'uid': 'probe-v1', 'at': 0}, 'fatigue': 100, 'rowCount': 1}
+[OK ] fatigue_capped 100
+[OK ] still_employed 1
+[OK ] rally_block_shown 阿强 想走了
+[OK ] three_paths 3
+[OK ] three_buttons 3
+[OK ] paths_named ['卖个人情', '加点工钱', '让他歇两天']
+[OK ] costs_shown ['不花钱，动人情｜人情 12 点', '今天掏一笔，以后天天多花｜¥450，日薪 +10%', '不花钱，这两天少一个人｜两天少一个人']
+[OK ] hint_says_today 阿强 撑不住了，问你要句话
+[OK ] favor_spent 40 -> 28
+[OK ] cash_untouched 30000 -> 30000
+[OK ] fatigue_relieved 70
+[OK ] rally_cleared None
+[OK ] last_event_says_stay 阿强 留下了：卖个人情
+[OK ] block_gone_after_choice blocks=0
+[OK ] save_version 37
+[OK ] console_clean 
+---
+all true
+

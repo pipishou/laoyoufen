@@ -31,7 +31,7 @@
     "cost": 6.3,
     "charm": 64,
     "total": 70,
-    "saveVersion": 32
+    "saveVersion": 37
   },
   "good": {
     "head": "进货 · 靓货 · 料钱 ×1.8卖相与分量抬高 25%，料钱 ×1.8",
@@ -45,7 +45,7 @@
     "cost": 7.5,
     "charm": 72,
     "total": 70,
-    "saveVersion": 32
+    "saveVersion": 37
   },
   "top": {
     "head": "进货 · 头手货 · 料钱 ×2.6卖相与分量抬高 55%，料钱 ×2.6",
@@ -59,7 +59,7 @@
     "cost": 8.7,
     "charm": 83,
     "total": 70,
-    "saveVersion": 32
+    "saveVersion": 37
   },
   "errors": []
 }

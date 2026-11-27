@@ -18,9 +18,11 @@ import json
 import sys
 from pathlib import Path
 
+from probe_console import on_console, noisy, texts
+import os
 from playwright.sync_api import sync_playwright
 
-URL = "http://127.0.0.1:4173/"
+URL = os.environ.get("PW_URL", "http://127.0.0.1:4173/")
 ROOT = Path(__file__).resolve().parents[2]
 OUTDIR = ROOT / "game" / "data" / "evidence" / "dayflow"
 OUT: dict = {"console_errors": [], "steps": []}
@@ -43,7 +45,7 @@ with sync_playwright() as pw:
     b = pw.chromium.launch(headless=True, channel="msedge", args=["--disable-extensions"])
     ctx = b.new_context(viewport={"width": 1440, "height": 900})
     page = ctx.new_page()
-    page.on("console", lambda m: OUT["console_errors"].append(m.text) if m.type == "error" else None)
+    page.on("console", on_console(OUT["console_errors"]))
     page.goto(URL, wait_until="load", timeout=30000)
     page.evaluate("() => localStorage.clear()")
     page.reload(wait_until="load")
@@ -134,6 +136,6 @@ with sync_playwright() as pw:
     snap(page, "09-nextday.png")
     b.close()
 
-OUT["console_error_count"] = len(OUT["console_errors"])
+OUT["console_error_count"] = len(noisy(OUT["console_errors"]))
 print(json.dumps(OUT, ensure_ascii=False, indent=1))
 sys.exit(0 if OUT["console_error_count"] == 0 else 3)

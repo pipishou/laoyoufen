@@ -43,7 +43,7 @@
     "wok": 0,
     "favor": 0,
     "cash": 15000,
-    "saveVersion": 33
+    "saveVersion": 37
   },
   "rich": {
     "head": "手上的功夫 · 0 / 36 节点",
@@ -68,7 +68,7 @@
     "wok": 0,
     "favor": 200,
     "cash": 50000,
-    "saveVersion": 33
+    "saveVersion": 37
   },
   "one": {
     "head": "手上的功夫 · 1 / 36 节点",
@@ -93,7 +93,7 @@
     "wok": 1,
     "favor": 192,
     "cash": 49800,
-    "saveVersion": 33
+    "saveVersion": 37
   },
   "three": {
     "head": "手上的功夫 · 3 / 36 节点",
@@ -118,7 +118,7 @@
     "wok": 3,
     "favor": 168,
     "cash": 48700,
-    "saveVersion": 33
+    "saveVersion": 37
   },
   "errors": []
 }

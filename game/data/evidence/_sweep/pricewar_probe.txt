@@ -1,0 +1,2 @@
+{"ok": false, "checks": {"section_found": true, "pricewar_present": true, "pricewar_has_mine": true, "pricewar_says_dear": true, "menu_two_dishes": true, "menu_has_prices": true, "save_version": false, "pricewar_says_cheap": true, "console_clean": true}, "base": {"pw": "你 ¥10，比三姐粉摊的中间价（¥7）贵 ¥3", "found": true, "menus": ["菜单：猪杂粉 ¥9 ／ 牛腩粉 ¥12", "菜单：瘦肉粉 ¥8 ／ 素粉 ¥6"], "price": 10, "saveVersion": 37}, "cheap": {"pw": "你 ¥4，比三姐粉摊的中间价（¥7）还便宜 ¥3", "found": true, "menus": ["菜单：猪杂粉 ¥9 ／ 牛腩粉 ¥12", "菜单：瘦肉粉 ¥8 ／ 素粉 ¥6"], "price": 4, "saveVersion": 37}, "errors": []}
+

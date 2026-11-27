@@ -13,6 +13,7 @@ import json
 import pathlib
 
 from playwright.sync_api import sync_playwright
+from probe_version import SAVE_VERSION
 
 URL = "http://127.0.0.1:4192/"
 OUT = pathlib.Path("game/data/evidence/trophy")
@@ -146,7 +147,7 @@ def main() -> int:
             and any("成就 ·" in t for t in toast)
             and after is not None
             and after["on"] == got["trophies"]
-            and report["saveVersion"] == 24
+            and report["saveVersion"] == SAVE_VERSION
             and not report["console_errors"]
         )
         report["ok"] = ok
