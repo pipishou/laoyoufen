@@ -36,7 +36,11 @@ import { priceOf, setChannel as setChannelImpl, setPrice as setPriceImpl, channe
 import { buyGood as buyGoodImpl } from "./sim/goods";
 import { PERKS } from "./data/perk";
 import { buyPerk as buyPerkImpl } from "./sim/perk";
-import { buyInvest as buyInvestImpl, cancelInvest as cancelInvestImpl } from "./sim/invest";
+import {
+  buyInvest as buyInvestImpl,
+  cancelInvest as cancelInvestImpl,
+  swapInvest as swapInvestImpl,
+} from "./sim/invest";
 import { renameDish as renameDishImpl } from "./sim/dish";
 import { buyGear } from "./sim/gear";
 import { buyStyle, setStyle } from "./sim/style";
@@ -466,6 +470,25 @@ panels = mountPanels(hudRoot, {
     }
     hud.showToast(r.line, "info");
     playSfx("ui");
+    refresh();
+  },
+  /**
+   * 批 BE′（解 P505）：一步换掉一条门路。
+   *
+   * 与 `buyInvest` 走同一条「买成了就说一句」的路（sound + 一句话接口），
+   * 因为它本质上**就是一次购买**，只是顺带把旧的撤了 —— 玩家听到、
+   * 看到的该是「新门路上桌了」，而不是「旧门路没了」。
+   */
+  swapInvest(from, to) {
+    const r = swapInvestImpl(state, String(from), String(to));
+    if (!r.ok) {
+      hud.showToast(r.reason, "info");
+      refresh();
+      return;
+    }
+    hud.showToast(r.line, "like");
+    playSfx("upgrade");
+    speakItem("invest", String(to), r.line);
     refresh();
   },
   /** 手艺点树（批 K′）：花段位给的份量，点一门手上的功夫 */

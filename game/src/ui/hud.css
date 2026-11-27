@@ -1828,6 +1828,22 @@ button.pill[disabled] {
   color: var(--wood);
 }
 
+/*
+ * 批 BE′（解 P506）：门路位写进打烊单脚注。
+ * 与现金同一排小字、靠左挨着现金，空着时不占位（`textContent` 被清空 ⇒ `:empty` 生效）——
+ * 玩家一关面板就忘了自己还有没有位子，打烊这一刻正好是决定明天买不买的时候。
+ */
+.dslots {
+  font-size: 11px;
+  color: var(--wood);
+  opacity: 0.85;
+  margin-left: 10px;
+}
+
+.dslots:empty {
+  display: none;
+}
+
 .daybtn {
   font-family: inherit;
   font-size: 13px;

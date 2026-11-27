@@ -2,7 +2,7 @@ import { CONTEST_RIVALS, CONTEST_TIERS, CONTEST_TYPES, CONTEST_TYPE_BY_ID, tierO
 import { retailLines, retailSummary, channelOf, retailThroughput, retailBowlLoad } from "../sim/retail";
 import { goodsSummary, goodsViews, goodWords } from "../sim/goods";
 import { perkFamilies, perkPoints, perkSummary, perkViews } from "../sim/perk";
-import { investSummary, investViews, investWords } from "../sim/invest";
+import { investSlotsWords, investSummary, investViews, investWords } from "../sim/invest";
 import { CHANNELS, PRICE_FLOOR, PRICE_CEIL } from "../data/retail";
 import { BOWL } from "../data/anchors";
 import { CUSTOMER_ARCHETYPES, LIKE_DIMS_ORDER, LIKE_LABELS, likeValueLabel } from "../data/customers";
@@ -203,6 +203,11 @@ export interface PanelActions {
   buyInvest(id: string): void;
   /** 批 BC′：撤一条正在走的门路（不退钱，只为空出位子） */
   cancelInvest(id: string): void;
+  /**
+   * 批 BE′（解 P505）：一步换掉一条正在走的门路 —— 撤旧 + 买新，位子不空。
+   * 两个参数是「换掉谁」与「换成谁」。
+   */
+  swapInvest(from: string, to: string): void;
   /** 杂货铺（批 B′）：花人情买一天的方便 */
   buyGood(id: string): void;
   buyPerk(id: string): void;
@@ -522,6 +527,12 @@ let lastGradeKey = "";
       case "cancelinvest":
         actions.cancelInvest(String(id));
         break;
+      case "swapinvest": {
+        // 批 BE′（解 P505）：data-id 形如「旧id|新id」——`|` 在门路 id 里不会出现
+        const [from, to] = String(id).split("|");
+        actions.swapInvest(String(from ?? ""), String(to ?? ""));
+        break;
+      }
       case "buygood":
         actions.buyGood(String(id));
         break;
@@ -1231,11 +1242,16 @@ let lastGradeKey = "";
    * 批 BD′ 加了第四类 `lean`（趁势）：与 `hedge` 成对，买的是「这几天那条好事一定来」。
    * 两类都只改**抽到哪一条行情**，乘数仍只来自 `data/market.ts` —— 所以 `hint2` 那一句
    * 要把「坏事不来」和「好事一定来」一起说出来，否则界面只承认一半的钱花在哪。
+   *
+   * 批 BE′（解 P505）：位子满时那一行不再只有「先撤一条」一句话，还多一个
+   * 「换掉「X」」按钮 —— 一次点击同时撤旧、买新，位子从头到尾不空。
+   * 这按钮的 `data-id` 是 `旧|新` 两个 id 拼起来的（`|` 在 id 里不会出现），
+   * 所以 `case "swapinvest"` 那边一眼能拆开。
    */
   const investSec = `
   <div class="sec">
     <div class="sechd">${icon("crate")}街上的门路 · ${investSummary(s)}</div>
-    <div class="hint2">钱能买到的是「今天多做出几碗」「今天多进来几个人」，还有「这半个月烦人的那条不来」「这几天好事一定来」。买不到乘数。位子挂满了就先撤一条，撤掉不退钱。</div>
+    <div class="hint2">钱能买到的是「今天多做出几碗」「今天多进来几个人」，还有「这半个月烦人的那条不来」「这几天好事一定来」。买不到乘数。位子挂满了可以换一条（一步换好，位子不空），也可以先撤一条，撤掉不退钱。</div>
     ${investViews(s)
       .map(
         // 批 BB′：每行钉一个 `data-invest-id`。原先这一格只能靠「行里有没有买按钮」来认，
@@ -1247,7 +1263,11 @@ let lastGradeKey = "";
           ? `<span class="tag2 on">在走 · 还剩 ${v.leftDays} 天</span><button type="button" class="pickbtn ghost" data-act="cancelinvest" data-id="${v.def.id}" title="撤掉不退钱，位子当天就能让别人用">撤一条</button>`
           : v.affordable
             ? `<button type="button" class="pickbtn" data-act="buyinvest" data-id="${v.def.id}">${money(v.def.costYuan)}</button>`
-            : `<span class="tag2">${v.reason}</span>`
+            : v.swapFrom
+              ? // 批 BE′（解 P505）：位子满又不差钱 —— 按钮在前（一步换好），
+                // 后面那句把「也可以先撤一条」留着，否则玩家会以为只剩一条路
+                `<button type="button" class="pickbtn" data-act="swapinvest" data-id="${v.swapFrom.id}|${v.def.id}" title="一步换：撤掉「${v.swapFrom.name}」同时买下这条，位子不空；前面那条的钱不退">换掉「${v.swapFrom.name}」· ${money(v.def.costYuan)}</button><span class="tag2">${v.reason}</span>`
+              : `<span class="tag2">${v.reason}</span>`
       }</div>
       <span class="lname">${v.def.name}</span>
       <div class="lmeta">${v.def.what}｜${investWords(v.def)}${v.def.days > 1 ? `｜管 ${v.def.days} 天` : ""}</div>
@@ -1996,7 +2016,36 @@ function collectionHtml(s: GameState): string {
 
     return `${reportHtml}
       <div class="sec"><div class="sechd">${icon("crate")}月度账本 · 最近 8 个月</div>${months || `<div class="empty2">还没走完一个月。</div>`}</div>
-      <div class="sec"><div class="sechd">${icon("crate")}年度成绩</div>${years || `<div class="empty2">满 12 个月出一次年度结算。</div>`}</div>`;
+      <div class="sec"><div class="sechd">${icon("crate")}年度成绩</div>${years || `<div class="empty2">满 12 个月出一次年度结算。</div>`}</div>
+      ${investLedgerSec(s)}`;
+  }
+
+  /**
+   * 批 BE′（解 P506）：门路位在账本里也有一格。
+   *
+   * 原来这个数只出现在门路那段抬头（`2 / 3 位`）——玩家一关面板就忘了自己还有没有空位，
+   * 而「还剩几位」正是决定「明天要不要再认一条街」的那句话。放在账本页末，
+   * 因为它跟钱一样是「这一段时间的底账」：挂着哪几条、还剩几天、几位空着。
+   * 一条都没挂时也印（0 / 2 位是信息），只是换成一句说明怎么买。
+   */
+  function investLedgerSec(s: GameState): string {
+    const live = investViews(s).filter((v) => v.active);
+    const rows =
+      live.length > 0
+        ? live
+            .map(
+              (v) => `<div class="lrow compact" data-ledger-invest-id="${v.def.id}">
+          <div class="lname">${v.def.name}</div>
+          <div class="lmeta">${investWords(v.def)} · 还剩 ${v.leftDays} 天</div>
+        </div>`,
+            )
+            .join("")
+        : `<div class="empty2">今天没挂门路。</div>`;
+    return `
+  <div class="sec" data-ledger-invest>
+    <div class="sechd">${icon("crate")}门路 · ${investSlotsWords(s)}</div>
+    ${rows}
+  </div>`;
   }
 
   const bodyOf = (tab: PanelTab): HTMLElement | null =>
@@ -2306,7 +2355,10 @@ function collectionHtml(s: GameState): string {
       key = `${s.collection.toppings.length}|${s.collection.customers.length}|${s.collection.grades.length}|${s.collection.provinces.length}|${s.collection.likes.length}|${(s.collection.flavors ?? []).length}|${(s.bowls ?? []).length}|${(s.flow.notes ?? []).length}|${s.news.length}|${(s.rivals ?? []).filter((r) => !r.closed).length}|${s.bowl ?? ""}|${s.gradeLevel}|${s.district}|${(s.branches ?? []).length}|${manualRead(s).length}`;
       html = collectionHtml(s);
     } else {
-      key = `${s.months.length}|${s.years.length}|${s.pendingReport?.year ?? -1}|${s.finished}|${Math.floor(s.cash / 100)}`;
+      // **第二十次「键漏字段」（批 BE′）**：账本页末尾多了门路那一格（挂着哪几条、
+      // 还剩几天、几位空着）。`investments` 与 `gradeLevel` 都不在原键里 ——
+      // 不补的话，买完门路再翻账本，那一格永远停在「今天没挂门路」（1 / 3 位）。
+      key = `${s.months.length}|${s.years.length}|${s.pendingReport?.year ?? -1}|${s.finished}|${Math.floor(s.cash / 100)}|${Object.entries(s.investments ?? {}).map(([k, v]) => `${k}:${v}`).join(",")}|${s.gradeLevel}|${s.days.length}`;
       html = ledgerHtml(s);
     }
     if (keys[current] !== key) {

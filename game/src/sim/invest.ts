@@ -102,6 +102,13 @@ export interface InvestView {
   affordable: boolean;
   /** 买不了的原因；能买就是空串 */
   reason: string;
+  /**
+   * 位子满了又不差钱时，这一行可以**一步换掉**哪一条（批 BE′，解 P505）。
+   *
+   * 挑的是「最快自己就结束的那条」——替它损失的剩余天数最少，玩家不用算。
+   * 空着（不是 `null` 就是 undefined）表示这一类不能换：要么本条在走、要么钱不够。
+   */
+  swapFrom?: InvestDef;
 }
 
 /**
@@ -111,18 +118,50 @@ export interface InvestView {
  * - 已经在走 → 说还剩几天；
  * - 位子满了 → **「先撤一条」**，并且要报出是哪一条挡着（不然他得上下一行行找）；
  * - 钱不够 → 说还差多少。
+ *
+ * 批 BE′（解 P505）：位子满又不差钱时额外给 `swapFrom` —— 面板据此画一个
+ * 「换掉「X」」按钮，一次点击完成「撤 + 买」，位子从头到尾不空。
  */
 export function investViews(state: GameState): InvestView[] {
   const live = activeInvests(state);
   const full = live.length >= investSlots(state);
+  /**
+   * 换掉谁：剩余天数最少的那条。同一天数时取 `INVESTS` 里靠前的（顺序稳定，
+   * 探针与测试才钉得住）。判「还剩几天」用与 `leftDays` 同一把尺子。
+   */
+  const daysLeftOf = (d: InvestDef): number =>
+    Math.max(0, investUntil(state, d.id) - dayIndexOf(state)) + 1;
+  let victim: InvestDef | null = null;
+  for (const d of live) {
+    if (!victim || daysLeftOf(d) < daysLeftOf(victim)) victim = d;
+  }
   return INVESTS.map((def) => {
     const active = investToday(state, def.id);
     const leftDays = Math.max(0, investUntil(state, def.id) - dayIndexOf(state)) + (active ? 1 : 0);
+    const canSwap =
+      full && !active && victim !== null && Math.round(state.cash) >= def.costYuan;
     let reason = "";
     if (active) reason = `已经在走了（还剩 ${leftDays} 天）`;
-    else if (full) reason = live[0] ? `先撤一条（现在「${live[0].name}」占着）` : "先撤一条";
-    else if (Math.round(state.cash) < def.costYuan) reason = `还差 ¥${def.costYuan - Math.round(state.cash)}`;
-    return { def, active, leftDays, affordable: reason === "", reason };
+    else if (full) {
+      /**
+       * 批 BE′（解 P505）：位子满时**两条路都给出来**。
+       * 钱够的那一行，面板会多画一个「换掉「X」」按钮 —— 所以这里把两句话都说全；
+       * 旧口径「先撤一条」不能删（批 BC′ 的判据与 `bc_probe` 就钉在这几个字上），
+       * 只是不再假装它是唯一办法。
+       */
+      const hold = victim ? `现在「${victim.name}」占着` : "位子满了";
+      reason = canSwap ? `先撤一条，或者直接换（${hold}）` : `先撤一条（${hold}）`;
+    } else if (Math.round(state.cash) < def.costYuan) {
+      reason = `还差 ¥${def.costYuan - Math.round(state.cash)}`;
+    }
+    return {
+      def,
+      active,
+      leftDays,
+      affordable: reason === "",
+      reason,
+      swapFrom: canSwap ? (victim as InvestDef) : undefined,
+    };
   });
 }
 
@@ -182,6 +221,53 @@ export function cancelInvest(state: GameState, id: string): BuyResult {
   delete next[def.id];
   state.investments = next;
   return { ok: true, line: `撤了「${def.name}」，位子空出来了（这钱不退）`, reason: "" };
+}
+
+/**
+ * 一步换掉一条正在走的门路（批 BE′，解 P505）。
+ *
+ * 为什么要有它：批 BC′ 只给了「撤一条」+「买一条」两个动作，于是换一条门路是
+ * 「撤 A → 位子空出来 → 买 B」，撤掉不退钱、买 B 再付一遍 —— 玩家要么付两趟钱，
+ * 要么眼睁睁看着位子空半天。开罗那边 `More Investments` 涨的是「同时能投几条」，
+ * 换一条本来就不该是一个专属操作。
+ *
+ * 语义（三条都写死在测试里）：
+ * - 这是**一次购买**，所以只扣 `to` 的价钱（`from` 退不退？不退 —— 它今天已经干了活，
+ *   见 `cancelInvest` 的理由）；
+ * - 位子**从头到尾不空**：`from` 的到期日在同一次赋值里被删掉、`to` 的写上，
+ *   中间不存在「两条都不在」的中间态；
+ * - 顺序仍然是**先判位子、再判钱**：`from` 不在走 / `to` 已经在走 / 位子没满
+ *   （不缺位子就不该用这个动作，直接买即可）都会被拒，而且一分不扣。
+ */
+export function swapInvest(state: GameState, from: string, to: string): BuyResult {
+  const oldDef = INVEST_BY_ID.get(from);
+  const newDef = INVEST_BY_ID.get(to);
+  if (!oldDef) return { ok: false, line: "", reason: "没有这条门路" };
+  if (!newDef) return { ok: false, line: "", reason: "没有要换的那条门路" };
+  if (from === to) return { ok: false, line: "", reason: "换的还是同一条" };
+  if (!investToday(state, oldDef.id)) {
+    return { ok: false, line: "", reason: `「${oldDef.name}」本来就没在走` };
+  }
+  if (investToday(state, newDef.id)) {
+    return { ok: false, line: "", reason: `「${newDef.name}」已经在走了` };
+  }
+  if (activeInvests(state).length < investSlots(state)) {
+    // 还有空位就不该「换」—— 直接买更划算（也能让玩家少丢几天）
+    return { ok: false, line: "", reason: "还有空位，直接买就行" };
+  }
+  if (Math.round(state.cash) < newDef.costYuan) {
+    return { ok: false, line: "", reason: `还差 ¥${newDef.costYuan - Math.round(state.cash)}` };
+  }
+  state.cash = Math.round((state.cash - newDef.costYuan) * 100) / 100;
+  const next = { ...(state.investments ?? {}) };
+  delete next[oldDef.id];
+  next[newDef.id] = dayIndexOf(state) + newDef.days;
+  state.investments = next;
+  return {
+    ok: true,
+    line: `把「${oldDef.name}」换成了「${newDef.name}」，位子没空过（前面的钱不退）`,
+    reason: "",
+  };
 }
 
 /** 当天产能 +N 碗（料商留货） */

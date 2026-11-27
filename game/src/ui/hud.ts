@@ -28,6 +28,7 @@ import { favoriteArchetypes } from "../sim/regulars";
 import type { DayRecord, GameState } from "../sim/state";
 import { nextTrophies } from "../sim/trophies";
 import { demandCapOf } from "../sim/district";
+import { hedgedMarketIds, investSlotsWords, leanedMarketIds } from "../sim/invest";
 import { frenzyActive, frenzyLeftMinutes } from "../sim/frenzy";
 import { isContestMonth, monthsToContest } from "../sim/calendar";
 
@@ -276,6 +277,7 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
       <div class="daywhy"><span data-act-line></span><span data-demand-line></span><span data-crew-line></span><span data-loss-line></span><span data-menu-line></span><span data-invest-line></span><span data-thick-line></span><span data-why-fold></span></div>
       <div class="dayfoot">
         <span class="dcash">现金 <b data-day-cash>¥0</b></span>
+        <span class="dslots" data-invest-slots></span>
         <span class="dhint">现金变化含熟客回礼与事件，不总等于营业额减料钱</span>
         <button type="button" class="daybtn" data-day-next>明天继续 ›</button>
       </div>
@@ -297,6 +299,8 @@ export function mountHud(root: HTMLElement, opts: HudOptions = {}): Hud {
   const lossLine = dayWrap.querySelector("[data-loss-line]") as HTMLElement;
   const menuLine = dayWrap.querySelector("[data-menu-line]") as HTMLElement;
   const investLine = dayWrap.querySelector("[data-invest-line]") as HTMLElement;
+  // 批 BE′（解 P506）：打烊单脚注里的门路位
+  const investSlotsFoot = dayWrap.querySelector("[data-invest-slots]") as HTMLElement;
   const thickLine = dayWrap.querySelector("[data-thick-line]") as HTMLElement;
   /** 批 AP′（P448）：来客天花板是闸的那天，打烊单也得说同一句话 */
   const demandLine = dayWrap.querySelector("[data-demand-line]") as HTMLElement;
@@ -720,6 +724,15 @@ const render = (s: GameState, score: RecipeScore): void => {
         .join("；");
       // CSS 的 `[data-invest-line]::before` 已经写了「到点 · 」，正文别再重复一次
       investLine.textContent = done.length > 0 ? said : "";
+      /**
+       * 批 BE′（解 P506）：门路位在打烊单上也看得见。
+       *
+       * 原先这个数只写在门路那段抬头（`2 / 3 位`），玩家一关面板就忘了自己还有没有空位；
+       * 打烊这一刻正是「明天要不要再买一条」的时候，所以位置放在脚注那一排（挨着现金），
+       * 不占上面那三条折行额度（`foldWhyLines` 只收七行对白，见 P406）。
+       * 一条都没挂时写「门路 0 / 2 位」—— 零也是信息（说明明天还有两位可用）。
+       */
+      investSlotsFoot.textContent = `门路 ${investSlotsWords(s)}`;
       // 挂汤（批 AB′，解 P397）：猪脚卤水的胶质没有格子可落，但今天卖了几碗挂汤说得清。
       const thick = Math.max(0, Math.round(s.dayReport?.thick ?? 0));
       thickLine.textContent = thick > 0 ? `${thick} 碗走的是猪脚卤水，客人说汤挂在粉上` : "";
@@ -879,7 +892,17 @@ const render = (s: GameState, score: RecipeScore): void => {
     // 今天街上的事（批次三）：回南天、赶圩、猪肉起价 —— 只有名字与四个数，点开才说细节
     {
       const mk = marketOf(s);
-      const mKey = mk ? `${mk.id}:${s.month}:${s.day}` : "";
+      /**
+       * **第二十一次「键漏字段」（批 BE′）**：这一格原来只按「行情 id + 月 + 日」判要不要重画，
+       * 而「明天：X」那半句读的是**对冲／趁势**（`hedgedMarketIds` / `leanedMarketIds`）——
+       * 买下「跟监管所报个备」之后，今天那条行情往往没变（本来就不是检查），
+       * 于是键也没变，整格不重画，右下角还挂着买之前那句「明天：创城检查」。
+       * 探针 `bb_probe` 的 `same_day_no_inspection` / `fifteen_days_clear` 两条红就是它
+       * （不是对冲没生效 —— 把对冲撤掉再读，那天真的又变回检查）。
+       */
+      const hedgeKey = [...hedgedMarketIds(s)].sort().join("+");
+      const leanKey = [...leanedMarketIds(s)].sort().join("+");
+      const mKey = `${mk ? mk.id : ""}:${s.month}:${s.day}:${hedgeKey}:${leanKey}`;
       if (mKey !== lastMarketKey) {
         lastMarketKey = mKey;
         const mp = mk ? marketPairWords(s) : "";
