@@ -12,6 +12,12 @@
  *     第 36 个月租金吃掉营收 34%，账上必亏（替身实测期末 −¥27,186）。现实里房租是房东定的固定数。
  */
 
+// 日产能那道座位闸（批 BH′ / P548）：建店卡要写的「一天最多约几碗」和模型同一算式，
+// 所以从 `sim/bottleneck.ts` 借，**不在这里另抄一遍数字**。
+// 依赖方向是 data → sim，听着别扭，但 bottleneck 对 state 只有 `import type`（编译后被擦掉），
+// 而 sites 只被 `sim/setup.ts` / `ui/setup.ts` 引用，没有环。
+import { seatBowlCeiling } from "../sim/bottleneck";
+
 export type SiteId = "stall" | "alley" | "streetfront";
 
 export interface SiteDef {
@@ -78,4 +84,21 @@ export function siteById(id: string): SiteDef | undefined {
 /** 开局能选的铺位（付得起转让费的） */
 export function affordableSites(cashYuan: number): SiteDef[] {
   return SITES.filter((s) => s.feeYuan <= cashYuan);
+}
+
+/**
+ * 这个铺位「一天最多约几碗」（批 BH′，解 P548）。
+ *
+ * 为什么建店卡上要有这一行：线上 97 局试玩里 **48 局**选了免费的 2 座「街边摊」，
+ * 中位只活 2 天、**0 局**活过第 5 天 —— 而卡片当时只写「2 座 / 1 口灶 / 月租约 ¥1,500」。
+ * 「2 座」对玩家不是产能信息，是「便宜」；他不知道自己买的是一天 33 碗的天花板，
+ * 也不知道旁边那档 4 座是一天 65 碗。数字必须写在**做决定的那一屏**上。
+ *
+ * 算式与模型同源（`sim/bottleneck.ts` 的 `seatBowlCeiling`），四舍五入到整碗 ——
+ * 界面上说「约」，就不要在个位小数上和人较劲；2 座算出来 32.73 → 写 33。
+ * 注意这**不是**「今天一定卖得掉 33 碗」：真正的瓶颈还可能是灶、日上限或来客量，
+ * 所以文案写的是「最多约」。
+ */
+export function dailyBowlCeiling(site: SiteDef): number {
+  return Math.round(seatBowlCeiling(site.seats));
 }

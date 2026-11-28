@@ -10,7 +10,7 @@
 
 import { CAPITAL } from "../data/anchors";
 import { nameCandidates, validShopName } from "../data/shop-names";
-import { SITES, type SiteDef } from "../data/sites";
+import { SITES, dailyBowlCeiling, type SiteDef } from "../data/sites";
 import type { GameState } from "../sim/state";
 
 export interface SetupOptions {
@@ -31,6 +31,19 @@ function yuan(n: number): string {
 /** 该铺位的月租（固定值，随年份 3% 续约涨幅；这里只展示第一年的数） */
 function rentOf(site: SiteDef): number {
   return site.rentMonthly;
+}
+
+/**
+ * 卡片底部那行小字（批 BH′，解 P548）。
+ *
+ * 2 座那档打「起步档」：它真的是最便宜的起步位（转让费 ¥0），
+ * 但也是**唯一一档会掉客**的（首日流失 20%，4 座与 6 座是 0%）。
+ * 玩家的误判不是「我选错了」，是「我定价错了 / 我做得不好」——
+ * 所以要在选的时候就告诉他「这是起步档」，而不是等他看见有人掉头走才猜。
+ * 数字不用形容词：上面那行「一天最多约 33 碗」已经把取舍摆在台面上了。
+ */
+function startTagOf(site: SiteDef): string {
+  return site.seats < 4 ? "起步档" : "";
 }
 
 export function mountSetup(root: HTMLElement, opts: SetupOptions): SetupScreen {
@@ -90,7 +103,7 @@ export function mountSetup(root: HTMLElement, opts: SetupOptions): SetupScreen {
       card.classList.toggle("broke", !affordable);
       card.setAttribute("aria-pressed", picked === id ? "true" : "false");
       const badge = card.querySelector<HTMLElement>("[data-badge]");
-      if (badge) badge.textContent = affordable ? "" : `转让费还差 ${yuan(site.feeYuan - latest.cash)}`;
+      if (badge) badge.textContent = affordable ? startTagOf(site) : `转让费还差 ${yuan(site.feeYuan - latest.cash)}`;
     }
     cashEl.textContent = fmtLeft();
     const nameOk = validShopName(nameEl.value);
@@ -132,6 +145,7 @@ export function mountSetup(root: HTMLElement, opts: SetupOptions): SetupScreen {
       <div class="spitch">${site.pitch}</div>
       <div class="sstats">
         <span>${site.seats} 座</span><span>${site.stoves} 口灶</span><span>月租约 ${yuan(rentOf(site))}</span>
+        <span class="sbowls" data-bowls>一天最多约 ${dailyBowlCeiling(site)} 碗</span>
       </div>
       <div class="sbadge" data-badge></div>`;
     card.addEventListener("click", () => {

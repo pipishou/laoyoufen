@@ -59,7 +59,22 @@ const EAT_MINUTES = 6.6;
  * 3 座 50.7（理想 54.5）、4 座 **64.0**（理想 72.7）—— 座位一多，空转就压不住了。
  * 取 0.9 折：4 座算 65.5（实测 64.0）、3 座 49.1（实测 50.7）。
  */
-const SEAT_IDLE = 0.9;
+export const SEAT_IDLE = 0.9;
+
+/**
+ * 给定座数，一天最多能卖几碗（批 BH′，P548 用）。
+ *
+ * 就是 `capacityOf` 里那道座位闸的算式，抽出来给**建店卡**用 —— 玩家在选铺位时
+ * 看不到「产能」，只能看到「N 座 / N 口灶 / 月租」，于是 48/97 的真人选了 2 座、
+ * 开门就掉头走人（见 `sim/customer.ts` 的 `spawnSeatFactor` 注释）。
+ *
+ * **刻意不取整、也不夹别的系数**：`capacityOf` 用的就是这一条算式，
+ * 抽成函数的唯一目的是让「界面上写的数」和「模型算的数」不可能各说各话。
+ * 取整交给调用方（建店卡写「一天最多约 N 碗」，用的是四舍五入）。
+ */
+export function seatBowlCeiling(seats: number): number {
+  return (seats * DAY_MINUTES * SEAT_IDLE) / EAT_MINUTES;
+}
 
 export type TightOn = "stove" | "seats" | "cap" | "demand";
 
@@ -123,7 +138,7 @@ export function capacityOf(state: GameState): Capacity {
   const batchMinutes = Math.max(0.2, bowlMinutes(state, FLOW.serveMinutes, stationServeFactor(state)));
   const stove = DAY_MINUTES / batchMinutes;
   // 座位只看「吃一碗占多久」：出碗再快，一个座位一天也只能翻 120/EAT 轮
-  const seats = (state.venue.seats * DAY_MINUTES * SEAT_IDLE) / EAT_MINUTES;
+  const seats = seatBowlCeiling(state.venue.seats);
   /**
    * 零售货架（批次七）：做货与卖碗抢同一份产能。
    *
@@ -246,7 +261,7 @@ export function capacityGain(state: GameState): {
   const seat = (n: number): number =>
     pack(
       now.stove,
-      ((state.venue.seats + n) * DAY_MINUTES * SEAT_IDLE) / EAT_MINUTES,
+      seatBowlCeiling(state.venue.seats + n),
       now.cap,
       now.demand,
       now.serveNow,

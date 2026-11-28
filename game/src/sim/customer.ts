@@ -300,10 +300,38 @@ export function demandPerDay(state: GameState): number {
  * 那天开始该让他练习「接不住」这件事，正是买矮凳、扩门面的动力。
  */
 export function spawnScaleByDay(state: GameState): number {
-  if (state.month !== 0) return 1;
-  if (state.day <= 1) return 0.55;
-  if (state.day <= 7) return 0.85;
-  return 1;
+  // 座位系数（批 BH′ / P547）：4 座是基准，少于 4 座按 sqrt 压客流。
+  const seatFactor = spawnSeatFactor(state.venue.seats);
+  if (state.month !== 0) return seatFactor;
+  if (state.day <= 1) return 0.55 * seatFactor;
+  if (state.day <= 7) return 0.85 * seatFactor;
+  return seatFactor;
+}
+
+/** 座位基准：从这里往上不再压客流（替身全程 4 座，所以它的数字一个字节都不会变） */
+const SEAT_BASE = 4;
+
+/**
+ * 座位系数（批 BH′，解 P545 + P547）：**座位少，街上愿意进来的人就少**。
+ *
+ * 为什么需要它：线上 97 局真实试玩里 **48 局**选了免费的「街边摊」（2 座），
+ * 中位只活 **2 天**、**0 局**活过第 5 天；而 4 座 39 局中位 5 天、6 座 10 局 70% 活过 5 天。
+ * 2 座的理论产能 `2 × 120 × 0.9 / 6.6 ≈ 32.7 碗/天`，可原来按 4 座的客流放人进来
+ * —— 首日到店 58 人、只能卖 36 碗，**22 个人当场掉头走**（38%）。
+ * 玩家看到的是「开门就有人走」，会误判成「我定价错了」，然后调价、然后一天退出。
+ * 三轮探针（`_tmp_bh_seat.probe.ts`，种子 1/2/3、同数值只换铺位）：
+ * 2 座 D1 卖 36 / 走 22（38%）、4 座 64 / 0、6 座 72 / 0。
+ *
+ * 为什么是 `sqrt(seats / 4)` 而不是线性：
+ * - 线性（2 座 ×0.5）会把首日到店压到 29 人，2 座卖 29 碗 —— 玩家看不到「忙」，
+ *   也就没有「接不住要加凳」的动机；sqrt 给 0.707，到店 41 人，仍会排一点队。
+ * - 这条系数**不碰产能**（`bottleneck.ts` 的座位闸照旧 32.7 碗）：修的是「来的人比能接的多」
+ *   这个配平错位，不是放宽难度。
+ * - **`seats >= 4` 恒等于 1.0**（`SEAT_BASE` 之上不压），替身全程 4 座 ⇒ 四种子逐位不变。
+ */
+export function spawnSeatFactor(seats: number): number {
+  if (seats >= SEAT_BASE) return 1;
+  return Math.sqrt(Math.max(0, seats) / SEAT_BASE);
 }
 
 /**
