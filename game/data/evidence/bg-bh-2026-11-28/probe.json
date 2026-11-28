@@ -1,0 +1,141 @@
+{
+  "ok": true,
+  "checks": {
+    "three_cards": true,
+    "card_bowls_stall": true,
+    "card_bowls_alley": true,
+    "card_bowls_street": true,
+    "card_bowls_keeps_old_stats": true,
+    "badge_stall_start": true,
+    "badge_alley_empty": true,
+    "badge_street_empty": true,
+    "mobile_bowls_visible": true,
+    "entered": true,
+    "note_queue_says_jammed": true,
+    "note_queue_not_price": true,
+    "note_price_says_board": true,
+    "note_price_not_jammed": true,
+    "note_wait_says_wait": true,
+    "note_wait_not_price": true,
+    "note_zero_not_price": true,
+    "summary_ok": true,
+    "summary_lost_split_keys": true,
+    "summary_lost_split_numbers": true,
+    "summary_labels_fixed": true,
+    "day_has_three_counters": true,
+    "day_no_reasons_map": true,
+    "console_clean": true
+  },
+  "detail": {
+    "cards": [
+      {
+        "site": "stall",
+        "name": "街边摊",
+        "stats": [
+          "2 座",
+          "1 口灶",
+          "月租约 ¥1,500",
+          "一天最多约 33 碗"
+        ],
+        "bowls": "一天最多约 33 碗",
+        "badge": "起步档"
+      },
+      {
+        "site": "alley",
+        "name": "巷内小店",
+        "stats": [
+          "4 座",
+          "1 口灶",
+          "月租约 ¥4,600",
+          "一天最多约 65 碗"
+        ],
+        "bowls": "一天最多约 65 碗",
+        "badge": ""
+      },
+      {
+        "site": "streetfront",
+        "name": "临街铺面",
+        "stats": [
+          "6 座",
+          "2 口灶",
+          "月租约 ¥7,600",
+          "一天最多约 98 碗"
+        ],
+        "bowls": "一天最多约 98 碗",
+        "badge": ""
+      }
+    ],
+    "note_queue": {
+      "note": "走了 49 位：44 位是门口站满了没进来。",
+      "closing": true,
+      "rep": {
+        "lost": 49,
+        "queue": 44,
+        "price": 2,
+        "wait": 3
+      }
+    },
+    "note_price": {
+      "note": "走了 46 位：41 位是看价牌掉头的 —— 最便宜那款再低一块试试。",
+      "closing": true,
+      "rep": {
+        "lost": 46,
+        "queue": 2,
+        "price": 41,
+        "wait": 3
+      }
+    },
+    "note_wait": {
+      "note": "走了 45 位：40 位是等不及 —— 出碗慢的时候，人站着就烦。",
+      "closing": true,
+      "rep": {
+        "lost": 45,
+        "queue": 3,
+        "price": 2,
+        "wait": 40
+      }
+    },
+    "note_zero": {
+      "note": "今天站住了：一碗毛利约 ¥4.2，明天试试多卖几碗。",
+      "closing": true,
+      "rep": {
+        "lost": 0,
+        "queue": 0,
+        "price": 0,
+        "wait": 0
+      }
+    },
+    "summary": {
+      "ok": true,
+      "lostSplit": {
+        "queue": 0,
+        "price": 0,
+        "wait": 0
+      },
+      "lostReasons": [],
+      "dayKeys": [
+        "bowls",
+        "day",
+        "lost",
+        "lostPrice",
+        "lostQueue",
+        "lostWait",
+        "minutes",
+        "month",
+        "peakWaiting",
+        "priceCount",
+        "priceSum",
+        "revenue",
+        "seats",
+        "tasteCount",
+        "tasteSum"
+      ],
+      "daySplit": {
+        "queue": 0,
+        "price": 0,
+        "wait": 0
+      }
+    }
+  },
+  "pageerrors": []
+}
