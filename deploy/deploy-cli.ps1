@@ -123,13 +123,75 @@ STAGE=/tmp/lfd bash /tmp/lfd/deploy/remote-install.sh
 "@ 600
 $inst.out
 
-# ---------- 5. 外网验证 ----------
+# ---------- 5. 外网验证（P549：这里以前只断言 http，2026-11-27 站点 404 了一整天它还报成功） ----------
+#
+# 那次事故的形态：同机另一个项目加了 conf.d 的 80 全站 301，而 443 上没有本站的 location。
+# 于是 `http://IP/laoyoufen/` → 301 → `https://IP/laoyoufen/` → 404。
+# 旧代码用 Invoke-WebRequest（默认跟随 301），拿到的 404 被 catch 成一行抱怨、退出码仍是 0
+# —— 部署脚本说成功，站点其实打不开。现在改成：每条都断言确切状态码，任何一条不中就把
+# 退出码置 1，并直接指向站点门。
 Write-Host "[5/5] verify"
 $ip = "8.134.86.249"
-foreach ($u in @("http://$ip/", "http://$ip/course-08.html", "http://$ip/laoyoufen/", "http://$ip/laoyou-api/health")) {
+$bad = @()
+
+function Check {
+  param([string]$label, [string]$url, [int]$want, [switch]$Insecure)
+
+  # 为什么不用 Invoke-WebRequest（都实测过，PS 5.1 上两处会骗人）：
+  #   1. `-MaximumRedirection 0` 遇到 301 不返回 Response，而是抛
+  #      InvalidOperationException「对象的当前状态使该操作无效」，且 Exception.Response 是 null
+  #      —— 我们的 catch 只能拿到 -1，301 和「连不上」分不开。
+  #   2. `-SkipCertificateCheck` 是 PS 6+ 的参数，5.1 上根本没有；而 5.1 默认还只开 TLS 1.0，
+  #      打 https 会报「基础连接已经关闭: 发送时发生错误」。
+  # HttpWebRequest 允许 AllowAutoRedirect=$false，拿得到 301 + Location，稳。
+  if ($Insecure) {
+    # 证书 CN 是 8-134-86-249.sslip.io，用 IP 访问必然告警，所以 beta 那条要跳过校验
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+  }
+  [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
+  $got = -1; $len = 0; $loc = ''
   try {
-    $r = Invoke-WebRequest $u -UseBasicParsing -TimeoutSec 15
-    "{0,-45} {1}  {2} B" -f $u, $r.StatusCode, $r.RawContentLength
-  } catch { "{0,-45} {1}" -f $u, $_.Exception.Response.StatusCode }
+    $req = [System.Net.HttpWebRequest]::Create($url)
+    $req.AllowAutoRedirect = $false      # 301 就是 301，不许被悄悄跟到 404 上去
+    $req.Timeout = 15000
+    $req.ReadWriteTimeout = 15000
+    $req.UserAgent = 'laoyoufen-deploy/1'
+    $resp = $req.GetResponse()
+    $got = [int]$resp.StatusCode
+    $loc = [string]$resp.Headers['Location']
+    try { $len = [int]$resp.ContentLength } catch { $len = 0 }
+    $resp.Close()
+  } catch [System.Net.WebException] {
+    if ($_.Exception.Response) {
+      $got = [int]$_.Exception.Response.StatusCode
+      $loc = [string]$_.Exception.Response.Headers['Location']
+    }
+  } finally {
+    if ($Insecure) { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null }
+  }
+
+  $mark = if ($got -eq $want) { "ok  " } else { "FAIL" }
+  $tail = if ($loc) { "  -> $loc" } elseif ($len) { "  $len B" } else { "" }
+  "{0}  {1,-46} {2} (期望 {3}){4}" -f $mark, $label, $got, $want, $tail
+  if ($got -ne $want) { $script:bad += "$label -> $got (期望 $want)" }
+}
+
+Check "home 目录页"            "http://$ip/"                 200
+Check "game 首页"              "http://$ip/laoyoufen/"       200
+Check "game api health"        "http://$ip/laoyou-api/health" 200
+Check "course-08"              "http://$ip/course-08.html"   200
+Check "ai-course"              "http://$ip/ai-course/"       200
+Check "beta http 必须跳 https" "http://$ip/x7k2beta/"        301
+Check "beta https 可达"        "https://$ip/x7k2beta/"       200 -Insecure
+
+if ($bad.Count -gt 0) {
+  Write-Host "`n站点验证失败（$($bad.Count) 条）：" -ForegroundColor Red
+  $bad | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+  Write-Host "`n定位：python -X utf8 tools/gate/site_gate.py   # 全矩阵，含资产与缓存头" -ForegroundColor Yellow
+  Write-Host "常见根因：conf.d 里别的项目写了 listen 80 + location / 的 301（会抢走默认 server），" -ForegroundColor Yellow
+  Write-Host "          或 443 的 server 没 include 本站的 default.d 片段。" -ForegroundColor Yellow
+  Write-Host "`n游戏地址： http://$ip/laoyoufen/  （当前不可用）"
+  exit 1
 }
 Write-Host "`n游戏地址： http://$ip/laoyoufen/"

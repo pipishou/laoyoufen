@@ -97,8 +97,45 @@ systemctl reload nginx
 log "nginx reloaded"
 
 # 7) 自检
+#
+# P549：以前这里只查 127.0.0.1 且**不带 Host 头**，于是 nginx 用默认 server 回答，
+# 恰好是 80 上第一个 server —— 2026-11-27 那次那个 server 是别的项目的「全站 301」，
+# 结果本脚本说 reload 成功、curl 说 200，外网用户看到的是 404。
+#
+# 现在查三件事：
+#   a) 带真实 Host 访问三条路径 —— 必须 200（不允许 301/404）
+#   b) 带一个**不存在的 Host** 访问 /laoyoufen/ —— 也必须 200。
+#      这一条才是真正的防线：它证明我们的 location 挂在「80 的默认 server」里。
+#      11-27 的坏配置在 (a) 上可能侥幸过关（server_name 恰好匹配），但在 (b) 上必红。
+#   c) 443 上 beta 仍然 200（-k：证书 CN 是 sslip.io，IP 访问必然告警；这条只证明没弄坏别人）
 sleep 1
 curl -fsS http://127.0.0.1:8767/health && echo
-curl -fsS -o /dev/null -w 'static %{http_code}\n' http://127.0.0.1/laoyoufen/
+HOSTHDR="Host: 8.134.86.249"
+for p in / /laoyoufen/ /laoyou-api/health; do
+  code=$(curl -sS -o /dev/null -m 8 -w '%{http_code}' -H "$HOSTHDR" "http://127.0.0.1$p" || echo 000)
+  echo "  host-routed $p -> $code"
+  case "$code" in
+    200) ;;
+    301|302|404|000) log "✗ $p 返回 $code —— 80 的默认 server 被别的项目抢走了（conf.d 里的 301），或本站 location 没挂上"; exit 8 ;;
+    *) log "✗ $p 返回 $code"; exit 8 ;;
+  esac
+done
+
+# b) 默认 server 归属
+BO=$(curl -sS -o /dev/null -m 8 -w '%{http_code}' -H "Host: laoyoufen-deploy-gate.invalid" http://127.0.0.1/laoyoufen/ || echo 000)
+echo "  default-server /laoyoufen/ -> $BO"
+if [ "$BO" != "200" ]; then
+  log "✗ 用一个不存在的 Host 访问 /laoyoufen/ 得到 $BO。"
+  log "  说明 80 上第一个 server（默认 server）不是你，或者它把路径 301 走了。"
+  log "  查：grep -rl 'listen.*80' /etc/nginx/conf.d/ | xargs grep -l 'return 301'"
+  log "  典型元凶：别的项目的 conf.d 文件写了 listen 80 + location / { return 301 https://...; }"
+  exit 8
+fi
+
+# c) 443 没被弄坏
+BW=$(curl -sS -k -o /dev/null -m 8 -w '%{http_code}' -H "Host: 8-134-86-249.sslip.io" https://127.0.0.1/x7k2beta/ || echo 000)
+echo "  https /x7k2beta/ -> $BW"
+[ "$BW" = "200" ] || log "⚠ 443 上 beta 返回 $BW（不是本站的事，但同机共享 nginx，提醒去看一眼）"
+
 echo
 log "done. 外网检查： http://8.134.86.249/laoyoufen/  与  http://8.134.86.249/laoyou-api/health"
