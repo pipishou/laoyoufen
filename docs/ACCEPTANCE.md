@@ -306,6 +306,24 @@ python -X utf8 tools/gate/ai_gate.py        # 跑完必须 npm run -s build
 95. **P530** `dsh-experimental-session-search` 的跨会话访问要求**目标 cwd 与调用方 cwd 字符串严格相等**：主窗在仓库根、副窗若 `cd game` 去起 preview，cwd 已经变了，就搜不到主窗的会话。**解法定**：起 preview 用工具的 `workdir` 参数，别改会话 cwd。**判据**：两窗 `session_search` 能看到对方本会话内记录。
 
 
+## 五·二十八、智能体团队 vs 多任务窗口（2026-11-28 记，非某批产出）
+
+老板打开了「使用智能体团队」，问该用团队还是多窗口。四个实验真跑过（两个计时探针并发／
+任务板 CAS 故意用旧 revision／子窗跑替身时的内存／四批 commit 时间戳），结论与逐条能力矩阵在
+[智能体团队vs多窗口-2026-11-28](智能体团队vs多窗口-2026-11-28.md)。
+
+一句话：**团队是「一个大脑多双手」，多窗口是「两个大脑」，不是二选一。** 日常批次全部用团队
+（读场、全量测、五门、替身 258 s、长跑门 306 s 都丢给子窗），多窗口只在一个场合开 ——
+**需要一个能追问的独立视角**（子窗不能被追问，只能 `send_message` 续一次）。
+实测：两个子窗落地时刻相差 **11 ms**、结束同一毫秒（真并发，不是排队）；任务板 CAS 是硬的
+（`Error: stale team task "task-1" revision 1; current revision is 2`）。
+
+96. **P531** `write_scopes` 只是警告、不进锁：两个 owner 同时写同一文件会静默互相覆盖（`dsh-tool-agent-team` README 明写「Write-scope overlap is advisory, not a lock」）。**解法定**：派活时主窗自己保证不重叠（一张「本轮谁写哪个文件」表），或等 P518 拆完 `panels.ts` 再谈真并行。**判据**：一批活派给三个子窗，事后 `git diff` 里没有任何一个文件被两个 owner 改过。
+97. **P532** 团队任务板在**进程内**，DSH 重启就没了（与 P528 的 `parallel_hold` 同型）—— 两套协调机制在「重启」这一格上都失效。**解法定**：主窗收尾时把 `team_task_list` 全量导出到 `.junshi/handoff/tasks-<日期>.json`，重启后人工对账。**判据**：重启后 `.junshi/handoff/` 里能查到上一轮未完成任务。
+98. **P533** 子窗回的是**摘要**，「它到底查了哪几行」无法复核。**解法定**：派读场活时强制「结论必须带 `文件:行号`，写进 `docs/<slug>-证据.md`」。**判据**：每份读场结论都能用 `grep` 在源码里对上。
+99. **P534** 长跑门与替身的串行关系现在靠人在 prompt 里写「等它回来再派」，任务板的 `blocked_by` 只是**记录**、不阻止 agent 提前动（`Task readiness never starts an owner` 的反面也没做到）。**解法定**：派活前先 `team_task_list` 查 blocker，未完成就拒派。**判据**：故意提前派一次，被明确拒绝而不是跑起来。
+
+
 ## 六、维护规矩
 
 - 每次整体验收在**这一份**里改三处：日期、第三节数字、第一节链到的新一份批次文档；
