@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { GUANGXI, monthTargetFor, rentMonthlyOf } from "../data/balance";
 import { CAPITAL, BOWL, bowls, monthsOf, RENT, totalCapital, totalGradeFee } from "../data/anchors";
 import { nameCandidates, validShopName } from "../data/shop-names";
-import { SITES, affordableSites, siteById } from "../data/sites";
+import { SITES, affordableSites, dailyBowlCeiling, siteById } from "../data/sites";
 import { canTakeSite, monthlyRentOf, openForBusiness } from "./setup";
-import { createInitialState, tickMinute } from "./state";
+import { createInitialState, advanceMinute, tickMinute } from "./state";
+import { resolveEvent } from "./events";
+import { spawnScaleByDay, spawnSeatFactor } from "./customer";
 
 /**
  * S0 建店（选铺位 + 起店名）与「钱/碗」坐标系的守门测试。
@@ -164,5 +166,91 @@ describe("坐标系（钱 / 碗 / 月营收）", () => {
     expect(rentMonthlyOf(RENT.communityMonthly, 12)).toBe(4_600);
     expect(rentMonthlyOf(RENT.communityMonthly, 13)).toBe(4_738);
     expect(rentMonthlyOf(RENT.communityMonthly, 25)).toBe(4_880);
+  });
+});
+
+/**
+ * 「2 座档不再是陷阱」（批 BH′，解 P545 + P547 + P548）。
+ *
+ * 线上 97 局真实试玩：**48 局**选了免费的 2 座街边摊，中位只活 2 天、0 局活过第 5 天；
+ * 4 座 39 局中位 5 天、6 座 10 局 70% 活过 5 天。2 座的理论产能 32.7 碗/天，
+ * 而旧配平按 4 座的客流放人进来 —— 首日到店 58 人、只能卖 36 碗，**22 个人当场掉头走**（38%）。
+ *
+ * 这三条断言就是这一批的判据：
+ *   ① 2 座首日流失 ≤25%（旧 38%），4 座 / 6 座仍然是 0%；
+ *   ② 4 座及以上座位系数**恒等于 1.0**（替身全程 4 座 ⇒ 四种子必须逐位不变）；
+ *   ③ 建店卡上的日产能和模型同一算式（见 `data/sites.test.ts`）。
+ */
+describe("2 座档不再是陷阱（批 BH′）", () => {
+  /** 开张 + 跑完一整天，取打烊单上的「卖出 / 走掉」 */
+  function oneDay(siteId: string, seed: number): { served: number; lost: number } {
+    const s = createInitialState("p-bh", seed);
+    expect(openForBusiness(s, siteId, "探针老友粉").ok).toBe(true);
+    let guard = 0;
+    while (!s.dayReport && guard < 50_000) {
+      if (s.events.pending) {
+        resolveEvent(s, 0);
+        continue;
+      }
+      advanceMinute(s);
+      guard += 1;
+    }
+    const rep = s.dayReport;
+    expect(rep).not.toBeNull();
+    return { served: rep!.served, lost: rep!.lost };
+  }
+
+  const churn = (x: { served: number; lost: number }): number =>
+    x.lost + x.served > 0 ? (x.lost / (x.lost + x.served)) * 100 : 0;
+
+  it("首日流失：2 座从 38% 降到 20% 上下（判据 ≤25%），4 座与 6 座仍是 0%", () => {
+    const seeds = [1, 2, 3];
+    const stall = seeds.map((seed) => churn(oneDay("stall", seed)));
+    const avg = stall.reduce((a, b) => a + b, 0) / stall.length;
+    expect(avg).toBeLessThanOrEqual(25);
+    // 单种子有波动（探针实测 27.1 / 26.4 / 0.0），但不许某一颗回到旧值附近
+    for (const v of stall) expect(v).toBeLessThan(30);
+    for (const seed of seeds) expect(oneDay("alley", seed).lost).toBe(0);
+    expect(oneDay("streetfront", 1).lost).toBe(0);
+  }, 120_000);
+
+  it("座位系数：4 座及以上恒等于 1.0 —— 替身全程 4 座，四种子一个字节都不许动", () => {
+    for (const seats of [4, 5, 6, 8, 12]) expect(spawnSeatFactor(seats)).toBe(1);
+    expect(spawnSeatFactor(2)).toBeCloseTo(Math.SQRT1_2, 12);
+    expect(spawnSeatFactor(3)).toBeCloseTo(Math.sqrt(0.75), 12);
+    expect(spawnSeatFactor(1)).toBeCloseTo(0.5, 12);
+    // 越少越少，且单调
+    expect(spawnSeatFactor(1)).toBeLessThan(spawnSeatFactor(2));
+    expect(spawnSeatFactor(2)).toBeLessThan(spawnSeatFactor(3));
+    expect(spawnSeatFactor(3)).toBeLessThan(spawnSeatFactor(4));
+  });
+
+  it("4 座时 spawnScaleByDay 与批 P67 的老分档逐位相同（0.55 / 0.85 / 1）", () => {
+    const s = createInitialState("p-bh-scale", 1);
+    expect(openForBusiness(s, "alley", "建政老友粉").ok).toBe(true);
+    s.month = 0;
+    for (const [day, want] of [[1, 0.55], [2, 0.85], [7, 0.85], [8, 1]] as const) {
+      s.day = day;
+      expect(spawnScaleByDay(s)).toBe(want);
+    }
+    s.month = 1;
+    s.day = 1;
+    expect(spawnScaleByDay(s)).toBe(1);
+  });
+
+  it("2 座从第 1 天起就压客流：0.55×0.707 ≈ 0.389，第 8 天起停在 0.707", () => {
+    const s = createInitialState("p-bh-scale", 1);
+    expect(openForBusiness(s, "stall", "街边老友粉").ok).toBe(true);
+    s.month = 0;
+    s.day = 1;
+    expect(spawnScaleByDay(s)).toBeCloseTo(0.55 * Math.SQRT1_2, 12);
+    expect(spawnScaleByDay(s)).toBeLessThan(0.4); // 首日到店约 41 人，仍会排一点队
+    s.day = 8;
+    expect(spawnScaleByDay(s)).toBeCloseTo(Math.SQRT1_2, 12);
+  });
+
+  it("建店卡把日产能写出来：2 座 33 碗，是 4 座（65 碗）的一半", () => {
+    expect(dailyBowlCeiling(siteById("stall")!)).toBe(33);
+    expect(dailyBowlCeiling(siteById("alley")!)).toBe(65);
   });
 });

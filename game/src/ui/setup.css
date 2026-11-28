@@ -102,6 +102,16 @@
   background: var(--cream);
   border: 1px solid var(--sand);
 }
+
+/* 批 BH′（P548）：日产能那一格要比「N 座 / N 口灶 / 月租」显眼 ——
+   玩家选铺位时唯一真正该比的就是它能接多少碗，其余三个数只是构成它。
+   不写死字号：跟着 .sstats 的 11px（与卡片其余小字同一档），只换底与描边。 */
+.sstats span.sbowls {
+  background: var(--paper2);
+  border-color: var(--ink);
+  font-weight: 700;
+  color: var(--ink);
+}
 .sbadge { margin-top: 6px; font-size: 11px; color: var(--red); min-height: 14px; }
 
 .namerow {
