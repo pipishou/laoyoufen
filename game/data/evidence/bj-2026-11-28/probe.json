@@ -1,0 +1,188 @@
+{
+  "ok": true,
+  "checks": {
+    "manifest_200": true,
+    "manifest_json_type": true,
+    "manifest_name": true,
+    "manifest_id_absolute": true,
+    "manifest_start_url_relative": true,
+    "manifest_scope_slash_end": true,
+    "manifest_display_fullscreen": true,
+    "manifest_orientation": true,
+    "manifest_colors": true,
+    "manifest_prefer_false": true,
+    "manifest_has_192": true,
+    "manifest_has_512": true,
+    "manifest_has_maskable": true,
+    "icon_192": true,
+    "icon_512": true,
+    "icon_maskable": true,
+    "head_manifest": true,
+    "head_theme_color": true,
+    "head_mobile_capable": true,
+    "head_apple_capable": true,
+    "head_apple_status": true,
+    "head_apple_title": true,
+    "head_apple_icon": true,
+    "safe_area_defined": true,
+    "tap_min_over_44": true,
+    "portrait_stage_inside": true,
+    "body_no_scroll": true,
+    "portrait_rotatehint_visible": true,
+    "portrait_rotatehint_44": true,
+    "portrait_sbtn_44": true,
+    "portrait_open_ok": true,
+    "portrait_guiderestore_44": true,
+    "portrait_reach_closing": true,
+    "portrait_next_44": true,
+    "portrait_day_advanced": true,
+    "landscape_rotatehint_hidden": true,
+    "landscape_stage_inside": true,
+    "desktop_rotatehint_hidden": true,
+    "no_pageerror": true
+  },
+  "detail": {
+    "manifest": {
+      "status": 200,
+      "contentType": "application/json",
+      "size": 997,
+      "name": "老友粉店",
+      "display": "fullscreen",
+      "orientation": "landscape",
+      "id": "/laoyoufen/",
+      "startUrl": "./",
+      "scope": "./",
+      "icons": [
+        "32x32",
+        "192x192",
+        "512x512",
+        "512x512"
+      ]
+    },
+    "icons": {
+      "192": {
+        "status": 200,
+        "type": "image/png",
+        "size": 672
+      },
+      "512": {
+        "status": 200,
+        "type": "image/png",
+        "size": 2041
+      },
+      "maskable": {
+        "status": 200,
+        "type": "image/png",
+        "size": 2037
+      }
+    },
+    "head": {
+      "manifest": "./manifest.json",
+      "themeColor": "#2f2118",
+      "mobileCapable": "yes",
+      "appleCapable": "yes",
+      "appleStatus": "black-translucent",
+      "appleTitle": "老友粉店",
+      "appleIcon": "./icons/icon-192.png"
+    },
+    "portrait_vars": {
+      "safe": {
+        "top": "0px",
+        "right": "0px",
+        "bottom": "0px",
+        "left": "0px"
+      },
+      "tapMin": "calc(44px / 0.3516)",
+      "tapMinPx": 125,
+      "stageScale": "0.3516",
+      "stage": {
+        "w": 360,
+        "h": 270,
+        "x": -0.0,
+        "y": 163
+      },
+      "vw": 360,
+      "vh": 640,
+      "bodyOverflow": "hidden",
+      "htmlOverflow": "hidden"
+    },
+    "rotatehint_portrait": {
+      "w": 140,
+      "h": 44,
+      "x": 110,
+      "y": 586,
+      "visible": true,
+      "text": "点我一键横屏"
+    },
+    "portrait_sbtn": {
+      "w": 294,
+      "h": 44,
+      "x": 33,
+      "y": 773,
+      "visible": true,
+      "text": "开张营业"
+    },
+    "enter": {
+      "steps": {
+        "card": true,
+        "chip": true,
+        "open": true,
+        "guide": true,
+        "pill": true,
+        "speed": true
+      },
+      "phase": "open",
+      "minute": 6
+    },
+    "portrait_guiderestore": {
+      "w": 44,
+      "h": 44,
+      "x": 313,
+      "y": 218,
+      "visible": true,
+      "text": "? 引导"
+    },
+    "closing": {
+      "ok": true,
+      "month": 0,
+      "day": 2,
+      "waited": 7500
+    },
+    "portrait_next": {
+      "w": 27,
+      "h": 44,
+      "x": 205,
+      "y": 345,
+      "visible": true,
+      "text": "明天继续 ›"
+    },
+    "next_click": {
+      "ok": true,
+      "before": {
+        "month": 0,
+        "day": 2,
+        "phase": "closing",
+        "report": true
+      },
+      "after": {
+        "month": 0,
+        "day": 2,
+        "phase": "prep",
+        "report": false
+      }
+    },
+    "landscape": {
+      "rotatehint": null,
+      "stage": {
+        "w": 500,
+        "h": 375,
+        "x": 83,
+        "y": -0.0
+      },
+      "vw": 667,
+      "vh": 375
+    },
+    "desktop_rotatehint": null
+  },
+  "pageerrors": []
+}

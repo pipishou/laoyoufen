@@ -1,0 +1,42 @@
+{
+  "name": "老友粉店",
+  "short_name": "老友粉店",
+  "description": "南宁老友粉店经营模拟：一把锅铲、一锅酸笋，从街边摊做到三层楼。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "id": "/laoyoufen/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#2f2118",
+  "theme_color": "#2f2118",
+  "categories": ["games", "simulation"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

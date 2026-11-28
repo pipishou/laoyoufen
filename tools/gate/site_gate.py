@@ -62,6 +62,9 @@ CHECKS = [
 
 ASSET = re.compile(rb'src="\./(assets/[^"]+)"|href="\./(assets/[^"]+)"')
 
+# 批 BJ′ 起要验的四张图标（manifest 里 icons[].src，相对 manifest 自己的 URL）
+ICONS = ["icon-192.png", "icon-512.png", "icon-512-maskable.png", "favicon-32.png"]
+
 
 def run(url: str, extra: list[str] | None = None) -> tuple[int, bytes, dict[str, str], str]:
     """curl 一次，返回 (状态码, body, headers, 有效 URL)。用 curl 而不是 urllib：
@@ -166,6 +169,42 @@ def check_acme(base: str) -> tuple[str, bool, str]:
     return "acme_channel", ok, f"{code}（能到 nginx 的 challenge 目录即可，404 是预期）"
 
 
+def check_manifest(base: str) -> list[tuple[str, bool, str]]:
+    """批 BJ′：manifest 与它的四张图标必须真的能取到，且 content-type 对。
+
+    为什么单列：`deploy/nginx-laoyoufen.conf` 没有 `application/manifest+json` 映射，
+    所以咱们用的是 `.json`（走 nginx 自古就有的 `application/json`）。这条一旦
+    变红，手机端「添加到主屏幕」会静默失效 —— 页面本身还是能开的，最难发现。
+    """
+    out: list[tuple[str, bool, str]] = []
+    code, body, headers, _ = run(f"{base}/laoyoufen/manifest.json")
+    ctype = headers.get("content-type", "")
+    ok = code == 200 and ctype.startswith("application/json")
+    detail = f"{code} · {ctype or '(无 Content-Type)'} · {len(body)} B"
+    fields = ""
+    if ok:
+        try:
+            m = json.loads(body.decode("utf-8"))
+            need = ["name", "short_name", "start_url", "display", "icons"]
+            missing = [k for k in need if not m.get(k)]
+            icons = m.get("icons") or []
+            sizes = {i.get("sizes") for i in icons}
+            have = {"192x192", "512x512"} <= sizes
+            maskable = any("maskable" in str(i.get("purpose", "")) for i in icons)
+            ok = not missing and have and maskable
+            fields = f" · 缺字段{missing or '无'} · 192+512={have} · maskable={maskable}"
+        except Exception as e:  # noqa: BLE001
+            ok, fields = False, f" · 不是 JSON: {e}"
+    out.append(("manifest", ok, detail + fields))
+
+    for name in ICONS:
+        c, b, h, _ = run(f"{base}/laoyoufen/icons/{name}")
+        ct = h.get("content-type", "")
+        ok = c == 200 and ct.startswith("image/png") and len(b) > 100
+        out.append((f"icon {name}", ok, f"{c} · {len(b)} B · {ct or '(无 Content-Type)'}"))
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default=DEFAULT_HOST)
@@ -185,6 +224,7 @@ def main() -> int:
         base = https_base if assertion == "https" else http_base
         results.append(check(name, path, want, assertion, base))
     results += check_assets(http_base)
+    results += check_manifest(http_base)
     if a.local and not a.port:
         # 打临时实例时 .well-known 的 root 指向临时 html 目录，没有意义，跳过
         results.append(check_acme(http_base))

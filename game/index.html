@@ -12,6 +12,25 @@
 <link rel="stylesheet" href="./src/ui/pixel.css">
 <!-- 空 favicon：否则浏览器每次加载都 404 一次，把「控制台零 error」这条验收搅浑 -->
 <link rel="icon" href="data:,">
+
+<!-- 装到手机主屏（P550）。为什么是这几个：
+     1. manifest.json 用 .json 后缀而不是 .webmanifest —— nginx 的 mime.types 里
+        没有 application/manifest+json 映射，.json 走 application/json 是自古就有的，
+        不用碰服务器配置（deploy/nginx-laoyoufen.conf）。
+     2. display: "fullscreen" 一份值喂两端 —— Android 拿零 chrome；iOS 不实现
+        fullscreen，按回退链自动落 standalone，同样没有地址栏。
+     3. apple-mobile-web-app-status-bar-style=black-translucent 是 iOS 上「拿到满高
+        视口」的唯一开关，缺它顶部会空出 62px 的状态栏。
+     4. mobile-web-app-capable 与 apple-mobile-web-app-capable 两个都写：
+        iOS 到 2026 仍只认 apple- 前缀那个。
+     5. 图标：iOS 只认 PNG、完全忽略 SVG；192/512 两张 any + 一张 512 maskable。 -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2f2118">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="老友粉店">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 </head>
 <body>
 <div id="stage">

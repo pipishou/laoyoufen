@@ -14,11 +14,11 @@
  },
  "browser": "bundled-chromium",
  "failed": [],
- "days": 34,
+ "days": 37,
  "fps": {
-  "min": 33.0,
-  "avg": 55.5,
-  "n": 2156
+  "min": 57.0,
+  "avg": 60.0,
+  "n": 2361
  },
  "heap": {
   "samples": [
@@ -50,6 +50,11 @@
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
   "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "Failed to load resource: the server responded with a status of 404 (Not Found)",
   "Failed to load resource: the server responded with a status of 404 (Not Found)"
  ],
  "bad_errors": [],
@@ -59,27 +64,32 @@
   "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/line",
+  "404 http://localhost:4246/laoyou-api/line",
+  "404 http://localhost:4246/laoyou-api/line",
+  "404 http://localhost:4246/laoyou-api/line",
+  "404 http://localhost:4246/laoyou-api/line",
+  "404 http://localhost:4246/laoyou-api/line",
   "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/playtest",
   "404 http://localhost:4246/laoyou-api/event",
-  "404 http://localhost:4246/laoyou-api/line",
+  "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/event",
   "404 http://localhost:4246/laoyou-api/playtest",
   "404 http://localhost:4246/laoyou-api/event"
  ],
  "off_api": [],
  "actions": {
-  "open": 34,
-  "wait": 2082,
-  "next-day": 33,
-  "event": 7
+  "open": 37,
+  "wait": 2280,
+  "next-day": 36,
+  "event": 8
  },
- "line_calls": 3,
- "line_per_day": 0.09,
+ "line_calls": 7,
+ "line_per_day": 0.19,
  "hud": {
-  "cash": "¥39,391",
-  "date": "第 1 年 · 2 月 · 4 日11:16",
+  "cash": "¥40,942",
+  "date": "第 1 年 · 2 月 · 7 日12:12",
   "canvas": true
  }
 }

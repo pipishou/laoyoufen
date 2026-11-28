@@ -3,11 +3,25 @@
  *
  * 规矩：
  *  1. 不改 hud.css 里任何坐标——它是「舞台内部坐标系」，改它等于改游戏。
- *  2. 这里只做三件事：等比缩放、安全区、触摸热区。
+ *  2. 这里只做四件事：等比缩放、安全区、触摸热区、竖屏旋转。
  *  3. 断点只影响「外框与提示」，不影响内部布局；真要大改布局，得另开一条证据链（眼睛绿）来验。
  */
 
+/* 安全区：刘海屏横屏时左右会挡住舞台边缘（P550）。
+   这四个变量以前被引用但从来没定义过 —— 等于没有安全区。只在
+   viewport-fit=cover 时 env() 才非 0；横屏刘海机的 left/right 实测 44–59px。 */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 
+  /* 手机上的触摸热区下限（真实屏幕像素）。44 是 iOS HIG 的数；
+     --stage-scale 是舞台缩小的倍数，除以它才能换算成「舞台内部坐标」。
+     不设上限：375 竖屏 scale 0.366 ⇒ 44/0.366 ≈ 120 舞台像素。
+     上限一旦设成 84，热区只有 30 真实像素 —— 比不设还糟（P550 实测过）。 */
+  --tap-min: calc(44px / var(--stage-scale, 1));
+}
 
 /* 安全区：刘海屏横屏时左右会挡住舞台边缘 */
 body {
@@ -37,14 +51,51 @@ body {
     overscroll-behavior: none;
   }
 
-  /* 44px 是 iOS HIG 的最小热区：缩放后仍要够点 */
-  #hud button,
-  #hud [role="button"],
-  #hud .tab,
-  #hud .btn,
-  #hud .choice {
+  /* 触摸热区（P550）。分两类处理，因为坐标系不同：
+
+     A. 挂在 body 上的浮层（建店 .setup、比赛 .arena、引导 .guiderestore）
+        是**屏幕坐标系**，`min-height:44px` 就是真的 44 屏幕像素 —— 直接写。
+     B. #stage 内部的 HUD 会跟 `transform: scale()` 一起缩（375 竖屏 0.366），
+        44px 只剩 16px。这里的顶栏高 52px、底栏高 100px，塞不下
+        「44 / 0.366 ≈ 120」舞台像素的按钮 —— 所以**只给放得下的**改，
+        放不下的记成 P555（要专门一套手机版 HUD，不是这批能解的）。 */
+
+  /* A. 屏幕坐标系的浮层：44 就是 44 */
+  .setup .sbtn,
+  .arena .abtn {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* 「? 引导」挂在 #hud 里（舞台坐标系），所以要用反算过的 --tap-min。
+     选择器必须带 #hud：guide.css 在本文件之后加载，它自己的
+     `.guiderestore{min-height:32px}` 同优先级会把我这条盖掉（实测过：
+     不带 #hud 时高度仍是 11 真实像素）。 */
+  #hud .guiderestore {
+    min-height: var(--tap-min);
+    min-width: var(--tap-min);
+    padding: 10px 14px;
+  }
+
+  /* B. 舞台内、有空间的那几个：日结单的「明天继续」与事件选项
+        （它们躺在通栏弹窗里，撑高不会挤到别人） */
+  #hud .daybtn,
+  #hud .evtbtn {
+    min-height: var(--tap-min);
+  }
+
+  #hud .chips {
+    gap: 8px;
+  }
+
+  #hud .speedbtns {
+    gap: 6px;
+  }
+
+  /* 这两类虽然密集，但只有 3–4 个，拉间距 + 加点内边距就够点 */
+  #hud .chip,
+  #hud .spd {
+    padding: 7px 8px 6px;
   }
 
   /* 触摸端不显示 hover 效果，避免「点完还亮着」 */
@@ -80,28 +131,49 @@ body {
   }
 }
 
-/* ---------- 竖屏提示（仅在 phone + portrait 时由 viewport.ts 挂 class） ---------- */
-body.hint-rotate::after {
-  content: "把手机横过来 · 横屏才看得清灶台";
+/* ---------- 竖屏时那枚「点我一键横屏」按钮（P550） ----------
+   由 viewport.ts 的 mountRotateHint() 插到 body 上，不在 #stage 里 ——
+   在里面会跟着 transform 一起缩，44px 又只剩 16px。
+
+   位置放**底部**：竖屏 360×640 实测舞台占 y=163..433（含上面那条 -8% 偏移），
+   按钮实测 y=586..630，两者不相交。以前那条假提示钉在底部
+   却盖着画面中心，正好压在配菜格与灶台上 —— 换个位置就解决了。
+
+   z-index 故意低于建店浮层（.setup 是 10000）：建店/日结这些是普通表单，
+   竖屏本来就看得清，不需要劝横屏；按钮掉到浮层后面等于自动隐身，
+   不用 JS 同步状态，也不会挡住主按钮。 */
+.rotatehint {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(16px + var(--safe-bottom));
-  margin: 0 auto;
-  width: max-content;
-  max-width: 88vw;
-  padding: 8px 14px;
-  font-size: 13px;
-  letter-spacing: 1px;
-  color: var(--paper);
-  background: var(--ink);
-  border: 2px solid var(--paper2);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+  left: 50%;
+  bottom: calc(10px + var(--safe-bottom));
+  transform: translateX(-50%);
   z-index: 9999;
-  pointer-events: none;
+  min-height: 44px;
+  min-width: 140px;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  background: var(--mustard);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
 }
 
-/* 竖屏时把舞台顶到上方，别让提示压住画面中心 */
+.rotatehint[hidden] {
+  display: none;
+}
+
+.rotatehint:active {
+  transform: translateX(-50%) translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* 竖屏：舞台往上挪 8%，把下面那条黑边让宽一点 ——
+   「点我一键横屏」钉在底部（bottom:10px，44 高），挪过之后两者离得更远。
+   这条偏移是上一版为躲假提示加的，删掉它画面会位移 1px、帧差基准要重存；
+   而它带来的效果（底部黑边更宽）恰好是这版需要的，所以留着。 */
 body.hint-rotate #stage {
   transform: scale(var(--stage-scale)) translateY(-8%);
 }
