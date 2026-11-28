@@ -23,6 +23,18 @@ export interface Sample {
   bowls: number;
   /** 今日流失人数（当天累计） */
   lost: number;
+  /**
+   * 三条流失计数（当天累计，批 BG′）。
+   *
+   * 为什么必须存这三条：`lostReason` 是**粘性字符串**，只在「一款都买不起」那条分支里被写
+   * （`sim/customer.ts` 的价牌分支），而队满与等不及只加计数不写 reason。于是过去把「当日
+   * 流失增量」整批记到那个字符串上 —— 线上 97 局里 `peakWaiting >= 12` 的 236 天，
+   * reasons 里**一条非价牌条目都没有**，日结单就在教玩家「你的问题在定价」。
+   * `sim/bottleneck.ts` 的 `lossSplitOf` 一直读的就是这三条，是准的。
+   */
+  lostQueue: number;
+  lostPrice: number;
+  lostWait: number;
   /** 今日营收（当天累计） */
   revenue: number;
   price: number;
@@ -50,8 +62,20 @@ export interface DayRollup {
   tasteCount: number;
   seats: number;
   peakWaiting: number;
-  /** 当天流失原因计数 */
-  reasons: Record<string, number>;
+  /**
+   * 当天流失的三条准确计数（批 BG′）。
+   *
+   * 这里原来是 `reasons: Record<string, number>` —— 「上一次写下的那句话 × 当日流失增量」。
+   * 那个设计是错的：`lostReason` 只在「一款都买不起」分支被写（`sim/customer.ts` 价牌分支），
+   * 队满与等不及只加计数不写 reason，于是它们被整批贴到上一句价牌话上。
+   * 线上 97 局里 `peakWaiting >= 12` 的 236 天，reasons 里**一条非价牌条目都没有**。
+   *
+   * 现在改成三条固定字段，与 `sim/bottleneck.ts` 的 `lossSplitOf` 同一个口径（那是准的）。
+   * 老归档里多出来的 `reasons` 键会被忽略；缺这三个字段的老数据按 0 读。
+   */
+  lostQueue: number;
+  lostPrice: number;
+  lostWait: number;
 }
 
 export interface TelemetrySummary {
@@ -65,8 +89,22 @@ export interface TelemetrySummary {
   peakWaiting: number;
   revenueTotal: number;
   bowlsPerDay: number;
+  /** 三条流失来源（批 BG′）。永远恰好三条，count 可能为 0 */
+  lostSplit: { queue: number; price: number; wait: number };
+  /**
+   * 三条来源的中文说法，供 `server/app.py` 的日报直接吃（它按 `reason` 字符串加总）。
+   * 顺序固定：条数多的在前。老归档里的旧字符串不在这里出现 —— 那是另一套统计，
+   * 由服务端自己按原始 `days[].reasons` 读。
+   */
   lostReasons: { reason: string; count: number }[];
 }
+
+/** 三条流失来源在日报/界面上的固定说法（改字要同步 `server/app.py` 的说明） */
+export const LOSS_LABELS = {
+  queue: "门口站满了没进来",
+  price: "看价牌掉头（一款都买不起）",
+  wait: "等不及走了",
+} as const;
 
 interface Store {
   version: 2;
@@ -110,7 +148,38 @@ function blankDay(s: GameState): DayRollup {
     tasteCount: 0,
     seats: s.venue.seats,
     peakWaiting: 0,
-    reasons: {},
+    lostQueue: 0,
+    lostPrice: 0,
+    lostWait: 0,
+  };
+}
+
+/**
+ * 读回来的老数据补齐（批 BG′）。
+ *
+ * v2 的归档里 `DayRollup` 只有 `reasons: Record<string, number>`，没有三条计数。
+ * 不补齐会让 `Math.max(d.lostQueue, …)` 吃到 `undefined` ⇒ `NaN` 一路传到日结与导出。
+ * 老的 `reasons` 键**丢掉**（那套数据本身是错的，留着会继续骗人）；三条按 0 起算，
+ * 从补齐的那一刻开始记准的。版本号仍是 2 —— 结构向后兼容，老浏览器里的档不用清。
+ */
+function normalizeDay(d: DayRollup): DayRollup {
+  const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  return {
+    month: d.month,
+    day: d.day,
+    minutes: num(d.minutes),
+    bowls: num(d.bowls),
+    lost: num(d.lost),
+    revenue: num(d.revenue),
+    priceSum: num(d.priceSum),
+    priceCount: num(d.priceCount),
+    tasteSum: num(d.tasteSum),
+    tasteCount: num(d.tasteCount),
+    seats: num(d.seats),
+    peakWaiting: num(d.peakWaiting),
+    lostQueue: num(d.lostQueue),
+    lostPrice: num(d.lostPrice),
+    lostWait: num(d.lostWait),
   };
 }
 
@@ -120,8 +189,8 @@ export function loadTelemetry(): void {
     if (!raw) return;
     const parsed = JSON.parse(raw) as Store;
     if (parsed && parsed.version === 2) {
-      days = Array.isArray(parsed.days) ? parsed.days.slice(-MAX_DAYS) : [];
-      today = parsed.today ?? null;
+      days = Array.isArray(parsed.days) ? parsed.days.slice(-MAX_DAYS).map(normalizeDay) : [];
+      today = parsed.today ? normalizeDay(parsed.today) : null;
       samples = Array.isArray(parsed.samples) ? parsed.samples.slice(-MAX_SAMPLES) : [];
     }
   } catch {
@@ -150,6 +219,9 @@ export function recordSample(s: GameState, taste: number): void {
     cash: Math.round(s.cash),
     waiting: waitingCount(s),
     seats: s.venue.seats,
+    lostQueue: s.flow.lostQueue,
+    lostPrice: s.flow.lostPrice,
+    lostWait: s.flow.lostWait,
     lostReason: s.flow.lastLostReason,
   };
   samples.push(sample);
@@ -167,9 +239,6 @@ export function recordSample(s: GameState, taste: number): void {
 
   const d = today;
   d.minutes += 1;
-  // 当日累计量必须单调：万一某处把 flow 清零（读档/事件），不能让 d.lost 回退，
-  // 否则「按增量记流失原因」会和「直接读 d.lost」对不上账。
-  const lostDelta = Math.max(0, sample.lost - d.lost);
   d.bowls = Math.max(d.bowls, sample.bowls);
   d.lost = Math.max(d.lost, sample.lost);
   d.revenue = Math.max(d.revenue, sample.revenue);
@@ -179,9 +248,24 @@ export function recordSample(s: GameState, taste: number): void {
   d.tasteSum += sample.taste;
   d.tasteCount += 1;
   if (sample.waiting > d.peakWaiting) d.peakWaiting = sample.waiting;
-  if (sample.lostReason && lostDelta > 0) {
-    d.reasons[sample.lostReason] = (d.reasons[sample.lostReason] ?? 0) + lostDelta;
-  }
+  /**
+   * 三条来源：**取当日累计的最大值**，不按增量累加。
+   *
+   * 这是批 BG′ 的核心修正。旧写法是
+   *   `d.reasons[sample.lostReason] += lostDelta`
+   * —— 它假设「这一分钟的流失都由 lastLostReason 解释」，而那个字符串只在价牌分支被写，
+   * 队满/等不及根本不写。于是排队堵死的那些天，日结单上写的是「嫌贵」。
+   *
+   * 现在直接搬 `flow.lostQueue/lostPrice/lostWait` 三条真实计数（`sim/customer.ts` 分别在
+   * 队满分支 `:375`、价牌分支 `:413`、等不及分支 `:833` 各加一），`d.lost` 与它们同源，
+   * 所以 `lostQueue + lostPrice + lostWait` 必然 ≤ `lost`，对得上账。
+   *
+   * 用 max 而不是 += 的理由与 `d.lost` 一样：这三个也是当日累计量，遇到读档/事件把 flow
+   * 清零时不能让日结算出的数回退。跨天时 `blankDay` 会从 0 重新开始。
+   */
+  d.lostQueue = Math.max(d.lostQueue, sample.lostQueue);
+  d.lostPrice = Math.max(d.lostPrice, sample.lostPrice);
+  d.lostWait = Math.max(d.lostWait, sample.lostWait);
 
   sinceFlush += 1;
   if (crossed || sinceFlush >= FLUSH_EVERY) flushTelemetry();
@@ -234,6 +318,7 @@ export function summarize(): TelemetrySummary {
       peakWaiting: 0,
       revenueTotal: 0,
       bowlsPerDay: 0,
+      lostSplit: { queue: 0, price: 0, wait: 0 },
       lostReasons: [],
     };
   }
@@ -246,7 +331,9 @@ export function summarize(): TelemetrySummary {
   let tasteSum = 0;
   let tasteCount = 0;
   let peak = 0;
-  const reasons = new Map<string, number>();
+  let lossQueue = 0;
+  let lossPrice = 0;
+  let lossWait = 0;
 
   for (const d of list) {
     minutes += d.minutes;
@@ -259,9 +346,10 @@ export function summarize(): TelemetrySummary {
     tasteSum += d.tasteSum;
     tasteCount += d.tasteCount;
     if (d.peakWaiting > peak) peak = d.peakWaiting;
-    for (const [reason, count] of Object.entries(d.reasons)) {
-      reasons.set(reason, (reasons.get(reason) ?? 0) + count);
-    }
+    // 三条来源逐日相加（每天一条累计值）。老归档缺这三个字段时按 0 读。
+    lossQueue += d.lostQueue ?? 0;
+    lossPrice += d.lostPrice ?? 0;
+    lossWait += d.lostWait ?? 0;
   }
   // 漏出门槛：minute 0 的样本可能没采到（例如从月中存档继续），天数按有效样本数算
   const days = list.filter((d) => d.minutes > 0).length;
@@ -277,11 +365,30 @@ export function summarize(): TelemetrySummary {
     peakWaiting: peak,
     revenueTotal,
     bowlsPerDay: days ? bowls / days : 0,
-    lostReasons: [...reasons.entries()]
-      .map(([reason, count]) => ({ reason, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8),
+    lostSplit: { queue: lossQueue, price: lossPrice, wait: lossWait },
+    lostReasons: (
+      [
+        { reason: LOSS_LABELS.queue, count: lossQueue },
+        { reason: LOSS_LABELS.price, count: lossPrice },
+        { reason: LOSS_LABELS.wait, count: lossWait },
+      ] as { reason: string; count: number }[]
+    )
+      .filter((it) => it.count > 0)
+      .sort((a, b) => b.count - a.count),
   };
+}
+
+/**
+ * 三条来源的「谁最该修」：与 `ui/hud.ts` 的 `dayNoteOf` 同一口径（条数多的先说话）。
+ *
+ * 存在的理由：日结单读的是 `DayRecord`（`sim/state.ts` 的 `recordDay` 已经把三条分开存了），
+ * 而遥测自己必须能给出同样的判断 —— 否则导出给服务端的那一份和玩家看到的那一份会打架。
+ */
+export function topLoss(split: { queue: number; price: number; wait: number }): "queue" | "price" | "wait" {
+  const { queue, price, wait } = split;
+  if (queue + price + wait === 0) return "wait";
+  if (price >= queue && price >= wait) return "price";
+  return queue >= wait ? "queue" : "wait";
 }
 
 /**
@@ -305,11 +412,19 @@ export function deviceId(): string {
   }
 }
 
-/** 导出给「飞轮」吃的一整包。自动上传不带 samples（那是 Shift+E 导出的东西），省 90% 流量 */
+/**
+ * 导出给「飞轮」吃的一整包。自动上传不带 samples（那是 Shift+E 导出的东西），省 90% 流量。
+ *
+ * `version` 3 → 4（批 BG′）：`summary` 多了 `lostSplit`，`days[]` 里
+ * `reasons: Record<string,number>` 换成 `lostQueue/lostPrice/lostWait` 三个数。
+ * 服务端 `_daily_reasons` 读的是 `summary.lostReasons`，**这个键名没变**，
+ * 只是内容从「客人原话 + 数字」变成「三条来源 + 条数」——所以老服务端不用改也能跑，
+ * 但日报上的说法会变成人话（见 `LOSS_LABELS`）。
+ */
 export function exportPayload(opts: { samples?: boolean } = {}): string {
   return JSON.stringify(
     {
-      version: 3,
+      version: 4,
       device: deviceId(),
       client: "laoyoufen-web",
       exportedAt: new Date().toISOString(),

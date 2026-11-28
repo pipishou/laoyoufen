@@ -309,6 +309,9 @@ export function deserialize(raw: string): GameState | null {
     parsed.flow.customers = [];
     parsed.flow.servedToday = 0;
     parsed.flow.lostToday = 0;
+    parsed.flow.lostQueue = 0;
+    parsed.flow.lostPrice = 0;
+    parsed.flow.lostWait = 0;
     parsed.flow.revenueToday = 0;
     parsed.flow.serveCooldown = 0;
   }
@@ -316,6 +319,16 @@ export function deserialize(raw: string): GameState | null {
   if (parsed.dayReport === undefined) parsed.dayReport = null;
   if (typeof parsed.flow.satSumToday !== "number") parsed.flow.satSumToday = 0;
   if (typeof parsed.flow.satCountToday !== "number") parsed.flow.satCountToday = 0;
+  // 三条流失来源（批 BG′）：老档只有 lostToday 一个总数，没有这三条。
+  // 可选字段按 0 起攒，不升 SAVE_VERSION —— `sim/telemetry.ts` 的 `recordSample` 用的是
+  // `Math.max(d.lostQueue, sample.lostQueue)`，吃到 undefined 会一路传 NaN 到日结与导出。
+  const flowRaw = parsed.flow as unknown as Record<string, unknown>;
+  for (const key of ["lostQueue", "lostPrice", "lostWait"] as const) {
+    const v = flowRaw[key];
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 0) {
+      flowRaw[key] = 0;
+    }
+  }
   // v7 → v8（建店 S0）：老档没有 site / shopName。
   // 老档已经是「开着店」的档，所以直接补成默认铺位的名字，不把玩家踢回 setup
   // ——只有全新存档才从 setup 开始（见 createInitialState）。
